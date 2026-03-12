@@ -1,0 +1,86 @@
+name: Publish Skills to ClawHub
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'public/*.md'
+      - 'public/*.json'
+      # UNCOMMENT THESE when ready to auto-publish variants (see DEPLOYMENT.md "Enabling Variant Publishing")
+      # - 'skill-variants/**/variant.config.json'
+      # - 'skill-variants/build-variants.ts'
+
+jobs:
+  publish-main-skill:
+    name: Publish Main Skill
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install ClawHub CLI
+        run: npm install -g clawhub
+
+      - name: Extract version from skill.md frontmatter
+        id: skill-meta
+        run: |
+          VERSION=$(grep -m1 '^version:' public/skill.md | sed 's/^version:[[:space:]]*//')
+          NAME=$(grep -m1 '^name:' public/skill.md | sed 's/^name:[[:space:]]*//')
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "name=$NAME" >> "$GITHUB_OUTPUT"
+          echo "Detected skill: $NAME v$VERSION"
+
+      - name: Publish main skill
+        run: |
+          clawhub publish ./public \
+            --slug ${{ steps.skill-meta.outputs.name }} \
+            --version ${{ steps.skill-meta.outputs.version }} \
+            --tags latest \
+            --no-input
+        env:
+          CLAWHUB_TOKEN: ${{ secrets.CLAWHUB_TOKEN }}
+
+  # ---------------------------------------------------------------
+  # VARIANT PUBLISHING — commented out for now.
+  # Uncomment this entire job when ready to auto-publish variants.
+  # See skill-variants/DEPLOYMENT.md "Enabling Variant Publishing"
+  # ---------------------------------------------------------------
+  # publish-variants:
+  #   name: Publish Skill Variants
+  #   runs-on: ubuntu-latest
+  #   needs: publish-main-skill
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #
+  #     - uses: actions/setup-node@v4
+  #       with:
+  #         node-version: '20'
+  #
+  #     - name: Install dependencies
+  #       run: npm install typescript tsx
+  #
+  #     - name: Install ClawHub CLI
+  #       run: npm install -g clawhub
+  #
+  #     - name: Build all variants
+  #       run: npx tsx skill-variants/build-variants.ts
+  #
+  #     - name: Publish each variant
+  #       env:
+  #         CLAWHUB_TOKEN: ${{ secrets.CLAWHUB_TOKEN }}
+  #       run: |
+  #         for variant_dir in skill-variants/*/dist; do
+  #           variant_name=$(basename $(dirname "$variant_dir"))
+  #           config_file="skill-variants/$variant_name/variant.config.json"
+  #           SLUG=$(node -e "console.log(JSON.parse(require('fs').readFileSync('$config_file','utf8')).overrides.name)")
+  #           VERSION=$(node -e "console.log(JSON.parse(require('fs').readFileSync('$config_file','utf8')).overrides.version)")
+  #           echo "Publishing variant: $variant_name (slug: $SLUG, version: $VERSION)"
+  #           clawhub publish "$variant_dir" \
+  #             --slug "$SLUG" \
+  #             --version "$VERSION" \
+  #             --tags latest \
+  #             --no-input
+  #         done

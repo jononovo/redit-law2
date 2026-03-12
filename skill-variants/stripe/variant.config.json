@@ -1,0 +1,17 @@
+{
+  "source": "public",
+  "urlPrefix": "stripe",
+  "overrides": {
+    "name": "stripe",
+    "version": "2.3.3",
+    "updated": "2026-02-23T00:00:00Z",
+    "description": "Easy-to-use agentic wallets powered by Stripe. Use your existing Stripe/Link to top-up this versatile x402 wallet for any purchases or A2A payments."
+  },
+  "skillJsonOverrides": {
+    "name": "stripe",
+    "version": "2.3.3",
+    "description": "Let your agent shop online with guardrailed wallets, multiple payment methods, and owner approval."
+  },
+  "titleOverride": "CreditClaw — Stripe-powered wallets and payments for AI Agents",
+  "extraFiles": []
+}

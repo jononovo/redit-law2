@@ -1,0 +1,34 @@
+node_modules
+dist
+.DS_Store
+server/public
+vite.config.ts.*
+*.tar.gz
+
+# Next.js build cache
+.next/
+
+# LevelDB / database temp files
+LOG
+CURRENT
+LOCK
+MANIFEST-*
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# OS files
+Thumbs.db
+
+# Editor files
+*.swp
+*.swo
+*~
+
+# TypeScript build info
+tsconfig.tsbuildinfo
+
+# Skill variant build output
+skill-variants/*/dist/

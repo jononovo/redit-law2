@@ -1,0 +1,17 @@
+{
+  "source": "public",
+  "urlPrefix": "creditcard",
+  "overrides": {
+    "name": "creditcard",
+    "version": "2.3.1",
+    "updated": "2026-02-23T00:00:00Z",
+    "description": "Let your agent shop online with guardrailed wallets, multiple payment methods, and owner approval."
+  },
+  "skillJsonOverrides": {
+    "name": "creditcard",
+    "version": "2.3.1",
+    "description": "Let your agent shop online with guardrailed wallets, multiple payment methods, and owner approval."
+  },
+  "titleOverride": "CreditClaw — Shopping for AI Agents",
+  "extraFiles": []
+}
