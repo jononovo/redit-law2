@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth/session";
 import { storage } from "@/server/storage";
 import { profilePermissionSchema } from "@/shared/schema";
+import { z } from "zod";
+
+const cardColorSchema = z.enum(["purple", "dark", "blue", "primary"]);
 
 export async function GET(request: NextRequest) {
   const user = await getSessionUser(request);
@@ -46,7 +49,21 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: "invalid_json" }, { status: 400 });
   }
 
-  const { card_id, permissions } = body;
+  const { card_id, permissions, card_color } = body;
+
+  if (card_id && card_color && !permissions) {
+    const colorParsed = cardColorSchema.safeParse(card_color);
+    if (!colorParsed.success) {
+      return NextResponse.json({ error: "invalid_color" }, { status: 400 });
+    }
+    const card = await storage.getRail4CardByCardId(card_id);
+    if (!card || card.ownerUid !== user.uid) {
+      return NextResponse.json({ error: "card_not_found" }, { status: 404 });
+    }
+    await storage.updateRail4CardByCardId(card_id, { cardColor: colorParsed.data } as any);
+    return NextResponse.json({ updated: true, card_color: colorParsed.data });
+  }
+
   if (!card_id || !permissions) {
     return NextResponse.json({ error: "missing_fields", message: "card_id and permissions are required." }, { status: 400 });
   }

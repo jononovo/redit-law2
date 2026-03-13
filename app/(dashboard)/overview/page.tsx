@@ -8,7 +8,7 @@ import { ActivityLog } from "@/components/dashboard/activity-log";
 import { WebhookLog } from "@/components/dashboard/webhook-log";
 import { OpsHealth } from "@/components/dashboard/ops-health";
 import { PaymentLinksPanel } from "@/components/dashboard/payment-links";
-import { Bot as BotIcon, Plus, Loader2, Wallet, CreditCard, ExternalLink } from "lucide-react";
+import { Bot as BotIcon, Plus, Loader2, Wallet, CreditCard, ExternalLink, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth/auth-context";
@@ -27,6 +27,7 @@ import { UnlinkBotDialog } from "@/components/wallet/dialogs/unlink-bot-dialog";
 import { TransferDialog } from "@/components/wallet/dialogs/transfer-dialog";
 import { FundWalletSheet } from "@/lib/payments/components/fund-wallet-sheet";
 import { FreezeDialog } from "@/components/wallet/dialogs/freeze-dialog";
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { ApprovalList, type ApprovalRow } from "@/components/wallet/approval-list";
 import { InfoTooltip } from "@/components/ui/info-tooltip";
 import type { Rail1WalletInfo, NormalizedCard } from "@/components/wallet/types";
@@ -65,6 +66,8 @@ export default function DashboardOverview() {
 
   const [rail5FreezeTarget, setRail5FreezeTarget] = useState<NormalizedCard | null>(null);
   const [rail5FreezeLoading, setRail5FreezeLoading] = useState(false);
+  const [rail5DeleteTarget, setRail5DeleteTarget] = useState<NormalizedCard | null>(null);
+  const [rail5DeleteLoading, setRail5DeleteLoading] = useState(false);
 
   const [fundSheetOpen, setFundSheetOpen] = useState(false);
   const [fundTarget, setFundTarget] = useState<{ id: number; address: string; botName?: string } | null>(null);
@@ -210,6 +213,22 @@ export default function DashboardOverview() {
     } finally {
       setRail5FreezeLoading(false);
       setRail5FreezeTarget(null);
+    }
+  }
+
+  async function handleRail5DeleteConfirm() {
+    if (!rail5DeleteTarget) return;
+    setRail5DeleteLoading(true);
+    try {
+      const res = await authFetch(`/api/v1/cards/${rail5DeleteTarget.card_id}?rail=rail5`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Failed to delete");
+      setRail5Cards((prev) => prev.filter((c) => c.card_id !== rail5DeleteTarget.card_id));
+      toast({ title: "Card Removed", description: `"${rail5DeleteTarget.card_name}" has been removed.` });
+    } catch {
+      toast({ title: "Delete failed", description: "Please try again.", variant: "destructive" });
+    } finally {
+      setRail5DeleteLoading(false);
+      setRail5DeleteTarget(null);
     }
   }
 
@@ -385,7 +404,6 @@ export default function DashboardOverview() {
               {firstCard ? (
                 <CreditCardItem
                   card={firstCard}
-                  index={0}
                   onFreeze={() => setRail5FreezeTarget(firstCard)}
                   onAddAgent={() => rail5BotLinking.openLinkDialog({
                     id: firstCard.card_id,
@@ -400,6 +418,7 @@ export default function DashboardOverview() {
                     bot_name: firstCard.bot_name,
                   })}
                   onCopyCardId={() => rail5WalletActions.copyCardId(firstCard.card_id)}
+                  onDelete={() => setRail5DeleteTarget(firstCard)}
                 />
               ) : (
                 <div className="relative" data-testid="card-rail5-empty">
@@ -457,6 +476,26 @@ export default function DashboardOverview() {
         onConfirm={handleRail5FreezeConfirm}
         itemType="card"
       />
+
+      <Dialog open={!!rail5DeleteTarget} onOpenChange={(open) => !open && setRail5DeleteTarget(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogTitle className="flex items-center gap-2">
+            <Trash2 className="w-5 h-5 text-red-600" /> Remove Card
+          </DialogTitle>
+          <DialogDescription className="text-neutral-600">
+            Are you sure you want to remove &quot;{rail5DeleteTarget?.card_name}&quot;? This action cannot be undone.
+          </DialogDescription>
+          <div className="flex justify-end gap-3 mt-4">
+            <Button variant="outline" onClick={() => setRail5DeleteTarget(null)} disabled={rail5DeleteLoading} data-testid="button-delete-cancel">
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleRail5DeleteConfirm} disabled={rail5DeleteLoading} data-testid="button-delete-confirm">
+              {rail5DeleteLoading && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
+              Remove
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <GuardrailDialog
         open={rail1Guardrails.guardrailsDialogOpen}

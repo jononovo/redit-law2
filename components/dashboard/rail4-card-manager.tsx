@@ -165,7 +165,7 @@ export function Rail4CardManager({ cardId }: Rail4CardManagerProps) {
   async function handleDelete() {
     setDeleting(true);
     try {
-      const res = await authFetch(`/api/v1/rail4?card_id=${cardId}`, { method: "DELETE" });
+      const res = await authFetch(`/api/v1/cards/${cardId}?rail=rail4`, { method: "DELETE" });
       if (!res.ok) throw new Error("Failed to delete");
       toast({ title: "Card Deleted", description: "Self-hosted card has been removed." });
       setDeleteOpen(false);

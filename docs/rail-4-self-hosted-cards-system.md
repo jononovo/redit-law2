@@ -363,8 +363,8 @@ Self-hosted pages rendering a simple e-commerce UI (browse → checkout → conf
 | `POST` | `/api/v1/rail4/initialize` | Session | Create a new card (pending_setup) |
 | `POST` | `/api/v1/rail4/submit-owner-data` | Session | Activate card with digits/expiry/permissions |
 | `GET` | `/api/v1/rail4/status?card_id=X` | Session | Card configuration status |
-| `DELETE` | `/api/v1/rail4?card_id=X` | Session | Delete card configuration |
-| `GET/PATCH` | `/api/v1/rail4/permissions?card_id=X` | Session | Get/update real profile permissions |
+| `DELETE` | `/api/v1/cards/:cardId?rail=rail4` | Session | Delete card (unified endpoint) |
+| `GET/PATCH` | `/api/v1/rail4/permissions?card_id=X` | Session | Get/update real profile permissions (PATCH also accepts `card_color`) |
 | `GET` | `/api/v1/rail4/confirmations` | Session | List pending approval requests |
 | `GET` | `/api/v1/rail4/obfuscation/status?card_id=X` | Session | Obfuscation engine state |
 | `GET` | `/api/v1/rail4/obfuscation/history?card_id=X` | Session | Obfuscation event history |
@@ -523,7 +523,7 @@ updateCheckoutConfirmationStatus(confirmationId: string, status: string): Promis
 | `app/api/v1/rail4/submit-owner-data/route.ts` | Activate card with digits/permissions |
 | `app/api/v1/rail4/cards/route.ts` | List owner's cards with allowance data |
 | `app/api/v1/rail4/status/route.ts` | Card configuration status |
-| `app/api/v1/rail4/route.ts` | DELETE card configuration |
+| `app/api/v1/cards/[cardId]/route.ts` | Unified DELETE card endpoint (supports rail4 and rail5 via `?rail=` query param) |
 | `app/api/v1/rail4/permissions/route.ts` | GET/PATCH real profile permissions |
 | `app/api/v1/rail4/confirmations/route.ts` | List pending approvals |
 | `app/api/v1/rail4/confirm/[confirmationId]/route.ts` | HMAC-signed approval page + processing |

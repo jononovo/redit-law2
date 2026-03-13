@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { CardVisual } from "@/components/wallet/card-visual";
 import { WalletActionBar } from "@/components/wallet/wallet-action-bar";
-import { CARD_COLORS, formatCentsToUsd } from "@/components/wallet/types";
+import { stableCardColor, formatCentsToUsd } from "@/components/wallet/types";
 
 interface CardData {
   id: number;
@@ -233,7 +233,7 @@ export default function CardsPage() {
           {cards.map((card, index) => (
             <div className="flex flex-col gap-4" key={card.id} data-testid={`card-wallet-${card.id}`}>
               <CardVisual
-                color={CARD_COLORS[index % CARD_COLORS.length]}
+                color={stableCardColor(card.botId)}
                 balance={formatCentsToUsd(card.balanceCents)}
                 balanceLabel="Current Balance"
                 last4={card.botId.slice(-4)}

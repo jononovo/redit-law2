@@ -1,29 +1,28 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { Eye, Snowflake, Play, Plus, Bot, Copy, Unlink, MoreHorizontal, type LucideIcon } from "lucide-react";
+import { Eye, Snowflake, Play, Plus, Bot, Copy, Unlink, MoreHorizontal, Trash2, type LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { CardVisual } from "./card-visual";
 import type { NormalizedCard } from "./types";
-import { CARD_COLORS } from "./types";
 
 interface CreditCardItemProps {
   card: NormalizedCard;
-  index: number;
   onFreeze: () => void;
   onAddAgent?: () => void;
   onUnlinkBot?: () => void;
   onCopyCardId: () => void;
+  onDelete: () => void;
 }
 
 export function CreditCardItem({
   card,
-  index,
   onFreeze,
   onAddAgent,
   onUnlinkBot,
   onCopyCardId,
+  onDelete,
 }: CreditCardItemProps) {
   const router = useRouter();
   const isFrozen = card.status === "frozen";
@@ -32,7 +31,7 @@ export function CreditCardItem({
   return (
     <div className="flex flex-col gap-4 min-w-[320px]" data-testid={`card-item-${card.card_id}`}>
       <CardVisual
-        color={CARD_COLORS[index % CARD_COLORS.length]}
+        color={card.card_color}
         balance={card.balance}
         balanceLabel={card.balanceLabel}
         balanceTooltip={card.balanceTooltip || undefined}
@@ -125,6 +124,9 @@ export function CreditCardItem({
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => router.push(card.detailPath)} data-testid={`menu-details-${card.card_id}`}>
               <Eye className="w-4 h-4 mr-2" /> View Details
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={onDelete} className="text-red-600 focus:text-red-600" data-testid={`menu-delete-${card.card_id}`}>
+              <Trash2 className="w-4 h-4 mr-2" /> Remove Card
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

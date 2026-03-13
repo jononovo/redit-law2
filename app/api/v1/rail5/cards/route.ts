@@ -30,6 +30,7 @@ export async function GET(request: NextRequest) {
       status: c.status,
       bot_id: c.botId || null,
       bot_name: c.botId ? (botLookup[c.botId] || null) : null,
+      card_color: c.cardColor || null,
       spending_limit_cents: guard?.maxPerTxCents ?? GUARDRAIL_DEFAULTS.rail5.maxPerTxCents,
       daily_limit_cents: guard?.dailyBudgetCents ?? GUARDRAIL_DEFAULTS.rail5.dailyBudgetCents,
       monthly_limit_cents: guard?.monthlyBudgetCents ?? GUARDRAIL_DEFAULTS.rail5.monthlyBudgetCents,
