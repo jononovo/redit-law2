@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { CardVisual } from "./card-visual";
 import type { NormalizedCard } from "./types";
-import { CARD_COLORS } from "./types";
 
 interface CreditCardItemProps {
   card: NormalizedCard;
@@ -34,7 +33,7 @@ export function CreditCardItem({
   return (
     <div className="flex flex-col gap-4 min-w-[320px]" data-testid={`card-item-${card.card_id}`}>
       <CardVisual
-        color={CARD_COLORS[index % CARD_COLORS.length]}
+        color={card.card_color}
         balance={card.balance}
         balanceLabel={card.balanceLabel}
         balanceTooltip={card.balanceTooltip || undefined}

@@ -4,6 +4,8 @@ import { storage } from "@/server/storage";
 import { rail5InitializeSchema } from "@/shared/schema";
 import { generateRail5CardId } from "@/lib/rail5";
 
+const CARD_COLORS = ["purple", "dark", "blue", "primary"] as const;
+
 export async function POST(request: NextRequest) {
   const user = await getSessionUser(request);
   if (!user) {
@@ -28,6 +30,8 @@ export async function POST(request: NextRequest) {
   const { card_name, card_brand, card_last4 } = parsed.data;
   const cardId = generateRail5CardId();
 
+  const cardColor = CARD_COLORS[Math.floor(Math.random() * CARD_COLORS.length)];
+
   const card = await storage.createRail5Card({
     cardId,
     ownerUid: user.uid,
@@ -35,6 +39,7 @@ export async function POST(request: NextRequest) {
     cardBrand: card_brand,
     cardLast4: card_last4,
     status: "pending_setup",
+    cardColor,
   });
 
   return NextResponse.json({

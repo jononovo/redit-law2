@@ -19,6 +19,7 @@ export async function GET(request: NextRequest) {
       use_case: c.useCase || null,
       status: c.status,
       bot_id: c.botId || null,
+      card_color: c.cardColor || null,
       created_at: c.createdAt.toISOString(),
       allowance: null as null | {
         value: number;

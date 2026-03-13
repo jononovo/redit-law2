@@ -15,6 +15,7 @@ const patchSchema = z.object({
   recurring_allowed: z.boolean().optional(),
   notes: z.string().max(2000).nullable().optional(),
   status: z.enum(["active", "frozen"]).optional(),
+  card_color: z.enum(["purple", "dark", "blue", "primary"]).optional(),
 });
 
 export async function PATCH(
@@ -57,6 +58,7 @@ export async function PATCH(
 
   if (data.card_name !== undefined) updates.cardName = data.card_name;
   if (data.bot_id !== undefined) updates.botId = data.bot_id;
+  if (data.card_color !== undefined) updates.cardColor = data.card_color;
   const guardrailUpdates: Record<string, unknown> = {};
   if (data.spending_limit_cents !== undefined) guardrailUpdates.maxPerTxCents = data.spending_limit_cents;
   if (data.daily_limit_cents !== undefined) guardrailUpdates.dailyBudgetCents = data.daily_limit_cents;
@@ -123,6 +125,7 @@ export async function PATCH(
     card_last4: updated!.cardLast4,
     status: updated!.status,
     bot_id: updated!.botId || null,
+    card_color: updated!.cardColor || null,
     spending_limit_cents: guard?.maxPerTxCents ?? GUARDRAIL_DEFAULTS.rail5.maxPerTxCents,
     daily_limit_cents: guard?.dailyBudgetCents ?? GUARDRAIL_DEFAULTS.rail5.dailyBudgetCents,
     monthly_limit_cents: guard?.monthlyBudgetCents ?? GUARDRAIL_DEFAULTS.rail5.monthlyBudgetCents,
@@ -166,6 +169,7 @@ export async function GET(
     card_last4: card.cardLast4,
     status: card.status,
     bot_id: card.botId || null,
+    card_color: card.cardColor || null,
     spending_limit_cents: guard?.maxPerTxCents ?? GUARDRAIL_DEFAULTS.rail5.maxPerTxCents,
     daily_limit_cents: guard?.dailyBudgetCents ?? GUARDRAIL_DEFAULTS.rail5.dailyBudgetCents,
     monthly_limit_cents: guard?.monthlyBudgetCents ?? GUARDRAIL_DEFAULTS.rail5.monthlyBudgetCents,

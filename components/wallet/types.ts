@@ -53,6 +53,7 @@ export interface Rail4CardInfo {
   use_case: string | null;
   status: string;
   bot_id: string | null;
+  card_color: string | null;
   created_at: string;
   allowance: AllowanceInfo | null;
 }
@@ -74,6 +75,7 @@ export interface Rail5CardInfo {
   status: string;
   bot_id: string | null;
   bot_name: string | null;
+  card_color: string | null;
   spending_limit_cents: number;
   daily_limit_cents: number;
   monthly_limit_cents: number;
@@ -89,6 +91,7 @@ export interface NormalizedCard {
   status: string;
   bot_id: string | null;
   bot_name: string | null;
+  card_color: "primary" | "blue" | "purple" | "dark";
   balance: string;
   balanceLabel: string;
   balanceTooltip?: string | null;
@@ -114,6 +117,7 @@ export function normalizeRail4Card(card: Rail4CardInfo, basePath: string): Norma
     status: card.status,
     bot_id: card.bot_id,
     bot_name: null,
+    card_color: resolveCardColor(card.card_color, card.card_id),
     balance,
     balanceLabel: "Remaining Allowance",
     balanceTooltip: tooltipParts.length > 0 ? tooltipParts.join("\n") : null,
@@ -132,6 +136,7 @@ export function normalizeRail5Card(card: Rail5CardInfo, basePath: string): Norma
     status: card.status,
     bot_id: card.bot_id,
     bot_name: card.bot_name,
+    card_color: resolveCardColor(card.card_color, card.card_id),
     balance: formatCentsToUsd(card.spending_limit_cents),
     balanceLabel: "Spending Limit",
     last4: card.card_last4,
@@ -246,6 +251,19 @@ export function formatResetsLabel(a: AllowanceInfo): string {
 }
 
 export const CARD_COLORS: ("primary" | "blue" | "purple" | "dark")[] = ["purple", "dark", "blue", "primary"];
+
+export function stableCardColor(cardId: string): "primary" | "blue" | "purple" | "dark" {
+  let hash = 0;
+  for (let i = 0; i < cardId.length; i++) {
+    hash = ((hash << 5) - hash + cardId.charCodeAt(i)) | 0;
+  }
+  return CARD_COLORS[Math.abs(hash) % CARD_COLORS.length];
+}
+
+export function resolveCardColor(color: string | null | undefined, cardId: string): "primary" | "blue" | "purple" | "dark" {
+  if (color && CARD_COLORS.includes(color as any)) return color as "primary" | "blue" | "purple" | "dark";
+  return stableCardColor(cardId);
+}
 
 export const BRAND_LABELS: Record<string, string> = {
   visa: "Visa",

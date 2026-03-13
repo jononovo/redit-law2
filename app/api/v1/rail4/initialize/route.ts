@@ -4,6 +4,8 @@ import { storage } from "@/server/storage";
 import { generateRail4Setup } from "@/lib/rail4/obfuscation";
 import { generateCardId } from "@/lib/agent-management/crypto";
 
+const CARD_COLORS = ["purple", "dark", "blue", "primary"] as const;
+
 export async function POST(request: NextRequest) {
   const user = await getSessionUser(request);
   if (!user) {
@@ -23,11 +25,14 @@ export async function POST(request: NextRequest) {
   const generatedCardId = generateCardId();
   const setup = generateRail4Setup();
 
+  const cardColor = CARD_COLORS[Math.floor(Math.random() * CARD_COLORS.length)];
+
   const card = await storage.createRail4Card({
     cardId: generatedCardId,
     ownerUid: user.uid,
     cardName,
     useCase: useCase || null,
+    cardColor,
     decoyFilename: setup.decoyFilename,
     realProfileIndex: setup.realProfileIndex,
     missingDigitPositions: setup.missingDigitPositions,

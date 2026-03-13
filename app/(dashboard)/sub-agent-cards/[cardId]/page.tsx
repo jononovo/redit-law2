@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, Loader2, CreditCard, Shield, Bot, Snowflake, Play, Clock, CheckCircle2, XCircle, AlertTriangle, ShoppingCart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CardVisual } from "@/components/wallet/card-visual";
+import { CARD_COLORS, resolveCardColor } from "@/components/wallet/types";
 import { useAuth } from "@/lib/auth/auth-context";
 import { authFetch } from "@/lib/auth-fetch";
 import { useToast } from "@/hooks/use-toast";
@@ -27,6 +28,7 @@ interface Rail5CardDetail {
   card_last4: string;
   status: string;
   bot_id: string | null;
+  card_color: string | null;
   spending_limit_cents: number;
   daily_limit_cents: number;
   monthly_limit_cents: number;
@@ -59,6 +61,7 @@ export default function Rail5CardDetailPage() {
   const [card, setCard] = useState<Rail5CardDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [freezeLoading, setFreezeLoading] = useState(false);
+  const [colorSaving, setColorSaving] = useState(false);
 
   useEffect(() => {
     if (user && cardId) {
@@ -148,7 +151,7 @@ export default function Rail5CardDetailPage() {
       </div>
 
       <CardVisual
-        color="purple"
+        color={resolveCardColor(card.card_color, card.card_id)}
         balance={formatLimit(card.spending_limit_cents)}
         balanceLabel="Spending Limit"
         last4={card.card_last4}
@@ -160,6 +163,38 @@ export default function Rail5CardDetailPage() {
         status={card.status}
         brand={card.card_brand}
       />
+
+      <div className="flex items-center gap-3">
+        <span className="text-sm text-neutral-500 font-medium">Card Color</span>
+        <div className="flex items-center gap-2">
+          {CARD_COLORS.map((c) => {
+            const active = resolveCardColor(card.card_color, card.card_id) === c;
+            const bg = c === "purple" ? "bg-purple-600" : c === "dark" ? "bg-neutral-800" : c === "blue" ? "bg-blue-600" : "bg-emerald-600";
+            return (
+              <button
+                key={c}
+                disabled={colorSaving}
+                onClick={async () => {
+                  setColorSaving(true);
+                  try {
+                    const res = await authFetch(`/api/v1/rail5/cards/${card.card_id}`, {
+                      method: "PATCH",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ card_color: c }),
+                    });
+                    if (res.ok) {
+                      setCard((prev) => prev ? { ...prev, card_color: c } : prev);
+                    }
+                  } catch {}
+                  setColorSaving(false);
+                }}
+                className={`w-7 h-7 rounded-full transition-all ${bg} ${active ? "ring-2 ring-offset-2 ring-neutral-400 scale-110" : "opacity-60 hover:opacity-100"}`}
+                data-testid={`color-picker-${c}`}
+              />
+            );
+          })}
+        </div>
+      </div>
 
       <div className="bg-white rounded-2xl border border-neutral-100 p-6 space-y-4">
         <h3 className="font-bold text-neutral-900 flex items-center gap-2">
