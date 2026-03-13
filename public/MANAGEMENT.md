@@ -1,7 +1,11 @@
 ---
 name: creditclaw-management
-parent: SKILL.md
-description: Bot self-management — transaction history, profile updates
+version: 2.6.0
+updated: 2026-03-13
+description: "Bot self-management — transaction history, profile updates."
+parent: https://creditclaw.com/SKILL.md
+api_base: https://creditclaw.com/api/v1
+credentials: [CREDITCLAW_API_KEY]
 ---
 
 # CreditClaw — Management

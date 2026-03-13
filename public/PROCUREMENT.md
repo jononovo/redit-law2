@@ -1,7 +1,11 @@
 ---
 name: creditclaw-procurement
-parent: SKILL.md
-description: Discover vendors and merchants — find the right skill for any purchase
+version: 2.6.0
+updated: 2026-03-13
+description: "Discover vendors and merchants — find the right skill for any purchase."
+parent: https://creditclaw.com/SKILL.md
+api_base: https://creditclaw.com/api/v1
+credentials: [CREDITCLAW_API_KEY]
 ---
 
 # CreditClaw — Procurement Skills
