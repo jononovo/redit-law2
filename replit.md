@@ -295,7 +295,7 @@ Turns every CreditClaw wallet holder into a seller. Checkout pages are public UR
 - **Pages**: `/checkout/create` (create + manage checkout pages), `/sales` (sales ledger with clickable rows), `/sales/[sale_id]` (sale detail page), `/pay/[id]` (public checkout page), `/pay/[id]/success` (post-payment confirmation).
 - **Webhook**: `wallet.sale.completed` event fired to seller's bot after confirmed sale via `fireWebhook()`. Includes `invoice_id` and `invoice_ref` when payment was for an invoice.
 - **Invoice linking**: Webhook handler checks for `metadata.invoice_ref`, looks up invoice, verifies checkout page match and payable status, links sale to invoice and marks invoice as paid.
-- **Skill file**: `public/CHECKOUT.md` — bot-readable instructions for creating checkout pages, viewing sales, and managing invoices.
+- **Skill file**: `public/MY-STORE.md` — bot-readable instructions for creating checkout pages, viewing sales, and managing invoices.
 - **Sidebar**: "Sales" section with "Create Checkout", "Shop", "My Sales", and "Invoices" links.
 
 ### Seller Profiles (`server/storage/seller-profiles.ts`)

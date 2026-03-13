@@ -26,7 +26,7 @@ Securely manage agentic spending.
 | **STRIPE-X402-WALLET.md** | `https://creditclaw.com/STRIPE-X402-WALLET.md` | x402 payment signing, USDC balance, Stripe Wallet transactions |
 | **MANAGEMENT.md** | `https://creditclaw.com/MANAGEMENT.md` | Bot self-management — transaction history, profile updates |
 | **PROCUREMENT.md** | `https://creditclaw.com/PROCUREMENT.md` | Discover vendors and merchants — find checkout skills for any purchase |
-| **CHECKOUT.md** | `https://creditclaw.com/CHECKOUT.md` | Sell to anyone — checkout pages, payment links, invoices, shops |
+| **MY-STORE.md** | `https://creditclaw.com/MY-STORE.md` | Sell to anyone — checkout pages, payment links, invoices, shops |
 | **HEARTBEAT.md** | `https://creditclaw.com/HEARTBEAT.md` | Lightweight polling routine for balance and spending checks |
 | **package.json** (metadata) | `https://creditclaw.com/skill.json` | Machine-readable skill metadata |
 
@@ -360,7 +360,7 @@ Only if you are shopping with crypto stablecoin USDC (pretty rare) read this, ot
 
 For viewing transaction history and managing your profile, see [MANAGEMENT.md](https://creditclaw.com/MANAGEMENT.md).
 
-To earn money by selling products or services, see [CHECKOUT.md](https://creditclaw.com/CHECKOUT.md).
+To earn money by selling products or services, see [MY-STORE.md](https://creditclaw.com/MY-STORE.md).
 
 ---
 
@@ -410,18 +410,18 @@ Base URL: `https://creditclaw.com/api/v1`
 
 | Method | Endpoint | Description | Rate Limit | File |
 |--------|----------|-------------|------------|------|
-| POST | `/bot/payments/create-link` | Generate a Stripe payment link to charge anyone. | 10/hr | [CHECKOUT.md](https://creditclaw.com/CHECKOUT.md) |
-| GET | `/bot/payments/links` | List your payment links. Supports `?status=` and `?limit=N`. | 12/hr | [CHECKOUT.md](https://creditclaw.com/CHECKOUT.md) |
-| POST | `/bot/checkout-pages/create` | Create a checkout page for selling. | — | [CHECKOUT.md](https://creditclaw.com/CHECKOUT.md) |
-| GET | `/bot/checkout-pages` | List your checkout pages. | 12/hr | [CHECKOUT.md](https://creditclaw.com/CHECKOUT.md) |
-| PATCH | `/bot/checkout-pages/:id` | Update a checkout page. | — | [CHECKOUT.md](https://creditclaw.com/CHECKOUT.md) |
-| GET | `/bot/sales` | List your completed sales. | 12/hr | [CHECKOUT.md](https://creditclaw.com/CHECKOUT.md) |
-| POST | `/bot/invoices/create` | Create an invoice. | 10/hr | [CHECKOUT.md](https://creditclaw.com/CHECKOUT.md) |
-| GET | `/bot/invoices` | List your invoices. | 12/hr | [CHECKOUT.md](https://creditclaw.com/CHECKOUT.md) |
-| POST | `/bot/invoices/:id/send` | Send an invoice via email. | 5/hr | [CHECKOUT.md](https://creditclaw.com/CHECKOUT.md) |
-| PATCH | `/bot/seller-profile` | Set up or update your seller profile. | — | [CHECKOUT.md](https://creditclaw.com/CHECKOUT.md) |
-| GET | `/bot/seller-profile` | View your seller profile. | — | [CHECKOUT.md](https://creditclaw.com/CHECKOUT.md) |
-| GET | `/bot/shop` | View your public shop. | — | [CHECKOUT.md](https://creditclaw.com/CHECKOUT.md) |
+| POST | `/bot/payments/create-link` | Generate a Stripe payment link to charge anyone. | 10/hr | [MY-STORE.md](https://creditclaw.com/MY-STORE.md) |
+| GET | `/bot/payments/links` | List your payment links. Supports `?status=` and `?limit=N`. | 12/hr | [MY-STORE.md](https://creditclaw.com/MY-STORE.md) |
+| POST | `/bot/checkout-pages/create` | Create a checkout page for selling. | — | [MY-STORE.md](https://creditclaw.com/MY-STORE.md) |
+| GET | `/bot/checkout-pages` | List your checkout pages. | 12/hr | [MY-STORE.md](https://creditclaw.com/MY-STORE.md) |
+| PATCH | `/bot/checkout-pages/:id` | Update a checkout page. | — | [MY-STORE.md](https://creditclaw.com/MY-STORE.md) |
+| GET | `/bot/sales` | List your completed sales. | 12/hr | [MY-STORE.md](https://creditclaw.com/MY-STORE.md) |
+| POST | `/bot/invoices/create` | Create an invoice. | 10/hr | [MY-STORE.md](https://creditclaw.com/MY-STORE.md) |
+| GET | `/bot/invoices` | List your invoices. | 12/hr | [MY-STORE.md](https://creditclaw.com/MY-STORE.md) |
+| POST | `/bot/invoices/:id/send` | Send an invoice via email. | 5/hr | [MY-STORE.md](https://creditclaw.com/MY-STORE.md) |
+| PATCH | `/bot/seller-profile` | Set up or update your seller profile. | — | [MY-STORE.md](https://creditclaw.com/MY-STORE.md) |
+| GET | `/bot/seller-profile` | View your seller profile. | — | [MY-STORE.md](https://creditclaw.com/MY-STORE.md) |
+| GET | `/bot/shop` | View your public shop. | — | [MY-STORE.md](https://creditclaw.com/MY-STORE.md) |
 
 ### Webhook Events (If You Registered With a callback_url)
 
