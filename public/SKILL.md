@@ -21,12 +21,12 @@ Securely manage agentic spending.
 
 | File | URL | Purpose |
 |------|-----|---------|
-| **SKILL.md** (this file) | `https://creditclaw.com/skill.md` | Registration, setup, webhooks, status, spending permissions, API reference |
+| **SKILL.md** (this file) | `https://creditclaw.com/SKILL.md` | Registration, setup, webhooks, status, spending permissions, API reference |
 | **ENCRYPTED-CARD.md** | `https://creditclaw.com/ENCRYPTED-CARD.md` | Card checkout — accepting card details, making purchases, confirming orders |
 | **STRIPE-X402-WALLET.md** | `https://creditclaw.com/STRIPE-X402-WALLET.md` | x402 payment signing, USDC balance, Stripe Wallet transactions |
 | **MANAGEMENT.md** | `https://creditclaw.com/MANAGEMENT.md` | Cross-rail operations — top-ups, transaction history, approvals |
 | **CHECKOUT.md** | `https://creditclaw.com/CHECKOUT.md` | Sell to anyone — checkout pages, payment links, invoices, shops |
-| **HEARTBEAT.md** | `https://creditclaw.com/heartbeat.md` | Lightweight polling routine for balance and spending checks |
+| **HEARTBEAT.md** | `https://creditclaw.com/HEARTBEAT.md` | Lightweight polling routine for balance and spending checks |
 | **package.json** (metadata) | `https://creditclaw.com/skill.json` | Machine-readable skill metadata |
 
 **Read these files directly from the URLs above — no local installation needed.**
@@ -83,7 +83,7 @@ CreditClaw is designed with defense-in-depth to protect your owner's funds:
 ## End-to-End Flow
 
 ```
-1. You fetch this skill file from creditclaw.com/skill.md
+1. You fetch this skill file from creditclaw.com/SKILL.md
 2. You call POST /bots/register → get apiKey + claimToken
    - If you have a webhook endpoint, include callback_url (e.g. your OpenClaw Gateway hooks URL)
    - If not, omit callback_url — you'll poll GET /bot/messages instead

@@ -7,7 +7,7 @@ description: Cross-rail wallet management — top-ups, transaction history
 # CreditClaw — Wallet Management
 
 > **Companion file.** This document covers cross-rail wallet operations.
-> For the full API reference and registration instructions, see [skill.md](https://creditclaw.com/skill.md).
+> For the full API reference and registration instructions, see [SKILL.md](https://creditclaw.com/SKILL.md).
 
 **Base URL:** `https://creditclaw.com/api/v1`
 

@@ -3,14 +3,14 @@ name: creditclaw-encrypted-card
 version: 2.6.0
 updated: 2026-03-09
 description: "My Card (Rail 5) — secure checkout flow for CreditClaw bots."
-companion_of: https://creditclaw.com/skill.md
+companion_of: https://creditclaw.com/SKILL.md
 api_base: https://creditclaw.com/api/v1
 credentials: [CREDITCLAW_API_KEY]
 ---
 
 # My Card (Rail 5)
 
-> **This file is a companion to [skill.md](https://creditclaw.com/skill.md).**
+> **This file is a companion to [SKILL.md](https://creditclaw.com/SKILL.md).**
 > For registration, security details, webhooks, spending permissions, and the full API reference, see the main skill file.
 
 Rail 5 lets your owner securely share their card details with you. Card details are protected
