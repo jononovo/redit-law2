@@ -11,12 +11,13 @@ import {
   type ReconciliationLog, type InsertReconciliationLog,
 } from "@/shared/schema";
 import { eq, and, isNull, desc, sql, gte, inArray } from "drizzle-orm";
+import { generateWebhookSecret } from "@/lib/agent-management/crypto";
 import type { IStorage } from "./types";
 
 type CoreMethods = Pick<IStorage,
   | "createBot" | "getBotByClaimToken" | "getBotByBotId" | "getBotsByOwnerEmail"
   | "getBotsByOwnerUid" | "claimBot" | "updateBotDefaultRail" | "checkDuplicateRegistration"
-  | "updateBotWebhookHealth"
+  | "updateBotWebhookHealth" | "updateBotProfile"
   | "createWallet" | "getWalletByBotId" | "getWalletByOwnerUid" | "creditWallet"
   | "createTransaction" | "getTransactionsByWalletId"
   | "getPaymentMethod" | "getPaymentMethods" | "getPaymentMethodById"
@@ -84,6 +85,42 @@ export const coreMethods: CoreMethods = {
       .where(and(eq(bots.botId, botId), eq(bots.ownerUid, ownerUid)))
       .returning();
     return updated || null;
+  },
+
+  async updateBotProfile(botId: string, ownerUid: string, data: { callbackUrl?: string; botName?: string; description?: string | null }): Promise<{ bot: Bot; newWebhookSecret: string | null }> {
+    const existing = await db.select().from(bots).where(and(eq(bots.botId, botId), eq(bots.ownerUid, ownerUid))).then(r => r[0]);
+    if (!existing) {
+      throw new Error("BOT_NOT_FOUND");
+    }
+
+    const updates: Partial<Pick<typeof bots.$inferInsert, "botName" | "description" | "callbackUrl" | "webhookStatus" | "webhookFailCount" | "webhookSecret">> = {};
+    let newWebhookSecret: string | null = null;
+
+    if (data.botName !== undefined) updates.botName = data.botName;
+    if (data.description !== undefined) updates.description = data.description;
+
+    if (data.callbackUrl !== undefined) {
+      updates.callbackUrl = data.callbackUrl;
+      updates.webhookStatus = "active";
+      updates.webhookFailCount = 0;
+
+      if (!existing.webhookSecret) {
+        newWebhookSecret = generateWebhookSecret();
+        updates.webhookSecret = newWebhookSecret;
+      }
+    }
+
+    if (Object.keys(updates).length === 0) {
+      return { bot: existing, newWebhookSecret: null };
+    }
+
+    const [updated] = await db
+      .update(bots)
+      .set(updates)
+      .where(and(eq(bots.botId, botId), eq(bots.ownerUid, ownerUid)))
+      .returning();
+
+    return { bot: updated, newWebhookSecret };
   },
 
   async updateBotWebhookHealth(botId: string, status: string, failCount: number): Promise<void> {

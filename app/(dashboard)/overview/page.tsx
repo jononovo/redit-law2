@@ -39,6 +39,8 @@ interface BotData {
   bot_name: string;
   description: string | null;
   wallet_status: string;
+  webhook_status: string;
+  callback_url: string | null;
   created_at: string;
   claimed_at: string | null;
 }
@@ -332,8 +334,11 @@ export default function DashboardOverview() {
                 botId={bot.bot_id}
                 description={bot.description}
                 walletStatus={bot.wallet_status}
+                webhookStatus={bot.webhook_status}
+                callbackUrl={bot.callback_url}
                 createdAt={bot.created_at}
                 claimedAt={bot.claimed_at}
+                onUpdated={() => fetchData()}
               />
             ))}
           </div>
