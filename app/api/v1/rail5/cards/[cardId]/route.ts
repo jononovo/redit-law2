@@ -134,38 +134,6 @@ export async function PATCH(
   });
 }
 
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: Promise<{ cardId: string }> }
-) {
-  const user = await getSessionUser(request);
-  if (!user) {
-    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-  }
-
-  const { cardId } = await params;
-
-  const card = await storage.getRail5CardByCardId(cardId);
-  if (!card) {
-    return NextResponse.json({ error: "card_not_found" }, { status: 404 });
-  }
-
-  if (card.ownerUid !== user.uid) {
-    return NextResponse.json({ error: "forbidden" }, { status: 403 });
-  }
-
-  if (card.botId) {
-    const bot = await storage.getBotByBotId(card.botId);
-    if (bot) {
-      fireRailsUpdated(bot, "card_removed" as const, "rail5", { card_id: cardId }).catch(() => {});
-    }
-  }
-
-  await storage.deleteRail5Card(cardId);
-
-  return NextResponse.json({ deleted: true });
-}
-
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ cardId: string }> }

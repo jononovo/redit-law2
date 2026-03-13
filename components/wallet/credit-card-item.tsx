@@ -15,7 +15,7 @@ interface CreditCardItemProps {
   onAddAgent?: () => void;
   onUnlinkBot?: () => void;
   onCopyCardId: () => void;
-  onDelete?: () => void;
+  onDelete: () => void;
 }
 
 export function CreditCardItem({
@@ -128,11 +128,9 @@ export function CreditCardItem({
             <DropdownMenuItem onClick={() => router.push(card.detailPath)} data-testid={`menu-details-${card.card_id}`}>
               <Eye className="w-4 h-4 mr-2" /> View Details
             </DropdownMenuItem>
-            {onDelete && (
-              <DropdownMenuItem onClick={onDelete} className="text-red-600 focus:text-red-600" data-testid={`menu-delete-${card.card_id}`}>
-                <Trash2 className="w-4 h-4 mr-2" /> Remove Card
-              </DropdownMenuItem>
-            )}
+            <DropdownMenuItem onClick={onDelete} className="text-red-600 focus:text-red-600" data-testid={`menu-delete-${card.card_id}`}>
+              <Trash2 className="w-4 h-4 mr-2" /> Remove Card
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>

@@ -188,9 +188,7 @@ export function CreditCardListPage({ config }: { config: CreditCardListPageConfi
     if (!deleteTarget) return;
     setDeleteLoading(true);
     try {
-      const url = config.railPrefix === "rail5"
-        ? `/api/v1/rail5/cards/${deleteTarget.card_id}`
-        : `/api/v1/${config.railPrefix}?card_id=${deleteTarget.card_id}`;
+      const url = `/api/v1/cards/${deleteTarget.card_id}?rail=${config.railPrefix}`;
       const res = await authFetch(url, { method: "DELETE" });
       if (!res.ok) throw new Error("Failed to delete");
       setCards((prev) => prev.filter((c) => c.card_id !== deleteTarget.card_id));
