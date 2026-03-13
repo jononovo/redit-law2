@@ -406,23 +406,6 @@ Base URL: `https://creditclaw.com/api/v1`
 | GET | `/bot/skills` | Discover vendors and merchants. Supports filtering by category, search, checkout method, capability, maturity. | — | [PROCUREMENT.md](https://creditclaw.com/PROCUREMENT.md) |
 | GET | `/bot/skills/{slug}` | Get a vendor's full checkout skill (returns Markdown). | — | [PROCUREMENT.md](https://creditclaw.com/PROCUREMENT.md) |
 
-### Checkout & Selling Endpoints
-
-| Method | Endpoint | Description | Rate Limit | File |
-|--------|----------|-------------|------------|------|
-| POST | `/bot/payments/create-link` | Generate a Stripe payment link to charge anyone. | 10/hr | [MY-STORE.md](https://creditclaw.com/MY-STORE.md) |
-| GET | `/bot/payments/links` | List your payment links. Supports `?status=` and `?limit=N`. | 12/hr | [MY-STORE.md](https://creditclaw.com/MY-STORE.md) |
-| POST | `/bot/checkout-pages/create` | Create a checkout page for selling. | — | [MY-STORE.md](https://creditclaw.com/MY-STORE.md) |
-| GET | `/bot/checkout-pages` | List your checkout pages. | 12/hr | [MY-STORE.md](https://creditclaw.com/MY-STORE.md) |
-| PATCH | `/bot/checkout-pages/:id` | Update a checkout page. | — | [MY-STORE.md](https://creditclaw.com/MY-STORE.md) |
-| GET | `/bot/sales` | List your completed sales. | 12/hr | [MY-STORE.md](https://creditclaw.com/MY-STORE.md) |
-| POST | `/bot/invoices/create` | Create an invoice. | 10/hr | [MY-STORE.md](https://creditclaw.com/MY-STORE.md) |
-| GET | `/bot/invoices` | List your invoices. | 12/hr | [MY-STORE.md](https://creditclaw.com/MY-STORE.md) |
-| POST | `/bot/invoices/:id/send` | Send an invoice via email. | 5/hr | [MY-STORE.md](https://creditclaw.com/MY-STORE.md) |
-| PATCH | `/bot/seller-profile` | Set up or update your seller profile. | — | [MY-STORE.md](https://creditclaw.com/MY-STORE.md) |
-| GET | `/bot/seller-profile` | View your seller profile. | — | [MY-STORE.md](https://creditclaw.com/MY-STORE.md) |
-| GET | `/bot/shop` | View your public shop. | — | [MY-STORE.md](https://creditclaw.com/MY-STORE.md) |
-
 ### Webhook Events (If You Registered With a callback_url)
 
 CreditClaw sends real-time POST events to your `callback_url`. Each webhook includes an
@@ -433,11 +416,9 @@ HMAC-SHA256 signature in the `X-CreditClaw-Signature` header that you can verify
 |-------|------|
 | `wallet.activated` | Owner claimed bot and wallet is live |
 | `wallet.topup.completed` | Funds added to your wallet |
-| `wallet.payment.received` | Someone paid your payment link |
 | `wallet.spend.authorized` | A purchase was approved |
 | `wallet.spend.declined` | A purchase was declined (includes reason) |
 | `wallet.balance.low` | Balance dropped below $5.00 |
-| `wallet.sale.completed` | A sale completed through your checkout page |
 | `rails.updated` | Payment methods or spending config changed — call `GET /bot/status` to refresh |
 | `rail5.card.delivered` | Owner set up a card — card details delivered for you to accept |
 | `rail5.test.required` | Card confirmed — complete a sandbox test purchase at the provided URL to activate |

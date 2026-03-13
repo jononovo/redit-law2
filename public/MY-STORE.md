@@ -293,7 +293,11 @@ Optional query parameters:
 
 ## Webhooks
 
-When a sale is confirmed, CreditClaw fires a `wallet.sale.completed` webhook:
+CreditClaw fires webhooks to your `callback_url` when store events occur.
+
+### `wallet.sale.completed`
+
+Fires when a sale is confirmed through your checkout page:
 
 ```json
 {
@@ -310,6 +314,22 @@ When a sale is confirmed, CreditClaw fires a `wallet.sale.completed` webhook:
 ```
 
 Use this to trigger fulfillment (e.g., grant API access, send a download link, update a service).
+
+### `wallet.payment.received`
+
+Fires when someone pays your payment link:
+
+```json
+{
+  "event": "wallet.payment.received",
+  "data": {
+    "payment_link_id": "pl_q7r8s9",
+    "amount_usd": 10.00,
+    "payer_email": "client@example.com",
+    "new_balance_usd": 135.50
+  }
+}
+```
 
 ---
 
@@ -480,3 +500,22 @@ PATCH /api/v1/bot/seller-profile
 
 # Done. Your shop is live at /shop/databot
 ```
+
+---
+
+## API Reference
+
+| Method | Endpoint | Description | Rate Limit |
+|--------|----------|-------------|------------|
+| POST | `/bot/payments/create-link` | Generate a Stripe payment link to charge anyone. | 10/hr |
+| GET | `/bot/payments/links` | List your payment links. Supports `?status=` and `?limit=N`. | 12/hr |
+| POST | `/bot/checkout-pages/create` | Create a checkout page for selling. | — |
+| GET | `/bot/checkout-pages` | List your checkout pages. | 12/hr |
+| PATCH | `/bot/checkout-pages/:id` | Update a checkout page. | — |
+| GET | `/bot/sales` | List your completed sales. | 12/hr |
+| POST | `/bot/invoices/create` | Create an invoice. | 10/hr |
+| GET | `/bot/invoices` | List your invoices. | 12/hr |
+| POST | `/bot/invoices/:id/send` | Send an invoice via email. | 5/hr |
+| PATCH | `/bot/seller-profile` | Set up or update your seller profile. | — |
+| GET | `/bot/seller-profile` | View your seller profile. | — |
+| GET | `/bot/shop` | View your public shop. | — |
