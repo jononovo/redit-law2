@@ -193,6 +193,7 @@ export function CreditCardListPage({ config }: { config: CreditCardListPageConfi
       if (!res.ok) throw new Error("Failed to delete");
       setCards((prev) => prev.filter((c) => c.card_id !== deleteTarget.card_id));
       toast({ title: "Card Removed", description: `"${deleteTarget.card_name}" has been removed.` });
+      fetchCards();
     } catch {
       toast({ title: "Delete failed", description: "Please try again.", variant: "destructive" });
     } finally {
