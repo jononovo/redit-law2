@@ -216,11 +216,10 @@ export function CreditCardListPage({ config }: { config: CreditCardListPageConfi
     </div>
   ) : (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-      {cards.map((card, index) => (
+      {cards.map((card) => (
         <CreditCardItem
           key={card.card_id}
           card={card}
-          index={index}
           onFreeze={() => setFreezeTarget(card)}
           onAddAgent={supportsBotLinking ? () => botLinking.openLinkDialog({
             id: card.card_id,

@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { CardVisual } from "@/components/wallet/card-visual";
 import { WalletActionBar } from "@/components/wallet/wallet-action-bar";
-import { CARD_COLORS, stableCardColor, formatCentsToUsd } from "@/components/wallet/types";
+import { stableCardColor, formatCentsToUsd } from "@/components/wallet/types";
 
 interface CardData {
   id: number;

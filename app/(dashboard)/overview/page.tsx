@@ -404,7 +404,6 @@ export default function DashboardOverview() {
               {firstCard ? (
                 <CreditCardItem
                   card={firstCard}
-                  index={0}
                   onFreeze={() => setRail5FreezeTarget(firstCard)}
                   onAddAgent={() => rail5BotLinking.openLinkDialog({
                     id: firstCard.card_id,

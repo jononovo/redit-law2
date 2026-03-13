@@ -582,7 +582,8 @@ Session deleted. Key, decrypted card, all context — gone.
 | POST | `/api/v1/rail5/submit-key` | Store encryption key material |
 | GET | `/api/v1/rail5/cards` | List owner's Rail 5 cards |
 | GET | `/api/v1/rail5/cards/[cardId]` | Get card detail + checkout history |
-| PATCH | `/api/v1/rail5/cards/[cardId]` | Update card settings, link/unlink bot, freeze/unfreeze |
+| PATCH | `/api/v1/rail5/cards/[cardId]` | Update card settings, link/unlink bot, freeze/unfreeze, change card_color |
+| DELETE | `/api/v1/cards/[cardId]?rail=rail5` | Delete card (unified endpoint, shared with rail4) |
 | GET | `/api/v1/rail5/cards/[cardId]/test-purchase-status` | Poll test result — 3 states: pending, in_progress, completed |
 | POST | `/api/v1/rail5/deliver-to-bot` | Transient relay of encrypted file to bot (legacy) |
 | POST | `/api/v1/bot-messages/send` | Universal message delivery via `sendToBot()` |

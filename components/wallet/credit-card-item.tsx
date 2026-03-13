@@ -9,7 +9,6 @@ import type { NormalizedCard } from "./types";
 
 interface CreditCardItemProps {
   card: NormalizedCard;
-  index: number;
   onFreeze: () => void;
   onAddAgent?: () => void;
   onUnlinkBot?: () => void;
@@ -19,7 +18,6 @@ interface CreditCardItemProps {
 
 export function CreditCardItem({
   card,
-  index,
   onFreeze,
   onAddAgent,
   onUnlinkBot,
