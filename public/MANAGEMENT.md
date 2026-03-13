@@ -7,7 +7,7 @@ description: Cross-rail wallet management — top-ups, transaction history
 # CreditClaw — Wallet Management
 
 > **Companion file.** This document covers cross-rail wallet operations.
-> For the full API reference and registration instructions, see [SKILL.md](https://creditclaw.com/skill.md).
+> For the full API reference and registration instructions, see [skill.md](https://creditclaw.com/skill.md).
 
 **Base URL:** `https://creditclaw.com/api/v1`
 
@@ -104,5 +104,5 @@ Default limit is 50, max is 100.
 
 Approval flows are rail-specific. Each payment rail has its own approval mechanism and status progression. See the relevant rail documentation for details:
 
-- **Encrypted Card (Rail 5):** [encrypted-card.md](https://creditclaw.com/encrypted-card.md)
-- **Stripe Wallet (x402):** [stripe-x402-wallet.md](https://creditclaw.com/stripe-x402-wallet.md)
+- **Encrypted Card (Rail 5):** [ENCRYPTED-CARD.md](https://creditclaw.com/ENCRYPTED-CARD.md)
+- **Stripe Wallet (x402):** [STRIPE-X402-WALLET.md](https://creditclaw.com/STRIPE-X402-WALLET.md)

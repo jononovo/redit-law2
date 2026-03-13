@@ -14,10 +14,10 @@
   },
   "files": {
     "SKILL.md": "https://creditclaw.com/skill.md",
-    "ENCRYPTED-CARD.md": "https://creditclaw.com/encrypted-card.md",
-    "STRIPE-X402-WALLET.md": "https://creditclaw.com/stripe-x402-wallet.md",
-    "MANAGEMENT.md": "https://creditclaw.com/management.md",
-    "CHECKOUT.md": "https://creditclaw.com/checkout.md",
+    "ENCRYPTED-CARD.md": "https://creditclaw.com/ENCRYPTED-CARD.md",
+    "STRIPE-X402-WALLET.md": "https://creditclaw.com/STRIPE-X402-WALLET.md",
+    "MANAGEMENT.md": "https://creditclaw.com/MANAGEMENT.md",
+    "CHECKOUT.md": "https://creditclaw.com/CHECKOUT.md",
     "HEARTBEAT.md": "https://creditclaw.com/heartbeat.md"
   }
 }

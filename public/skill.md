@@ -22,10 +22,10 @@ Securely manage agentic spending.
 | File | URL | Purpose |
 |------|-----|---------|
 | **SKILL.md** (this file) | `https://creditclaw.com/skill.md` | Registration, setup, webhooks, status, spending permissions, API reference |
-| **ENCRYPTED-CARD.md** | `https://creditclaw.com/encrypted-card.md` | Card checkout — accepting card details, making purchases, confirming orders |
-| **STRIPE-X402-WALLET.md** | `https://creditclaw.com/stripe-x402-wallet.md` | x402 payment signing, USDC balance, Stripe Wallet transactions |
-| **MANAGEMENT.md** | `https://creditclaw.com/management.md` | Cross-rail operations — top-ups, transaction history, approvals |
-| **CHECKOUT.md** | `https://creditclaw.com/checkout.md` | Sell to anyone — checkout pages, payment links, invoices, shops |
+| **ENCRYPTED-CARD.md** | `https://creditclaw.com/ENCRYPTED-CARD.md` | Card checkout — accepting card details, making purchases, confirming orders |
+| **STRIPE-X402-WALLET.md** | `https://creditclaw.com/STRIPE-X402-WALLET.md` | x402 payment signing, USDC balance, Stripe Wallet transactions |
+| **MANAGEMENT.md** | `https://creditclaw.com/MANAGEMENT.md` | Cross-rail operations — top-ups, transaction history, approvals |
+| **CHECKOUT.md** | `https://creditclaw.com/CHECKOUT.md` | Sell to anyone — checkout pages, payment links, invoices, shops |
 | **HEARTBEAT.md** | `https://creditclaw.com/heartbeat.md` | Lightweight polling routine for balance and spending checks |
 | **package.json** (metadata) | `https://creditclaw.com/skill.json` | Machine-readable skill metadata |
 
@@ -43,8 +43,8 @@ on what your owner has configured.
 
 | Rail | Method | Status | Guide |
 |------|--------|--------|-------|
-| **My Card** | Owner's card details, secure checkout with owner approval | Live | [encrypted-card.md](https://creditclaw.com/encrypted-card.md) |
-| **Stripe Wallet (x402)** | USDC on Base chain, x402 payment protocol | Private Beta | [stripe-x402-wallet.md](https://creditclaw.com/stripe-x402-wallet.md) |
+| **My Card** | Owner's card details, secure checkout with owner approval | Live | [ENCRYPTED-CARD.md](https://creditclaw.com/ENCRYPTED-CARD.md) |
+| **Stripe Wallet (x402)** | USDC on Base chain, x402 payment protocol | Private Beta | [STRIPE-X402-WALLET.md](https://creditclaw.com/STRIPE-X402-WALLET.md) |
 
 The default payment rail is "My Card". Your owner chooses which rails to enable for you. Check `GET /bot/status` to see
 your full status across all connected rails.
@@ -94,8 +94,8 @@ CreditClaw is designed with defense-in-depth to protect your owner's funds:
    - Via polling: call GET /bot/status until status changes to "active"
 6. You poll GET /bot/status periodically to monitor balance across all rails
 7. You check GET /bot/wallet/spending for your owner's permission rules
-8. When you need to make a purchase, follow encrypted-card.md
-9. When balance is low, request a top-up (see management.md)
+8. When you need to make a purchase, follow ENCRYPTED-CARD.md
+9. When balance is low, request a top-up (see MANAGEMENT.md)
 10. Human monitors activity from creditclaw.com/overview
 ```
 
@@ -352,14 +352,14 @@ Your owner can update these permissions anytime from `https://creditclaw.com/ove
 
 Once your wallet is active and you need to buy something, follow the checkout guide instructions here:
 
-- **My Card** — Read [encrypted-card.md](https://creditclaw.com/encrypted-card.md) for the full checkout flow
+- **My Card** — Read [ENCRYPTED-CARD.md](https://creditclaw.com/ENCRYPTED-CARD.md) for the full checkout flow
 
 Only if you are shopping with crypto stablecoin USDC (pretty rare) read this, otherwise ignore:
-- **Stripe Wallet (x402)** — Read [stripe-x402-wallet.md](https://creditclaw.com/stripe-x402-wallet.md) for x402 payment signing
+- **Stripe Wallet (x402)** — Read [STRIPE-X402-WALLET.md](https://creditclaw.com/STRIPE-X402-WALLET.md) for x402 payment signing
 
-For managing your balance, requesting top-ups, and viewing transaction history, see [management.md](https://creditclaw.com/management.md).
+For managing your balance, requesting top-ups, and viewing transaction history, see [MANAGEMENT.md](https://creditclaw.com/MANAGEMENT.md).
 
-To earn money by selling products or services, see [checkout.md](https://creditclaw.com/checkout.md).
+To earn money by selling products or services, see [CHECKOUT.md](https://creditclaw.com/CHECKOUT.md).
 
 ---
 
@@ -383,36 +383,36 @@ Base URL: `https://creditclaw.com/api/v1`
 
 | Method | Endpoint | Description | Rate Limit | File |
 |--------|----------|-------------|------------|------|
-| POST | `/bot/rail5/checkout` | Request checkout approval. Returns checkout_steps. | 30/hr | [encrypted-card.md](https://creditclaw.com/encrypted-card.md) |
-| GET | `/bot/rail5/checkout/status` | Poll for checkout approval result. `?checkout_id=` required. | 60/hr | [encrypted-card.md](https://creditclaw.com/encrypted-card.md) |
-| POST | `/bot/rail5/key` | Get one-time decryption key for an approved checkout. | 30/hr | [encrypted-card.md](https://creditclaw.com/encrypted-card.md) |
-| POST | `/bot/rail5/confirm` | Confirm checkout success or failure. | 30/hr | [encrypted-card.md](https://creditclaw.com/encrypted-card.md) |
-| POST | `/bot/rail5/confirm-delivery` | Confirm card details received. Advances status to `confirmed`. | — | [encrypted-card.md](https://creditclaw.com/encrypted-card.md) |
-| GET | `/bot/check/rail5` | Encrypted Card detail: limits, approval threshold. | 6/hr | [encrypted-card.md](https://creditclaw.com/encrypted-card.md) |
+| POST | `/bot/rail5/checkout` | Request checkout approval. Returns checkout_steps. | 30/hr | [ENCRYPTED-CARD.md](https://creditclaw.com/ENCRYPTED-CARD.md) |
+| GET | `/bot/rail5/checkout/status` | Poll for checkout approval result. `?checkout_id=` required. | 60/hr | [ENCRYPTED-CARD.md](https://creditclaw.com/ENCRYPTED-CARD.md) |
+| POST | `/bot/rail5/key` | Get one-time decryption key for an approved checkout. | 30/hr | [ENCRYPTED-CARD.md](https://creditclaw.com/ENCRYPTED-CARD.md) |
+| POST | `/bot/rail5/confirm` | Confirm checkout success or failure. | 30/hr | [ENCRYPTED-CARD.md](https://creditclaw.com/ENCRYPTED-CARD.md) |
+| POST | `/bot/rail5/confirm-delivery` | Confirm card details received. Advances status to `confirmed`. | — | [ENCRYPTED-CARD.md](https://creditclaw.com/ENCRYPTED-CARD.md) |
+| GET | `/bot/check/rail5` | Encrypted Card detail: limits, approval threshold. | 6/hr | [ENCRYPTED-CARD.md](https://creditclaw.com/ENCRYPTED-CARD.md) |
 
 ### Management Endpoints
 
 | Method | Endpoint | Description | Rate Limit | File |
 |--------|----------|-------------|------------|------|
-| POST | `/bot/wallet/topup-request` | Ask owner to add funds. Sends email notification. | 3/hr | [management.md](https://creditclaw.com/management.md) |
-| GET | `/bot/wallet/transactions` | List transaction history. Supports `?limit=N` (default 50, max 100). | 12/hr | [management.md](https://creditclaw.com/management.md) |
+| POST | `/bot/wallet/topup-request` | Ask owner to add funds. Sends email notification. | 3/hr | [MANAGEMENT.md](https://creditclaw.com/MANAGEMENT.md) |
+| GET | `/bot/wallet/transactions` | List transaction history. Supports `?limit=N` (default 50, max 100). | 12/hr | [MANAGEMENT.md](https://creditclaw.com/MANAGEMENT.md) |
 
 ### Checkout & Selling Endpoints
 
 | Method | Endpoint | Description | Rate Limit | File |
 |--------|----------|-------------|------------|------|
-| POST | `/bot/payments/create-link` | Generate a Stripe payment link to charge anyone. | 10/hr | [checkout.md](https://creditclaw.com/checkout.md) |
-| GET | `/bot/payments/links` | List your payment links. Supports `?status=` and `?limit=N`. | 12/hr | [checkout.md](https://creditclaw.com/checkout.md) |
-| POST | `/bot/checkout-pages/create` | Create a checkout page for selling. | — | [checkout.md](https://creditclaw.com/checkout.md) |
-| GET | `/bot/checkout-pages` | List your checkout pages. | 12/hr | [checkout.md](https://creditclaw.com/checkout.md) |
-| PATCH | `/bot/checkout-pages/:id` | Update a checkout page. | — | [checkout.md](https://creditclaw.com/checkout.md) |
-| GET | `/bot/sales` | List your completed sales. | 12/hr | [checkout.md](https://creditclaw.com/checkout.md) |
-| POST | `/bot/invoices/create` | Create an invoice. | 10/hr | [checkout.md](https://creditclaw.com/checkout.md) |
-| GET | `/bot/invoices` | List your invoices. | 12/hr | [checkout.md](https://creditclaw.com/checkout.md) |
-| POST | `/bot/invoices/:id/send` | Send an invoice via email. | 5/hr | [checkout.md](https://creditclaw.com/checkout.md) |
-| PATCH | `/bot/seller-profile` | Set up or update your seller profile. | — | [checkout.md](https://creditclaw.com/checkout.md) |
-| GET | `/bot/seller-profile` | View your seller profile. | — | [checkout.md](https://creditclaw.com/checkout.md) |
-| GET | `/bot/shop` | View your public shop. | — | [checkout.md](https://creditclaw.com/checkout.md) |
+| POST | `/bot/payments/create-link` | Generate a Stripe payment link to charge anyone. | 10/hr | [CHECKOUT.md](https://creditclaw.com/CHECKOUT.md) |
+| GET | `/bot/payments/links` | List your payment links. Supports `?status=` and `?limit=N`. | 12/hr | [CHECKOUT.md](https://creditclaw.com/CHECKOUT.md) |
+| POST | `/bot/checkout-pages/create` | Create a checkout page for selling. | — | [CHECKOUT.md](https://creditclaw.com/CHECKOUT.md) |
+| GET | `/bot/checkout-pages` | List your checkout pages. | 12/hr | [CHECKOUT.md](https://creditclaw.com/CHECKOUT.md) |
+| PATCH | `/bot/checkout-pages/:id` | Update a checkout page. | — | [CHECKOUT.md](https://creditclaw.com/CHECKOUT.md) |
+| GET | `/bot/sales` | List your completed sales. | 12/hr | [CHECKOUT.md](https://creditclaw.com/CHECKOUT.md) |
+| POST | `/bot/invoices/create` | Create an invoice. | 10/hr | [CHECKOUT.md](https://creditclaw.com/CHECKOUT.md) |
+| GET | `/bot/invoices` | List your invoices. | 12/hr | [CHECKOUT.md](https://creditclaw.com/CHECKOUT.md) |
+| POST | `/bot/invoices/:id/send` | Send an invoice via email. | 5/hr | [CHECKOUT.md](https://creditclaw.com/CHECKOUT.md) |
+| PATCH | `/bot/seller-profile` | Set up or update your seller profile. | — | [CHECKOUT.md](https://creditclaw.com/CHECKOUT.md) |
+| GET | `/bot/seller-profile` | View your seller profile. | — | [CHECKOUT.md](https://creditclaw.com/CHECKOUT.md) |
+| GET | `/bot/shop` | View your public shop. | — | [CHECKOUT.md](https://creditclaw.com/CHECKOUT.md) |
 
 ### Webhook Events (If You Registered With a callback_url)
 
@@ -564,8 +564,8 @@ you retrieve it, your owner can re-stage the delivery from their dashboard.
 - **Never share your API key.** Do not send it to any domain other than `creditclaw.com`, and do not share it with other agents, tools, or services.
 - **Default mode is `ask_for_everything`.** All new accounts require owner approval before every purchase. Follow this mode until your owner changes it.
 - **Spending is enforced server-side.** Your owner's limits and blocked categories are enforced by CreditClaw on every purchase attempt. Even if you try a blocked purchase, it will be declined.
-- **Balance can reach $0.** Purchases will be declined. Ask your human if they'd like you to request a top-up (see [management.md](https://creditclaw.com/management.md)).
+- **Balance can reach $0.** Purchases will be declined. Ask your human if they'd like you to request a top-up (see [MANAGEMENT.md](https://creditclaw.com/MANAGEMENT.md)).
 - **One bot = one wallet per rail.** Your wallet is unique to you and linked to your owner's account. You may have wallets on multiple rails.
 - **Poll responsibly.** Use `GET /bot/status` no more than every 10 minutes unless you are actively waiting for a top-up.
-- **Follow the checkout guide when making purchases.** See [encrypted-card.md](https://creditclaw.com/encrypted-card.md).
+- **Follow the checkout guide when making purchases.** See [ENCRYPTED-CARD.md](https://creditclaw.com/ENCRYPTED-CARD.md).
 - **Webhooks keep you in sync.** Your `callback_url` receives real-time approval notifications, card details, and spending alerts. If your endpoint becomes unreachable, events are staged as bot messages until you recover.

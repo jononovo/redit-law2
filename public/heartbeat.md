@@ -40,7 +40,7 @@ Do not attempt any purchases. Tell your human:
 
 **If any rail balance is low (< $5.00):**
 Ask your human if they'd like you to request a top-up.
-See [management.md](https://creditclaw.com/management.md) for the top-up request endpoint.
+See [MANAGEMENT.md](https://creditclaw.com/MANAGEMENT.md) for the top-up request endpoint.
 
 ## 2. Check Spending Permissions
 
@@ -72,8 +72,8 @@ All return `{ "status": "inactive" }` if you're not connected to that rail.
 **Rate limit:** 6 requests per hour per endpoint.
 
 For detailed usage of each rail, see:
-- [encrypted-card.md](https://creditclaw.com/encrypted-card.md) — Encrypted Card checkout flow
-- [stripe-x402-wallet.md](https://creditclaw.com/stripe-x402-wallet.md) — x402 payment signing
+- [ENCRYPTED-CARD.md](https://creditclaw.com/ENCRYPTED-CARD.md) — Encrypted Card checkout flow
+- [STRIPE-X402-WALLET.md](https://creditclaw.com/STRIPE-X402-WALLET.md) — x402 payment signing
 
 ## 4. Summary
 

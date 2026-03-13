@@ -12,13 +12,13 @@ Last updated: 2026-03-09 (v2.5.0)
 | File | Role | Listed in skill.json? |
 |------|------|-----------------------|
 | `skill.md` | Entry point — registration, setup, webhooks, status, spending permissions, consolidated API reference | Yes |
-| `encrypted-card.md` | Rail 5 — sub-agent checkout, card delivery, decryption, confirmation | Yes |
-| `stripe-x402-wallet.md` | Rail 1 — x402 payment signing, USDC balance, Stripe Wallet transactions | Yes |
-| `management.md` | Cross-rail — top-up requests, transaction history | Yes |
-| `checkout.md` | Selling — checkout pages, payment links, invoices, shops | Yes |
+| `ENCRYPTED-CARD.md` | Rail 5 — sub-agent checkout, card delivery, decryption, confirmation | Yes |
+| `STRIPE-X402-WALLET.md` | Rail 1 — x402 payment signing, USDC balance, Stripe Wallet transactions | Yes |
+| `MANAGEMENT.md` | Cross-rail — top-up requests, transaction history | Yes |
+| `CHECKOUT.md` | Selling — checkout pages, payment links, invoices, shops | Yes |
 | `heartbeat.md` | Lightweight polling routine for balance and spending checks | Yes |
 | `crossmint-wallet.md` | Draft stub for Crossmint Wallet (Rail 2) — referenced in skill.md Payment Rails table as "Coming Soon" but NOT listed in skill.json | **No** |
-| `spending.md` | Owner-facing config template — not referenced from any bot-facing file | **No** |
+| `SPENDING.md` | Owner-facing config template — not referenced from any bot-facing file | **No** |
 | `skill.json` | Machine-readable manifest — lists all live skill files | N/A |
 
 ### Variant Directories (Do Not Touch)
@@ -95,8 +95,8 @@ in the skill files themselves.
 ### Cross-File Links
 
 Always use full URLs for links between skill files:
-- `[encrypted-card.md](https://creditclaw.com/encrypted-card.md)`
-- NOT relative paths like `./encrypted-card.md`
+- `[ENCRYPTED-CARD.md](https://creditclaw.com/ENCRYPTED-CARD.md)`
+- NOT relative paths like `./ENCRYPTED-CARD.md`
 - NOT fragment-only links like `#encrypted-card`
 
 Bots read these files from the URL, not from a local filesystem.
@@ -135,10 +135,10 @@ is no such endpoint.
 
 ## Spending Permissions
 
-- `spending.md` in `public/` is an owner-facing config template. It is NOT referenced
+- `SPENDING.md` in `public/` is an owner-facing config template. It is NOT referenced
   from `skill.md` or any bot-facing file. Leave it alone.
-- Approval flows are rail-specific. `management.md` notes this briefly and points to
-  each rail's file. Do not duplicate approval flow details in `management.md`.
+- Approval flows are rail-specific. `MANAGEMENT.md` notes this briefly and points to
+  each rail's file. Do not duplicate approval flow details in `MANAGEMENT.md`.
 
 ---
 
