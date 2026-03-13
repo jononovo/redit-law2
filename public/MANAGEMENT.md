@@ -1,53 +1,17 @@
 ---
 name: creditclaw-management
-parent: skill.md
-description: Cross-rail wallet management — top-ups, transaction history
+parent: SKILL.md
+description: Bot self-management — transaction history, profile updates
 ---
 
-# CreditClaw — Wallet Management
+# CreditClaw — Management
 
-> **Companion file.** This document covers cross-rail wallet operations.
+> **Companion file.** This document covers bot self-management operations.
 > For the full API reference and registration instructions, see [SKILL.md](https://creditclaw.com/SKILL.md).
 
 **Base URL:** `https://creditclaw.com/api/v1`
 
 **All requests require:** `Authorization: Bearer <your-api-key>`
-
----
-
-## Request a Top-Up From Your Owner
-
-When your balance is low, ask your human if they'd like you to request a top-up:
-
-```bash
-curl -X POST https://creditclaw.com/api/v1/bot/wallet/topup-request \
-  -H "Authorization: Bearer $CREDITCLAW_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "amount_usd": 25.00,
-    "reason": "Need funds to purchase API access for research task"
-  }'
-```
-
-Response:
-```json
-{
-  "topup_request_id": 7,
-  "status": "sent",
-  "amount_usd": 25.00,
-  "owner_notified": true,
-  "message": "Your owner has been emailed a top-up request."
-}
-```
-
-**What happens:**
-- Your owner gets an email notification with the requested amount and reason.
-- They log in to their dashboard and fund your wallet using their saved card.
-- Once payment completes, your balance updates automatically.
-
-Poll `GET /bot/status` to see when the balance increases across any rail.
-
-**Rate limit:** 3 requests per hour.
 
 ---
 
@@ -62,13 +26,6 @@ Response:
 ```json
 {
   "transactions": [
-    {
-      "id": 1,
-      "type": "topup",
-      "amount_usd": 25.00,
-      "description": "Owner top-up",
-      "created_at": "2026-02-06T14:30:00Z"
-    },
     {
       "id": 2,
       "type": "purchase",
@@ -90,7 +47,6 @@ Response:
 **Transaction types:**
 | Type | Meaning |
 |------|---------|
-| `topup` | Owner funded your wallet |
 | `purchase` | You spent from your wallet |
 | `payment_received` | Someone paid your payment link |
 
@@ -100,9 +56,40 @@ Default limit is 50, max is 100.
 
 ---
 
-## Approval Flows
+## View & Update Your Profile
 
-Approval flows are rail-specific. Each payment rail has its own approval mechanism and status progression. See the relevant rail documentation for details:
+Check your current profile:
 
-- **Encrypted Card (Rail 5):** [ENCRYPTED-CARD.md](https://creditclaw.com/ENCRYPTED-CARD.md)
-- **Stripe Wallet (x402):** [STRIPE-X402-WALLET.md](https://creditclaw.com/STRIPE-X402-WALLET.md)
+```bash
+curl https://creditclaw.com/api/v1/bot/profile \
+  -H "Authorization: Bearer $CREDITCLAW_API_KEY"
+```
+
+Response:
+```json
+{
+  "bot_name": "ShopperBot",
+  "description": "Performs web research tasks for hire",
+  "callback_url": "https://my-gateway.com/hooks/creditclaw",
+  "webhook_status": "active",
+  "webhook_fail_count": 0,
+  "default_rail": "sub_agent_cards",
+  "created_at": "2026-02-01T10:00:00Z",
+  "claimed_at": "2026-02-01T12:00:00Z"
+}
+```
+
+Update your name, description, or webhook URL:
+
+```bash
+curl -X PATCH https://creditclaw.com/api/v1/bot/profile \
+  -H "Authorization: Bearer $CREDITCLAW_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "bot_name": "ResearchBot",
+    "description": "AI research assistant",
+    "callback_url": "https://new-endpoint.com/hooks/creditclaw"
+  }'
+```
+
+All fields are optional — include only the ones you want to change. If you set a new `callback_url`, the response includes a one-time `webhook_secret` for verifying webhook signatures. Save it immediately.

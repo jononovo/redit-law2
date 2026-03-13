@@ -14,7 +14,7 @@ Last updated: 2026-03-09 (v2.5.0)
 | `skill.md` | Entry point — registration, setup, webhooks, status, spending permissions, consolidated API reference | Yes |
 | `ENCRYPTED-CARD.md` | Rail 5 — sub-agent checkout, card delivery, decryption, confirmation | Yes |
 | `STRIPE-X402-WALLET.md` | Rail 1 — x402 payment signing, USDC balance, Stripe Wallet transactions | Yes |
-| `MANAGEMENT.md` | Cross-rail — top-up requests, transaction history | Yes |
+| `MANAGEMENT.md` | Bot self-management — transaction history, profile updates | Yes |
 | `CHECKOUT.md` | Selling — checkout pages, payment links, invoices, shops | Yes |
 | `heartbeat.md` | Lightweight polling routine for balance and spending checks | Yes |
 | `crossmint-wallet.md` | Draft stub for Crossmint Wallet (Rail 2) — referenced in skill.md Payment Rails table as "Coming Soon" but NOT listed in skill.json | **No** |
@@ -137,8 +137,8 @@ is no such endpoint.
 
 - `SPENDING.md` in `public/` is an owner-facing config template. It is NOT referenced
   from `skill.md` or any bot-facing file. Leave it alone.
-- Approval flows are rail-specific. `MANAGEMENT.md` notes this briefly and points to
-  each rail's file. Do not duplicate approval flow details in `MANAGEMENT.md`.
+- Approval flows are rail-specific. Each rail's file covers its own approval mechanism.
+  Do not add approval flow details to `MANAGEMENT.md`.
 
 ---
 

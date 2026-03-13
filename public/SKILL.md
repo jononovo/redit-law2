@@ -24,7 +24,7 @@ Securely manage agentic spending.
 | **SKILL.md** (this file) | `https://creditclaw.com/SKILL.md` | Registration, setup, webhooks, status, spending permissions, API reference |
 | **ENCRYPTED-CARD.md** | `https://creditclaw.com/ENCRYPTED-CARD.md` | Card checkout — accepting card details, making purchases, confirming orders |
 | **STRIPE-X402-WALLET.md** | `https://creditclaw.com/STRIPE-X402-WALLET.md` | x402 payment signing, USDC balance, Stripe Wallet transactions |
-| **MANAGEMENT.md** | `https://creditclaw.com/MANAGEMENT.md` | Cross-rail operations — top-ups, transaction history, approvals |
+| **MANAGEMENT.md** | `https://creditclaw.com/MANAGEMENT.md` | Bot self-management — transaction history, profile updates |
 | **CHECKOUT.md** | `https://creditclaw.com/CHECKOUT.md` | Sell to anyone — checkout pages, payment links, invoices, shops |
 | **HEARTBEAT.md** | `https://creditclaw.com/HEARTBEAT.md` | Lightweight polling routine for balance and spending checks |
 | **package.json** (metadata) | `https://creditclaw.com/skill.json` | Machine-readable skill metadata |
@@ -95,7 +95,7 @@ CreditClaw is designed with defense-in-depth to protect your owner's funds:
 6. You poll GET /bot/status periodically to monitor balance across all rails
 7. You check GET /bot/wallet/spending for your owner's permission rules
 8. When you need to make a purchase, follow ENCRYPTED-CARD.md
-9. When balance is low, request a top-up (see MANAGEMENT.md)
+9. View your transaction history and manage your profile (see MANAGEMENT.md)
 10. Human monitors activity from creditclaw.com/overview
 ```
 
@@ -357,7 +357,7 @@ Once your wallet is active and you need to buy something, follow the checkout gu
 Only if you are shopping with crypto stablecoin USDC (pretty rare) read this, otherwise ignore:
 - **Stripe Wallet (x402)** — Read [STRIPE-X402-WALLET.md](https://creditclaw.com/STRIPE-X402-WALLET.md) for x402 payment signing
 
-For managing your balance, requesting top-ups, and viewing transaction history, see [MANAGEMENT.md](https://creditclaw.com/MANAGEMENT.md).
+For viewing transaction history and managing your profile, see [MANAGEMENT.md](https://creditclaw.com/MANAGEMENT.md).
 
 To earn money by selling products or services, see [CHECKOUT.md](https://creditclaw.com/CHECKOUT.md).
 
@@ -394,8 +394,9 @@ Base URL: `https://creditclaw.com/api/v1`
 
 | Method | Endpoint | Description | Rate Limit | File |
 |--------|----------|-------------|------------|------|
-| POST | `/bot/wallet/topup-request` | Ask owner to add funds. Sends email notification. | 3/hr | [MANAGEMENT.md](https://creditclaw.com/MANAGEMENT.md) |
 | GET | `/bot/wallet/transactions` | List transaction history. Supports `?limit=N` (default 50, max 100). | 12/hr | [MANAGEMENT.md](https://creditclaw.com/MANAGEMENT.md) |
+| GET | `/bot/profile` | View your bot profile (name, description, webhook URL, status). | — | [MANAGEMENT.md](https://creditclaw.com/MANAGEMENT.md) |
+| PATCH | `/bot/profile` | Update your bot name, description, or callback URL. | — | [MANAGEMENT.md](https://creditclaw.com/MANAGEMENT.md) |
 
 ### Checkout & Selling Endpoints
 
@@ -564,8 +565,8 @@ you retrieve it, your owner can re-stage the delivery from their dashboard.
 - **Never share your API key.** Do not send it to any domain other than `creditclaw.com`, and do not share it with other agents, tools, or services.
 - **Default mode is `ask_for_everything`.** All new accounts require owner approval before every purchase. Follow this mode until your owner changes it.
 - **Spending is enforced server-side.** Your owner's limits and blocked categories are enforced by CreditClaw on every purchase attempt. Even if you try a blocked purchase, it will be declined.
-- **Balance can reach $0.** Purchases will be declined. Ask your human if they'd like you to request a top-up (see [MANAGEMENT.md](https://creditclaw.com/MANAGEMENT.md)).
+- **Balance can reach $0.** Purchases will be declined. Let your human know so they can take action from their dashboard.
 - **One bot = one wallet per rail.** Your wallet is unique to you and linked to your owner's account. You may have wallets on multiple rails.
-- **Poll responsibly.** Use `GET /bot/status` no more than every 10 minutes unless you are actively waiting for a top-up.
+- **Poll responsibly.** Use `GET /bot/status` no more than every 8 hours during normal operation.
 - **Follow the checkout guide when making purchases.** See [ENCRYPTED-CARD.md](https://creditclaw.com/ENCRYPTED-CARD.md).
 - **Webhooks keep you in sync.** Your `callback_url` receives real-time approval notifications, card details, and spending alerts. If your endpoint becomes unreachable, events are staged as bot messages until you recover.

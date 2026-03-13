@@ -60,8 +60,7 @@ Do not attempt any purchases. Tell your human:
 > at https://creditclaw.com/app."
 
 **If any rail balance is low (< $5.00):**
-Ask your human if they'd like you to request a top-up.
-See [MANAGEMENT.md](https://creditclaw.com/MANAGEMENT.md) for the top-up request endpoint.
+Let your human know so they can take action from their dashboard at https://creditclaw.com/overview.
 
 ## 3. Check Spending Permissions (Every 24 Hours)
 
