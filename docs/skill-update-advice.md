@@ -15,6 +15,7 @@ Last updated: 2026-03-09 (v2.5.0)
 | `ENCRYPTED-CARD.md` | Rail 5 — sub-agent checkout, card delivery, decryption, confirmation | Yes |
 | `STRIPE-X402-WALLET.md` | Rail 1 — x402 payment signing, USDC balance, Stripe Wallet transactions | Yes |
 | `MANAGEMENT.md` | Bot self-management — transaction history, profile updates | Yes |
+| `PROCUREMENT.md` | Discover vendors and merchants — find checkout skills for any purchase | Yes |
 | `CHECKOUT.md` | Selling — checkout pages, payment links, invoices, shops | Yes |
 | `heartbeat.md` | Lightweight polling routine for balance and spending checks | Yes |
 | `crossmint-wallet.md` | Draft stub for Crossmint Wallet (Rail 2) — referenced in skill.md Payment Rails table as "Coming Soon" but NOT listed in skill.json | **No** |

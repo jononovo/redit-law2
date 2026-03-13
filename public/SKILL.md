@@ -25,6 +25,7 @@ Securely manage agentic spending.
 | **ENCRYPTED-CARD.md** | `https://creditclaw.com/ENCRYPTED-CARD.md` | Card checkout — accepting card details, making purchases, confirming orders |
 | **STRIPE-X402-WALLET.md** | `https://creditclaw.com/STRIPE-X402-WALLET.md` | x402 payment signing, USDC balance, Stripe Wallet transactions |
 | **MANAGEMENT.md** | `https://creditclaw.com/MANAGEMENT.md` | Bot self-management — transaction history, profile updates |
+| **PROCUREMENT.md** | `https://creditclaw.com/PROCUREMENT.md` | Discover vendors and merchants — find checkout skills for any purchase |
 | **CHECKOUT.md** | `https://creditclaw.com/CHECKOUT.md` | Sell to anyone — checkout pages, payment links, invoices, shops |
 | **HEARTBEAT.md** | `https://creditclaw.com/HEARTBEAT.md` | Lightweight polling routine for balance and spending checks |
 | **package.json** (metadata) | `https://creditclaw.com/skill.json` | Machine-readable skill metadata |
@@ -397,6 +398,13 @@ Base URL: `https://creditclaw.com/api/v1`
 | GET | `/bot/wallet/transactions` | List transaction history. Supports `?limit=N` (default 50, max 100). | 12/hr | [MANAGEMENT.md](https://creditclaw.com/MANAGEMENT.md) |
 | GET | `/bot/profile` | View your bot profile (name, description, webhook URL, status). | — | [MANAGEMENT.md](https://creditclaw.com/MANAGEMENT.md) |
 | PATCH | `/bot/profile` | Update your bot name, description, or callback URL. | — | [MANAGEMENT.md](https://creditclaw.com/MANAGEMENT.md) |
+
+### Procurement Endpoints
+
+| Method | Endpoint | Description | Rate Limit | File |
+|--------|----------|-------------|------------|------|
+| GET | `/bot/skills` | Discover vendors and merchants. Supports filtering by category, search, checkout method, capability, maturity. | — | [PROCUREMENT.md](https://creditclaw.com/PROCUREMENT.md) |
+| GET | `/bot/skills/{slug}` | Get a vendor's full checkout skill (returns Markdown). | — | [PROCUREMENT.md](https://creditclaw.com/PROCUREMENT.md) |
 
 ### Checkout & Selling Endpoints
 
