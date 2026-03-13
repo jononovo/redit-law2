@@ -310,9 +310,9 @@ async function handleRealCheckout(
   if (needsHumanConfirmation) {
     const { createHmac } = await import("crypto");
     const confirmationId = "chk_" + randomBytes(6).toString("hex");
-    const hmacSecret = process.env.CONFIRMATION_HMAC_SECRET || process.env.CRON_SECRET;
+    const hmacSecret = process.env.CONFIRMATION_HMAC_SECRET;
     if (!hmacSecret) {
-      console.error("CRITICAL: CONFIRMATION_HMAC_SECRET or CRON_SECRET must be set");
+      console.error("CRITICAL: CONFIRMATION_HMAC_SECRET must be set");
       return NextResponse.json({ error: "server_config_error", message: "Server is not properly configured for approvals." }, { status: 500 });
     }
     const hmacToken = createHmac("sha256", hmacSecret).update(confirmationId).digest("hex");
