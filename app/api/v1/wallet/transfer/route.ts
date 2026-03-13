@@ -161,7 +161,7 @@ export async function POST(request: NextRequest) {
           maxPerTxUsdc: guardrails.maxPerTxUsdc,
           dailyBudgetUsdc: guardrails.dailyBudgetUsdc,
           monthlyBudgetUsdc: guardrails.monthlyBudgetUsdc,
-          requireApprovalAbove: guardrails.requireApprovalAbove,
+          requireApprovalAbove: null,
           autoPauseOnZero: guardrails.autoPauseOnZero,
         },
         { amountUsdc: amount_usdc },

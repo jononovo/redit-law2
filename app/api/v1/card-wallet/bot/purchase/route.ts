@@ -5,6 +5,7 @@ import { authenticateBot } from "@/lib/agent-management/auth";
 import { evaluateGuardrails } from "@/lib/guardrails/evaluate";
 import { evaluateProcurementControls } from "@/lib/procurement-controls/evaluate";
 import { evaluateMasterGuardrails } from "@/lib/guardrails/master";
+import { evaluateApprovalDecision } from "@/lib/guardrails/approval";
 import { usdToMicroUsdc } from "@/lib/rail2/client";
 import { createApproval } from "@/lib/approvals/service";
 
@@ -84,14 +85,12 @@ async function handler(request: NextRequest, botId: string) {
       }
     }
 
-    const approvalMode = guardrails.approvalMode ?? "ask_for_everything";
-
     const decision = evaluateGuardrails(
       {
         maxPerTxUsdc: guardrails.maxPerTxUsdc,
         dailyBudgetUsdc: guardrails.dailyBudgetUsdc,
         monthlyBudgetUsdc: guardrails.monthlyBudgetUsdc,
-        requireApprovalAbove: guardrails.requireApprovalAbove,
+        requireApprovalAbove: null,
         autoPauseOnZero: guardrails.autoPauseOnZero,
       },
       { amountUsdc: estimatedAmountUsdc },
@@ -102,9 +101,10 @@ async function handler(request: NextRequest, botId: string) {
       return NextResponse.json({ error: "guardrail_violation", reason: decision.reason }, { status: 403 });
     }
 
-    const needsApproval =
-      approvalMode === "ask_for_everything" ||
-      decision.action === "require_approval";
+    const estimatedCents = estimated_price_usd ? Math.round(estimated_price_usd * (quantity || 1) * 100) : 0;
+    const approvalDecision = await evaluateApprovalDecision(wallet.ownerUid, estimatedCents);
+
+    const needsApproval = approvalDecision.action === "require_approval";
 
     if (!needsApproval) {
       const tx = await storage.crossmintCreateTransaction({

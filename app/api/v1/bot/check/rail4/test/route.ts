@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { withBotApi } from "@/lib/agent-management/agent-api/middleware";
 import { storage } from "@/server/storage";
+import { evaluateApprovalDecision } from "@/lib/guardrails/approval";
 
 const preflightSchema = z.object({
   merchant_name: z.string().min(1).max(200),
@@ -85,13 +86,14 @@ export const POST = withBotApi("/api/v1/bot/check/rail4/test", async (request, {
       reasons.push("exceeds_profile_allowance");
     }
 
-    const approvalMode = profilePerm.human_permission_required || "all";
-    const exemptLimit = profilePerm.confirmation_exempt_limit ?? 0;
-
-    if (approvalMode === "all") {
+    const isAdminOverride = profilePerm.human_permission_required === "all";
+    if (isAdminOverride) {
       requiresApproval = true;
-    } else if (approvalMode === "above_exempt" && amountUsd > exemptLimit) {
-      requiresApproval = true;
+    } else if (bot.ownerUid) {
+      const approvalDecision = await evaluateApprovalDecision(bot.ownerUid, body.amount_cents);
+      if (approvalDecision.action === "require_approval") {
+        requiresApproval = true;
+      }
     }
   } else if (permissionsList.length === 0) {
     requiresApproval = true;

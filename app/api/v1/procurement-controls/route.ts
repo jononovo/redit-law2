@@ -40,8 +40,6 @@ export async function POST(request: NextRequest) {
     if (data.blocklisted_merchants !== undefined) updateData.blocklistedMerchants = data.blocklisted_merchants;
     if (data.allowlisted_categories !== undefined) updateData.allowlistedCategories = data.allowlisted_categories;
     if (data.blocklisted_categories !== undefined) updateData.blocklistedCategories = data.blocklisted_categories;
-    if (data.approval_mode !== undefined) updateData.approvalMode = data.approval_mode;
-    if (data.approval_threshold_cents !== undefined) updateData.approvalThresholdCents = data.approval_threshold_cents;
     if (data.notes !== undefined) updateData.notes = data.notes;
 
     const control = await storage.upsertProcurementControls(

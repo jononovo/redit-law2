@@ -69,7 +69,7 @@ Four tables, all prefixed `privy_` for rail segmentation.
 | max_per_tx_usdc | integer | Per-transaction cap in USD (default: 100) |
 | daily_budget_usdc | integer | Daily spend cap in USD (default: 1000) |
 | monthly_budget_usdc | integer | Monthly spend cap in USD (default: 10000) |
-| require_approval_above | integer | Human approval threshold in USD (null = never) |
+| *(approval thresholds are now in master_guardrails)* | | |
 | allowlisted_domains | jsonb | Array of allowed domains |
 | blocklisted_domains | jsonb | Array of blocked domains |
 | auto_pause_on_zero | boolean | Pause wallet when balance hits zero (default: true) |
@@ -175,7 +175,7 @@ Backend guardrail checks (in order):
   4. Monthly cumulative + amount ≤ monthly_budget_usdc?
   5. Domain on allowlist? (if set)
   6. Domain not on blocklist?
-  7. Amount < require_approval_above? (if set)
+  7. Amount within master guardrails approval threshold? (if set)
 
 If approval required → create pending approval (5-min TTL), return 202
 If hard block → return 403 with reason
@@ -192,7 +192,7 @@ Bot retries original request with X-PAYMENT header
 ### 4. Human-in-the-Loop Approval
 
 ```
-Bot payment exceeds require_approval_above threshold
+Bot payment exceeds master guardrails approval threshold
 → Transaction created with status "requires_approval"
 → Approval record created (5-minute expiry)
 → Bot receives 202 { status: "awaiting_approval", approval_id }

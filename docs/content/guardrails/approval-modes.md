@@ -32,21 +32,21 @@ This mode works in conjunction with [Category Controls](/docs/guardrails/categor
 
 ## Setting the Approval Mode
 
-To configure the approval mode on a wallet:
+The approval mode is configured at the account level through **Master Guardrails** and applies uniformly across all wallets and rails:
 
-1. Go to the wallet page for the wallet type you want to configure
-2. Select the wallet
-3. Click the **Guardrails** button
-4. Choose the approval mode from the dropdown
-5. If using "Auto-approve under threshold," set the dollar threshold
-6. Save your changes
+1. Go to **Settings** → **Master Guardrails**
+2. Choose the approval mode from the dropdown
+3. If using "Auto-approve under threshold," set the dollar threshold
+4. Save your changes
+
+The approval mode applies to all wallets and cards on your account — Rail 1, Rail 2, Rail 4, and Rail 5.
 
 ## How Approvals Work
 
 When a transaction requires approval:
 
 1. Your bot submits the purchase request to CreditClaw
-2. CreditClaw evaluates the request against your [spending limits](/docs/guardrails/spending-limits) and approval mode
+2. CreditClaw evaluates the request against your [spending limits](/docs/guardrails/spending-limits) and the account-wide approval mode from master guardrails
 3. If approval is required, CreditClaw sends you a notification with the details (amount, merchant, category)
 4. You approve or reject the request from the dashboard or via the email link
 5. If approved, the transaction proceeds. If rejected, the bot is notified
@@ -66,4 +66,4 @@ Approval requests do not expire automatically — they remain pending until you 
 | Bot purchasing from known vendors only | Auto-Approve by Category |
 | High-value procurement | Ask for Everything |
 
-You can change the approval mode at any time. The new mode applies to all future transactions on that wallet.
+You can change the approval mode at any time. The new mode applies to all future transactions across all wallets and rails.

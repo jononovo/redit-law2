@@ -38,7 +38,6 @@ These wallets support guardrail-based limits:
 - **Per-transaction limit**: Maximum USDC for a single purchase
 - **Daily budget**: Total USDC your bot can spend per day
 - **Monthly budget**: Total USDC your bot can spend per month
-- **Approval threshold**: Purchases above this amount require your manual approval
 
 To configure these limits:
 
@@ -46,6 +45,8 @@ To configure these limits:
 2. Click **Guardrails** in the action bar
 3. Adjust the limits
 4. Save your changes
+
+Approval thresholds are configured at the account level through **Master Guardrails** in Settings, and apply across all wallets and rails.
 
 ### Sub-Agent Cards (Rail 4)
 
@@ -63,7 +64,8 @@ Self-Hosted Cards have the most granular controls:
 - Per-transaction spending limit
 - Daily spending limit
 - Monthly spending limit
-- Human approval threshold — any purchase above this amount requires your sign-off before the bot can proceed
+
+Approval thresholds are managed through Master Guardrails and apply uniformly across all rails.
 
 ## Category Controls (Card Wallets)
 
@@ -111,7 +113,7 @@ Unlinking a bot is the safest way to revoke access without deleting the wallet. 
 ## Best Practices
 
 - **Start with conservative limits**: Set low spending limits initially and increase them as you gain confidence in your bot's behavior
-- **Use approval thresholds**: Require manual approval for large purchases so you stay in the loop
+- **Use approval thresholds**: Configure approval thresholds in Master Guardrails to require manual approval for large purchases
 - **Review transactions regularly**: Check the transaction history for each wallet to spot unexpected patterns
 - **Freeze first, ask questions later**: If something looks wrong, freeze the wallet immediately — you can always unfreeze it
 - **One bot per wallet**: While you can relink wallets, it's cleaner to have dedicated wallets per bot for easier tracking

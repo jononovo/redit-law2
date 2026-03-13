@@ -3,6 +3,7 @@ import { getSessionUser } from "@/lib/auth/session";
 import { storage } from "@/server/storage";
 import { upsertMasterGuardrailsSchema } from "@/shared/schema";
 import { microUsdcToUsd } from "@/lib/guardrails/master";
+import { GUARDRAIL_DEFAULTS } from "@/lib/guardrails/defaults";
 
 export async function GET(request: NextRequest) {
   try {
@@ -20,8 +21,17 @@ export async function GET(request: NextRequest) {
         max_per_tx_usdc: config.maxPerTxUsdc,
         daily_budget_usdc: config.dailyBudgetUsdc,
         monthly_budget_usdc: config.monthlyBudgetUsdc,
+        approval_mode: config.approvalMode,
+        require_approval_above: config.requireApprovalAbove,
         enabled: config.enabled,
-      } : null,
+      } : {
+        max_per_tx_usdc: GUARDRAIL_DEFAULTS.master.maxPerTxUsdc,
+        daily_budget_usdc: GUARDRAIL_DEFAULTS.master.dailyBudgetUsdc,
+        monthly_budget_usdc: GUARDRAIL_DEFAULTS.master.monthlyBudgetUsdc,
+        approval_mode: GUARDRAIL_DEFAULTS.master.approvalMode,
+        require_approval_above: GUARDRAIL_DEFAULTS.master.requireApprovalAbove,
+        enabled: false,
+      },
       spend: {
         daily: {
           rail1_usd: microUsdcToUsd(dailySpend.rail1),
@@ -60,6 +70,8 @@ export async function POST(request: NextRequest) {
     if (parsed.data.max_per_tx_usdc !== undefined) data.maxPerTxUsdc = parsed.data.max_per_tx_usdc;
     if (parsed.data.daily_budget_usdc !== undefined) data.dailyBudgetUsdc = parsed.data.daily_budget_usdc;
     if (parsed.data.monthly_budget_usdc !== undefined) data.monthlyBudgetUsdc = parsed.data.monthly_budget_usdc;
+    if (parsed.data.approval_mode !== undefined) data.approvalMode = parsed.data.approval_mode;
+    if (parsed.data.require_approval_above !== undefined) data.requireApprovalAbove = parsed.data.require_approval_above;
     if (parsed.data.enabled !== undefined) data.enabled = parsed.data.enabled;
 
     const config = await storage.upsertMasterGuardrails(user.uid, data);
@@ -69,6 +81,8 @@ export async function POST(request: NextRequest) {
         max_per_tx_usdc: config.maxPerTxUsdc,
         daily_budget_usdc: config.dailyBudgetUsdc,
         monthly_budget_usdc: config.monthlyBudgetUsdc,
+        approval_mode: config.approvalMode,
+        require_approval_above: config.requireApprovalAbove,
         enabled: config.enabled,
       },
     });

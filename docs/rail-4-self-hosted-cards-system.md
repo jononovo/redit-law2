@@ -55,7 +55,7 @@ Tracks spending per card per profile per time window.
 | `profile_index` | integer | Which profile (1–6) |
 | `window_start` | timestamp | Start of the current allowance period |
 | `spent_cents` | integer | Total spent in this window (default 0) |
-| `exempt_used` | boolean | Whether the confirmation-exempt allowance was used this window |
+| *(exempt_used column has been removed)* | | |
 | `created_at` | timestamp | |
 
 Index: composite `(card_id, profile_index)`.
@@ -137,8 +137,7 @@ Permissions are stored per-profile in the `profile_permissions` JSON column on `
   allowance_duration: "day" | "week" | "month";
   allowance_currency: string;     // default "USD"
   allowance_value: number;        // e.g., 500.00 (in dollars, not cents)
-  confirmation_exempt_limit: number; // purchases ≤ this amount skip human approval (dollars)
-  human_permission_required: "all" | "above_exempt" | "none";
+  human_permission_required: "all" | "none";
   creditclaw_permission_required: "all"; // always "all" for CreditClaw's internal check
 }
 ```
@@ -153,8 +152,7 @@ Permissions are stored per-profile in the `profile_permissions` JSON column on `
 ### Human approval flow:
 
 - If `human_permission_required === "all"`: every real purchase needs approval
-- If `human_permission_required === "above_exempt"`: purchases ≤ `confirmation_exempt_limit` are auto-approved (once per window — tracked by `exempt_used`); above that threshold requires approval
-- If `human_permission_required === "none"`: auto-approve everything
+- If `human_permission_required === "none"`: auto-approve everything (approval thresholds are managed at the account level via master guardrails)
 
 When approval is needed:
 1. A `checkoutConfirmation` row is created with status `"pending"` and a 15-minute TTL

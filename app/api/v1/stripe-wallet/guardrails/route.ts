@@ -62,8 +62,6 @@ export async function POST(request: NextRequest) {
     if (guardrailData.max_per_tx_usdc !== undefined) updateData.maxPerTxUsdc = guardrailData.max_per_tx_usdc;
     if (guardrailData.daily_budget_usdc !== undefined) updateData.dailyBudgetUsdc = guardrailData.daily_budget_usdc;
     if (guardrailData.monthly_budget_usdc !== undefined) updateData.monthlyBudgetUsdc = guardrailData.monthly_budget_usdc;
-    if (guardrailData.require_approval_above !== undefined) updateData.requireApprovalAbove = guardrailData.require_approval_above;
-    if (guardrailData.approval_mode !== undefined) updateData.approvalMode = guardrailData.approval_mode;
     if (guardrailData.recurring_allowed !== undefined) updateData.recurringAllowed = guardrailData.recurring_allowed;
     if (guardrailData.auto_pause_on_zero !== undefined) updateData.autoPauseOnZero = guardrailData.auto_pause_on_zero;
     if (guardrailData.notes !== undefined) updateData.notes = guardrailData.notes;

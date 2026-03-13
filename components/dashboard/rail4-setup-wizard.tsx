@@ -322,8 +322,6 @@ export function Rail4SetupWizard({ cardId: existingCardId, open, onOpenChange, o
 
   const [permAllowanceDuration, setPermAllowanceDuration] = useState("week");
   const [permAllowanceValue, setPermAllowanceValue] = useState("50");
-  const [permExemptLimit, setPermExemptLimit] = useState("10");
-  const [permHumanPermission, setPermHumanPermission] = useState("all");
 
   const [ownerBot, setOwnerBot] = useState<{ bot_id: string; bot_name: string; wallet_status: string } | null>(null);
   const [ownerBotCardCount, setOwnerBotCardCount] = useState(0);
@@ -363,8 +361,6 @@ export function Rail4SetupWizard({ cardId: existingCardId, open, onOpenChange, o
       setAutoTogglePaused(false);
       setPermAllowanceDuration("week");
       setPermAllowanceValue("50");
-      setPermExemptLimit("10");
-      setPermHumanPermission("all");
       setOwnerBot(null);
       setOwnerBotCardCount(0);
       setOwnerBotLoading(false);
@@ -461,8 +457,7 @@ export function Rail4SetupWizard({ cardId: existingCardId, open, onOpenChange, o
             allowance_duration: permAllowanceDuration,
             allowance_currency: "USD",
             allowance_value: parseFloat(permAllowanceValue) || 50,
-            confirmation_exempt_limit: parseFloat(permExemptLimit) || 0,
-            human_permission_required: permHumanPermission,
+            human_permission_required: "none",
             creditclaw_permission_required: "all",
           },
         }),
@@ -807,33 +802,6 @@ export function Rail4SetupWizard({ cardId: existingCardId, open, onOpenChange, o
           <p className="text-xs text-neutral-400">Maximum spend per {permAllowanceDuration}</p>
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="wizard-exempt-limit">Confirmation Exempt Limit ($)</Label>
-          <Input
-            id="wizard-exempt-limit"
-            type="number"
-            min={0}
-            value={permExemptLimit}
-            onChange={(e) => setPermExemptLimit(e.target.value)}
-            className="rounded-xl"
-            data-testid="input-wizard-exempt-limit"
-          />
-          <p className="text-xs text-neutral-400">Purchases under this amount skip human approval</p>
-        </div>
-
-        <div className="space-y-2">
-          <Label>Human Permission Required</Label>
-          <Select value={permHumanPermission} onValueChange={setPermHumanPermission}>
-            <SelectTrigger className="rounded-xl" data-testid="select-wizard-human-permission">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Transactions</SelectItem>
-              <SelectItem value="above_exempt">Above Exempt Limit</SelectItem>
-              <SelectItem value="none">None</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
       </div>
 
       <div className="flex gap-3 mt-8">

@@ -163,18 +163,14 @@ export const rail4Methods: Rail4Methods = {
     return usage || null;
   },
 
-  async upsertProfileAllowanceUsage(cardId: string, profileIndex: number, windowStart: Date, addCents: number, markExemptUsed = false): Promise<ProfileAllowanceUsage> {
+  async upsertProfileAllowanceUsage(cardId: string, profileIndex: number, windowStart: Date, addCents: number): Promise<ProfileAllowanceUsage> {
     const existing = await this.getProfileAllowanceUsage(cardId, profileIndex, windowStart);
     if (existing) {
-      const updateData: Record<string, unknown> = {
-        spentCents: sql`${profileAllowanceUsage.spentCents} + ${addCents}`,
-      };
-      if (markExemptUsed) {
-        updateData.exemptUsed = true;
-      }
       const [updated] = await db
         .update(profileAllowanceUsage)
-        .set(updateData)
+        .set({
+          spentCents: sql`${profileAllowanceUsage.spentCents} + ${addCents}`,
+        })
         .where(eq(profileAllowanceUsage.id, existing.id))
         .returning();
       return updated;
@@ -186,7 +182,6 @@ export const rail4Methods: Rail4Methods = {
         profileIndex,
         windowStart,
         spentCents: addCents,
-        exemptUsed: markExemptUsed,
       })
       .returning();
     return created;
