@@ -5,6 +5,7 @@ import { rail5CheckoutRequestSchema } from "@/shared/schema";
 import { generateRail5CheckoutId, buildSpawnPayload, buildCheckoutSteps } from "@/lib/rail5";
 import { evaluateMasterGuardrails, centsToMicroUsdc } from "@/lib/guardrails/master";
 import { evaluateCardGuardrails } from "@/lib/guardrails/evaluate";
+import { evaluateApprovalDecision } from "@/lib/guardrails/approval";
 import { GUARDRAIL_DEFAULTS } from "@/lib/guardrails/defaults";
 import { recordOrder } from "@/lib/orders/create";
 
@@ -49,12 +50,11 @@ export const POST = withBotApi("/api/v1/bot/rail5/checkout", async (request, { b
   }
 
   const guardrails = await storage.getRail5Guardrails(card.cardId);
-  const approvalMode = guardrails?.approvalMode ?? GUARDRAIL_DEFAULTS.rail5.approvalMode;
   const rules = {
     maxPerTxCents: guardrails?.maxPerTxCents ?? GUARDRAIL_DEFAULTS.rail5.maxPerTxCents,
     dailyBudgetCents: guardrails?.dailyBudgetCents ?? GUARDRAIL_DEFAULTS.rail5.dailyBudgetCents,
     monthlyBudgetCents: guardrails?.monthlyBudgetCents ?? GUARDRAIL_DEFAULTS.rail5.monthlyBudgetCents,
-    requireApprovalAbove: guardrails?.requireApprovalAbove ?? GUARDRAIL_DEFAULTS.rail5.requireApprovalAbove,
+    requireApprovalAbove: null as number | null,
     autoPauseOnZero: guardrails?.autoPauseOnZero ?? GUARDRAIL_DEFAULTS.rail5.autoPauseOnZero,
   };
 
@@ -66,61 +66,7 @@ export const POST = withBotApi("/api/v1/bot/rail5/checkout", async (request, { b
     );
   }
 
-  if (approvalMode === "ask_for_everything") {
-    const checkoutId = generateRail5CheckoutId();
-    const wallet = await storage.getWalletByOwnerUid(card.ownerUid);
-    const walletBalance = wallet?.balanceCents ?? null;
-
-    await storage.createRail5Checkout({
-      checkoutId,
-      cardId: card.cardId,
-      botId: bot.botId,
-      ownerUid: card.ownerUid,
-      merchantName: merchant_name,
-      merchantUrl: merchant_url,
-      itemName: item_name,
-      amountCents: amount_cents,
-      category: category || undefined,
-      status: "pending_approval",
-      balanceAfter: walletBalance,
-    });
-
-    const owner = await storage.getOwnerByUid(card.ownerUid);
-    if (owner) {
-      const { notifyOwner } = await import("@/lib/notifications");
-      await notifyOwner({
-        ownerUid: card.ownerUid,
-        ownerEmail: owner.email,
-        type: "purchase",
-        title: `Approval needed: $${(amount_cents / 100).toFixed(2)} at ${merchant_name}`,
-        body: `Your bot wants to spend $${(amount_cents / 100).toFixed(2)} at ${merchant_name} for "${item_name}". Approval mode requires all purchases to be approved.`,
-        botId: bot.botId,
-      }).catch(() => {});
-
-      const { createApproval } = await import("@/lib/approvals/service");
-      createApproval({
-        rail: "rail5",
-        ownerUid: card.ownerUid,
-        ownerEmail: owner.email,
-        botName: bot.botName,
-        amountDisplay: `$${(amount_cents / 100).toFixed(2)}`,
-        amountRaw: amount_cents,
-        merchantName: merchant_name,
-        itemName: item_name,
-        railRef: checkoutId,
-        metadata: { cardId: card.cardId, merchantUrl: merchant_url, category },
-      }).catch((err) => {
-        console.error("[Rail5] Unified approval email failed:", err);
-      });
-    }
-
-    return NextResponse.json({
-      approved: false,
-      status: "pending_approval",
-      checkout_id: checkoutId,
-      message: "Approval mode requires all purchases to be approved. Owner notified.",
-    });
-  }
+  const approvalDecision = await evaluateApprovalDecision(card.ownerUid, amount_cents);
 
   const dailySpend = await storage.getRail5DailySpendCents(card.cardId);
   const monthlySpend = await storage.getRail5MonthlySpendCents(card.cardId);
@@ -142,7 +88,7 @@ export const POST = withBotApi("/api/v1/bot/rail5/checkout", async (request, { b
   const wallet = await storage.getWalletByOwnerUid(card.ownerUid);
   const walletBalance = wallet?.balanceCents ?? null;
 
-  if (decision.action === "require_approval") {
+  if (approvalDecision.action === "require_approval") {
     await storage.createRail5Checkout({
       checkoutId,
       cardId: card.cardId,
@@ -165,7 +111,7 @@ export const POST = withBotApi("/api/v1/bot/rail5/checkout", async (request, { b
         ownerEmail: owner.email,
         type: "purchase",
         title: `Approval needed: $${(amount_cents / 100).toFixed(2)} at ${merchant_name}`,
-        body: `Your bot wants to spend $${(amount_cents / 100).toFixed(2)} at ${merchant_name} for "${item_name}". This exceeds your approval threshold.`,
+        body: `Your bot wants to spend $${(amount_cents / 100).toFixed(2)} at ${merchant_name} for "${item_name}". ${approvalDecision.reason}`,
         botId: bot.botId,
       }).catch(() => {});
 
@@ -190,7 +136,7 @@ export const POST = withBotApi("/api/v1/bot/rail5/checkout", async (request, { b
       approved: false,
       status: "pending_approval",
       checkout_id: checkoutId,
-      message: `${decision.reason}. Owner notified.`,
+      message: `${approvalDecision.reason} Owner notified.`,
     });
   }
 

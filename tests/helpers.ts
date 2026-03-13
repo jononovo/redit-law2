@@ -123,8 +123,7 @@ export async function createTestCard(opts: {
       allowance_duration: "day",
       allowance_currency: "USD",
       allowance_value: 500,
-      confirmation_exempt_limit: 10,
-      human_permission_required: "above_exempt",
+      human_permission_required: "all",
       creditclaw_permission_required: "all",
     },
     ...fakeProfiles.slice(0, 2).map(f => ({
@@ -132,7 +131,6 @@ export async function createTestCard(opts: {
       allowance_duration: "day",
       allowance_currency: "USD",
       allowance_value: 100,
-      confirmation_exempt_limit: 5,
       human_permission_required: "none",
       creditclaw_permission_required: "all",
     })),

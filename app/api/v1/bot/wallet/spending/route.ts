@@ -12,6 +12,8 @@ export const GET = withBotApi("/api/v1/bot/wallet/spending", async (_request, { 
     );
   }
 
+  const masterGuardrails = bot.ownerUid ? await storage.getMasterGuardrails(bot.ownerUid) : null;
+
   const rail4Cards = await storage.getRail4CardsByBotId(bot.botId);
   const activeCard = rail4Cards.find(c => c.status === "active");
 
@@ -19,12 +21,12 @@ export const GET = withBotApi("/api/v1/bot/wallet/spending", async (_request, { 
   if (activeCard) {
     const guard = await storage.getRail4Guardrails(activeCard.cardId);
     guardrailData = {
-      approval_mode: guard?.approvalMode ?? GUARDRAIL_DEFAULTS.rail4.approvalMode,
+      approval_mode: masterGuardrails?.approvalMode ?? GUARDRAIL_DEFAULTS.master.approvalMode,
       limits: {
         per_transaction_usd: (guard?.maxPerTxCents ?? GUARDRAIL_DEFAULTS.rail4.maxPerTxCents) / 100,
         daily_usd: (guard?.dailyBudgetCents ?? GUARDRAIL_DEFAULTS.rail4.dailyBudgetCents) / 100,
         monthly_usd: (guard?.monthlyBudgetCents ?? GUARDRAIL_DEFAULTS.rail4.monthlyBudgetCents) / 100,
-        ask_approval_above_usd: (guard?.requireApprovalAbove ?? GUARDRAIL_DEFAULTS.rail4.requireApprovalAbove ?? 500) / 100,
+        ask_approval_above_usd: masterGuardrails?.requireApprovalAbove != null ? masterGuardrails.requireApprovalAbove / 100 : null,
       },
       recurring_allowed: guard?.recurringAllowed ?? GUARDRAIL_DEFAULTS.rail4.recurringAllowed,
       notes: guard?.notes ?? null,
@@ -32,12 +34,12 @@ export const GET = withBotApi("/api/v1/bot/wallet/spending", async (_request, { 
     };
   } else {
     guardrailData = {
-      approval_mode: GUARDRAIL_DEFAULTS.rail4.approvalMode,
+      approval_mode: masterGuardrails?.approvalMode ?? GUARDRAIL_DEFAULTS.master.approvalMode,
       limits: {
         per_transaction_usd: GUARDRAIL_DEFAULTS.rail4.maxPerTxCents / 100,
         daily_usd: GUARDRAIL_DEFAULTS.rail4.dailyBudgetCents / 100,
         monthly_usd: GUARDRAIL_DEFAULTS.rail4.monthlyBudgetCents / 100,
-        ask_approval_above_usd: (GUARDRAIL_DEFAULTS.rail4.requireApprovalAbove ?? 500) / 100,
+        ask_approval_above_usd: masterGuardrails?.requireApprovalAbove != null ? masterGuardrails.requireApprovalAbove / 100 : null,
       },
       recurring_allowed: GUARDRAIL_DEFAULTS.rail4.recurringAllowed,
       notes: null,

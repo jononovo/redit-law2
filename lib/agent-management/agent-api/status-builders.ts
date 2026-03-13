@@ -5,11 +5,12 @@ export async function buildRail1Detail(botId: string) {
   const wallet = await storage.privyGetWalletByBotId(botId);
   if (!wallet) return { status: "inactive" as const };
 
-  const [guardrails, dailySpend, monthlySpend, allPendingApprovals] = await Promise.all([
+  const [guardrails, dailySpend, monthlySpend, allPendingApprovals, masterGuardrails] = await Promise.all([
     storage.privyGetGuardrails(wallet.id),
     storage.privyGetDailySpend(wallet.id),
     storage.privyGetMonthlySpend(wallet.id),
     storage.getUnifiedApprovalsByOwnerUid(wallet.ownerUid, "pending"),
+    storage.getMasterGuardrails(wallet.ownerUid),
   ]);
   const pendingApprovals = allPendingApprovals.filter(a => a.rail === "rail1");
 
@@ -33,8 +34,8 @@ export async function buildRail1Detail(botId: string) {
       daily_remaining_usd: Math.max(0, dailyBudget - dailySpendUsd),
       monthly_spent_usd: monthlySpendUsd,
       monthly_remaining_usd: Math.max(0, monthlyBudget - monthlySpendUsd),
-      require_approval_above_usd: guardrails?.requireApprovalAbove ?? null,
-      approval_mode: guardrails?.approvalMode ?? GUARDRAIL_DEFAULTS.rail1.approvalMode,
+      require_approval_above_usd: masterGuardrails?.requireApprovalAbove != null ? masterGuardrails.requireApprovalAbove / 100 : null,
+      approval_mode: masterGuardrails?.approvalMode ?? GUARDRAIL_DEFAULTS.master.approvalMode,
       recurring_allowed: guardrails?.recurringAllowed ?? GUARDRAIL_DEFAULTS.rail1.recurringAllowed,
       notes: guardrails?.notes ?? null,
     },
@@ -50,10 +51,11 @@ export async function buildRail2Detail(botId: string) {
   const wallet = await storage.crossmintGetWalletByBotId(botId);
   if (!wallet) return { status: "inactive" as const };
 
-  const [guardrails, dailySpend, monthlySpend] = await Promise.all([
+  const [guardrails, dailySpend, monthlySpend, masterGuardrails] = await Promise.all([
     storage.crossmintGetGuardrails(wallet.id),
     storage.crossmintGetDailySpend(wallet.id),
     storage.crossmintGetMonthlySpend(wallet.id),
+    storage.getMasterGuardrails(wallet.ownerUid),
   ]);
 
   const maxPerTx = guardrails?.maxPerTxUsdc ?? GUARDRAIL_DEFAULTS.rail2.maxPerTxUsdc;
@@ -76,8 +78,8 @@ export async function buildRail2Detail(botId: string) {
       daily_remaining_usd: Math.max(0, dailyBudget - dailySpendUsd),
       monthly_spent_usd: monthlySpendUsd,
       monthly_remaining_usd: Math.max(0, monthlyBudget - monthlySpendUsd),
-      require_approval_above_usd: guardrails?.requireApprovalAbove ?? 0,
-      approval_mode: guardrails?.approvalMode ?? GUARDRAIL_DEFAULTS.rail2.approvalMode,
+      require_approval_above_usd: masterGuardrails?.requireApprovalAbove != null ? masterGuardrails.requireApprovalAbove / 100 : null,
+      approval_mode: masterGuardrails?.approvalMode ?? GUARDRAIL_DEFAULTS.master.approvalMode,
       recurring_allowed: guardrails?.recurringAllowed ?? GUARDRAIL_DEFAULTS.rail2.recurringAllowed,
       notes: guardrails?.notes ?? null,
     },
@@ -128,6 +130,9 @@ export async function buildRail4Detail(botId: string) {
   const cards = await storage.getRail4CardsByBotId(botId);
   if (cards.length === 0) return { status: "inactive" as const };
 
+  const ownerUid = cards[0]?.ownerUid;
+  const masterGuardrails = ownerUid ? await storage.getMasterGuardrails(ownerUid) : null;
+
   const cardDetails = await Promise.all(
     cards.map(async (card) => {
       let profiles: any[] = [];
@@ -163,8 +168,6 @@ export async function buildRail4Detail(botId: string) {
         });
       }
 
-      const realProfilePerm = permissionsList.find(p => p.profile_index === card.realProfileIndex);
-
       const guard = await storage.getRail4Guardrails(card.cardId);
 
       return {
@@ -173,14 +176,12 @@ export async function buildRail4Detail(botId: string) {
         use_case: card.useCase,
         status: card.status,
         profiles,
-        approval_mode: realProfilePerm?.human_permission_required ?? "all",
-        approval_threshold_usd: realProfilePerm?.confirmation_exempt_limit ?? 0,
         guardrails: guard ? {
           max_per_tx_usd: guard.maxPerTxCents / 100,
           daily_budget_usd: guard.dailyBudgetCents / 100,
           monthly_budget_usd: guard.monthlyBudgetCents / 100,
-          require_approval_above_usd: guard.requireApprovalAbove != null ? guard.requireApprovalAbove / 100 : null,
-          approval_mode: guard.approvalMode ?? GUARDRAIL_DEFAULTS.rail4.approvalMode,
+          require_approval_above_usd: masterGuardrails?.requireApprovalAbove != null ? masterGuardrails.requireApprovalAbove / 100 : null,
+          approval_mode: masterGuardrails?.approvalMode ?? GUARDRAIL_DEFAULTS.master.approvalMode,
           recurring_allowed: guard.recurringAllowed,
           notes: guard.notes ?? null,
         } : null,
@@ -199,7 +200,10 @@ export async function buildRail5Detail(botId: string) {
   const card = await storage.getRail5CardByBotId(botId);
   if (!card) return { status: "inactive" as const };
 
-  const guard = await storage.getRail5Guardrails(card.cardId);
+  const [guard, masterGuardrails] = await Promise.all([
+    storage.getRail5Guardrails(card.cardId),
+    storage.getMasterGuardrails(card.ownerUid),
+  ]);
 
   return {
     status: card.status === "active" ? "active" as const : card.status,
@@ -211,8 +215,8 @@ export async function buildRail5Detail(botId: string) {
       max_per_tx_usd: (guard?.maxPerTxCents ?? GUARDRAIL_DEFAULTS.rail5.maxPerTxCents) / 100,
       daily_budget_usd: (guard?.dailyBudgetCents ?? GUARDRAIL_DEFAULTS.rail5.dailyBudgetCents) / 100,
       monthly_budget_usd: (guard?.monthlyBudgetCents ?? GUARDRAIL_DEFAULTS.rail5.monthlyBudgetCents) / 100,
-      require_approval_above_usd: (guard?.requireApprovalAbove ?? GUARDRAIL_DEFAULTS.rail5.requireApprovalAbove ?? 2500) / 100,
-      approval_mode: guard?.approvalMode ?? GUARDRAIL_DEFAULTS.rail5.approvalMode,
+      require_approval_above_usd: masterGuardrails?.requireApprovalAbove != null ? masterGuardrails.requireApprovalAbove / 100 : null,
+      approval_mode: masterGuardrails?.approvalMode ?? GUARDRAIL_DEFAULTS.master.approvalMode,
       recurring_allowed: guard?.recurringAllowed ?? GUARDRAIL_DEFAULTS.rail5.recurringAllowed,
       notes: guard?.notes ?? null,
     },
@@ -220,7 +224,7 @@ export async function buildRail5Detail(botId: string) {
       per_transaction_usd: (guard?.maxPerTxCents ?? GUARDRAIL_DEFAULTS.rail5.maxPerTxCents) / 100,
       daily_usd: (guard?.dailyBudgetCents ?? GUARDRAIL_DEFAULTS.rail5.dailyBudgetCents) / 100,
       monthly_usd: (guard?.monthlyBudgetCents ?? GUARDRAIL_DEFAULTS.rail5.monthlyBudgetCents) / 100,
-      human_approval_above_usd: (guard?.requireApprovalAbove ?? GUARDRAIL_DEFAULTS.rail5.requireApprovalAbove ?? 2500) / 100,
+      human_approval_above_usd: masterGuardrails?.requireApprovalAbove != null ? masterGuardrails.requireApprovalAbove / 100 : null,
     },
   };
 }

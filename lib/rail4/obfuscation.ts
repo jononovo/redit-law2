@@ -125,7 +125,6 @@ function generateFakePermission(profileIndex: number): ProfilePermission {
     allowance_duration: duration,
     allowance_currency: "USD",
     allowance_value: value,
-    confirmation_exempt_limit: 0,
     human_permission_required: "none",
     creditclaw_permission_required: "all",
   };
@@ -137,7 +136,6 @@ function generateRealPermissionDefaults(profileIndex: number): ProfilePermission
     allowance_duration: "week",
     allowance_currency: "USD",
     allowance_value: 50,
-    confirmation_exempt_limit: 10,
     human_permission_required: "all",
     creditclaw_permission_required: "all",
   };
@@ -258,7 +256,6 @@ export function buildDecoyFileContent(
         lines.push(`allowance-duration: ${perm.allowance_duration}`);
         lines.push(`allowance-currency: ${perm.allowance_currency}`);
         lines.push(`allowance-value: ${perm.allowance_value}`);
-        lines.push(`confirmation_exempt_limit: ${perm.confirmation_exempt_limit}`);
         lines.push(`human_permission_required: ${perm.human_permission_required}`);
         lines.push(`creditclaw_permission_required: ${perm.creditclaw_permission_required}`);
       }
@@ -279,7 +276,6 @@ export function buildDecoyFileContent(
         lines.push(`allowance-duration: ${perm.allowance_duration}`);
         lines.push(`allowance-currency: ${perm.allowance_currency}`);
         lines.push(`allowance-value: ${perm.allowance_value}`);
-        lines.push(`confirmation_exempt_limit: ${perm.confirmation_exempt_limit}`);
         lines.push(`human_permission_required: ${perm.human_permission_required}`);
         lines.push(`creditclaw_permission_required: ${perm.creditclaw_permission_required}`);
       }

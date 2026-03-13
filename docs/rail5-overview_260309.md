@@ -149,8 +149,7 @@ Spending controls per card. Separate from the card record.
 | `max_per_tx_cents` | integer | Per-checkout spending cap |
 | `daily_budget_cents` | integer | Daily aggregate cap |
 | `monthly_budget_cents` | integer | Monthly aggregate cap |
-| `require_approval_above` | integer, nullable | Require owner approval above this |
-| `approval_mode` | text | `ask_for_everything`, `auto_approve_under_threshold`, `auto_approve_by_category` |
+| *(approval_mode and require_approval_above are now in master_guardrails)* | | |
 | `recurring_allowed` | boolean | Allow recurring charges |
 | `auto_pause_on_zero` | boolean | Freeze card when budget exhausted |
 | `notes` | text, nullable | Owner notes |
@@ -506,7 +505,7 @@ CreditClaw validates spending limits (from `rail5_guardrails`) and returns a spa
 }
 ```
 
-If above `require_approval_above`, returns `"status": "pending_approval"` instead. The owner receives a confirmation request. Once approved, the checkout proceeds.
+If above the master guardrails approval threshold, returns `"status": "pending_approval"` instead. The owner receives a confirmation request. Once approved, the checkout proceeds.
 
 ### Step 2: Main Agent Spawns Sub-Agent
 

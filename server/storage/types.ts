@@ -199,7 +199,7 @@ export interface IStorage {
   getActiveObfuscationStates(): Promise<ObfuscationState[]>;
 
   getProfileAllowanceUsage(cardId: string, profileIndex: number, windowStart: Date): Promise<ProfileAllowanceUsage | null>;
-  upsertProfileAllowanceUsage(cardId: string, profileIndex: number, windowStart: Date, addCents: number, markExemptUsed?: boolean): Promise<ProfileAllowanceUsage>;
+  upsertProfileAllowanceUsage(cardId: string, profileIndex: number, windowStart: Date, addCents: number): Promise<ProfileAllowanceUsage>;
 
   createCheckoutConfirmation(data: InsertCheckoutConfirmation): Promise<CheckoutConfirmation>;
   getCheckoutConfirmation(confirmationId: string): Promise<CheckoutConfirmation | null>;

@@ -40,7 +40,7 @@ async function fulfillRail4Approval(approval: UnifiedApproval) {
     const profilePerm = permissions.find((p: { profile_index: number }) => p.profile_index === conf.profileIndex);
     if (profilePerm) {
       const windowStart = getWindowStart(profilePerm.allowance_duration);
-      await storage.upsertProfileAllowanceUsage(conf.cardId, conf.profileIndex, windowStart, conf.amountCents, false);
+      await storage.upsertProfileAllowanceUsage(conf.cardId, conf.profileIndex, windowStart, conf.amountCents);
     }
   }
 

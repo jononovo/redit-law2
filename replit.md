@@ -44,12 +44,12 @@ New features should follow a feature-first folder structure. Each rail lives und
 - `types.ts` — `GuardrailRules` (USDC-based for Rails 1/2), `CardGuardrailRules` (cents-based for Rails 4/5), `TransactionRequest`, `CardTransactionRequest`, `CumulativeSpend`, `CardCumulativeSpend`, `GuardrailDecision` interfaces.
 - `evaluate.ts` — two pure evaluation functions: `evaluateGuardrails()` for USDC rails (1 & 2) and `evaluateCardGuardrails()` for card rails (4 & 5). Only enforces spending limits and approval thresholds — domain/merchant/category enforcement is handled by procurement controls.
 - `master.ts` — master-level guardrail evaluation (fetches config, aggregates cross-rail spend, calls `evaluateGuardrails`).
-- **Standardized Structure**: All four rail guardrail tables have identical columns (differing only in `_usdc` vs `_cents` suffix and FK type): `maxPerTx`, `dailyBudget`, `monthlyBudget`, `requireApprovalAbove`, `approvalMode`, `recurringAllowed`, `autoPauseOnZero`, `notes`, `updatedAt`, `updatedBy`. Domain/merchant/category lists are NOT guardrails — they live exclusively in `procurement_controls`.
-- **approvalMode Enforcement**: All four checkout routes check `approvalMode` before running the evaluator:
-  - `ask_for_everything` → immediately require owner approval (skip evaluator)
-  - `auto_approve_under_threshold` → run evaluator; only require approval if amount exceeds `requireApprovalAbove`
-  - `auto_approve_by_category` → treated same as `auto_approve_under_threshold` (future feature)
-  - Defaults: Rail 1/2/4 default to `ask_for_everything`, Rail 5 defaults to `auto_approve_under_threshold`
+- `approval.ts` — centralized `evaluateApprovalDecision()` function that reads `approvalMode` and `requireApprovalAbove` from the `master_guardrails` table. This is the single source of truth for all approval decisions across all rails.
+- **Standardized Structure**: Per-rail guardrail tables (`privy_guardrails`, `crossmint_guardrails`, `rail4_guardrails`, `rail5_guardrails`) contain only spending limits: `maxPerTx`, `dailyBudget`, `monthlyBudget`, `recurringAllowed`, `autoPauseOnZero`, `notes`, `updatedAt`, `updatedBy`. Approval mode (`approvalMode`, `requireApprovalAbove`) lives exclusively on `master_guardrails`. Domain/merchant/category lists live exclusively in `procurement_controls`.
+- **Centralized Approval**: All checkout routes call `evaluateApprovalDecision(ownerUid, amountCents)` from `lib/guardrails/approval.ts`. This function reads from `master_guardrails` and supports:
+  - `ask_for_everything` → require owner approval for all transactions
+  - `auto_approve_under_threshold` → only require approval if amount >= `requireApprovalAbove`
+  - `auto_approve_by_category` → allow (category-based approval not yet fully implemented)
 - **recurringAllowed**: Column exists on all rails for structural consistency but is not yet enforced in checkout routes (pending recurring detection logic).
 - **notes**: Informational field on all rails, returned in API responses but not used in enforcement.
 

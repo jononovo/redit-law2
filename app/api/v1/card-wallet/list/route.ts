@@ -32,7 +32,6 @@ export async function GET(request: NextRequest) {
             max_per_tx_usdc: guardrails.maxPerTxUsdc,
             daily_budget_usdc: guardrails.dailyBudgetUsdc,
             monthly_budget_usdc: guardrails.monthlyBudgetUsdc,
-            require_approval_above: guardrails.requireApprovalAbove,
             allowlisted_merchants: procControls?.allowlistedMerchants ?? [],
             blocklisted_merchants: procControls?.blocklistedMerchants ?? [],
             auto_pause_on_zero: guardrails.autoPauseOnZero,

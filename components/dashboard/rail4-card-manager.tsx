@@ -64,7 +64,6 @@ interface Permissions {
   profile_index: number;
   allowance_duration: string;
   allowance_value: number;
-  confirmation_exempt_limit: number;
   human_permission_required: string;
 }
 
@@ -82,8 +81,7 @@ export function Rail4CardManager({ cardId }: Rail4CardManagerProps) {
     profile_index: 0,
     allowance_duration: "month",
     allowance_value: 500,
-    confirmation_exempt_limit: 50,
-    human_permission_required: "above_exempt",
+    human_permission_required: "none",
   });
   const [permSaving, setPermSaving] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -371,35 +369,6 @@ export function Rail4CardManager({ cardId }: Rail4CardManagerProps) {
                 data-testid="input-allowance-value"
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="exempt-limit">Confirmation Exempt Limit ($)</Label>
-              <Input
-                id="exempt-limit"
-                type="number"
-                min={0}
-                value={permissions.confirmation_exempt_limit}
-                onChange={(e) => setPermissions((p) => ({ ...p, confirmation_exempt_limit: parseFloat(e.target.value) || 0 }))}
-                className="rounded-xl"
-                data-testid="input-exempt-limit"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Human Permission Required</Label>
-              <Select
-                value={permissions.human_permission_required}
-                onValueChange={(v) => setPermissions((p) => ({ ...p, human_permission_required: v }))}
-              >
-                <SelectTrigger className="rounded-xl" data-testid="select-human-permission">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Transactions</SelectItem>
-                  <SelectItem value="above_exempt">Above Exempt Limit</SelectItem>
-                  <SelectItem value="none">None</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
             <div className="bg-amber-50 rounded-xl border border-amber-100 p-3 text-left">
               <p className="text-xs text-amber-700 leading-relaxed">
                 After saving, remember to also update the permissions in your local payment profiles file to keep them in sync.

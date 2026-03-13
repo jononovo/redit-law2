@@ -30,8 +30,7 @@ export async function GET(request: NextRequest) {
       profile_index: card.realProfileIndex,
       allowance_duration: "month",
       allowance_value: 500,
-      confirmation_exempt_limit: 50,
-      human_permission_required: "above_exempt",
+      human_permission_required: "none",
     },
   });
 }

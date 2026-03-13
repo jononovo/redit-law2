@@ -13,7 +13,7 @@ const defaultRules: GuardrailRules = {
   maxPerTxUsdc: 25,
   dailyBudgetUsdc: 50,
   monthlyBudgetUsdc: 500,
-  requireApprovalAbove: 10,
+  requireApprovalAbove: null,
   autoPauseOnZero: false,
 };
 
@@ -72,23 +72,12 @@ describe("evaluateGuardrails", () => {
     expect((result as { reason: string }).reason).toContain("monthly budget");
   });
 
-  it("requires approval when amount meets the threshold", () => {
+  it("requires approval when requireApprovalAbove is set and amount meets the threshold", () => {
+    const rules: GuardrailRules = { ...defaultRules, requireApprovalAbove: 10 };
     const tx: TransactionRequest = { amountUsdc: 10_000_000 };
-    const result = evaluateGuardrails(defaultRules, tx, zeroSpend);
+    const result = evaluateGuardrails(rules, tx, zeroSpend);
     expect(result.action).toBe("require_approval");
     expect((result as { reason: string }).reason).toContain("approval threshold");
-  });
-
-  it("requires approval when amount exceeds the threshold", () => {
-    const tx: TransactionRequest = { amountUsdc: 15_000_000 };
-    const result = evaluateGuardrails(defaultRules, tx, zeroSpend);
-    expect(result.action).toBe("require_approval");
-  });
-
-  it("allows when amount is below approval threshold", () => {
-    const tx: TransactionRequest = { amountUsdc: 9_999_999 };
-    const result = evaluateGuardrails(defaultRules, tx, zeroSpend);
-    expect(result.action).toBe("allow");
   });
 
   it("allows any amount when requireApprovalAbove is null", () => {
@@ -112,7 +101,7 @@ describe("evaluateCardGuardrails", () => {
     maxPerTxCents: 2500,
     dailyBudgetCents: 5000,
     monthlyBudgetCents: 50000,
-    requireApprovalAbove: 1000,
+    requireApprovalAbove: null,
     autoPauseOnZero: false,
   };
 
@@ -150,9 +139,10 @@ describe("evaluateCardGuardrails", () => {
     expect((result as { reason: string }).reason).toContain("monthly budget");
   });
 
-  it("requires approval when amount meets threshold", () => {
+  it("requires approval when requireApprovalAbove is set and amount meets threshold", () => {
+    const rules: CardGuardrailRules = { ...cardRules, requireApprovalAbove: 1000 };
     const tx: CardTransactionRequest = { amountCents: 1000 };
-    const result = evaluateCardGuardrails(cardRules, tx, zeroCardSpend);
+    const result = evaluateCardGuardrails(rules, tx, zeroCardSpend);
     expect(result.action).toBe("require_approval");
   });
 

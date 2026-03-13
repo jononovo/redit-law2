@@ -259,11 +259,11 @@ curl -s -X GET http://localhost:5000/api/v1/bot/wallet/spending \
 
 **Expected:** HTTP 200
 **Verify:**
-- `approval_mode` is `"ask_for_everything"`
+- `approval_mode` is `"ask_for_everything"` (sourced from master guardrails)
 - `limits.per_transaction_usd` is `25`
 - `limits.daily_usd` is `50`
 - `limits.monthly_usd` is `500`
-- `limits.ask_approval_above_usd` is `10`
+- `limits.ask_approval_above_usd` reflects the master guardrails threshold
 - `blocked_categories` includes `"gambling"`, `"adult_content"`, `"cryptocurrency"`, `"cash_advances"`
 - `recurring_allowed` is `false`
 

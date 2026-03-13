@@ -34,7 +34,6 @@ export async function GET(request: NextRequest) {
       spending_limit_cents: guard?.maxPerTxCents ?? GUARDRAIL_DEFAULTS.rail5.maxPerTxCents,
       daily_limit_cents: guard?.dailyBudgetCents ?? GUARDRAIL_DEFAULTS.rail5.dailyBudgetCents,
       monthly_limit_cents: guard?.monthlyBudgetCents ?? GUARDRAIL_DEFAULTS.rail5.monthlyBudgetCents,
-      human_approval_above_cents: guard?.requireApprovalAbove ?? GUARDRAIL_DEFAULTS.rail5.requireApprovalAbove,
       created_at: c.createdAt.toISOString(),
     };
   }));

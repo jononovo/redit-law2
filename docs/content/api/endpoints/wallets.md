@@ -203,7 +203,7 @@ curl -X POST https://creditclaw.com/api/v1/bot/wallet/topup-request \
 
 ## Get Spending Guardrails
 
-Returns the bot's current spending guardrails including approval mode, limits, and procurement controls.
+Returns the bot's current spending guardrails including approval mode (from master guardrails), limits, and procurement controls.
 
 | | |
 |---|---|
@@ -219,7 +219,7 @@ No request body or query parameters required.
 
 ```json
 {
-  "approval_mode": "auto",
+  "approval_mode": "ask_for_everything",
   "limits": {
     "per_transaction_usd": 25.00,
     "daily_usd": 100.00,
@@ -236,11 +236,11 @@ No request body or query parameters required.
 
 | Field | Type | Description |
 |---|---|---|
-| `approval_mode` | string | `"auto"`, `"manual"`, or `"hybrid"` — how purchases are approved |
+| `approval_mode` | string | `"ask_for_everything"`, `"auto_approve_under_threshold"`, or `"auto_approve_by_category"` — set at the account level via master guardrails |
 | `limits.per_transaction_usd` | number | Maximum per-transaction spend |
 | `limits.daily_usd` | number | Daily spending budget |
 | `limits.monthly_usd` | number | Monthly spending budget |
-| `limits.ask_approval_above_usd` | number | Purchases above this amount require human approval |
+| `limits.ask_approval_above_usd` | number \| null | Purchases above this amount require human approval (from master guardrails; null if not set) |
 | `recurring_allowed` | boolean | Whether recurring/subscription purchases are allowed |
 | `notes` | string \| null | Owner-provided instructions for the bot |
 | `updated_at` | string | ISO 8601 timestamp of last guardrail update |

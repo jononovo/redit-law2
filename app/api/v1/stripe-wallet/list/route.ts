@@ -28,7 +28,6 @@ export async function GET(request: NextRequest) {
             max_per_tx_usdc: guardrails.maxPerTxUsdc,
             daily_budget_usdc: guardrails.dailyBudgetUsdc,
             monthly_budget_usdc: guardrails.monthlyBudgetUsdc,
-            require_approval_above: guardrails.requireApprovalAbove,
           } : null,
           created_at: w.createdAt,
         };

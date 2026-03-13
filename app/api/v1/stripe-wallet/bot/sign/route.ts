@@ -7,6 +7,7 @@ import { authenticateBot } from "@/lib/agent-management/auth";
 import { evaluateGuardrails } from "@/lib/guardrails/evaluate";
 import { evaluateProcurementControls } from "@/lib/procurement-controls/evaluate";
 import { evaluateMasterGuardrails } from "@/lib/guardrails/master";
+import { evaluateApprovalDecision } from "@/lib/guardrails/approval";
 import { createApproval } from "@/lib/approvals/service";
 import { recordOrder } from "@/lib/orders/create";
 
@@ -34,62 +35,47 @@ async function handler(request: NextRequest, botId: string) {
       return NextResponse.json({ error: masterDecision.reason }, { status: 403 });
     }
 
-    const guardrailsForApproval = await storage.privyGetGuardrails(wallet.id);
+    const amountCentsForApproval = Math.round(microUsdcToUsd(amount_usdc) * 100);
+    const approvalDecision = await evaluateApprovalDecision(wallet.ownerUid, amountCentsForApproval);
 
-    if (guardrailsForApproval) {
-      const approvalMode = guardrailsForApproval.approvalMode ?? "ask_for_everything";
+    if (approvalDecision.action === "require_approval") {
+      const tx = await storage.privyCreateTransaction({
+        walletId: wallet.id,
+        type: "x402_payment",
+        amountUsdc: amount_usdc,
+        recipientAddress: recipient_address,
+        resourceUrl: resource_url,
+        status: "requires_approval",
+        balanceAfter: wallet.balanceUsdc,
+      });
 
-      if (approvalMode === "ask_for_everything") {
+      const bot = await storage.getBotByBotId(botId);
+      const owner = await storage.getOwnerByUid(wallet.ownerUid);
+      if (owner && bot) {
+        const unifiedApproval = await createApproval({
+          rail: "rail1",
+          ownerUid: wallet.ownerUid,
+          ownerEmail: owner.email,
+          botName: bot.botName,
+          amountDisplay: `$${microUsdcToUsd(amount_usdc).toFixed(2)} USDC`,
+          amountRaw: amount_usdc,
+          merchantName: resource_url,
+          railRef: String(tx.id),
+          metadata: { recipient_address, resource_url },
+        });
+
         return NextResponse.json({
-          error: "requires_owner_approval",
-          approval_mode: "ask_for_everything",
-          message: "Your owner requires approval for all transactions. This setting can be changed from the dashboard."
-        }, { status: 403 });
+          status: "awaiting_approval",
+          approval_id: unifiedApproval.approvalId,
+        }, { status: 202 });
       }
 
-      if (approvalMode === "auto_approve_under_threshold") {
-        const thresholdUsdc = guardrailsForApproval.requireApprovalAbove ?? 5;
-        const thresholdMicro = usdToMicroUsdc(thresholdUsdc);
-        if (amount_usdc > thresholdMicro) {
-          const tx = await storage.privyCreateTransaction({
-            walletId: wallet.id,
-            type: "x402_payment",
-            amountUsdc: amount_usdc,
-            recipientAddress: recipient_address,
-            resourceUrl: resource_url,
-            status: "requires_approval",
-            balanceAfter: wallet.balanceUsdc,
-          });
-
-          const bot = await storage.getBotByBotId(botId);
-          const owner = await storage.getOwnerByUid(wallet.ownerUid);
-          if (owner && bot) {
-            const unifiedApproval = await createApproval({
-              rail: "rail1",
-              ownerUid: wallet.ownerUid,
-              ownerEmail: owner.email,
-              botName: bot.botName,
-              amountDisplay: `$${microUsdcToUsd(amount_usdc).toFixed(2)} USDC`,
-              amountRaw: amount_usdc,
-              merchantName: resource_url,
-              railRef: String(tx.id),
-              metadata: { recipient_address, resource_url },
-            });
-
-            return NextResponse.json({
-              status: "awaiting_approval",
-              approval_id: unifiedApproval.approvalId,
-            }, { status: 202 });
-          }
-
-          return NextResponse.json({
-            status: "awaiting_approval",
-          }, { status: 202 });
-        }
-      }
+      return NextResponse.json({
+        status: "awaiting_approval",
+      }, { status: 202 });
     }
 
-    const guardrails = guardrailsForApproval ?? await storage.privyGetGuardrails(wallet.id);
+    const guardrails = await storage.privyGetGuardrails(wallet.id);
 
     if (guardrails) {
       const dailySpend = await storage.privyGetDailySpend(wallet.id);
@@ -118,7 +104,7 @@ async function handler(request: NextRequest, botId: string) {
           maxPerTxUsdc: guardrails.maxPerTxUsdc,
           dailyBudgetUsdc: guardrails.dailyBudgetUsdc,
           monthlyBudgetUsdc: guardrails.monthlyBudgetUsdc,
-          requireApprovalAbove: guardrails.requireApprovalAbove,
+          requireApprovalAbove: null,
           autoPauseOnZero: guardrails.autoPauseOnZero,
         },
         { amountUsdc: amount_usdc },
@@ -127,43 +113,6 @@ async function handler(request: NextRequest, botId: string) {
 
       if (decision.action === "block") {
         return NextResponse.json({ error: decision.reason }, { status: 403 });
-      }
-
-      if (decision.action === "require_approval") {
-        const tx = await storage.privyCreateTransaction({
-          walletId: wallet.id,
-          type: "x402_payment",
-          amountUsdc: amount_usdc,
-          recipientAddress: recipient_address,
-          resourceUrl: resource_url,
-          status: "requires_approval",
-          balanceAfter: wallet.balanceUsdc,
-        });
-
-        const bot = await storage.getBotByBotId(botId);
-        const owner = await storage.getOwnerByUid(wallet.ownerUid);
-        if (owner && bot) {
-          const unifiedApproval = await createApproval({
-            rail: "rail1",
-            ownerUid: wallet.ownerUid,
-            ownerEmail: owner.email,
-            botName: bot.botName,
-            amountDisplay: `$${microUsdcToUsd(amount_usdc).toFixed(2)} USDC`,
-            amountRaw: amount_usdc,
-            merchantName: resource_url,
-            railRef: String(tx.id),
-            metadata: { recipient_address, resource_url },
-          });
-
-          return NextResponse.json({
-            status: "awaiting_approval",
-            approval_id: unifiedApproval.approvalId,
-          }, { status: 202 });
-        }
-
-        return NextResponse.json({
-          status: "awaiting_approval",
-        }, { status: 202 });
       }
     }
 

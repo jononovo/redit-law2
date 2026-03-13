@@ -74,7 +74,7 @@ Four tables prefixed `crossmint_` for rail segmentation, plus the shared `master
 | max_per_tx_usdc | integer | Per-transaction cap in USD (default: 100) |
 | daily_budget_usdc | integer | Daily spend cap in USD (default: 500) |
 | monthly_budget_usdc | integer | Monthly spend cap in USD (default: 2000) |
-| require_approval_above | integer | Human approval threshold in USD (default: 0 — all purchases require approval) |
+| *(approval thresholds are now in master_guardrails)* | | |
 | allowlisted_merchants | jsonb | Array of allowed merchant strings (e.g. `["amazon", "shopify"]`) |
 | blocklisted_merchants | jsonb | Array of blocked merchant strings |
 | auto_pause_on_zero | boolean | Pause wallet when balance hits zero (default: true) |
@@ -217,7 +217,7 @@ Backend checks (in order):
      c. Monthly cumulative + amount ≤ monthly_budget_usdc?
      d. Merchant on allowlist? (if set)
      e. Merchant not on blocklist?
-     f. Amount < require_approval_above? (if set; default 0 = always approve)
+     f. Amount within master guardrails approval threshold? (if set)
 
 If blocked → return 403 with reason
 If passed (or approval required) → create pending approval (15-min TTL)

@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const { card_id, key_hex, iv_hex, tag_hex, card_last4, card_brand, spending_limit_cents, daily_limit_cents, monthly_limit_cents, human_approval_above_cents } = parsed.data;
+  const { card_id, key_hex, iv_hex, tag_hex, card_last4, card_brand, spending_limit_cents, daily_limit_cents, monthly_limit_cents } = parsed.data;
 
   const keyValidation = validateKeyMaterial(key_hex, iv_hex, tag_hex);
   if (!keyValidation.valid) {
@@ -66,7 +66,6 @@ export async function POST(request: NextRequest) {
   if (spending_limit_cents !== undefined) guardrailUpdates.maxPerTxCents = spending_limit_cents;
   if (daily_limit_cents !== undefined) guardrailUpdates.dailyBudgetCents = daily_limit_cents;
   if (monthly_limit_cents !== undefined) guardrailUpdates.monthlyBudgetCents = monthly_limit_cents;
-  if (human_approval_above_cents !== undefined) guardrailUpdates.requireApprovalAbove = human_approval_above_cents;
 
   if (Object.keys(guardrailUpdates).length > 0) {
     await storage.upsertRail5Guardrails(card_id, guardrailUpdates);

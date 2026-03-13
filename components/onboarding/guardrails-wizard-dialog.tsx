@@ -89,20 +89,31 @@ export function GuardrailsWizardDialog({ open, onOpenChange }: GuardrailsWizardD
 
   const loadExisting = useCallback(async () => {
     try {
-      const res = await authFetch("/api/v1/procurement-controls");
-      if (res.ok) {
-        const data = await res.json();
-        const master = (data.controls || []).find((c: any) => c.scope === "master");
+      const [masterRes, procRes] = await Promise.all([
+        authFetch("/api/v1/master-guardrails"),
+        authFetch("/api/v1/procurement-controls"),
+      ]);
+      let approvalMode = DEFAULT_STATE.approvalMode;
+      let thresholdCents = DEFAULT_STATE.thresholdCents;
+      if (masterRes.ok) {
+        const masterData = await masterRes.json();
+        const cfg = masterData.config || masterData;
+        if (cfg.approval_mode) approvalMode = cfg.approval_mode;
+        if (cfg.require_approval_above != null) thresholdCents = cfg.require_approval_above;
+      }
+      let approvedCategories = DEFAULT_STATE.approvedCategories;
+      let blockedCategories = DEFAULT_STATE.blockedCategories;
+      let notes = DEFAULT_STATE.notes;
+      if (procRes.ok) {
+        const procData = await procRes.json();
+        const master = (procData.controls || []).find((c: any) => c.scope === "master");
         if (master) {
-          setState({
-            approvalMode: master.approvalMode || DEFAULT_STATE.approvalMode,
-            thresholdCents: master.approvalThresholdCents ?? DEFAULT_STATE.thresholdCents,
-            approvedCategories: master.allowlistedCategories || DEFAULT_STATE.approvedCategories,
-            blockedCategories: master.blocklistedCategories || DEFAULT_STATE.blockedCategories,
-            notes: master.notes || DEFAULT_STATE.notes,
-          });
+          approvedCategories = master.allowlistedCategories || approvedCategories;
+          blockedCategories = master.blocklistedCategories || blockedCategories;
+          notes = master.notes || notes;
         }
       }
+      setState({ approvalMode, thresholdCents, approvedCategories, blockedCategories, notes });
     } catch {} finally {
       setLoading(false);
     }
@@ -127,18 +138,26 @@ export function GuardrailsWizardDialog({ open, onOpenChange }: GuardrailsWizardD
     setSaving(true);
     try {
       const notesValue = finalNotes !== undefined ? finalNotes : state.notes;
-      await authFetch("/api/v1/procurement-controls", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          scope: "master",
-          allowlisted_categories: state.approvedCategories,
-          blocklisted_categories: state.blockedCategories,
-          approval_mode: state.approvalMode,
-          approval_threshold_cents: showThreshold ? state.thresholdCents : null,
-          notes: notesValue || null,
+      await Promise.all([
+        authFetch("/api/v1/master-guardrails", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            approval_mode: state.approvalMode,
+            require_approval_above: showThreshold ? state.thresholdCents : null,
+          }),
         }),
-      });
+        authFetch("/api/v1/procurement-controls", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            scope: "master",
+            allowlisted_categories: state.approvedCategories,
+            blocklisted_categories: state.blockedCategories,
+            notes: notesValue || null,
+          }),
+        }),
+      ]);
       setSaved(true);
       setTimeout(() => onOpenChange(false), 1500);
     } catch {} finally {

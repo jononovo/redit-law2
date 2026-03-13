@@ -11,7 +11,6 @@ export interface CryptoWalletGuardrails {
   max_per_tx_usdc: number;
   daily_budget_usdc: number;
   monthly_budget_usdc: number;
-  require_approval_above: number | null;
 }
 
 export interface CardWalletGuardrails extends CryptoWalletGuardrails {
@@ -79,7 +78,6 @@ export interface Rail5CardInfo {
   spending_limit_cents: number;
   daily_limit_cents: number;
   monthly_limit_cents: number;
-  human_approval_above_cents: number;
   created_at: string;
 }
 

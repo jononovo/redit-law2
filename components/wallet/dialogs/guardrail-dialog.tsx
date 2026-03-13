@@ -11,11 +11,9 @@ interface CryptoGuardrailForm {
   max_per_tx_usdc: number;
   daily_budget_usdc: number;
   monthly_budget_usdc: number;
-  require_approval_above: number | null;
 }
 
 interface CardGuardrailForm extends CryptoGuardrailForm {
-  require_approval_above: number;
   allowlisted_merchants: string;
   blocklisted_merchants: string;
   auto_pause_on_zero: boolean;
@@ -87,16 +85,6 @@ export function GuardrailDialog({
                   data-testid="input-monthly-budget"
                 />
               </div>
-              <div>
-                <Label>Require approval above (USD, optional)</Label>
-                <Input
-                  type="number"
-                  value={form.require_approval_above ?? ""}
-                  onChange={(e) => onFormChange({ ...form, require_approval_above: e.target.value ? Number(e.target.value) : null })}
-                  placeholder="No threshold"
-                  data-testid="input-approval-threshold"
-                />
-              </div>
               <div className="flex justify-end gap-3">
                 <Button variant="outline" onClick={() => onOpenChange(false)} data-testid="button-cancel-guardrails">
                   Cancel
@@ -140,15 +128,6 @@ export function GuardrailDialog({
                     value={form.monthly_budget_usdc}
                     onChange={(e) => onFormChange({ ...form, monthly_budget_usdc: Number(e.target.value) })}
                     data-testid="input-monthly-budget"
-                  />
-                </div>
-                <div>
-                  <Label className="text-xs">Require Approval Above ($)</Label>
-                  <Input
-                    type="number"
-                    value={form.require_approval_above}
-                    onChange={(e) => onFormChange({ ...form, require_approval_above: Number(e.target.value) })}
-                    data-testid="input-require-approval"
                   />
                 </div>
               </div>
