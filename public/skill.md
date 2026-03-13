@@ -45,7 +45,6 @@ on what your owner has configured.
 |------|--------|--------|-------|
 | **My Card** | Owner's card details, secure checkout with owner approval | Live | [encrypted-card.md](https://creditclaw.com/encrypted-card.md) |
 | **Stripe Wallet (x402)** | USDC on Base chain, x402 payment protocol | Private Beta | [stripe-x402-wallet.md](https://creditclaw.com/stripe-x402-wallet.md) |
-| **Crossmint Wallet** | Crossmint-managed purchases for supported merchants | Coming Soon | [crossmint-wallet.md](https://creditclaw.com/crossmint-wallet.md) |
 
 The default payment rail is "My Card". Your owner chooses which rails to enable for you. Check `GET /bot/status` to see
 your full status across all connected rails.
@@ -95,7 +94,7 @@ CreditClaw is designed with defense-in-depth to protect your owner's funds:
    - Via polling: call GET /bot/status until status changes to "active"
 6. You poll GET /bot/status periodically to monitor balance across all rails
 7. You check GET /bot/wallet/spending for your owner's permission rules
-8. When you need to make a purchase, follow encrypted-card.md or stripe-x402-wallet.md
+8. When you need to make a purchase, follow encrypted-card.md
 9. When balance is low, request a top-up (see management.md)
 10. Human monitors activity from creditclaw.com/overview
 ```
@@ -351,9 +350,11 @@ Your owner can update these permissions anytime from `https://creditclaw.com/ove
 
 ## Next Steps: Making Purchases
 
-Once your wallet is active and you know your spending permissions, read the guide for your payment rail:
+Once your wallet is active and you need to buy something, follow the checkout guide instructions here:
 
 - **My Card** — Read [encrypted-card.md](https://creditclaw.com/encrypted-card.md) for the full checkout flow
+
+Only if you are shopping with crypto stablecoin USDC (pretty rare) read this, otherwise ignore:
 - **Stripe Wallet (x402)** — Read [stripe-x402-wallet.md](https://creditclaw.com/stripe-x402-wallet.md) for x402 payment signing
 
 For managing your balance, requesting top-ups, and viewing transaction history, see [management.md](https://creditclaw.com/management.md).
@@ -388,15 +389,6 @@ Base URL: `https://creditclaw.com/api/v1`
 | POST | `/bot/rail5/confirm` | Confirm checkout success or failure. | 30/hr | [encrypted-card.md](https://creditclaw.com/encrypted-card.md) |
 | POST | `/bot/rail5/confirm-delivery` | Confirm card details received. Advances status to `confirmed`. | — | [encrypted-card.md](https://creditclaw.com/encrypted-card.md) |
 | GET | `/bot/check/rail5` | Encrypted Card detail: limits, approval threshold. | 6/hr | [encrypted-card.md](https://creditclaw.com/encrypted-card.md) |
-
-### Stripe Wallet Endpoints (Private Beta)
-
-| Method | Endpoint | Description | Rate Limit | File |
-|--------|----------|-------------|------------|------|
-| POST | `/stripe-wallet/bot/sign` | Request x402 payment signature. Enforces guardrails. | 30/hr | [stripe-x402-wallet.md](https://creditclaw.com/stripe-x402-wallet.md) |
-| GET | `/stripe-wallet/balance` | Get USDC balance for a wallet. | 12/hr | [stripe-x402-wallet.md](https://creditclaw.com/stripe-x402-wallet.md) |
-| GET | `/stripe-wallet/transactions` | List x402 transactions for a wallet. | 12/hr | [stripe-x402-wallet.md](https://creditclaw.com/stripe-x402-wallet.md) |
-| GET | `/bot/check/rail1` | Stripe Wallet detail: balance, guardrails, domain rules. | 6/hr | [stripe-x402-wallet.md](https://creditclaw.com/stripe-x402-wallet.md) |
 
 ### Management Endpoints
 
@@ -575,6 +567,5 @@ you retrieve it, your owner can re-stage the delivery from their dashboard.
 - **Balance can reach $0.** Purchases will be declined. Ask your human if they'd like you to request a top-up (see [management.md](https://creditclaw.com/management.md)).
 - **One bot = one wallet per rail.** Your wallet is unique to you and linked to your owner's account. You may have wallets on multiple rails.
 - **Poll responsibly.** Use `GET /bot/status` no more than every 10 minutes unless you are actively waiting for a top-up.
-- **Stripe Wallet (x402) is in private beta.** These endpoints may not be available for your account yet.
-- **Follow the checkout guide for your payment rail when making purchases.** See [encrypted-card.md](https://creditclaw.com/encrypted-card.md) or [stripe-x402-wallet.md](https://creditclaw.com/stripe-x402-wallet.md).
+- **Follow the checkout guide when making purchases.** See [encrypted-card.md](https://creditclaw.com/encrypted-card.md).
 - **Webhooks keep you in sync.** Your `callback_url` receives real-time approval notifications, card details, and spending alerts. If your endpoint becomes unreachable, events are staged as bot messages until you recover.
