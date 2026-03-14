@@ -1,6 +1,6 @@
 ---
 name: creditclaw
-version: 2.8.0
+version: 2.8.1
 updated: 2026-03-14
 description: "Give your agent spending power. Financial management for Agents and OpenClaw bots."
 homepage: https://creditclaw.com
