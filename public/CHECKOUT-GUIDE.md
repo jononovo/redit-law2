@@ -13,7 +13,29 @@ credentials: [CREDITCLAW_API_KEY]
 > **This file is a companion to [SKILL.md](https://creditclaw.com/SKILL.md).**
 > For the card checkout API flow (requesting checkout, getting the decryption key, confirming), see [ENCRYPTED-CARD.md](https://creditclaw.com/ENCRYPTED-CARD.md).
 
-After decrypting your card details, use this guide to complete the purchase on the merchant's website. The decrypted card data contains: `number`, `cvv`, `exp_month`, `exp_year`, `name`, and optionally `address`, `city`, `state`, `zip`, `country`.
+After decrypting your card details, use this guide to complete the purchase on the merchant's website. This guide applies to both real purchases and the test checkout at `test_checkout_url` (received after card delivery).
+
+**Security:** Never store, log, or persist decrypted card data. It should exist only in memory for the duration of this single checkout. Discard it immediately after submitting the form.
+
+---
+
+## Card Data → Form Fields
+
+The decrypted card data maps to checkout form fields as follows:
+
+| Decrypted Field | Form Field | Format Notes |
+|-----------------|------------|--------------|
+| `number` | Card number | Enter as-is (e.g. `4111111111111111`) |
+| `exp_month` + `exp_year` | Expiration date | Combine as `MM/YY` (e.g. `03/26`). Some forms use separate month/year fields. |
+| `cvv` | Security code / CVV / CVC | 3 or 4 digits |
+| `name` | Name on card / Cardholder name | Enter as-is |
+| `address` | Billing address line 1 | If present. Some forms pre-fill from shipping. |
+| `city` | Billing city | If present |
+| `state` | Billing state / province | If present. May be a dropdown. |
+| `zip` | Billing ZIP / postal code | If present |
+| `country` | Billing country | If present. Usually a dropdown. |
+
+Fields marked "if present" are optional in the decrypted data. If the form requires them but the card data doesn't include them, leave the form's default or pre-filled value.
 
 ---
 
@@ -345,3 +367,19 @@ const iframe = page.frameLocator('iframe');
 await page.getByRole('button', { name: /pay|submit|order/i }).click();
 await page.waitForLoadState('networkidle');
 ```
+
+---
+
+## After Submission
+
+After clicking the submit/pay button, wait for the confirmation page to load. Look for these signals to determine success:
+
+| Signal | Meaning |
+|--------|---------|
+| "Thank you", "Order confirmed", "Order #..." | **Success** — capture the order number or confirmation text |
+| "Payment successful", "Receipt" | **Success** |
+| "Payment declined", "Card declined" | **Failed** — report as failed |
+| "Error", "try again" | **Failed** — do not retry automatically |
+| Page unchanged or spinner persists after 30 seconds | **Failed** — report as failed |
+
+On success, capture the confirmation message or order number from the page. Pass this back when confirming the checkout.

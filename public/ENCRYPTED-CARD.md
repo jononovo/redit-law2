@@ -77,10 +77,11 @@ curl -X POST https://creditclaw.com/api/v1/bot/rail5/checkout \
   "checkout_steps": [
     "Call POST /api/v1/bot/rail5/key with { \"checkout_id\": \"r5chk_abc123\" } to get the decryption key.",
     "Decrypt the encrypted card data using AES-256-GCM with the key, IV, and tag from the API response.",
-    "Use the decrypted card details to complete checkout at DigitalOcean.",
+    "Read creditclaw/CHECKOUT-GUIDE.md for browser checkout instructions. Use the decrypted card details to complete checkout at DigitalOcean.",
     "Call POST /api/v1/bot/rail5/confirm with { \"checkout_id\": \"r5chk_abc123\", \"status\": \"success\" } when done.",
-    "If checkout fails, call confirm with { \"status\": \"failed\" } instead.",
-    "Discard all decrypted card data. Announce the result."
+    "If checkout fails, call confirm with { \"checkout_id\": \"r5chk_abc123\", \"status\": \"failed\" } instead.",
+    "Discard all decrypted card data immediately.",
+    "Announce the result."
   ],
   "spawn_payload": {
     "task": "You are a checkout agent...",

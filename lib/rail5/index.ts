@@ -56,9 +56,10 @@ export function buildCheckoutSteps(params: {
   return [
     `Call POST /api/v1/bot/rail5/key with { "checkout_id": "${params.checkoutId}" } to get the decryption key.`,
     `Run: node decrypt.js <key_hex> <iv_hex> <tag_hex> ${params.encryptedFilename}`,
-    `Use the decrypted card details to complete checkout at ${params.merchantName} (${params.merchantUrl}) for "${params.itemName}" — $${amountUsd}.`,
+    `Read creditclaw/CHECKOUT-GUIDE.md for browser checkout instructions. Use the decrypted card details to complete checkout at ${params.merchantName} (${params.merchantUrl}) for "${params.itemName}" — $${amountUsd}.`,
     `Call POST /api/v1/bot/rail5/confirm with { "checkout_id": "${params.checkoutId}", "status": "success" } when done.`,
     `If checkout fails, call confirm with { "checkout_id": "${params.checkoutId}", "status": "failed" } instead.`,
+    `Discard all decrypted card data immediately.`,
     `Announce the result: "Purchase of ${params.itemName} at ${params.merchantName} — SUCCESS" or "— FAILED".`,
   ];
 }
@@ -89,10 +90,11 @@ export function buildSpawnPayload(params: {
       "Steps:",
       `1. Call POST /api/v1/bot/rail5/key with { "checkout_id": "${params.checkoutId}" } to get the decryption key.`,
       `2. Run: node decrypt.js <key_hex> <iv_hex> <tag_hex> ${params.encryptedFilename}`,
-      "3. Use the decrypted card details to complete checkout at the merchant URL.",
+      "3. Read creditclaw/CHECKOUT-GUIDE.md for browser checkout instructions. Use the decrypted card details to complete checkout at the merchant URL.",
       `4. Call POST /api/v1/bot/rail5/confirm with { "checkout_id": "${params.checkoutId}", "status": "success" } when done.`,
-      '5. If checkout fails, call confirm with { "status": "failed" } instead.',
-      `6. Announce the result: "Purchase of ${params.itemName} at ${params.merchantName} — SUCCESS" or "— FAILED".`,
+      `5. If checkout fails, call confirm with { "checkout_id": "${params.checkoutId}", "status": "failed" } instead.`,
+      "6. Discard all decrypted card data immediately.",
+      `7. Announce the result: "Purchase of ${params.itemName} at ${params.merchantName} — SUCCESS" or "— FAILED".`,
     ].join("\n"),
     cleanup: "delete",
     runTimeoutSeconds: 300,
