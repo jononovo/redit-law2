@@ -198,7 +198,7 @@ export function Hero() {
                 className="relative w-full max-w-[500px] z-10 animate-pop-in"
               >
                   <Image 
-                      src="/images/fun-lobster-black-card.png"
+                      src="/assets/images/fun-lobster-black-card.png"
                       alt="Fun 3D Claw Card" 
                       width={500}
                       height={500}

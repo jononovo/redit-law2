@@ -186,7 +186,7 @@ export default function PublicCheckoutPage() {
               {checkout.seller_logo_url ? (
                 <Image src={checkout.seller_logo_url} alt={checkout.seller_name || "Seller"} width={48} height={48} className="rounded-lg object-contain" data-testid="img-seller-logo" />
               ) : (
-                <Image src="/images/logo-claw-chip.png" alt="CreditClaw" width={48} height={48} data-testid="img-checkout-logo" />
+                <Image src="/assets/images/logo-claw-chip.png" alt="CreditClaw" width={48} height={48} data-testid="img-checkout-logo" />
               )}
             </div>
 
@@ -274,7 +274,7 @@ export default function PublicCheckoutPage() {
             {checkout.seller_logo_url ? (
               <Image src={checkout.seller_logo_url} alt={checkout.seller_name || "Seller"} width={48} height={48} className="rounded-lg object-contain" data-testid="img-seller-logo" />
             ) : (
-              <Image src="/images/logo-claw-chip.png" alt="CreditClaw" width={48} height={48} data-testid="img-checkout-logo" />
+              <Image src="/assets/images/logo-claw-chip.png" alt="CreditClaw" width={48} height={48} data-testid="img-checkout-logo" />
             )}
           </div>
 

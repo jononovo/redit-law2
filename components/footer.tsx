@@ -8,7 +8,7 @@ export function Footer() {
         <div className="grid md:grid-cols-5 gap-12 mb-12">
           <div className="md:col-span-1">
             <Link href="/" className="flex items-center gap-2 mb-4" data-testid="footer-logo-link">
-              <Image src="/images/logo-claw-chip.png" alt="CreditClaw Logo" width={32} height={32} className="object-contain" />
+              <Image src="/assets/images/logo-claw-chip.png" alt="CreditClaw Logo" width={32} height={32} className="object-contain" />
               <span className="font-bold text-lg tracking-tight">CreditClaw</span>
             </Link>
             <p className="text-sm text-neutral-400 font-medium leading-relaxed">

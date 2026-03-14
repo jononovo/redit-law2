@@ -4,7 +4,7 @@ export const VENDOR_REGISTRY: VendorSkill[] = [
   {
     slug: "amazon",
     name: "Amazon",
-    logoUrl: "/images/vendors/amazon.svg",
+    logoUrl: "/assets/images/vendors/amazon.svg",
     category: "retail",
     url: "https://www.amazon.com",
     checkoutMethods: ["native_api", "self_hosted_card"],
@@ -44,7 +44,7 @@ export const VENDOR_REGISTRY: VendorSkill[] = [
   {
     slug: "shopify",
     name: "Shopify Stores",
-    logoUrl: "/images/vendors/shopify.svg",
+    logoUrl: "/assets/images/vendors/shopify.svg",
     category: "retail",
     url: "https://www.shopify.com",
     checkoutMethods: ["native_api", "self_hosted_card"],
@@ -83,7 +83,7 @@ export const VENDOR_REGISTRY: VendorSkill[] = [
   {
     slug: "amazon-business",
     name: "Amazon Business",
-    logoUrl: "/images/vendors/amazon-business.svg",
+    logoUrl: "/assets/images/vendors/amazon-business.svg",
     category: "retail",
     url: "https://business.amazon.com",
     checkoutMethods: ["self_hosted_card"],
@@ -117,7 +117,7 @@ export const VENDOR_REGISTRY: VendorSkill[] = [
   {
     slug: "walmart",
     name: "Walmart",
-    logoUrl: "/images/vendors/walmart.svg",
+    logoUrl: "/assets/images/vendors/walmart.svg",
     category: "retail",
     url: "https://www.walmart.com",
     checkoutMethods: ["self_hosted_card", "browser_automation"],
@@ -155,7 +155,7 @@ export const VENDOR_REGISTRY: VendorSkill[] = [
   {
     slug: "walmart-business",
     name: "Walmart Business",
-    logoUrl: "/images/vendors/walmart-business.svg",
+    logoUrl: "/assets/images/vendors/walmart-business.svg",
     category: "retail",
     url: "https://business.walmart.com",
     checkoutMethods: ["self_hosted_card"],
@@ -188,7 +188,7 @@ export const VENDOR_REGISTRY: VendorSkill[] = [
   {
     slug: "staples",
     name: "Staples",
-    logoUrl: "/images/vendors/staples.svg",
+    logoUrl: "/assets/images/vendors/staples.svg",
     category: "office",
     url: "https://www.staples.com",
     checkoutMethods: ["self_hosted_card"],
@@ -222,7 +222,7 @@ export const VENDOR_REGISTRY: VendorSkill[] = [
   {
     slug: "home-depot",
     name: "Home Depot",
-    logoUrl: "/images/vendors/home-depot.svg",
+    logoUrl: "/assets/images/vendors/home-depot.svg",
     category: "hardware",
     url: "https://www.homedepot.com",
     checkoutMethods: ["self_hosted_card"],
@@ -256,7 +256,7 @@ export const VENDOR_REGISTRY: VendorSkill[] = [
   {
     slug: "lowes",
     name: "Lowe's",
-    logoUrl: "/images/vendors/lowes.svg",
+    logoUrl: "/assets/images/vendors/lowes.svg",
     category: "hardware",
     url: "https://www.lowes.com",
     checkoutMethods: ["self_hosted_card"],
@@ -290,7 +290,7 @@ export const VENDOR_REGISTRY: VendorSkill[] = [
   {
     slug: "office-depot",
     name: "Office Depot",
-    logoUrl: "/images/vendors/office-depot.svg",
+    logoUrl: "/assets/images/vendors/office-depot.svg",
     category: "office",
     url: "https://www.officedepot.com",
     checkoutMethods: ["self_hosted_card"],
@@ -323,7 +323,7 @@ export const VENDOR_REGISTRY: VendorSkill[] = [
   {
     slug: "uline",
     name: "Uline",
-    logoUrl: "/images/vendors/uline.svg",
+    logoUrl: "/assets/images/vendors/uline.svg",
     category: "industrial",
     url: "https://www.uline.com",
     checkoutMethods: ["self_hosted_card"],
@@ -357,7 +357,7 @@ export const VENDOR_REGISTRY: VendorSkill[] = [
   {
     slug: "grainger",
     name: "Grainger",
-    logoUrl: "/images/vendors/grainger.svg",
+    logoUrl: "/assets/images/vendors/grainger.svg",
     category: "industrial",
     url: "https://www.grainger.com",
     checkoutMethods: ["self_hosted_card"],
@@ -391,7 +391,7 @@ export const VENDOR_REGISTRY: VendorSkill[] = [
   {
     slug: "newegg",
     name: "Newegg",
-    logoUrl: "/images/vendors/newegg.svg",
+    logoUrl: "/assets/images/vendors/newegg.svg",
     category: "electronics",
     url: "https://www.newegg.com",
     checkoutMethods: ["self_hosted_card"],
@@ -425,7 +425,7 @@ export const VENDOR_REGISTRY: VendorSkill[] = [
   {
     slug: "bh-photo",
     name: "B&H Photo",
-    logoUrl: "/images/vendors/bh-photo.svg",
+    logoUrl: "/assets/images/vendors/bh-photo.svg",
     category: "electronics",
     url: "https://www.bhphotovideo.com",
     checkoutMethods: ["self_hosted_card"],
@@ -459,7 +459,7 @@ export const VENDOR_REGISTRY: VendorSkill[] = [
   {
     slug: "mcmaster-carr",
     name: "McMaster-Carr",
-    logoUrl: "/images/vendors/mcmaster-carr.svg",
+    logoUrl: "/assets/images/vendors/mcmaster-carr.svg",
     category: "industrial",
     url: "https://www.mcmaster.com",
     checkoutMethods: ["self_hosted_card"],

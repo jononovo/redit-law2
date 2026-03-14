@@ -105,7 +105,7 @@ function ClaimPageContent() {
       <div className="w-full max-w-md">
         <div className="flex items-center justify-center mb-8">
           <Link href="/" className="flex items-center gap-3">
-            <Image src="/images/logo-claw-chip.png" alt="CreditClaw" width={40} height={40} className="object-contain" />
+            <Image src="/assets/images/logo-claw-chip.png" alt="CreditClaw" width={40} height={40} className="object-contain" />
             <span className="font-bold text-xl tracking-tight text-neutral-900">CreditClaw</span>
           </Link>
         </div>

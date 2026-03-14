@@ -166,7 +166,7 @@ function SuccessContent() {
       <footer className="py-6 text-center" data-testid="footer-branding">
         <div className="flex items-center justify-center gap-2 mb-2">
           <Image
-            src="/images/logo-claw-chip.png"
+            src="/assets/images/logo-claw-chip.png"
             alt="CreditClaw"
             width={20}
             height={20}

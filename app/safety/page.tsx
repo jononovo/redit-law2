@@ -44,18 +44,18 @@ const safetyFeatures = [
 ];
 
 const partners = [
-  { name: "Stripe", role: "Payment Processing", desc: "PCI-DSS Level 1, fraud detection, tokenized storage", logo: "/logos/partners/stripe.svg" },
-  { name: "Google Cloud", role: "Partner Authentication", desc: "Google-grade auth, session management, OAuth providers", logo: "/logos/partners/googlecloud.svg" },
-  { name: "Privy", role: "Wallet Infrastructure", desc: "Server wallets, embedded auth, Base chain integration", logo: "/logos/partners/privy.png" },
-  { name: "Crossmint", role: "Smart Wallets", desc: "NFT commerce, smart contract wallets, Amazon integration", logo: "/logos/partners/crossmint.png" },
-  { name: "Bridge", role: "Crypto Transfers", desc: "Stablecoin payments, fiat-to-crypto rails, cross-border transfers", logo: "/logos/partners/bridge.png" },
-  { name: "Circle", role: "Stablecoin Infrastructure", desc: "USDC issuance, programmable wallets, compliance", logo: "/logos/partners/circle.svg" },
-  { name: "Stytch", role: "Authentication", desc: "Passwordless auth, session management, fraud prevention", logo: "/logos/partners/stytch.png" },
+  { name: "Stripe", role: "Payment Processing", desc: "PCI-DSS Level 1, fraud detection, tokenized storage", logo: "/assets/logos/partners/stripe.svg" },
+  { name: "Google Cloud", role: "Partner Authentication", desc: "Google-grade auth, session management, OAuth providers", logo: "/assets/logos/partners/googlecloud.svg" },
+  { name: "Privy", role: "Wallet Infrastructure", desc: "Server wallets, embedded auth, Base chain integration", logo: "/assets/logos/partners/privy.png" },
+  { name: "Crossmint", role: "Smart Wallets", desc: "NFT commerce, smart contract wallets, Amazon integration", logo: "/assets/logos/partners/crossmint.png" },
+  { name: "Bridge", role: "Crypto Transfers", desc: "Stablecoin payments, fiat-to-crypto rails, cross-border transfers", logo: "/assets/logos/partners/bridge.png" },
+  { name: "Circle", role: "Stablecoin Infrastructure", desc: "USDC issuance, programmable wallets, compliance", logo: "/assets/logos/partners/circle.svg" },
+  { name: "Stytch", role: "Authentication", desc: "Passwordless auth, session management, fraud prevention", logo: "/assets/logos/partners/stytch.png" },
 ];
 
 const pendingIntegrations = [
-  { name: "Intuit / QuickBooks", role: "Invoice Reconciliation", desc: "Automated invoice matching, expense categorization, financial reporting", logo: "/logos/partners/quickbooks.svg" },
-  { name: "Plaid", role: "Payment Reconciliation", desc: "Bank account verification, transaction matching, balance checks", logo: "/logos/partners/plaid.png" },
+  { name: "Intuit / QuickBooks", role: "Invoice Reconciliation", desc: "Automated invoice matching, expense categorization, financial reporting", logo: "/assets/logos/partners/quickbooks.svg" },
+  { name: "Plaid", role: "Payment Reconciliation", desc: "Bank account verification, transaction matching, balance checks", logo: "/assets/logos/partners/plaid.png" },
 ];
 
 export default function SafetyPage() {
