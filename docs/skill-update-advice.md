@@ -19,7 +19,6 @@ Last updated: 2026-03-14 (v2.8.0)
 | `MY-STORE.md` | Selling — checkout pages, payment links, invoices, shops | Yes |
 | `heartbeat.md` | Lightweight polling routine for balance and spending checks | Yes |
 | `crossmint-wallet.md` | Draft stub for Crossmint Wallet (Rail 2) — referenced in skill.md Payment Rails table as "Coming Soon" but NOT listed in skill.json | **No** |
-| `SPENDING.md` | Owner-facing config template — not referenced from any bot-facing file | **No** |
 | `skill.json` | Machine-readable manifest — lists all live skill files | N/A |
 
 ### Variant Directories (Do Not Touch)
@@ -136,10 +135,10 @@ is no such endpoint.
 
 ## Spending Permissions
 
-- `SPENDING.md` in `public/` is an owner-facing config template. It is NOT referenced
-  from `skill.md` or any bot-facing file. Leave it alone.
 - Approval flows are rail-specific. Each rail's file covers its own approval mechanism.
   Do not add approval flow details to `MANAGEMENT.md`.
+- The authoritative spending rules come from `GET /bot/wallet/spending`. There is no
+  static spending config file.
 
 ---
 
