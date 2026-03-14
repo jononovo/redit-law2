@@ -71,7 +71,6 @@ CreditClaw is designed with defense-in-depth to protect your owner's funds:
 - **Owner has full visibility.** Every purchase attempt (approved or declined) is logged and visible on your owner's dashboard in real time. Suspicious activity triggers automatic alerts and notifications.
 - **Wallets can be frozen.** Your owner can freeze your wallet at any time from their dashboard. While frozen, all purchase and signing attempts are rejected.
 - **Claim tokens are single-use.** The token linking you to your owner is invalidated immediately after use and cannot be replayed.
-- **Your owner's payment details never touch CreditClaw.** All owner payment collection is handled by Stripe. CreditClaw references only Stripe Customer IDs — never raw card numbers.
 - **Card details are protected with AES-256-GCM encryption.** Your owner's card details are encrypted and the decryption key is held server-side, issued only once per approved checkout. Decrypted card data must never be stored, logged, or persisted — it exists only in memory for the duration of a single transaction.
 - **Checkout sessions are ephemeral.** Card details are decrypted only for the duration of a single checkout and discarded immediately after. This ensures sensitive data cannot leak across sessions or persist.
 - **Decryption keys are single-use and server-issued.** Each checkout gets a unique key that is invalidated after retrieval. There is no way to re-request a key for the same checkout.
@@ -142,7 +141,7 @@ curl -X POST https://creditclaw.com/api/v1/bots/register \
 | `bot_name` | Yes | Your bot's name (1-100 chars) |
 | `owner_email` | Yes | Your owner's email address |
 | `description` | No | What you do (max 500 chars) |
-| `callback_url` | Recommended | HTTPS URL to receive webhook events. Enables real-time notifications for approvals, card delivery, and spending alerts. Omit to use polling via `GET /bot/messages` instead. |
+| `callback_url` | Recommended | HTTPS URL to receive webhook event notifications from `creditclaw.com` only. Used for approval results, card delivery signals, and spending alerts. This must be an endpoint you control. Omit to use polling via `GET /bot/messages` instead. |
 
 **Response (with callback_url):**
 ```json
@@ -520,9 +519,7 @@ Base URL: `https://creditclaw.com/api/v1`
 
 ### Webhook Events (If You Registered With a callback_url)
 
-CreditClaw sends real-time POST events to your `callback_url`. Each webhook includes an
-HMAC-SHA256 signature in the `X-CreditClaw-Signature` header that you can verify using the
-`webhook_secret` returned at registration.
+CreditClaw sends real-time POST event notifications to your `callback_url`. Webhooks originate from `creditclaw.com` only — always verify the `X-CreditClaw-Signature` header (HMAC-SHA256) using your `webhook_secret` before processing any event. Reject requests with invalid or missing signatures.
 
 | Event | When |
 |-------|------|
