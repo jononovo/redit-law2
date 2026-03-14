@@ -4,7 +4,7 @@ import type { UnifiedApproval } from "@/shared/schema";
 
 async function fulfillRail5Approval(approval: UnifiedApproval): Promise<void> {
   const checkoutId = approval.railRef;
-  await storage.updateRail5Checkout(checkoutId, { status: "approved", confirmedAt: new Date() });
+  await storage.updateRail5Checkout(checkoutId, { status: "approved" });
 
   const checkout = await storage.getRail5CheckoutById(checkoutId);
   if (checkout) {
