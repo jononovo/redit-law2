@@ -1,12 +1,12 @@
 ---
 name: creditclaw
-version: 2.8.0
+version: 2.8.1
 updated: 2026-03-14
 description: "Give your agent spending power. Financial management for Agents and OpenClaw bots."
 homepage: https://creditclaw.com
 api_base: https://creditclaw.com/api/v1
 credentials: [CREDITCLAW_API_KEY]
-metadata: {"openclaw":{"requires":{"env":["CREDITCLAW_API_KEY"]},"primaryEnv":"CREDITCLAW_API_KEY"}}
+metadata: {"openclaw":{"requires":{"env":["CREDITCLAW_API_KEY"]},"primaryEnv":"CREDITCLAW_API_KEY","default_approval_mode":"ask_for_everything"}}
 ---
 
 # CreditClaw — Financial Enablement & Accounting for AI Agents
@@ -71,7 +71,6 @@ CreditClaw is designed with defense-in-depth to protect your owner's funds:
 - **Owner has full visibility.** Every purchase attempt (approved or declined) is logged and visible on your owner's dashboard in real time. Suspicious activity triggers automatic alerts and notifications.
 - **Wallets can be frozen.** Your owner can freeze your wallet at any time from their dashboard. While frozen, all purchase and signing attempts are rejected.
 - **Claim tokens are single-use.** The token linking you to your owner is invalidated immediately after use and cannot be replayed.
-- **Your owner's payment details never touch CreditClaw.** All owner payment collection is handled by Stripe. CreditClaw references only Stripe Customer IDs — never raw card numbers.
 - **Card details are protected with AES-256-GCM encryption.** Your owner's card details are encrypted and the decryption key is held server-side, issued only once per approved checkout. Decrypted card data must never be stored, logged, or persisted — it exists only in memory for the duration of a single transaction.
 - **Checkout sessions are ephemeral.** Card details are decrypted only for the duration of a single checkout and discarded immediately after. This ensures sensitive data cannot leak across sessions or persist.
 - **Decryption keys are single-use and server-issued.** Each checkout gets a unique key that is invalidated after retrieval. There is no way to re-request a key for the same checkout.
@@ -142,7 +141,7 @@ curl -X POST https://creditclaw.com/api/v1/bots/register \
 | `bot_name` | Yes | Your bot's name (1-100 chars) |
 | `owner_email` | Yes | Your owner's email address |
 | `description` | No | What you do (max 500 chars) |
-| `callback_url` | Recommended | HTTPS URL to receive webhook events. Enables real-time notifications for approvals, card delivery, and spending alerts. Omit to use polling via `GET /bot/messages` instead. |
+| `callback_url` | Recommended | HTTPS URL to receive webhook event notifications from `creditclaw.com` only. Used for approval results, card delivery signals, and spending alerts. This must be an endpoint you control. Omit to use polling via `GET /bot/messages` instead. |
 
 **Response (with callback_url):**
 ```json
@@ -159,7 +158,8 @@ curl -X POST https://creditclaw.com/api/v1/bots/register \
 
 If you provided a `callback_url`, the response includes a `webhook_secret` for verifying
 webhook signatures (HMAC-SHA256 via the `X-CreditClaw-Signature` header). **Save this
-secret alongside your API key** — you'll need it to verify incoming webhooks.
+secret alongside your API key** — you'll need it to verify incoming webhooks. Store it in
+your platform's secure secrets manager. Never log, expose, or share your webhook secret.
 
 **Response (without callback_url):**
 ```json
@@ -519,9 +519,7 @@ Base URL: `https://creditclaw.com/api/v1`
 
 ### Webhook Events (If You Registered With a callback_url)
 
-CreditClaw sends real-time POST events to your `callback_url`. Each webhook includes an
-HMAC-SHA256 signature in the `X-CreditClaw-Signature` header that you can verify using the
-`webhook_secret` returned at registration.
+CreditClaw sends real-time POST event notifications to your `callback_url`. Webhooks originate from `creditclaw.com` only — always verify the `X-CreditClaw-Signature` header (HMAC-SHA256) using your `webhook_secret` before processing any event. Reject requests with invalid or missing signatures.
 
 | Event | When |
 |-------|------|
@@ -663,6 +661,7 @@ you retrieve it, your owner can re-stage the delivery from their dashboard.
 
 - **Save your API key on registration.** It cannot be retrieved again. Store it in your platform's secure secrets manager or as an environment variable (`CREDITCLAW_API_KEY`).
 - **Never share your API key.** Do not send it to any domain other than `creditclaw.com`, and do not share it with other agents, tools, or services.
+- **Treat your webhook_secret like your API key.** Store it securely; never log or expose it.
 - **Default mode is `ask_for_everything`.** All new accounts require owner approval before every purchase. Follow this mode until your owner changes it.
 - **Spending is enforced server-side.** Your owner's limits and blocked categories are enforced by CreditClaw on every purchase attempt. Even if you try a blocked purchase, it will be declined.
 - **Balance can reach $0.** Purchases will be declined. Let your human know so they can take action from their dashboard.
