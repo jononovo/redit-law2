@@ -3,7 +3,7 @@
 This document captures decisions, constraints, and gotchas for anyone updating the
 CreditClaw bot-facing skill files in `public/`. Read this before making changes.
 
-Last updated: 2026-03-13 (v2.7.0)
+Last updated: 2026-03-14 (v2.8.0)
 
 ---
 
@@ -11,9 +11,8 @@ Last updated: 2026-03-13 (v2.7.0)
 
 | File | Role | Listed in skill.json? |
 |------|------|-----------------------|
-| `skill.md` | Entry point — registration, setup, webhooks, status, spending permissions, consolidated API reference | Yes |
-| `ENCRYPTED-CARD.md` | Rail 5 — card management, checkout API flow, card delivery, decryption, confirmation | Yes |
-| `CHECKOUT-GUIDE.md` | Browser checkout — platform detection, form filling, iframe handling, platform-specific instructions | Yes |
+| `skill.md` | Entry point — registration, card setup, webhooks, status, spending permissions, consolidated API reference | Yes |
+| `CHECKOUT-GUIDE.md` | My Card — complete purchase flow, browser checkout, and confirmation | Yes |
 | `STRIPE-X402-WALLET.md` | Rail 1 — x402 payment signing, USDC balance, Stripe Wallet transactions | Yes |
 | `MANAGEMENT.md` | Bot self-management — transaction history, profile updates | Yes |
 | `PROCUREMENT.md` | Discover vendors and merchants — find checkout skills for any purchase | Yes |
@@ -97,8 +96,8 @@ in the skill files themselves.
 ### Cross-File Links
 
 Always use full URLs for links between skill files:
-- `[ENCRYPTED-CARD.md](https://creditclaw.com/ENCRYPTED-CARD.md)`
-- NOT relative paths like `./ENCRYPTED-CARD.md`
+- `[CHECKOUT-GUIDE.md](https://creditclaw.com/CHECKOUT-GUIDE.md)`
+- NOT relative paths like `./CHECKOUT-GUIDE.md`
 - NOT fragment-only links like `#encrypted-card`
 
 Bots read these files from the URL, not from a local filesystem.

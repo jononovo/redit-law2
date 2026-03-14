@@ -1,7 +1,7 @@
 ---
 name: creditclaw
-version: 2.7.0
-updated: 2026-03-13
+version: 2.8.0
+updated: 2026-03-14
 description: "Give your agent spending power. Financial management for Agents and OpenClaw bots."
 homepage: https://creditclaw.com
 api_base: https://creditclaw.com/api/v1
@@ -21,9 +21,8 @@ Securely manage agentic spending.
 
 | File | URL | Purpose |
 |------|-----|---------|
-| **SKILL.md** (this file) | `https://creditclaw.com/SKILL.md` | Registration, setup, webhooks, status, spending permissions, API reference |
-| **ENCRYPTED-CARD.md** | `https://creditclaw.com/ENCRYPTED-CARD.md` | Card management — accepting card details, checkout API flow, confirming orders |
-| **CHECKOUT-GUIDE.md** | `https://creditclaw.com/CHECKOUT-GUIDE.md` | Browser checkout — platform detection, form filling, iframe handling |
+| **SKILL.md** (this file) | `https://creditclaw.com/SKILL.md` | Registration, card setup, webhooks, status, spending permissions, API reference |
+| **CHECKOUT-GUIDE.md** | `https://creditclaw.com/CHECKOUT-GUIDE.md` | My Card — complete purchase flow, browser checkout, and confirmation |
 | **MANAGEMENT.md** | `https://creditclaw.com/MANAGEMENT.md` | Bot self-management — transaction history, profile updates |
 | **PROCUREMENT.md** | `https://creditclaw.com/PROCUREMENT.md` | Discover vendors and merchants — find checkout skills for any purchase |
 | **MY-STORE.md** | `https://creditclaw.com/MY-STORE.md` | Sell to anyone — checkout pages, payment links, invoices, shops |
@@ -45,7 +44,7 @@ on what your owner has configured.
 
 | Rail | Method | Status | Guide |
 |------|--------|--------|-------|
-| **My Card** | Owner's card details, secure checkout with owner approval | Live | [ENCRYPTED-CARD.md](https://creditclaw.com/ENCRYPTED-CARD.md) |
+| **My Card** | Owner's card details, secure checkout with owner approval | Live | [CHECKOUT-GUIDE.md](https://creditclaw.com/CHECKOUT-GUIDE.md) |
 | **Stripe Wallet (x402)** | USDC on Base chain, x402 payment protocol | Private Beta | [STRIPE-X402-WALLET.md](https://creditclaw.com/STRIPE-X402-WALLET.md) |
 
 The default payment rail is "My Card". Your owner chooses which rails to enable for you. Check `GET /bot/status` to see
@@ -96,7 +95,7 @@ CreditClaw is designed with defense-in-depth to protect your owner's funds:
    - Via polling: call GET /bot/status until status changes to "active"
 6. You poll GET /bot/status periodically to monitor balance across all rails
 7. You check GET /bot/wallet/spending for your owner's permission rules
-8. When you need to make a purchase, follow ENCRYPTED-CARD.md
+8. When you need to make a purchase, follow CHECKOUT-GUIDE.md
 9. View your transaction history and manage your profile (see MANAGEMENT.md)
 10. Human monitors activity from creditclaw.com/overview
 ```
@@ -350,11 +349,122 @@ Your owner can update these permissions anytime from `https://creditclaw.com/ove
 
 ---
 
+## 5. Receiving Card Details
+
+When your owner sets up a card for you, CreditClaw delivers the encrypted card details
+via the `rail5.card.delivered` event.
+
+**Via webhook:** If you have a `callback_url`, the card details are delivered automatically:
+```json
+{
+  "event": "rail5.card.delivered",
+  "bot_id": "bot_abc123",
+  "data": {
+    "card_id": "r5card_...",
+    "card_name": "ChaseD",
+    "card_last4": "9547",
+    "encrypted_data": "<encrypted card details>",
+    "instructions": "Accept the encrypted card details and confirm delivery via POST /bot/rail5/confirm-delivery"
+  }
+}
+```
+
+**Via bot messages (polling):** If you don't have a webhook, check `GET /bot/messages` for
+messages with `event_type: "rail5.card.delivered"`. The payload is identical. After accepting
+the card details, acknowledge the message via `POST /bot/messages/ack`.
+
+Store the encrypted card data securely using your platform's secrets manager or keep it
+in memory. Follow the `instructions` field in the message payload for next steps.
+
+### Confirm Delivery
+
+**After receiving the card details**, confirm delivery so your card status advances from `pending_delivery`
+to `confirmed`:
+
+```bash
+curl -X POST https://creditclaw.com/api/v1/bot/rail5/confirm-delivery \
+  -H "Authorization: Bearer $CREDITCLAW_API_KEY"
+```
+
+Response:
+```json
+{
+  "status": "confirmed",
+  "card_id": "r5card_...",
+  "card_name": "ChaseD",
+  "message": "Card confirmed. Complete a test purchase to verify your card works end-to-end.",
+  "test_checkout_url": "https://creditclaw.com/pay/test_...",
+  "test_instructions": "Navigate to the test checkout URL to complete a sandbox purchase.\nThis is a sandbox checkout — no real payment will be processed.\nDecrypt the card details and enter them at the checkout page.\nFill in all fields: card number, expiry, CVV, cardholder name, and billing address.\nSubmit the payment. The system will verify that the card details were decrypted correctly.\nThis proves your card works end-to-end before any real purchase."
+}
+```
+
+After confirming delivery, you will also receive a `rail5.test.required` event (via webhook or
+pending message) with the `test_checkout_url` and full instructions. This ensures you are notified
+even if you don't parse the `confirm-delivery` response.
+
+**Complete the test purchase** at the `test_checkout_url` to advance your card from `confirmed`
+to `active`. This is a sandbox checkout — no real payment is processed. It verifies that your
+card details decrypt correctly end-to-end before any real purchase.
+
+**Pending messages for card deliveries expire after 24 hours.** If the message expires before
+you retrieve it, your owner can re-stage the delivery from their dashboard.
+
+**Recovery:** If you lose the card data, your owner deletes the card and creates a new one
+through the setup wizard. The card details are re-delivered automatically.
+
+---
+
+## Card Status Progression
+
+| Status | Meaning |
+|--------|---------|
+| `pending_delivery` | Key submitted, waiting for bot to confirm card details received |
+| `confirmed` | Bot confirmed card details received — ready for checkout |
+| `active` | First successful checkout completed — proven working |
+| `frozen` | Owner manually paused the card |
+
+> Cards begin in `pending_setup` during owner configuration. Your bot first sees the card
+> at `pending_delivery` when the encrypted card details are delivered.
+
+---
+
+## Per-Rail Detail Check
+
+For deeper operational info about your card — limits, approval threshold, and status:
+
+```bash
+curl https://creditclaw.com/api/v1/bot/check/rail5 \
+  -H "Authorization: Bearer $CREDITCLAW_API_KEY"
+```
+
+Response:
+```json
+{
+  "status": "active",
+  "card_id": "r5_abc123",
+  "card_name": "Shopping Card",
+  "card_brand": "visa",
+  "last4": "4532",
+  "limits": {
+    "per_transaction_usd": 50.00,
+    "daily_usd": 100.00,
+    "monthly_usd": 500.00,
+    "human_approval_above_usd": 25.00
+  }
+}
+```
+
+Response (not connected): `{ "status": "inactive" }`
+
+**Rate limit:** 6 requests per hour.
+
+---
+
 ## Next Steps: Making Purchases
 
 Once your wallet is active and you need to buy something, follow the checkout guide instructions here:
 
-- **My Card** — Read [ENCRYPTED-CARD.md](https://creditclaw.com/ENCRYPTED-CARD.md) for the full checkout flow
+- **My Card** — Read [CHECKOUT-GUIDE.md](https://creditclaw.com/CHECKOUT-GUIDE.md) for the full checkout flow
 
 Only if you are shopping with crypto stablecoin USDC (pretty rare) read this, otherwise ignore:
 - **Stripe Wallet (x402)** — Read [STRIPE-X402-WALLET.md](https://creditclaw.com/STRIPE-X402-WALLET.md) for x402 payment signing
@@ -381,16 +491,16 @@ Base URL: `https://creditclaw.com/api/v1`
 | GET | `/bot/messages` | Fetch pending messages (for bots without webhooks). | 12/hr | this file |
 | POST | `/bot/messages/ack` | Acknowledge (delete) processed messages. | 30/hr | this file |
 
-### Encrypted Card Endpoints
+### My Card Endpoints
 
 | Method | Endpoint | Description | Rate Limit | File |
 |--------|----------|-------------|------------|------|
-| POST | `/bot/rail5/checkout` | Request checkout approval. Returns checkout_steps. | 30/hr | [ENCRYPTED-CARD.md](https://creditclaw.com/ENCRYPTED-CARD.md) |
-| GET | `/bot/rail5/checkout/status` | Poll for checkout approval result. `?checkout_id=` required. | 60/hr | [ENCRYPTED-CARD.md](https://creditclaw.com/ENCRYPTED-CARD.md) |
-| POST | `/bot/rail5/key` | Get one-time decryption key for an approved checkout. | 30/hr | [ENCRYPTED-CARD.md](https://creditclaw.com/ENCRYPTED-CARD.md) |
-| POST | `/bot/rail5/confirm` | Confirm checkout success or failure. | 30/hr | [ENCRYPTED-CARD.md](https://creditclaw.com/ENCRYPTED-CARD.md) |
-| POST | `/bot/rail5/confirm-delivery` | Confirm card details received. Advances status to `confirmed`. | — | [ENCRYPTED-CARD.md](https://creditclaw.com/ENCRYPTED-CARD.md) |
-| GET | `/bot/check/rail5` | Encrypted Card detail: limits, approval threshold. | 6/hr | [ENCRYPTED-CARD.md](https://creditclaw.com/ENCRYPTED-CARD.md) |
+| POST | `/bot/rail5/checkout` | Request checkout approval. Returns checkout_steps. | 30/hr | [CHECKOUT-GUIDE.md](https://creditclaw.com/CHECKOUT-GUIDE.md) |
+| GET | `/bot/rail5/checkout/status` | Poll for checkout approval result. `?checkout_id=` required. | 60/hr | [CHECKOUT-GUIDE.md](https://creditclaw.com/CHECKOUT-GUIDE.md) |
+| POST | `/bot/rail5/key` | Get one-time decryption key for an approved checkout. | 30/hr | [CHECKOUT-GUIDE.md](https://creditclaw.com/CHECKOUT-GUIDE.md) |
+| POST | `/bot/rail5/confirm` | Confirm checkout success or failure. | 30/hr | [CHECKOUT-GUIDE.md](https://creditclaw.com/CHECKOUT-GUIDE.md) |
+| POST | `/bot/rail5/confirm-delivery` | Confirm card details received. Advances status to `confirmed`. | — | this file |
+| GET | `/bot/check/rail5` | Card detail: limits, approval threshold. | 6/hr | this file |
 
 ### Management Endpoints
 
@@ -558,5 +668,5 @@ you retrieve it, your owner can re-stage the delivery from their dashboard.
 - **Balance can reach $0.** Purchases will be declined. Let your human know so they can take action from their dashboard.
 - **One bot = one wallet per rail.** Your wallet is unique to you and linked to your owner's account. You may have wallets on multiple rails.
 - **Poll responsibly.** Use `GET /bot/status` no more than every 8 hours during normal operation.
-- **Follow the checkout guide when making purchases.** See [ENCRYPTED-CARD.md](https://creditclaw.com/ENCRYPTED-CARD.md).
+- **Follow the checkout guide when making purchases.** See [CHECKOUT-GUIDE.md](https://creditclaw.com/CHECKOUT-GUIDE.md).
 - **Webhooks keep you in sync.** Your `callback_url` receives real-time approval notifications, card details, and spending alerts. If your endpoint becomes unreachable, events are staged as bot messages until you recover.

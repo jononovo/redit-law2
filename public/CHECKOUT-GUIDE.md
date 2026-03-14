@@ -1,21 +1,161 @@
 ---
 name: creditclaw-checkout-guide
-version: 2.7.0
-updated: 2026-03-13
-description: "Browser checkout guide — platform detection, form filling, iframe handling."
+version: 2.8.0
+updated: 2026-03-14
+description: "My Card — complete purchase flow, browser checkout, and confirmation."
 companion_of: https://creditclaw.com/SKILL.md
 api_base: https://creditclaw.com/api/v1
 credentials: [CREDITCLAW_API_KEY]
 ---
 
-# Browser Checkout Guide
+# My Card — Checkout Guide
 
 > **This file is a companion to [SKILL.md](https://creditclaw.com/SKILL.md).**
-> For the card checkout API flow (requesting checkout, getting the decryption key, confirming), see [ENCRYPTED-CARD.md](https://creditclaw.com/ENCRYPTED-CARD.md).
+> For registration, card setup, spending permissions, and the full API reference, see the main skill file.
 
-After decrypting your card details, use this guide to complete the purchase on the merchant's website. This guide applies to both real purchases and the test checkout at `test_checkout_url` (received after card delivery).
+This guide covers the complete purchase flow — from requesting checkout approval through filling the merchant's payment form to confirming the result. This guide applies to both real purchases and the test checkout at `test_checkout_url` (received after card delivery).
 
-**Security:** Never store, log, or persist decrypted card data. It should exist only in memory for the duration of this single checkout. Discard it immediately after submitting the form.
+**Security:** Never store, log, or persist decrypted card data. It should exist only in memory for the duration of this single checkout. Discard it immediately after.
+
+---
+
+## Purchase Flow
+
+```
+1. You decide a purchase is needed (and it's within your spending rules)
+2. You call POST /bot/rail5/checkout with the merchant and amount details
+3. CreditClaw checks guardrails — if within limits, it approves immediately
+   If above threshold, your owner gets an approval request (via dashboard or email)
+4. Once approved, call POST /bot/rail5/key to get the one-time decryption key
+5. Decrypt the card details using AES-256-GCM
+6. Navigate to the merchant's checkout page and fill the payment form
+7. Call POST /bot/rail5/confirm with success or failure
+8. Discard decrypted card data — it must not persist beyond this checkout
+9. Announce the result to your human
+```
+
+---
+
+## Step 1: Request Checkout
+
+```bash
+curl -X POST https://creditclaw.com/api/v1/bot/rail5/checkout \
+  -H "Authorization: Bearer $CREDITCLAW_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "merchant_name": "DigitalOcean",
+    "merchant_url": "https://cloud.digitalocean.com/billing",
+    "item_name": "Droplet hosting - 1 month",
+    "amount_cents": 1200,
+    "category": "cloud_compute"
+  }'
+```
+
+**Request fields:**
+| Field | Required | Description |
+|-------|----------|-------------|
+| `merchant_name` | Yes | Merchant name (1-200 chars) |
+| `merchant_url` | Yes | Merchant website URL |
+| `item_name` | Yes | What you're buying |
+| `amount_cents` | Yes | Amount in cents (integer) |
+| `category` | No | Spending category |
+
+**Response (approved):**
+```json
+{
+  "approved": true,
+  "checkout_id": "r5chk_abc123",
+  "checkout_steps": [
+    "Call POST /api/v1/bot/rail5/key with { \"checkout_id\": \"r5chk_abc123\" } to get the decryption key.",
+    "Decrypt the encrypted card data using AES-256-GCM with the key, IV, and tag from the API response.",
+    "Read creditclaw/CHECKOUT-GUIDE.md for browser checkout instructions. Use the decrypted card details to complete checkout at DigitalOcean.",
+    "Call POST /api/v1/bot/rail5/confirm with { \"checkout_id\": \"r5chk_abc123\", \"status\": \"success\" } when done.",
+    "If checkout fails, call confirm with { \"checkout_id\": \"r5chk_abc123\", \"status\": \"failed\" } instead.",
+    "Discard all decrypted card data immediately.",
+    "Announce the result."
+  ],
+  "spawn_payload": {
+    "task": "You are a checkout agent...",
+    "cleanup": "delete",
+    "runTimeoutSeconds": 300,
+    "label": "checkout-digitalocean"
+  }
+}
+```
+
+**Response (requires owner approval):**
+```json
+{
+  "approved": false,
+  "status": "pending_approval",
+  "checkout_id": "r5chk_abc123",
+  "message": "Amount exceeds auto-approve threshold. Your owner has been notified.",
+  "expires_in_minutes": 15
+}
+```
+
+### Waiting for Approval
+
+If you receive `pending_approval`, you need to wait for your owner's response:
+
+- **Via webhook:** If you registered with a `callback_url`, you'll receive a `wallet.spend.authorized` or `wallet.spend.declined` event automatically.
+- **Via polling:** Call the endpoint below every 30 seconds until the status changes:
+
+```bash
+curl "https://creditclaw.com/api/v1/bot/rail5/checkout/status?checkout_id=r5chk_abc123" \
+  -H "Authorization: Bearer $CREDITCLAW_API_KEY"
+```
+
+Response:
+```json
+{
+  "checkout_id": "r5chk_abc123",
+  "status": "pending_approval",
+  "merchant_name": "DigitalOcean",
+  "item_name": "Droplet hosting - 1 month",
+  "amount_cents": 1200,
+  "key_delivered": false,
+  "confirmed_at": null,
+  "created_at": "2026-03-09T12:00:00.000Z"
+}
+```
+
+**Status values:**
+| Status | Meaning |
+|--------|---------|
+| `pending_approval` | Owner hasn't responded yet — poll again in 30 seconds |
+| `approved` | Owner approved — proceed with checkout |
+| `rejected` | Owner declined — do not proceed |
+| `expired` | 15-minute approval window passed — try again if needed |
+| `completed` | Checkout confirmed successful |
+| `failed` | Checkout reported failure |
+
+Your owner receives the approval request via their dashboard and email. Approvals expire after 15 minutes.
+
+## Step 2: Get Decryption Key
+
+Once the checkout is approved, call this endpoint to retrieve the one-time decryption key:
+
+```bash
+curl -X POST https://creditclaw.com/api/v1/bot/rail5/key \
+  -H "Authorization: Bearer $CREDITCLAW_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "checkout_id": "r5chk_abc123" }'
+```
+
+**Response:** `{ "key_hex": "...", "iv_hex": "...", "tag_hex": "..." }`
+
+**This key is single-use.** It cannot be retrieved again for this checkout. If decryption
+fails after retrieving the key, the checkout must be re-initiated.
+
+## Step 3: Decrypt Card Details
+
+Using the `key_hex`, `iv_hex`, and `tag_hex` from the API response, perform AES-256-GCM
+decryption on the encrypted card data you received from your owner. This produces the
+card details (number, CVV, expiry, name, billing address).
+
+**Critical:** Never store, log, or persist the decrypted card data.
+It should exist only in memory for the duration of this single checkout.
 
 ---
 
@@ -39,7 +179,9 @@ Fields marked "if present" are optional in the decrypted data. If the form requi
 
 ---
 
-## Pre-Check: Detect Platform & Payment Stack
+## Step 4: Fill the Checkout Form
+
+### Pre-Check: Detect Platform & Payment Stack
 
 Always run this before filling any fields. One snapshot of the page head is enough.
 
@@ -76,9 +218,9 @@ Now proceed to the matching checkout section below.
 
 ---
 
-## Agent-Browser (CLI) Checkout
+### Agent-Browser (CLI) Checkout
 
-### Setup
+#### Setup
 
 Set this once so `--efficient` is always the default:
 
@@ -90,7 +232,7 @@ Set this once so `--efficient` is always the default:
 
 Save to `~/.openclaw/openclaw.json`.
 
-### Generic Rules
+#### Generic Rules
 
 ```bash
 openclaw browser snapshot --efficient --selector "form"
@@ -164,7 +306,7 @@ openclaw browser press Tab
 openclaw browser type e12 "value"
 ```
 
-### Shopify (CLI)
+#### Shopify (CLI)
 
 Card fields: **inline** — no iframe needed. Directly visible in form snapshot.
 Expiry: single MM/YY field.
@@ -181,7 +323,7 @@ Click submit ("Pay now" / "Complete order").
 
 3-4 snapshots total.
 
-### WooCommerce (CLI)
+#### WooCommerce (CLI)
 
 Card fields: usually **Stripe iframe**. May need to click "Credit Card" radio first.
 Dropdowns: Select2 (custom) — click, type, Enter.
@@ -206,7 +348,7 @@ openclaw browser click e_submit_button_ref
 
 3-5 snapshots total.
 
-### Stripe Iframe (CLI)
+#### Stripe Iframe (CLI)
 
 Applies to any site using Stripe Elements (Squarespace, WooCommerce, custom sites).
 
@@ -229,7 +371,7 @@ Stripe may use one combined field or separate iframes for number/expiry/CVC.
 
 3-4 snapshots total.
 
-### Multi-Step (CLI)
+#### Multi-Step (CLI)
 
 BigCommerce, some Magento, some custom sites. Steps separated by Continue/Next.
 
@@ -243,7 +385,7 @@ Fill visible fields → click Continue → repeat.
 
 5-6 snapshots total.
 
-### Generic (CLI)
+#### Generic (CLI)
 
 ```bash
 openclaw browser snapshot --efficient --selector "form"
@@ -267,9 +409,9 @@ Submit → wait for confirmation page.
 
 ---
 
-## Browser-Control (Playwright) Checkout
+### Browser-Control (Playwright) Checkout
 
-### Generic Rules
+#### Generic Rules
 
 - Scope actions to the checkout form — do not interact with the full page.
 - Use role-based or accessibility selectors, not CSS class selectors. CSS breaks on re-renders.
@@ -289,7 +431,7 @@ For native `<select>` dropdowns: use `selectOption()`.
 For custom/React dropdowns: click the trigger → type to filter → press Enter.
 If filter doesn't work: click trigger → ArrowDown to target → Enter.
 
-### Shopify (Playwright)
+#### Shopify (Playwright)
 
 Card fields: **inline** — no iframe. Directly in the DOM.
 Expiry: single MM/YY field.
@@ -309,7 +451,7 @@ await page.keyboard.press('Enter');
 
 3-4 page reads total.
 
-### WooCommerce (Playwright)
+#### WooCommerce (Playwright)
 
 Card fields: usually **Stripe iframe**.
 
@@ -327,7 +469,7 @@ await page.getByRole('button', { name: /place order/i }).click();
 
 3-5 page reads total.
 
-### Stripe Iframe (Playwright)
+#### Stripe Iframe (Playwright)
 
 Applies to any site using Stripe Elements.
 
@@ -348,7 +490,7 @@ const cvcFrame = page.frameLocator('iframe[name*="cvc"]');
 
 Submit button is always on the main page. 3-4 page reads total.
 
-### Multi-Step (Playwright)
+#### Multi-Step (Playwright)
 
 ```javascript
 await page.getByRole('button', { name: /continue/i }).click();
@@ -357,7 +499,7 @@ await page.waitForLoadState('networkidle');
 
 Then read next section and fill. 5-6 page reads total.
 
-### Generic (Playwright)
+#### Generic (Playwright)
 
 ```javascript
 const form = page.locator('form');
@@ -382,4 +524,23 @@ After clicking the submit/pay button, wait for the confirmation page to load. Lo
 | "Error", "try again" | **Failed** — do not retry automatically |
 | Page unchanged or spinner persists after 30 seconds | **Failed** — report as failed |
 
-On success, capture the confirmation message or order number from the page. Pass this back when confirming the checkout.
+On success, capture the confirmation message or order number from the page.
+
+---
+
+## Step 5: Confirm Checkout
+
+After completing (or failing) checkout at the merchant:
+
+```bash
+curl -X POST https://creditclaw.com/api/v1/bot/rail5/confirm \
+  -H "Authorization: Bearer $CREDITCLAW_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "checkout_id": "r5chk_abc123", "status": "success" }'
+```
+
+Use `"status": "failed"` if checkout didn't work. On success, the transaction is recorded
+in your owner's dashboard. After your first successful checkout, your card status moves
+from `confirmed` to `active`.
+
+Discard all decrypted card data immediately after confirming.
