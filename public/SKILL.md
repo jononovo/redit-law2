@@ -45,7 +45,7 @@ on what your owner has configured.
 
 | Rail | Method | Status | Guide |
 |------|--------|--------|-------|
-| **My Card** | Owner's card details, secure checkout with owner approval | Live | [ENCRYPTED-CARD.md](https://creditclaw.com/ENCRYPTED-CARD.md) |
+| **My Card** | Owner's card details, secure checkout with owner approval | Live | [ENCRYPTED-CARD.md](https://creditclaw.com/ENCRYPTED-CARD.md) + [CHECKOUT-GUIDE.md](https://creditclaw.com/CHECKOUT-GUIDE.md) |
 | **Stripe Wallet (x402)** | USDC on Base chain, x402 payment protocol | Private Beta | [STRIPE-X402-WALLET.md](https://creditclaw.com/STRIPE-X402-WALLET.md) |
 
 The default payment rail is "My Card". Your owner chooses which rails to enable for you. Check `GET /bot/status` to see
@@ -353,7 +353,7 @@ Your owner can update these permissions anytime from `https://creditclaw.com/ove
 
 Once your wallet is active and you need to buy something, follow the checkout guide instructions here:
 
-- **My Card** — Read [ENCRYPTED-CARD.md](https://creditclaw.com/ENCRYPTED-CARD.md) for the full checkout flow
+- **My Card** — Read [ENCRYPTED-CARD.md](https://creditclaw.com/ENCRYPTED-CARD.md) for the checkout API flow, then [CHECKOUT-GUIDE.md](https://creditclaw.com/CHECKOUT-GUIDE.md) for browser form filling
 
 Only if you are shopping with crypto stablecoin USDC (pretty rare) read this, otherwise ignore:
 - **Stripe Wallet (x402)** — Read [STRIPE-X402-WALLET.md](https://creditclaw.com/STRIPE-X402-WALLET.md) for x402 payment signing
