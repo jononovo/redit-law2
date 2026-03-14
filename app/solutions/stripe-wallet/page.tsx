@@ -44,7 +44,7 @@ export default function StripeWalletLanding() {
       <header className="border-b border-neutral-100">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-3">
-            <Image src="/images/logo-claw-chip.png" alt="CreditClaw" width={32} height={32} />
+            <Image src="/assets/images/logo-claw-chip.png" alt="CreditClaw" width={32} height={32} />
             <span className="font-bold text-lg tracking-tight">CreditClaw</span>
           </Link>
           <div className="flex items-center gap-4">

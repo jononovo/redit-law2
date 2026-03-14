@@ -43,7 +43,7 @@ function Sidebar({
             onClick={onNavigate}
             data-testid="link-home"
           >
-            <Image src="/images/logo-claw-chip.png" alt="CreditClaw" width={28} height={28} className="object-contain" />
+            <Image src="/assets/images/logo-claw-chip.png" alt="CreditClaw" width={28} height={28} className="object-contain" />
             <span className="text-base font-bold text-neutral-900">CreditClaw</span>
           </Link>
           <Link
@@ -157,7 +157,7 @@ export default function DocsLayout({ children }: { children: React.ReactNode }) 
 
       <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-white border-b border-neutral-200 px-4 py-3 flex items-center gap-3">
         <Link href="/" className="flex items-center gap-2 shrink-0" data-testid="link-home-mobile">
-          <Image src="/images/logo-claw-chip.png" alt="CreditClaw" width={28} height={28} className="object-contain" />
+          <Image src="/assets/images/logo-claw-chip.png" alt="CreditClaw" width={28} height={28} className="object-contain" />
           <span className="text-base font-bold text-neutral-900">CreditClaw</span>
         </Link>
         <Link

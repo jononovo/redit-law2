@@ -103,20 +103,20 @@ export function LiveMetrics() {
           
           <div className="flex flex-wrap items-center gap-8 md:gap-12">
             <div className="flex items-center gap-2 group cursor-default">
-              <img src="/logos/visa.svg" alt="Visa" className="h-4 w-auto object-contain" />
+              <img src="/assets/logos/visa.svg" alt="Visa" className="h-4 w-auto object-contain" />
             </div>
 
             <div className="flex items-center gap-3 group cursor-default">
-              <img src="/logos/mastercard.svg" alt="MasterCard" className="h-6 w-auto object-contain" />
+              <img src="/assets/logos/mastercard.svg" alt="MasterCard" className="h-6 w-auto object-contain" />
             </div>
 
             <div className="flex items-center gap-3 group cursor-default">
-              <img src="/logos/stripe.svg" alt="Stripe" className="h-6 w-auto object-contain" />
+              <img src="/assets/logos/stripe.svg" alt="Stripe" className="h-6 w-auto object-contain" />
               <span className="text-[10px] font-bold text-green-600">Powered by</span>
             </div>
 
             <div className="flex items-center gap-2 group cursor-default">
-              <img src="/logos/amex.svg" alt="American Express" className="h-6 w-auto object-contain" />
+              <img src="/assets/logos/amex.svg" alt="American Express" className="h-6 w-auto object-contain" />
             </div>
           </div>
         </div>

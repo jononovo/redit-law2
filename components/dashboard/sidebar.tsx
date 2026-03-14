@@ -94,7 +94,7 @@ export function AppSidebar({ onNewCard }: AppSidebarProps) {
   return (
     <SidebarShell className="border-r border-neutral-100">
       <SidebarHeader className="p-6 flex-row items-center gap-3">
-        <Image src="/images/logo-claw-chip.png" alt="CreditClaw" width={32} height={32} className="object-contain" />
+        <Image src="/assets/images/logo-claw-chip.png" alt="CreditClaw" width={32} height={32} className="object-contain" />
         <span className="font-bold text-lg tracking-tight text-neutral-900">CreditClaw</span>
       </SidebarHeader>
 

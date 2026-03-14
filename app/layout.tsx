@@ -27,13 +27,13 @@ export const metadata: Metadata = {
     siteName: "CreditClaw",
     images: [
       {
-        url: "/og/og-image.png",
+        url: "/assets/og/og-image.png",
         width: 1200,
         height: 675,
         alt: "CreditClaw - Allowance platform for AI agents",
       },
       {
-        url: "/og/og-square.png",
+        url: "/assets/og/og-square.png",
         width: 1200,
         height: 1200,
         alt: "CreditClaw - Allowance platform for AI agents",
@@ -47,7 +47,7 @@ export const metadata: Metadata = {
     description: "The fun, safe way to give your OpenClaw bot an allowance. Self-hosted cards, wallets, and spending guardrails for AI agents.",
     images: [
       {
-        url: "/og/og-twitter.png",
+        url: "/assets/og/og-twitter.png",
         width: 1200,
         height: 675,
         alt: "CreditClaw - Allowance platform for AI agents",
@@ -57,11 +57,11 @@ export const metadata: Metadata = {
   icons: {
     icon: [
       { url: "/favicon.ico", sizes: "32x32" },
-      { url: "/images/favicon-16x16.png", sizes: "16x16", type: "image/png" },
-      { url: "/images/favicon-32x32.png", sizes: "32x32", type: "image/png" },
+      { url: "/assets/images/favicon-16x16.png", sizes: "16x16", type: "image/png" },
+      { url: "/assets/images/favicon-32x32.png", sizes: "32x32", type: "image/png" },
     ],
     apple: [
-      { url: "/images/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
+      { url: "/assets/images/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
     ],
   },
 };
