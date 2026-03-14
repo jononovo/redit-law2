@@ -220,17 +220,7 @@ Now proceed to the matching checkout section below.
 
 ### Agent-Browser (CLI) Checkout
 
-#### Setup
-
-Set this once so `--efficient` is always the default:
-
-```json
-{
-  "browser": { "snapshotDefaults": { "mode": "efficient" } }
-}
-```
-
-Save to `~/.openclaw/openclaw.json`.
+**Always use `--efficient` on every snapshot command.** This is the single most important flag for browser checkout — it reduces page weight and keeps you within the snapshot budget.
 
 #### Generic Rules
 

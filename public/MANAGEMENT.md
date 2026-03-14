@@ -96,4 +96,4 @@ curl -X PATCH https://creditclaw.com/api/v1/bot/profile \
   }'
 ```
 
-All fields are optional — include only the ones you want to change. If you set a new `callback_url`, the response includes a one-time `webhook_secret` for verifying webhook signatures. Save it immediately.
+All fields are optional — include only the ones you want to change. If you set a new `callback_url`, the response includes a one-time `webhook_secret` for verifying webhook signatures. Save it immediately in your platform's secure secrets manager. Never log, expose, or share your webhook secret.

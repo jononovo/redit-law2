@@ -6,7 +6,7 @@ description: "Give your agent spending power. Financial management for Agents an
 homepage: https://creditclaw.com
 api_base: https://creditclaw.com/api/v1
 credentials: [CREDITCLAW_API_KEY]
-metadata: {"openclaw":{"requires":{"env":["CREDITCLAW_API_KEY"]},"primaryEnv":"CREDITCLAW_API_KEY"}}
+metadata: {"openclaw":{"requires":{"env":["CREDITCLAW_API_KEY"]},"primaryEnv":"CREDITCLAW_API_KEY","default_approval_mode":"ask_for_everything"}}
 ---
 
 # CreditClaw — Financial Enablement & Accounting for AI Agents
@@ -159,7 +159,8 @@ curl -X POST https://creditclaw.com/api/v1/bots/register \
 
 If you provided a `callback_url`, the response includes a `webhook_secret` for verifying
 webhook signatures (HMAC-SHA256 via the `X-CreditClaw-Signature` header). **Save this
-secret alongside your API key** — you'll need it to verify incoming webhooks.
+secret alongside your API key** — you'll need it to verify incoming webhooks. Store it in
+your platform's secure secrets manager. Never log, expose, or share your webhook secret.
 
 **Response (without callback_url):**
 ```json
@@ -663,6 +664,7 @@ you retrieve it, your owner can re-stage the delivery from their dashboard.
 
 - **Save your API key on registration.** It cannot be retrieved again. Store it in your platform's secure secrets manager or as an environment variable (`CREDITCLAW_API_KEY`).
 - **Never share your API key.** Do not send it to any domain other than `creditclaw.com`, and do not share it with other agents, tools, or services.
+- **Treat your webhook_secret like your API key.** Store it securely; never log or expose it.
 - **Default mode is `ask_for_everything`.** All new accounts require owner approval before every purchase. Follow this mode until your owner changes it.
 - **Spending is enforced server-side.** Your owner's limits and blocked categories are enforced by CreditClaw on every purchase attempt. Even if you try a blocked purchase, it will be declined.
 - **Balance can reach $0.** Purchases will be declined. Let your human know so they can take action from their dashboard.

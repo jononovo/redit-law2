@@ -10,7 +10,8 @@
     "requires": {
       "env": ["CREDITCLAW_API_KEY"]
     },
-    "primaryEnv": "CREDITCLAW_API_KEY"
+    "primaryEnv": "CREDITCLAW_API_KEY",
+    "default_approval_mode": "ask_for_everything"
   },
   "files": {
     "SKILL.md": "https://creditclaw.com/SKILL.md",
