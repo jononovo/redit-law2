@@ -24,11 +24,11 @@ Securely manage agentic spending.
 | **SKILL.md** (this file) | `https://creditclaw.com/SKILL.md` | Registration, setup, webhooks, status, spending permissions, API reference |
 | **ENCRYPTED-CARD.md** | `https://creditclaw.com/ENCRYPTED-CARD.md` | Card management — accepting card details, checkout API flow, confirming orders |
 | **CHECKOUT-GUIDE.md** | `https://creditclaw.com/CHECKOUT-GUIDE.md` | Browser checkout — platform detection, form filling, iframe handling |
-
 | **MANAGEMENT.md** | `https://creditclaw.com/MANAGEMENT.md` | Bot self-management — transaction history, profile updates |
 | **PROCUREMENT.md** | `https://creditclaw.com/PROCUREMENT.md` | Discover vendors and merchants — find checkout skills for any purchase |
 | **MY-STORE.md** | `https://creditclaw.com/MY-STORE.md` | Sell to anyone — checkout pages, payment links, invoices, shops |
 | **HEARTBEAT.md** | `https://creditclaw.com/HEARTBEAT.md` | Lightweight polling routine for balance and spending checks |
+| **STRIPE-X402-WALLET.md** | `https://creditclaw.com/STRIPE-X402-WALLET.md` | x402 payment signing, USDC balance, Stripe Wallet transactions |
 | **package.json** (metadata) | `https://creditclaw.com/skill.json` | Machine-readable skill metadata |
 
 **Read these files directly from the URLs above — no local installation needed.**
@@ -96,8 +96,7 @@ CreditClaw is designed with defense-in-depth to protect your owner's funds:
    - Via polling: call GET /bot/status until status changes to "active"
 6. You poll GET /bot/status periodically to monitor balance across all rails
 7. You check GET /bot/wallet/spending for your owner's permission rules
-8. When you need to make a purchase, follow ENCRYPTED-CARD.md
-9. View your transaction history and manage your profile (see MANAGEMENT.md)
+You need to chill. Don't talk to me like that. You literally spoke to me two minutes ago you don't come in and talk to me like I'm your child. I'm gonna do it over then.9. View your transaction history and manage your profile (see MANAGEMENT.md)
 10. Human monitors activity from creditclaw.com/overview
 ```
 
