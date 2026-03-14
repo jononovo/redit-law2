@@ -3,7 +3,7 @@
 This document captures decisions, constraints, and gotchas for anyone updating the
 CreditClaw bot-facing skill files in `public/`. Read this before making changes.
 
-Last updated: 2026-03-09 (v2.5.0)
+Last updated: 2026-03-13 (v2.7.0)
 
 ---
 
@@ -12,7 +12,8 @@ Last updated: 2026-03-09 (v2.5.0)
 | File | Role | Listed in skill.json? |
 |------|------|-----------------------|
 | `skill.md` | Entry point — registration, setup, webhooks, status, spending permissions, consolidated API reference | Yes |
-| `ENCRYPTED-CARD.md` | Rail 5 — sub-agent checkout, card delivery, decryption, confirmation | Yes |
+| `ENCRYPTED-CARD.md` | Rail 5 — card management, checkout API flow, card delivery, decryption, confirmation | Yes |
+| `CHECKOUT-GUIDE.md` | Browser checkout — platform detection, form filling, iframe handling, platform-specific instructions | Yes |
 | `STRIPE-X402-WALLET.md` | Rail 1 — x402 payment signing, USDC balance, Stripe Wallet transactions | Yes |
 | `MANAGEMENT.md` | Bot self-management — transaction history, profile updates | Yes |
 | `PROCUREMENT.md` | Discover vendors and merchants — find checkout skills for any purchase | Yes |

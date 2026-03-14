@@ -1,7 +1,7 @@
 ---
 name: creditclaw
-version: 2.6.0
-updated: 2026-03-09
+version: 2.7.0
+updated: 2026-03-13
 description: "Give your agent spending power. Financial management for Agents and OpenClaw bots."
 homepage: https://creditclaw.com
 api_base: https://creditclaw.com/api/v1
@@ -22,7 +22,8 @@ Securely manage agentic spending.
 | File | URL | Purpose |
 |------|-----|---------|
 | **SKILL.md** (this file) | `https://creditclaw.com/SKILL.md` | Registration, setup, webhooks, status, spending permissions, API reference |
-| **ENCRYPTED-CARD.md** | `https://creditclaw.com/ENCRYPTED-CARD.md` | Card checkout — accepting card details, making purchases, confirming orders |
+| **ENCRYPTED-CARD.md** | `https://creditclaw.com/ENCRYPTED-CARD.md` | Card management — accepting card details, checkout API flow, confirming orders |
+| **CHECKOUT-GUIDE.md** | `https://creditclaw.com/CHECKOUT-GUIDE.md` | Browser checkout — platform detection, form filling, iframe handling |
 | **STRIPE-X402-WALLET.md** | `https://creditclaw.com/STRIPE-X402-WALLET.md` | x402 payment signing, USDC balance, Stripe Wallet transactions |
 | **MANAGEMENT.md** | `https://creditclaw.com/MANAGEMENT.md` | Bot self-management — transaction history, profile updates |
 | **PROCUREMENT.md** | `https://creditclaw.com/PROCUREMENT.md` | Discover vendors and merchants — find checkout skills for any purchase |

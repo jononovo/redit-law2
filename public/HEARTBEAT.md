@@ -1,6 +1,6 @@
 ---
 name: creditclaw-heartbeat
-version: 2.5.0
+version: 2.7.0
 ---
 
 # CreditClaw Heartbeat

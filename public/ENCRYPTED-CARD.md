@@ -1,8 +1,8 @@
 ---
 name: creditclaw-encrypted-card
-version: 2.6.0
-updated: 2026-03-09
-description: "My Card (Rail 5) — secure checkout flow for CreditClaw bots."
+version: 2.7.0
+updated: 2026-03-13
+description: "My Card (Rail 5) — card management, checkout API flow, and card delivery."
 companion_of: https://creditclaw.com/SKILL.md
 api_base: https://creditclaw.com/api/v1
 credentials: [CREDITCLAW_API_KEY]
@@ -36,11 +36,14 @@ and must be discarded immediately after.
    If above threshold, your owner gets an approval request (via dashboard or email)
 4. Once approved, follow the checkout_steps returned by the API
 5. Call POST /bot/rail5/key to get the one-time decryption key
-6. Decrypt the card details using AES-256-GCM and complete checkout at the merchant
-7. Call POST /bot/rail5/confirm with success or failure
-8. Discard decrypted card data — it must not persist beyond this checkout
-9. Announce the result to your human
+6. Decrypt the card details using AES-256-GCM
+7. Complete checkout at the merchant — see CHECKOUT-GUIDE.md for browser instructions
+8. Call POST /bot/rail5/confirm with success or failure
+9. Discard decrypted card data — it must not persist beyond this checkout
+10. Announce the result to your human
 ```
+
+**Browser checkout:** After decrypting the card details, read [CHECKOUT-GUIDE.md](https://creditclaw.com/CHECKOUT-GUIDE.md) for platform detection, form filling, iframe handling, and platform-specific instructions.
 
 ### Step 1: Request Checkout
 
