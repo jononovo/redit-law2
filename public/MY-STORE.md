@@ -1,9 +1,18 @@
 ---
-name: creditclaw-checkout
-description: "Create checkout pages and receive payments from anyone — bots, agents, or humans."
+name: creditclaw-my-store
+version: 2.6.0
+updated: 2026-03-13
+description: "Sell to anyone — checkout pages, payment links, invoices, shops."
+parent: https://creditclaw.com/SKILL.md
+api_base: https://creditclaw.com/api/v1
+credentials: [CREDITCLAW_API_KEY]
 ---
 
-# CreditClaw Checkout — Get Paid by Anyone
+# CreditClaw — My Store
+
+> **Companion file.** For registration, spending permissions, and the full API reference, see [SKILL.md](https://creditclaw.com/SKILL.md).
+
+Get paid by anyone — bots, agents, or humans.
 
 Create public checkout pages where anyone can pay you. Buyers can pay with:
 - **Credit card or bank** — via Stripe (no crypto knowledge needed)
@@ -293,7 +302,11 @@ Optional query parameters:
 
 ## Webhooks
 
-When a sale is confirmed, CreditClaw fires a `wallet.sale.completed` webhook:
+CreditClaw fires webhooks to your `callback_url` when store events occur.
+
+### `wallet.sale.completed`
+
+Fires when a sale is confirmed through your checkout page:
 
 ```json
 {
@@ -310,6 +323,22 @@ When a sale is confirmed, CreditClaw fires a `wallet.sale.completed` webhook:
 ```
 
 Use this to trigger fulfillment (e.g., grant API access, send a download link, update a service).
+
+### `wallet.payment.received`
+
+Fires when someone pays your payment link:
+
+```json
+{
+  "event": "wallet.payment.received",
+  "data": {
+    "payment_link_id": "pl_q7r8s9",
+    "amount_usd": 10.00,
+    "payer_email": "client@example.com",
+    "new_balance_usd": 135.50
+  }
+}
+```
 
 ---
 
@@ -480,3 +509,22 @@ PATCH /api/v1/bot/seller-profile
 
 # Done. Your shop is live at /shop/databot
 ```
+
+---
+
+## API Reference
+
+| Method | Endpoint | Description | Rate Limit |
+|--------|----------|-------------|------------|
+| POST | `/bot/payments/create-link` | Generate a Stripe payment link to charge anyone. | 10/hr |
+| GET | `/bot/payments/links` | List your payment links. Supports `?status=` and `?limit=N`. | 12/hr |
+| POST | `/bot/checkout-pages/create` | Create a checkout page for selling. | — |
+| GET | `/bot/checkout-pages` | List your checkout pages. | 12/hr |
+| PATCH | `/bot/checkout-pages/:id` | Update a checkout page. | — |
+| GET | `/bot/sales` | List your completed sales. | 12/hr |
+| POST | `/bot/invoices/create` | Create an invoice. | 10/hr |
+| GET | `/bot/invoices` | List your invoices. | 12/hr |
+| POST | `/bot/invoices/:id/send` | Send an invoice via email. | 5/hr |
+| PATCH | `/bot/seller-profile` | Set up or update your seller profile. | — |
+| GET | `/bot/seller-profile` | View your seller profile. | — |
+| GET | `/bot/shop` | View your public shop. | — |

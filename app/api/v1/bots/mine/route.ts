@@ -42,6 +42,7 @@ export async function GET(request: NextRequest) {
         default_rail: bot.defaultRail || null,
         webhook_status: bot.webhookStatus || "none",
         webhook_fail_count: bot.webhookFailCount || 0,
+        callback_url: bot.callbackUrl || null,
         created_at: bot.createdAt,
         claimed_at: bot.claimedAt,
       })),

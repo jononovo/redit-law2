@@ -673,4 +673,4 @@ Stable since Node 10+. Built-in, no dependencies.
 | 2026-03-10 | Removed dark card info/API cheat sheet block from Step 7 (redundant with card summary panel) |
 | 2026-03-10 | Renamed "Self-Hosted" to "My Card - Encrypted" in New Card modal, moved to first position |
 | 2026-03-10 | "My Card - Encrypted" now opens Rail 5 wizard directly from the modal (no navigation to `/sub-agent-cards`) |
-| 2026-03-10 | Added `rail5.test.required` to webhook events docs in `skill.md` and `encrypted-card.md` |
+| 2026-03-10 | Added `rail5.test.required` to webhook events docs in `skill.md` and `ENCRYPTED-CARD.md` |

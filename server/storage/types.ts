@@ -65,6 +65,7 @@ export interface IStorage {
   claimBot(claimToken: string, ownerUid: string): Promise<Bot | null>;
   updateBotDefaultRail(botId: string, ownerUid: string, defaultRail: string | null): Promise<Bot | null>;
   updateBotWebhookHealth(botId: string, status: string, failCount: number): Promise<void>;
+  updateBotProfile(botId: string, ownerUid: string, data: { callbackUrl?: string; botName?: string; description?: string | null }): Promise<{ bot: Bot; newWebhookSecret: string | null }>;
   checkDuplicateRegistration(botName: string, ownerEmail: string): Promise<boolean>;
 
   createWallet(data: InsertWallet): Promise<Wallet>;
