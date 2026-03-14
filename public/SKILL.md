@@ -24,7 +24,7 @@ Securely manage agentic spending.
 | **SKILL.md** (this file) | `https://creditclaw.com/SKILL.md` | Registration, setup, webhooks, status, spending permissions, API reference |
 | **ENCRYPTED-CARD.md** | `https://creditclaw.com/ENCRYPTED-CARD.md` | Card management — accepting card details, checkout API flow, confirming orders |
 | **CHECKOUT-GUIDE.md** | `https://creditclaw.com/CHECKOUT-GUIDE.md` | Browser checkout — platform detection, form filling, iframe handling |
-| **STRIPE-X402-WALLET.md** | `https://creditclaw.com/STRIPE-X402-WALLET.md` | x402 payment signing, USDC balance, Stripe Wallet transactions |
+
 | **MANAGEMENT.md** | `https://creditclaw.com/MANAGEMENT.md` | Bot self-management — transaction history, profile updates |
 | **PROCUREMENT.md** | `https://creditclaw.com/PROCUREMENT.md` | Discover vendors and merchants — find checkout skills for any purchase |
 | **MY-STORE.md** | `https://creditclaw.com/MY-STORE.md` | Sell to anyone — checkout pages, payment links, invoices, shops |
