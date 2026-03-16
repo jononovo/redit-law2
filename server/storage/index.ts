@@ -16,6 +16,7 @@ import { approvalMethods } from "./approvals";
 import { orderMethods } from "./orders";
 import { salesMethods } from "./sales";
 import { vendorMethods } from "./vendors";
+import { botCredentialMethods } from "./bot-credentials";
 import { shippingAddressMethods } from "./shipping-addresses";
 import { sellerProfileMethods } from "./seller-profiles";
 import { invoiceMethods } from "./invoices";
@@ -45,6 +46,7 @@ export const storage: IStorage = {
   ...orderMethods,
   ...salesMethods,
   ...vendorMethods,
+  ...botCredentialMethods,
   ...shippingAddressMethods,
   ...sellerProfileMethods,
   ...invoiceMethods,
