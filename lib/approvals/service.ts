@@ -1,10 +1,10 @@
-import { createHmac, randomBytes } from "crypto";
+import { createHmac, randomBytes, timingSafeEqual } from "crypto";
 import { storage } from "@/server/storage";
 import { sendApprovalEmail } from "@/lib/approvals/email";
 import { getApprovalExpiresAt, APPROVAL_TTL_BY_RAIL } from "@/lib/approvals/lifecycle";
 import type { UnifiedApproval } from "@/shared/schema";
 
-const HMAC_SECRET = process.env.UNIFIED_APPROVAL_HMAC_SECRET || process.env.HMAC_SECRET || process.env.CONFIRMATION_HMAC_SECRET || process.env.CRON_SECRET;
+const HMAC_SECRET = process.env.UNIFIED_APPROVAL_HMAC_SECRET || process.env.HMAC_SECRET || process.env.CONFIRMATION_HMAC_SECRET;
 
 function getHmacSecret(): string {
   if (!HMAC_SECRET) {
@@ -24,11 +24,7 @@ function generateHmac(approvalId: string): string {
 export function verifyHmac(approvalId: string, token: string): boolean {
   const expected = generateHmac(approvalId);
   if (expected.length !== token.length) return false;
-  let mismatch = 0;
-  for (let i = 0; i < expected.length; i++) {
-    mismatch |= expected.charCodeAt(i) ^ token.charCodeAt(i);
-  }
-  return mismatch === 0;
+  return timingSafeEqual(Buffer.from(expected), Buffer.from(token));
 }
 
 export type RailCallbacks = {

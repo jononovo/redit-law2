@@ -194,8 +194,8 @@ export async function listPendingConfirmations(botId?: string) {
 }
 
 export function generateConfirmationUrl(confirmationId: string): string {
-  const hmacSecret = process.env.CONFIRMATION_HMAC_SECRET || process.env.CRON_SECRET;
-  if (!hmacSecret) throw new Error("No HMAC secret configured (set CONFIRMATION_HMAC_SECRET or CRON_SECRET)");
+  const hmacSecret = process.env.CONFIRMATION_HMAC_SECRET;
+  if (!hmacSecret) throw new Error("No HMAC secret configured (set CONFIRMATION_HMAC_SECRET)");
   const hmacToken = createHmac("sha256", hmacSecret).update(confirmationId).digest("hex");
   const baseUrl = process.env.TEST_BASE_URL || "http://localhost:5000";
   return `${baseUrl}/api/v1/rail4/confirm/${confirmationId}?token=${hmacToken}`;

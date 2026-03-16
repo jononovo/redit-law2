@@ -1,0 +1,59 @@
+services:
+  openclaw-claude:
+    image: ghcr.io/openclaw/openclaw:latest
+    env_file: openclaw-config/claude.env
+    volumes:
+      - ./openclaw-config/base-config.json:/home/node/.openclaw/config.json
+      - claude-data:/home/node/.openclaw/workspace
+    ports: ["18701:18789"]
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "0.5"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:18789/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  openclaw-openai:
+    image: ghcr.io/openclaw/openclaw:latest
+    env_file: openclaw-config/openai.env
+    volumes:
+      - ./openclaw-config/base-config.json:/home/node/.openclaw/config.json
+      - openai-data:/home/node/.openclaw/workspace
+    ports: ["18702:18789"]
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "0.5"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:18789/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  openclaw-gemini:
+    image: ghcr.io/openclaw/openclaw:latest
+    env_file: openclaw-config/gemini.env
+    volumes:
+      - ./openclaw-config/base-config.json:/home/node/.openclaw/config.json
+      - gemini-data:/home/node/.openclaw/workspace
+    ports: ["18703:18789"]
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "0.5"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:18789/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  claude-data:
+  openai-data:
+  gemini-data:

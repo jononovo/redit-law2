@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { resolveApproval, verifyHmac } from "@/lib/approvals/service";
 import { storage } from "@/server/storage";
+import { escapeHtml } from "@/lib/utils/escape-html";
 import "@/lib/approvals/callbacks";
 
 const RAIL_LABELS: Record<string, string> = {
@@ -165,12 +166,12 @@ function renderApprovalPage(approval: any, token: string): string {
   <div class="card">
     <div class="logo">\u{1F99E}</div>
     <h1>Purchase Approval Request</h1>
-    <div style="text-align: center;"><span class="badge">${railLabel}</span></div>
-    <div class="amount">${approval.amountDisplay}</div>
+    <div style="text-align: center;"><span class="badge">${escapeHtml(railLabel)}</span></div>
+    <div class="amount">${escapeHtml(approval.amountDisplay)}</div>
     <div class="details">
-      <div class="row"><span class="label">Bot</span><span class="value">${approval.botName}</span></div>
-      <div class="row"><span class="label">Merchant</span><span class="value">${approval.merchantName}</span></div>
-      ${approval.itemName ? `<div class="row"><span class="label">Item</span><span class="value">${approval.itemName}</span></div>` : ""}
+      <div class="row"><span class="label">Bot</span><span class="value">${escapeHtml(approval.botName)}</span></div>
+      <div class="row"><span class="label">Merchant</span><span class="value">${escapeHtml(approval.merchantName)}</span></div>
+      ${approval.itemName ? `<div class="row"><span class="label">Item</span><span class="value">${escapeHtml(approval.itemName)}</span></div>` : ""}
     </div>
     ${railDescription ? `<p class="note">${railDescription}</p>` : ""}
     <div class="buttons" id="buttons">
@@ -187,7 +188,7 @@ function renderApprovalPage(approval: any, token: string): string {
         const res = await fetch(window.location.pathname, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action, token: '${token}' }),
+          body: JSON.stringify({ action, token: ${JSON.stringify(token)} }),
         });
         const data = await res.json();
         const el = document.getElementById('result');
