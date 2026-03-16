@@ -15,7 +15,7 @@ export async function fetchSkillJson(): Promise<{ status: number; data: SkillJso
 }
 
 export async function fetchSkillMd(): Promise<{ status: number; content: string | null; frontmatter: SkillMdFrontmatter | null }> {
-  const url = `${getBaseUrl()}/skill.md`;
+  const url = `${getBaseUrl()}/SKILL.md`;
   const res = await fetch(url);
   if (!res.ok) return { status: res.status, content: null, frontmatter: null };
   const content = await res.text();
@@ -43,5 +43,9 @@ export function validateSkillJson(data: SkillJson): string[] {
   if (!data.name) errors.push("missing 'name'");
   if (!data.version) errors.push("missing 'version'");
   if (!data.description) errors.push("missing 'description'");
+  if (!data.api_base) errors.push("missing 'api_base'");
+  if (!data.credentials || !Array.isArray(data.credentials)) errors.push("missing or invalid 'credentials'");
+  if (!data.files || typeof data.files !== "object") errors.push("missing 'files'");
+  if (data.files && !data.files["SKILL.md"]) errors.push("missing 'SKILL.md' in files map");
   return errors;
 }

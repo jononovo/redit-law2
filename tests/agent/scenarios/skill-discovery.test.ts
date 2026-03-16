@@ -15,18 +15,36 @@ describe("Skill Discovery", () => {
     expect(errors).toEqual([]);
   });
 
-  it("skill.md is accessible and returns 200", async () => {
+  it("skill.json files map entries are reachable", { timeout: 30_000 }, async () => {
+    const { data } = await fetchSkillJson();
+    expect(data?.files).toBeTruthy();
+
+    const files = data!.files!;
+    const results = await Promise.all(
+      Object.entries(files).map(async ([name, url]) => {
+        const res = await fetch(url, { method: "HEAD" });
+        return { name, url, status: res.status };
+      })
+    );
+
+    for (const r of results) {
+      expect(r.status, `${r.name} at ${r.url} returned ${r.status}`).toBe(200);
+    }
+  });
+
+  it("SKILL.md is accessible and returns 200", { timeout: 15_000 }, async () => {
     const { status, content } = await fetchSkillMd();
     expect(status).toBe(200);
     expect(content).toBeTruthy();
   });
 
-  it("skill.md has parseable frontmatter", async () => {
+  it("SKILL.md has parseable frontmatter", async () => {
     const { frontmatter } = await fetchSkillMd();
     expect(frontmatter).not.toBeNull();
+    expect(frontmatter!.name).toBe("creditclaw");
   });
 
-  it("skill.json and skill.md versions match", async () => {
+  it("skill.json and SKILL.md versions match", async () => {
     const [json, md] = await Promise.all([fetchSkillJson(), fetchSkillMd()]);
     if (!json.data?.version || !md.frontmatter?.version) {
       console.warn("Skipping version match — one or both versions missing");
@@ -35,7 +53,7 @@ describe("Skill Discovery", () => {
     expect(json.data.version).toBe(md.frontmatter.version);
   });
 
-  it("skill.json and skill.md api_base match", async () => {
+  it("skill.json and SKILL.md api_base match", async () => {
     const [json, md] = await Promise.all([fetchSkillJson(), fetchSkillMd()]);
     if (!json.data?.api_base || !md.frontmatter?.api_base) {
       console.warn("Skipping api_base match — one or both api_base values missing");

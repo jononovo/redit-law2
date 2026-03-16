@@ -20,15 +20,16 @@ export interface SkillJson {
   name: string;
   version: string;
   description: string;
-  credentials?: {
-    type: string;
-    header?: string;
-  };
-  openclaw?: {
-    install_url?: string;
-    skill_md?: string;
-  };
+  author?: string;
+  homepage?: string;
   api_base?: string;
+  credentials?: string[];
+  openclaw?: {
+    requires?: { env?: string[] };
+    primaryEnv?: string;
+    default_approval_mode?: string;
+  };
+  files?: Record<string, string>;
   [key: string]: unknown;
 }
 
