@@ -41,6 +41,7 @@ import {
   type Sale, type InsertSale,
   type Vendor, type InsertVendor,
   type MerchantAccount, type InsertMerchantAccount,
+  type BotCredential, type InsertBotCredential,
   type SavedShippingAddress, type InsertShippingAddress,
   type SellerProfile, type InsertSellerProfile,
   type Invoice, type InsertInvoice,
@@ -306,6 +307,13 @@ export interface IStorage {
   getMerchantAccountByVendor(ownerUid: string, vendorId: number): Promise<MerchantAccount | null>;
   updateMerchantAccount(id: number, updates: Partial<InsertMerchantAccount>): Promise<MerchantAccount | null>;
   deleteMerchantAccount(id: number): Promise<void>;
+
+  createBotCredential(data: InsertBotCredential): Promise<BotCredential>;
+  getBotCredentialsByBotId(botId: string): Promise<BotCredential[]>;
+  getBotCredentialByDomain(botId: string, domain: string): Promise<BotCredential | null>;
+  getBotCredentialById(credentialId: string): Promise<BotCredential | null>;
+  updateBotCredential(credentialId: string, updates: Partial<InsertBotCredential>): Promise<BotCredential | null>;
+  deleteBotCredential(credentialId: string): Promise<void>;
 
   createShippingAddress(data: InsertShippingAddress): Promise<SavedShippingAddress>;
   getShippingAddressesByOwner(ownerUid: string): Promise<SavedShippingAddress[]>;

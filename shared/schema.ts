@@ -1113,6 +1113,31 @@ export const insertMerchantAccountSchema = z.object({
   metadata: z.record(z.any()).optional().nullable(),
 });
 
+export const botCredentials = pgTable("bot_credentials", {
+  id: serial("id").primaryKey(),
+  credentialId: text("credential_id").notNull().unique(),
+  botId: text("bot_id").notNull(),
+  merchantDomain: text("merchant_domain").notNull(),
+  merchantName: text("merchant_name").notNull(),
+  username: text("username").notNull(),
+  encryptedPassword: text("encrypted_password").notNull(),
+  encryptedTotpSecret: text("encrypted_totp_secret"),
+  loginUrl: text("login_url"),
+  hasTotp: boolean("has_totp").notNull().default(false),
+  notes: text("notes"),
+  loginCount: integer("login_count").notNull().default(0),
+  lastLoginAt: timestamp("last_login_at"),
+  lastLoginStatus: text("last_login_status"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+}, (table) => [
+  index("bot_credentials_bot_id_idx").on(table.botId),
+  index("bot_credentials_domain_idx").on(table.botId, table.merchantDomain),
+]);
+
+export type BotCredential = typeof botCredentials.$inferSelect;
+export type InsertBotCredential = typeof botCredentials.$inferInsert;
+
 export const orders = pgTable("orders", {
   id: serial("id").primaryKey(),
   ownerUid: text("owner_uid").notNull(),
