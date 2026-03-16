@@ -1,0 +1,47 @@
+{
+  "skill": {
+    "name": "creditclaw",
+    "source": "./public",
+    "slug": "creditclaw"
+  },
+  "hubs": {
+    "clawhub": {
+      "enabled": true,
+      "registry": "https://clawhub.ai",
+      "tags": ["latest"]
+    },
+    "github": {
+      "enabled": true,
+      "owner": "jononovo",
+      "repo": "redit-law2",
+      "tagPrefix": "skill-v"
+    }
+  },
+  "variants": [
+    {
+      "name": "stripe",
+      "slug": "stripe",
+      "configPath": "./skill-variants/stripe/variant.config.json"
+    },
+    {
+      "name": "creditcard",
+      "slug": "creditcard",
+      "configPath": "./skill-variants/creditcard/variant.config.json"
+    }
+  ],
+  "reserve": {
+    "names": [
+      "creditclaw",
+      "creditclaw-wallet",
+      "creditclaw-pay",
+      "creditclaw-card",
+      "claw-wallet",
+      "claw-card",
+      "clawcard",
+      "claw-spend",
+      "claw-checkout",
+      "claw-finance",
+      "claw-pay"
+    ]
+  }
+}
