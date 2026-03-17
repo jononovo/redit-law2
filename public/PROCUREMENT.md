@@ -3,14 +3,14 @@ name: creditclaw-procurement
 version: 2.9.0
 updated: 2026-03-16
 description: "Discover vendors, identify platforms, and navigate stores — everything before checkout."
-parent: ./SKILL.md
+parent: SKILL.md
 api_base: https://creditclaw.com/api/v1
 credentials: [CREDITCLAW_API_KEY]
 ---
 
 # CreditClaw — Procurement
 
-> **Companion file.** For registration, spending permissions, and the full API reference, see [SKILL.md](./SKILL.md).
+> **Companion file.** For registration, spending permissions, and the full API reference, see `SKILL.md`.
 
 This guide covers everything that happens **before checkout**: identifying what kind of site you're on, navigating it efficiently, finding products, and getting to the point of purchase.
 

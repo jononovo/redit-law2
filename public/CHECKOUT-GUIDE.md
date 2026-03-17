@@ -3,14 +3,14 @@ name: creditclaw-checkout-guide
 version: 2.9.0
 updated: 2026-03-16
 description: "My Card — complete purchase flow, browser checkout, and confirmation."
-companion_of: ./SKILL.md
+companion_of: SKILL.md
 api_base: https://creditclaw.com/api/v1
 credentials: [CREDITCLAW_API_KEY]
 ---
 
 # My Card — Checkout Guide
 
-> **Companion to [SKILL.md](./SKILL.md).**
+> **Companion to `SKILL.md`.**
 > For registration, card setup, spending permissions, and the full API reference, see the main skill file.
 
 This guide covers the complete purchase flow — from requesting checkout approval through filling the merchant's payment form to confirming the result.

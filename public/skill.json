@@ -13,17 +13,18 @@
     "primaryEnv": "CREDITCLAW_API_KEY",
     "default_approval_mode": "ask_for_everything"
   },
-  "files": {
-    "SKILL.md": "./SKILL.md",
-    "CHECKOUT-GUIDE.md": "./CHECKOUT-GUIDE.md",
-    "STRIPE-X402-WALLET.md": "./STRIPE-X402-WALLET.md",
-    "MANAGEMENT.md": "./MANAGEMENT.md",
-    "PROCUREMENT.md": "./PROCUREMENT.md",
-    "MY-STORE.md": "./MY-STORE.md",
-    "HEARTBEAT.md": "./HEARTBEAT.md",
-    "checkouts/SHOPIFY.md": "./checkouts/SHOPIFY.md",
-    "checkouts/GENERIC.md": "./checkouts/GENERIC.md",
-    "platforms/SHOPIFY.md": "./platforms/SHOPIFY.md",
-    "platforms/GENERIC.md": "./platforms/GENERIC.md"
-  }
+  "files": [
+    "SKILL.md",
+    "CHECKOUT-GUIDE.md",
+    "STRIPE-X402-WALLET.md",
+    "MANAGEMENT.md",
+    "PROCUREMENT.md",
+    "MY-STORE.md",
+    "HEARTBEAT.md",
+    "checkouts/SHOPIFY.md",
+    "checkouts/GENERIC.md",
+    "platforms/SHOPIFY.md",
+    "platforms/GENERIC.md",
+    "platforms/AMAZON.md"
+  ]
 }

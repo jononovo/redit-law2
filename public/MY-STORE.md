@@ -3,14 +3,14 @@ name: creditclaw-my-store
 version: 2.6.0
 updated: 2026-03-13
 description: "Sell to anyone — checkout pages, payment links, invoices, shops."
-parent: ./SKILL.md
+parent: SKILL.md
 api_base: https://creditclaw.com/api/v1
 credentials: [CREDITCLAW_API_KEY]
 ---
 
 # CreditClaw — My Store
 
-> **Companion file.** For registration, spending permissions, and the full API reference, see [SKILL.md](./SKILL.md).
+> **Companion file.** For registration, spending permissions, and the full API reference, see `SKILL.md`.
 
 Get paid by anyone — bots, agents, or humans.
 

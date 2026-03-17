@@ -1,6 +1,11 @@
 ---
 name: creditclaw
 description: "Give your agent spending power. Financial management for Agents and OpenClaw bots."
+metadata:
+  openclaw:
+    requires:
+      env:
+        - CREDITCLAW_API_KEY
 ---
 
 # CreditClaw — Financial Enablement & Accounting for AI Agents
@@ -13,20 +18,23 @@ Securely manage agentic spending.
 
 ## Skill Files
 
-All companion files are bundled in this skill directory. Reference them by relative path.
+All companion files are bundled in this skill directory.
 
-| File | Path | Purpose |
-|------|------|---------|
-| **SKILL.md** (this file) | `./SKILL.md` | Registration, card setup, webhooks, status, spending permissions, API reference |
-| **CHECKOUT-GUIDE.md** | `./CHECKOUT-GUIDE.md` | My Card — complete purchase flow, browser checkout, and confirmation |
-| **MANAGEMENT.md** | `./MANAGEMENT.md` | Bot self-management — transaction history, profile updates |
-| **PROCUREMENT.md** | `./PROCUREMENT.md` | Discover vendors and merchants — find checkout skills for any purchase |
-| **MY-STORE.md** | `./MY-STORE.md` | Sell to anyone — checkout pages, payment links, invoices, shops |
-| **HEARTBEAT.md** | `./HEARTBEAT.md` | Lightweight polling routine for balance and spending checks |
-| **STRIPE-X402-WALLET.md** | `./STRIPE-X402-WALLET.md` | x402 payment signing, USDC balance, Stripe Wallet transactions |
-| **skill.json** (metadata) | `./skill.json` | Machine-readable skill metadata |
-
-**All files are co-located in this skill package — read them from the local directory.**
+| File | Purpose |
+|------|---------|
+| `SKILL.md` (this file) | Registration, card setup, webhooks, status, spending permissions, API reference |
+| `CHECKOUT-GUIDE.md` | My Card — complete purchase flow, browser checkout, and confirmation |
+| `MANAGEMENT.md` | Bot self-management — transaction history, profile updates |
+| `PROCUREMENT.md` | Discover vendors and merchants — find checkout skills for any purchase |
+| `MY-STORE.md` | Sell to anyone — checkout pages, payment links, invoices, shops |
+| `HEARTBEAT.md` | Lightweight polling routine for balance and spending checks |
+| `STRIPE-X402-WALLET.md` | x402 payment signing, USDC balance, Stripe Wallet transactions |
+| `checkouts/SHOPIFY.md` | Shopify checkout flow |
+| `checkouts/GENERIC.md` | Generic web checkout flow |
+| `platforms/SHOPIFY.md` | Shopify platform integration |
+| `platforms/GENERIC.md` | Generic platform integration |
+| `platforms/AMAZON.md` | Amazon platform integration |
+| `skill.json` | Machine-readable skill metadata |
 
 **Base URL:** `https://creditclaw.com/api/v1`
 
@@ -40,8 +48,8 @@ on what your owner has configured.
 
 | Rail | Method | Status | Guide |
 |------|--------|--------|-------|
-| **My Card** | Owner's card details, secure checkout with owner approval | Live | [CHECKOUT-GUIDE.md](./CHECKOUT-GUIDE.md) |
-| **Stripe Wallet (x402)** | USDC on Base chain, x402 payment protocol | Private Beta | [STRIPE-X402-WALLET.md](./STRIPE-X402-WALLET.md) |
+| **My Card** | Owner's card details, secure checkout with owner approval | Live | `CHECKOUT-GUIDE.md` |
+| **Stripe Wallet (x402)** | USDC on Base chain, x402 payment protocol | Private Beta | `STRIPE-X402-WALLET.md` |
 
 The default payment rail is "My Card". Your owner chooses which rails to enable for you. Check `GET /bot/status` to see
 your full status across all connected rails.
@@ -460,14 +468,14 @@ Response (not connected): `{ "status": "inactive" }`
 
 Once your wallet is active and you need to buy something, follow the checkout guide instructions here:
 
-- **My Card** — Read [CHECKOUT-GUIDE.md](./CHECKOUT-GUIDE.md) for the full checkout flow
+- **My Card** — Read `CHECKOUT-GUIDE.md` for the full checkout flow
 
 Only if you are shopping with crypto stablecoin USDC (pretty rare) read this, otherwise ignore:
-- **Stripe Wallet (x402)** — Read [STRIPE-X402-WALLET.md](./STRIPE-X402-WALLET.md) for x402 payment signing
+- **Stripe Wallet (x402)** — Read `STRIPE-X402-WALLET.md` for x402 payment signing
 
-For viewing transaction history and managing your profile, see [MANAGEMENT.md](./MANAGEMENT.md).
+For viewing transaction history and managing your profile, see `MANAGEMENT.md`.
 
-To earn money by selling products or services, see [MY-STORE.md](./MY-STORE.md).
+To earn money by selling products or services, see `MY-STORE.md`.
 
 ---
 
@@ -491,10 +499,10 @@ Base URL: `https://creditclaw.com/api/v1`
 
 | Method | Endpoint | Description | Rate Limit | File |
 |--------|----------|-------------|------------|------|
-| POST | `/bot/rail5/checkout` | Request checkout approval. Returns checkout_steps. | 30/hr | [CHECKOUT-GUIDE.md](./CHECKOUT-GUIDE.md) |
-| GET | `/bot/rail5/checkout/status` | Poll for checkout approval result. `?checkout_id=` required. | 60/hr | [CHECKOUT-GUIDE.md](./CHECKOUT-GUIDE.md) |
-| POST | `/bot/rail5/key` | Get one-time decryption key for an approved checkout. | 30/hr | [CHECKOUT-GUIDE.md](./CHECKOUT-GUIDE.md) |
-| POST | `/bot/rail5/confirm` | Confirm checkout success or failure. | 30/hr | [CHECKOUT-GUIDE.md](./CHECKOUT-GUIDE.md) |
+| POST | `/bot/rail5/checkout` | Request checkout approval. Returns checkout_steps. | 30/hr | `CHECKOUT-GUIDE.md` |
+| GET | `/bot/rail5/checkout/status` | Poll for checkout approval result. `?checkout_id=` required. | 60/hr | `CHECKOUT-GUIDE.md` |
+| POST | `/bot/rail5/key` | Get one-time decryption key for an approved checkout. | 30/hr | `CHECKOUT-GUIDE.md` |
+| POST | `/bot/rail5/confirm` | Confirm checkout success or failure. | 30/hr | `CHECKOUT-GUIDE.md` |
 | POST | `/bot/rail5/confirm-delivery` | Confirm card details received. Advances status to `confirmed`. | — | this file |
 | GET | `/bot/check/rail5` | Card detail: limits, approval threshold. | 6/hr | this file |
 
@@ -502,16 +510,16 @@ Base URL: `https://creditclaw.com/api/v1`
 
 | Method | Endpoint | Description | Rate Limit | File |
 |--------|----------|-------------|------------|------|
-| GET | `/bot/wallet/transactions` | List transaction history. Supports `?limit=N` (default 50, max 100). | 12/hr | [MANAGEMENT.md](./MANAGEMENT.md) |
-| GET | `/bot/profile` | View your bot profile (name, description, webhook URL, status). | — | [MANAGEMENT.md](./MANAGEMENT.md) |
-| PATCH | `/bot/profile` | Update your bot name, description, or callback URL. | — | [MANAGEMENT.md](./MANAGEMENT.md) |
+| GET | `/bot/wallet/transactions` | List transaction history. Supports `?limit=N` (default 50, max 100). | 12/hr | `MANAGEMENT.md` |
+| GET | `/bot/profile` | View your bot profile (name, description, webhook URL, status). | — | `MANAGEMENT.md` |
+| PATCH | `/bot/profile` | Update your bot name, description, or callback URL. | — | `MANAGEMENT.md` |
 
 ### Procurement Endpoints
 
 | Method | Endpoint | Description | Rate Limit | File |
 |--------|----------|-------------|------------|------|
-| GET | `/bot/skills` | Discover vendors and merchants. Supports filtering by category, search, checkout method, capability, maturity. | — | [PROCUREMENT.md](./PROCUREMENT.md) |
-| GET | `/bot/skills/{slug}` | Get a vendor's full checkout skill (returns Markdown). | — | [PROCUREMENT.md](./PROCUREMENT.md) |
+| GET | `/bot/skills` | Discover vendors and merchants. Supports filtering by category, search, checkout method, capability, maturity. | — | `PROCUREMENT.md` |
+| GET | `/bot/skills/{slug}` | Get a vendor's full checkout skill (returns Markdown). | — | `PROCUREMENT.md` |
 
 ### Webhook Events (If You Registered With a callback_url)
 
@@ -663,5 +671,5 @@ you retrieve it, your owner can re-stage the delivery from their dashboard.
 - **Balance can reach $0.** Purchases will be declined. Let your human know so they can take action from their dashboard.
 - **One bot = one wallet per rail.** Your wallet is unique to you and linked to your owner's account. You may have wallets on multiple rails.
 - **Poll responsibly.** Use `GET /bot/status` no more than every 8 hours during normal operation.
-- **Follow the checkout guide when making purchases.** See [CHECKOUT-GUIDE.md](./CHECKOUT-GUIDE.md).
+- **Follow the checkout guide when making purchases.** See `CHECKOUT-GUIDE.md`.
 - **Webhooks keep you in sync.** Your `callback_url` receives real-time approval notifications, card details, and spending alerts. If your endpoint becomes unreachable, events are staged as bot messages until you recover.

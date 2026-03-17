@@ -8,7 +8,7 @@ version: 2.8.0
 Run this routine periodically to stay aware of your wallet status,
 spending permissions, and pending messages.
 
-Full API reference: [SKILL.md](./SKILL.md)
+Full API reference: `SKILL.md`
 
 ---
 
