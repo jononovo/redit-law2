@@ -1,5 +1,5 @@
 ---
-name: creditclaw-wallet
+name: creditclaw
 description: "Give your agent spending power. Financial management for Agents and OpenClaw bots."
 ---
 
