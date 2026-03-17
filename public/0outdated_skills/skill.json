@@ -1,6 +1,6 @@
 {
   "name": "creditclaw",
-  "version": "2.9.0",
+  "version": "2.8.0",
   "description": "Give your agent spending power. Financial management for Agents and OpenClaw bots.",
   "author": "creditclaw",
   "homepage": "https://creditclaw.com",
@@ -20,10 +20,6 @@
     "MANAGEMENT.md": "https://creditclaw.com/MANAGEMENT.md",
     "PROCUREMENT.md": "https://creditclaw.com/PROCUREMENT.md",
     "MY-STORE.md": "https://creditclaw.com/MY-STORE.md",
-    "HEARTBEAT.md": "https://creditclaw.com/HEARTBEAT.md",
-    "checkouts/SHOPIFY.md": "https://creditclaw.com/checkouts/SHOPIFY.md",
-    "checkouts/GENERIC.md": "https://creditclaw.com/checkouts/GENERIC.md",
-    "platforms/SHOPIFY.md": "https://creditclaw.com/platforms/SHOPIFY.md",
-    "platforms/GENERIC.md": "https://creditclaw.com/platforms/GENERIC.md"
+    "HEARTBEAT.md": "https://creditclaw.com/HEARTBEAT.md"
   }
 }

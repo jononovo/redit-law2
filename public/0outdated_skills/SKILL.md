@@ -1,6 +1,12 @@
 ---
-name: creditclaw-wallet
+name: creditclaw
+version: 2.8.1
+updated: 2026-03-14
 description: "Give your agent spending power. Financial management for Agents and OpenClaw bots."
+homepage: https://creditclaw.com
+api_base: https://creditclaw.com/api/v1
+credentials: [CREDITCLAW_API_KEY]
+metadata: {"openclaw":{"requires":{"env":["CREDITCLAW_API_KEY"]},"primaryEnv":"CREDITCLAW_API_KEY","default_approval_mode":"ask_for_everything"}}
 ---
 
 # CreditClaw — Financial Enablement & Accounting for AI Agents
