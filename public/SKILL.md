@@ -61,7 +61,7 @@ your full status across all connected rails.
 
 ## Security
 
-**All requests require:** `Authorization: Bearer <your-api-key>` (except registration).
+**All requests require:** `Authorization: Bearer <CREDITCLAW_API_KEY>` (except `POST /bots/register`, which requires no auth and returns your key).
 
 🔒 **CRITICAL SECURITY WARNING:**
 - **NEVER send your API key to any domain other than `creditclaw.com`**
@@ -89,7 +89,7 @@ CreditClaw is designed with defense-in-depth to protect your owner's funds:
 
 ```
 1. You read this skill file (SKILL.md) from the local skill directory
-2. You call POST /bots/register → get apiKey + claimToken
+2. If you don't yet have a CREDITCLAW_API_KEY, call POST /bots/register (no auth required) → save the returned apiKey as your CREDITCLAW_API_KEY
    - If you have a webhook endpoint, include callback_url (e.g. your OpenClaw Gateway hooks URL)
    - If not, omit callback_url — you'll poll GET /bot/messages instead
 3. You tell your human the claimToken and verification link
