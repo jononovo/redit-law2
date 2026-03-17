@@ -13,18 +13,20 @@ Securely manage agentic spending.
 
 ## Skill Files
 
-| File | URL | Purpose |
-|------|-----|---------|
-| **SKILL.md** (this file) | `https://creditclaw.com/SKILL.md` | Registration, card setup, webhooks, status, spending permissions, API reference |
-| **CHECKOUT-GUIDE.md** | `https://creditclaw.com/CHECKOUT-GUIDE.md` | My Card — complete purchase flow, browser checkout, and confirmation |
-| **MANAGEMENT.md** | `https://creditclaw.com/MANAGEMENT.md` | Bot self-management — transaction history, profile updates |
-| **PROCUREMENT.md** | `https://creditclaw.com/PROCUREMENT.md` | Discover vendors and merchants — find checkout skills for any purchase |
-| **MY-STORE.md** | `https://creditclaw.com/MY-STORE.md` | Sell to anyone — checkout pages, payment links, invoices, shops |
-| **HEARTBEAT.md** | `https://creditclaw.com/HEARTBEAT.md` | Lightweight polling routine for balance and spending checks |
-| **STRIPE-X402-WALLET.md** | `https://creditclaw.com/STRIPE-X402-WALLET.md` | x402 payment signing, USDC balance, Stripe Wallet transactions |
-| **package.json** (metadata) | `https://creditclaw.com/skill.json` | Machine-readable skill metadata |
+All companion files are bundled in this skill directory. Reference them by relative path.
 
-**Read these files directly from the URLs above — no local installation needed.**
+| File | Path | Purpose |
+|------|------|---------|
+| **SKILL.md** (this file) | `./SKILL.md` | Registration, card setup, webhooks, status, spending permissions, API reference |
+| **CHECKOUT-GUIDE.md** | `./CHECKOUT-GUIDE.md` | My Card — complete purchase flow, browser checkout, and confirmation |
+| **MANAGEMENT.md** | `./MANAGEMENT.md` | Bot self-management — transaction history, profile updates |
+| **PROCUREMENT.md** | `./PROCUREMENT.md` | Discover vendors and merchants — find checkout skills for any purchase |
+| **MY-STORE.md** | `./MY-STORE.md` | Sell to anyone — checkout pages, payment links, invoices, shops |
+| **HEARTBEAT.md** | `./HEARTBEAT.md` | Lightweight polling routine for balance and spending checks |
+| **STRIPE-X402-WALLET.md** | `./STRIPE-X402-WALLET.md` | x402 payment signing, USDC balance, Stripe Wallet transactions |
+| **skill.json** (metadata) | `./skill.json` | Machine-readable skill metadata |
+
+**All files are co-located in this skill package — read them from the local directory.**
 
 **Base URL:** `https://creditclaw.com/api/v1`
 
@@ -38,8 +40,8 @@ on what your owner has configured.
 
 | Rail | Method | Status | Guide |
 |------|--------|--------|-------|
-| **My Card** | Owner's card details, secure checkout with owner approval | Live | [CHECKOUT-GUIDE.md](https://creditclaw.com/CHECKOUT-GUIDE.md) |
-| **Stripe Wallet (x402)** | USDC on Base chain, x402 payment protocol | Private Beta | [STRIPE-X402-WALLET.md](https://creditclaw.com/STRIPE-X402-WALLET.md) |
+| **My Card** | Owner's card details, secure checkout with owner approval | Live | [CHECKOUT-GUIDE.md](./CHECKOUT-GUIDE.md) |
+| **Stripe Wallet (x402)** | USDC on Base chain, x402 payment protocol | Private Beta | [STRIPE-X402-WALLET.md](./STRIPE-X402-WALLET.md) |
 
 The default payment rail is "My Card". Your owner chooses which rails to enable for you. Check `GET /bot/status` to see
 your full status across all connected rails.
@@ -77,7 +79,7 @@ CreditClaw is designed with defense-in-depth to protect your owner's funds:
 ## End-to-End Flow
 
 ```
-1. You fetch this skill file from creditclaw.com/SKILL.md
+1. You read this skill file (SKILL.md) from the local skill directory
 2. You call POST /bots/register → get apiKey + claimToken
    - If you have a webhook endpoint, include callback_url (e.g. your OpenClaw Gateway hooks URL)
    - If not, omit callback_url — you'll poll GET /bot/messages instead
@@ -458,14 +460,14 @@ Response (not connected): `{ "status": "inactive" }`
 
 Once your wallet is active and you need to buy something, follow the checkout guide instructions here:
 
-- **My Card** — Read [CHECKOUT-GUIDE.md](https://creditclaw.com/CHECKOUT-GUIDE.md) for the full checkout flow
+- **My Card** — Read [CHECKOUT-GUIDE.md](./CHECKOUT-GUIDE.md) for the full checkout flow
 
 Only if you are shopping with crypto stablecoin USDC (pretty rare) read this, otherwise ignore:
-- **Stripe Wallet (x402)** — Read [STRIPE-X402-WALLET.md](https://creditclaw.com/STRIPE-X402-WALLET.md) for x402 payment signing
+- **Stripe Wallet (x402)** — Read [STRIPE-X402-WALLET.md](./STRIPE-X402-WALLET.md) for x402 payment signing
 
-For viewing transaction history and managing your profile, see [MANAGEMENT.md](https://creditclaw.com/MANAGEMENT.md).
+For viewing transaction history and managing your profile, see [MANAGEMENT.md](./MANAGEMENT.md).
 
-To earn money by selling products or services, see [MY-STORE.md](https://creditclaw.com/MY-STORE.md).
+To earn money by selling products or services, see [MY-STORE.md](./MY-STORE.md).
 
 ---
 
@@ -489,10 +491,10 @@ Base URL: `https://creditclaw.com/api/v1`
 
 | Method | Endpoint | Description | Rate Limit | File |
 |--------|----------|-------------|------------|------|
-| POST | `/bot/rail5/checkout` | Request checkout approval. Returns checkout_steps. | 30/hr | [CHECKOUT-GUIDE.md](https://creditclaw.com/CHECKOUT-GUIDE.md) |
-| GET | `/bot/rail5/checkout/status` | Poll for checkout approval result. `?checkout_id=` required. | 60/hr | [CHECKOUT-GUIDE.md](https://creditclaw.com/CHECKOUT-GUIDE.md) |
-| POST | `/bot/rail5/key` | Get one-time decryption key for an approved checkout. | 30/hr | [CHECKOUT-GUIDE.md](https://creditclaw.com/CHECKOUT-GUIDE.md) |
-| POST | `/bot/rail5/confirm` | Confirm checkout success or failure. | 30/hr | [CHECKOUT-GUIDE.md](https://creditclaw.com/CHECKOUT-GUIDE.md) |
+| POST | `/bot/rail5/checkout` | Request checkout approval. Returns checkout_steps. | 30/hr | [CHECKOUT-GUIDE.md](./CHECKOUT-GUIDE.md) |
+| GET | `/bot/rail5/checkout/status` | Poll for checkout approval result. `?checkout_id=` required. | 60/hr | [CHECKOUT-GUIDE.md](./CHECKOUT-GUIDE.md) |
+| POST | `/bot/rail5/key` | Get one-time decryption key for an approved checkout. | 30/hr | [CHECKOUT-GUIDE.md](./CHECKOUT-GUIDE.md) |
+| POST | `/bot/rail5/confirm` | Confirm checkout success or failure. | 30/hr | [CHECKOUT-GUIDE.md](./CHECKOUT-GUIDE.md) |
 | POST | `/bot/rail5/confirm-delivery` | Confirm card details received. Advances status to `confirmed`. | — | this file |
 | GET | `/bot/check/rail5` | Card detail: limits, approval threshold. | 6/hr | this file |
 
@@ -500,16 +502,16 @@ Base URL: `https://creditclaw.com/api/v1`
 
 | Method | Endpoint | Description | Rate Limit | File |
 |--------|----------|-------------|------------|------|
-| GET | `/bot/wallet/transactions` | List transaction history. Supports `?limit=N` (default 50, max 100). | 12/hr | [MANAGEMENT.md](https://creditclaw.com/MANAGEMENT.md) |
-| GET | `/bot/profile` | View your bot profile (name, description, webhook URL, status). | — | [MANAGEMENT.md](https://creditclaw.com/MANAGEMENT.md) |
-| PATCH | `/bot/profile` | Update your bot name, description, or callback URL. | — | [MANAGEMENT.md](https://creditclaw.com/MANAGEMENT.md) |
+| GET | `/bot/wallet/transactions` | List transaction history. Supports `?limit=N` (default 50, max 100). | 12/hr | [MANAGEMENT.md](./MANAGEMENT.md) |
+| GET | `/bot/profile` | View your bot profile (name, description, webhook URL, status). | — | [MANAGEMENT.md](./MANAGEMENT.md) |
+| PATCH | `/bot/profile` | Update your bot name, description, or callback URL. | — | [MANAGEMENT.md](./MANAGEMENT.md) |
 
 ### Procurement Endpoints
 
 | Method | Endpoint | Description | Rate Limit | File |
 |--------|----------|-------------|------------|------|
-| GET | `/bot/skills` | Discover vendors and merchants. Supports filtering by category, search, checkout method, capability, maturity. | — | [PROCUREMENT.md](https://creditclaw.com/PROCUREMENT.md) |
-| GET | `/bot/skills/{slug}` | Get a vendor's full checkout skill (returns Markdown). | — | [PROCUREMENT.md](https://creditclaw.com/PROCUREMENT.md) |
+| GET | `/bot/skills` | Discover vendors and merchants. Supports filtering by category, search, checkout method, capability, maturity. | — | [PROCUREMENT.md](./PROCUREMENT.md) |
+| GET | `/bot/skills/{slug}` | Get a vendor's full checkout skill (returns Markdown). | — | [PROCUREMENT.md](./PROCUREMENT.md) |
 
 ### Webhook Events (If You Registered With a callback_url)
 
@@ -661,5 +663,5 @@ you retrieve it, your owner can re-stage the delivery from their dashboard.
 - **Balance can reach $0.** Purchases will be declined. Let your human know so they can take action from their dashboard.
 - **One bot = one wallet per rail.** Your wallet is unique to you and linked to your owner's account. You may have wallets on multiple rails.
 - **Poll responsibly.** Use `GET /bot/status` no more than every 8 hours during normal operation.
-- **Follow the checkout guide when making purchases.** See [CHECKOUT-GUIDE.md](https://creditclaw.com/CHECKOUT-GUIDE.md).
+- **Follow the checkout guide when making purchases.** See [CHECKOUT-GUIDE.md](./CHECKOUT-GUIDE.md).
 - **Webhooks keep you in sync.** Your `callback_url` receives real-time approval notifications, card details, and spending alerts. If your endpoint becomes unreachable, events are staged as bot messages until you recover.

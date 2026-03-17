@@ -14,16 +14,16 @@
     "default_approval_mode": "ask_for_everything"
   },
   "files": {
-    "SKILL.md": "https://creditclaw.com/SKILL.md",
-    "CHECKOUT-GUIDE.md": "https://creditclaw.com/CHECKOUT-GUIDE.md",
-    "STRIPE-X402-WALLET.md": "https://creditclaw.com/STRIPE-X402-WALLET.md",
-    "MANAGEMENT.md": "https://creditclaw.com/MANAGEMENT.md",
-    "PROCUREMENT.md": "https://creditclaw.com/PROCUREMENT.md",
-    "MY-STORE.md": "https://creditclaw.com/MY-STORE.md",
-    "HEARTBEAT.md": "https://creditclaw.com/HEARTBEAT.md",
-    "checkouts/SHOPIFY.md": "https://creditclaw.com/checkouts/SHOPIFY.md",
-    "checkouts/GENERIC.md": "https://creditclaw.com/checkouts/GENERIC.md",
-    "platforms/SHOPIFY.md": "https://creditclaw.com/platforms/SHOPIFY.md",
-    "platforms/GENERIC.md": "https://creditclaw.com/platforms/GENERIC.md"
+    "SKILL.md": "./SKILL.md",
+    "CHECKOUT-GUIDE.md": "./CHECKOUT-GUIDE.md",
+    "STRIPE-X402-WALLET.md": "./STRIPE-X402-WALLET.md",
+    "MANAGEMENT.md": "./MANAGEMENT.md",
+    "PROCUREMENT.md": "./PROCUREMENT.md",
+    "MY-STORE.md": "./MY-STORE.md",
+    "HEARTBEAT.md": "./HEARTBEAT.md",
+    "checkouts/SHOPIFY.md": "./checkouts/SHOPIFY.md",
+    "checkouts/GENERIC.md": "./checkouts/GENERIC.md",
+    "platforms/SHOPIFY.md": "./platforms/SHOPIFY.md",
+    "platforms/GENERIC.md": "./platforms/GENERIC.md"
   }
 }
