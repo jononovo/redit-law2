@@ -6,6 +6,7 @@ metadata:
     requires:
       env:
         - CREDITCLAW_API_KEY
+    invocation: user_confirmed
 ---
 
 # CreditClaw — Financial Enablement & Accounting for AI Agents

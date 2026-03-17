@@ -11,7 +11,8 @@
       "env": ["CREDITCLAW_API_KEY"]
     },
     "primaryEnv": "CREDITCLAW_API_KEY",
-    "default_approval_mode": "ask_for_everything"
+    "default_approval_mode": "ask_for_everything",
+    "invocation": "user_confirmed"
   },
   "files": [
     "SKILL.md",
