@@ -1,0 +1,18 @@
+The skill's requirements and runtime instructions are coherent with a payment/checkout automation service, but it handles highly sensitive operations (card decryption and automated spending) so you should only enable it if you trust the provider and protect the API key and webhook endpoints.
+✓
+Purpose & Capability
+Name/description (agent spending power via CreditClaw/Stripe) align with the declared requirement (CREDITCLAW_API_KEY) and the SKILL.md content: registration, wallet checks, checkout flows, x402 signing, and Stripe interactions are all within the expected scope.
+ℹ
+Instruction Scope
+The SKILL.md gives detailed runtime instructions to request one-time decryption keys, decrypt card data locally, drive a browser to merchant checkouts, and submit card details. This is consistent with the stated purpose but is high-sensitivity: it directs the agent to handle plaintext card data, interact with third-party merchant pages, and optionally register a callback_url for webhooks. Those actions are expected for a spend-capable skill, but they materially increase risk if the API key, webhook URL, or agent automation are misused.
+✓
+Install Mechanism
+Instruction-only skill with no install spec and no bundled executables—lowest install risk. All interactions are via HTTPS API calls and OpenClaw browser primitives described in the docs.
+✓
+Credentials
+Only CREDITCLAW_API_KEY is required and that matches the service's API usage. No unrelated credentials or config paths are requested. The _meta also lists this as primaryEnv. Reasonable for a payment integration.
+ℹ
+Persistence & Privilege
+always:false (not force-installed). The skill can be invoked autonomously (platform default). Combined with the skill's spending capability, autonomous invocation increases blast radius — review approval_mode and agent permissions on your platform before enabling autonomous runs.
+Assessment
+This skill is internally consistent for a payment/checkout automation service: it legitimately needs a CREDITCLAW_API_KEY and the runtime steps (register, poll or webhook, get one‑time decryption keys, decrypt card data locally, fill merchant forms) are what you'd expect. However, it gives any agent with access to the key the ability to spend funds and handle raw card data. Before installing: 1) Verify the provider (creditclaw.com) and prefer a published homepage/repository — the registry metadata here shows no homepage/source, which lowers trust. 2) Treat CREDITCLAW_API_KEY like a high-value secret: store in your platform's secrets manager and do not paste it into other services. 3) Require owner approval_mode (default 'ask_for_everything') or stricter spending guards until you fully trust agent behavior. 4) If you provide a callback_url/webhook endpoint, ensure that endpoint is controlled by you and is secured (HTTPS, verify webhook signatures, store webhook_secret safely). 5) Audit transactions and enable alerts; limit agent autonomy (don't allow automatic spending) unless you intentionally trust the skill and account settings. If you cannot verify the provider or are uncomfortable with automated spending, do not install or only enable in a heavily restricted/test environment.
