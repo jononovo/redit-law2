@@ -1,13 +1,11 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { ArrowUpRight, ArrowDownLeft, Loader2, Receipt } from "lucide-react";
 import { RailPageTabs } from "@/components/wallet/rail-page-tabs";
 import { OrdersPanel } from "@/components/wallet/orders-panel";
 import { GuardrailsWizardDialog } from "@/components/onboarding/guardrails-wizard-dialog";
-import { ApprovalList, type ApprovalRow } from "@/components/wallet/approval-list";
-import { authFetch } from "@/lib/auth-fetch";
-import { useToast } from "@/hooks/use-toast";
+import { ApprovalHistoryPanel } from "@/components/wallet/approval-history-panel";
 
 interface TransactionData {
   id: number;
@@ -116,64 +114,6 @@ function TransactionsTab() {
   );
 }
 
-function ApprovalsTab() {
-  const { toast } = useToast();
-  const [approvals, setApprovals] = useState<ApprovalRow[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  const fetchApprovals = useCallback(async () => {
-    try {
-      const res = await authFetch("/api/v1/approvals");
-      if (res.ok) {
-        const data = await res.json();
-        setApprovals(data.approvals || []);
-      }
-    } catch {} finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchApprovals();
-  }, [fetchApprovals]);
-
-  const handleDecide = useCallback(async (id: number | string, decision: "approve" | "reject") => {
-    try {
-      const res = await authFetch("/api/v1/approvals/decide", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ approval_id: id, decision }),
-      });
-      if (res.ok) {
-        toast({ title: decision === "approve" ? "Approved" : "Rejected" });
-        fetchApprovals();
-      } else {
-        const data = await res.json();
-        toast({ title: "Error", description: data.error || "Failed to process decision", variant: "destructive" });
-      }
-    } catch {
-      toast({ title: "Error", variant: "destructive" });
-    }
-  }, [fetchApprovals, toast]);
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-16">
-        <Loader2 className="w-6 h-6 animate-spin text-neutral-400" data-testid="loader-approvals" />
-      </div>
-    );
-  }
-
-  return (
-    <ApprovalList
-      approvals={approvals}
-      onDecide={handleDecide}
-      showRailBadge
-      testIdPrefix="unified-approval"
-    />
-  );
-}
-
 export default function TransactionsPage() {
   const [activeTab, setActiveTab] = useState("transactions");
   const [guardrailsOpen, setGuardrailsOpen] = useState(false);
@@ -210,7 +150,7 @@ export default function TransactionsPage() {
           {
             id: "approvals",
             label: "Approvals",
-            content: <ApprovalsTab />,
+            content: <ApprovalHistoryPanel />,
           },
         ]}
       />

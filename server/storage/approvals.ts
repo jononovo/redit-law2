@@ -3,12 +3,21 @@ import {
   unifiedApprovals,
   type UnifiedApproval, type InsertUnifiedApproval,
 } from "@/shared/schema";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, gte, lte } from "drizzle-orm";
 import type { IStorage } from "./types";
+
+export interface ApprovalFilters {
+  status?: string;
+  rail?: string;
+  botName?: string;
+  dateFrom?: Date;
+  dateTo?: Date;
+}
 
 type ApprovalMethods = Pick<IStorage,
   | "createUnifiedApproval" | "getUnifiedApprovalById" | "getUnifiedApprovalByRailRef"
   | "decideUnifiedApproval" | "closeUnifiedApprovalByRailRef" | "getUnifiedApprovalsByOwnerUid"
+  | "getApprovalHistory"
 >;
 
 export const approvalMethods: ApprovalMethods = {
@@ -68,5 +77,30 @@ export const approvalMethods: ApprovalMethods = {
       .where(and(...conditions))
       .orderBy(desc(unifiedApprovals.createdAt))
       .limit(50);
+  },
+
+  async getApprovalHistory(ownerUid: string, filters?: ApprovalFilters): Promise<UnifiedApproval[]> {
+    const conditions = [eq(unifiedApprovals.ownerUid, ownerUid)];
+
+    if (filters?.status) {
+      conditions.push(eq(unifiedApprovals.status, filters.status));
+    }
+    if (filters?.rail) {
+      conditions.push(eq(unifiedApprovals.rail, filters.rail));
+    }
+    if (filters?.botName) {
+      conditions.push(eq(unifiedApprovals.botName, filters.botName));
+    }
+    if (filters?.dateFrom) {
+      conditions.push(gte(unifiedApprovals.createdAt, filters.dateFrom));
+    }
+    if (filters?.dateTo) {
+      conditions.push(lte(unifiedApprovals.createdAt, filters.dateTo));
+    }
+
+    return db.select().from(unifiedApprovals)
+      .where(and(...conditions))
+      .orderBy(desc(unifiedApprovals.createdAt))
+      .limit(200);
   },
 };
