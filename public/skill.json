@@ -1,9 +1,10 @@
 {
   "name": "creditclaw",
-  "version": "2.8.0",
+  "version": "2.9.0",
   "description": "Give your agent spending power. Financial management for Agents and OpenClaw bots.",
   "author": "creditclaw",
   "homepage": "https://creditclaw.com",
+  "repository": "https://github.com/jononovo/claw-skill",
   "api_base": "https://creditclaw.com/api/v1",
   "credentials": ["CREDITCLAW_API_KEY"],
   "openclaw": {
@@ -11,15 +12,22 @@
       "env": ["CREDITCLAW_API_KEY"]
     },
     "primaryEnv": "CREDITCLAW_API_KEY",
-    "default_approval_mode": "ask_for_everything"
+    "default_approval_mode": "ask_for_everything",
+    "invocation": "user_confirmed"
   },
-  "files": {
-    "SKILL.md": "https://creditclaw.com/SKILL.md",
-    "CHECKOUT-GUIDE.md": "https://creditclaw.com/CHECKOUT-GUIDE.md",
-    "STRIPE-X402-WALLET.md": "https://creditclaw.com/STRIPE-X402-WALLET.md",
-    "MANAGEMENT.md": "https://creditclaw.com/MANAGEMENT.md",
-    "PROCUREMENT.md": "https://creditclaw.com/PROCUREMENT.md",
-    "MY-STORE.md": "https://creditclaw.com/MY-STORE.md",
-    "HEARTBEAT.md": "https://creditclaw.com/HEARTBEAT.md"
-  }
+  "files": [
+    "SKILL.md",
+    "CHECKOUT-GUIDE.md",
+    "STRIPE-X402-WALLET.md",
+    "MANAGEMENT.md",
+    "PROCUREMENT.md",
+    "MY-STORE.md",
+    "HEARTBEAT.md",
+    "WEBHOOK.md",
+    "checkouts/SHOPIFY.md",
+    "checkouts/GENERIC.md",
+    "platforms/SHOPIFY.md",
+    "platforms/GENERIC.md",
+    "platforms/AMAZON.md"
+  ]
 }

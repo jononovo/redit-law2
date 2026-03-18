@@ -3,12 +3,12 @@ name: creditclaw-stripe-x402-wallet
 version: 2.5.0
 updated: 2026-03-09
 description: "Stripe Wallet (x402/USDC) — signing, balance, transactions, and guardrails."
-parent: SKILL.md
+parent: https://creditclaw.com/SKILL.md
 ---
 
 # Stripe Wallet — x402 / USDC (Private Beta)
 
-> **Companion file** — see `SKILL.md` for registration, webhooks, and the full API reference.
+> **Companion file** — see [SKILL.md](https://creditclaw.com/SKILL.md) for registration, webhooks, and the full API reference.
 
 > **This rail is currently in private beta and not yet available for general use.**
 > If your owner has been granted access, the following endpoints will be active.
