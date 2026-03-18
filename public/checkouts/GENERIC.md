@@ -1,30 +1,14 @@
 ---
 name: checkout-generic
 platform: generic
-updated: 2026-03-16
+updated: 2026-03-18
 ---
 
 # Generic Checkout
 
-Use this guide when no platform-specific guide exists. Covers inline card fields, Stripe Elements iframes, WooCommerce, multi-step checkouts, and unknown platforms.
+Use this guide when no platform-specific checkout guide exists. Covers inline card fields, Stripe Elements iframes, Braintree/Adyen, WooCommerce, and multi-step checkouts.
 
----
-
-## Step 1: Identify the Form
-
-```bash
-openclaw browser snapshot --efficient --selector "form"
-```
-
-If no form found:
-```bash
-openclaw browser snapshot --efficient --depth 4
-```
-
-From the snapshot, determine:
-- Are card fields **visible directly** (inline) or **inside iframes**?
-- Is there a payment method selector (radio buttons, tabs)?
-- Is the checkout single-page or multi-step?
+> **For platform detection and form identification,** see `PROCUREMENT.md`. It will tell you which checkout guide to use and what type of payment form you're dealing with.
 
 ---
 

@@ -1,8 +1,8 @@
 ---
 name: creditclaw-procurement
 version: 2.9.0
-updated: 2026-03-16
-description: "Discover vendors, identify platforms, and navigate stores — everything before checkout."
+updated: 2026-03-18
+description: "Merchant detection, routing, and vendor discovery — the single decision point before checkout."
 parent: SKILL.md
 api_base: https://creditclaw.com/api/v1
 credentials: [CREDITCLAW_API_KEY]
@@ -12,7 +12,10 @@ credentials: [CREDITCLAW_API_KEY]
 
 > **Companion file.** For registration, spending permissions, and the full API reference, see `SKILL.md`.
 
-This guide covers everything that happens **before checkout**: identifying what kind of site you're on, navigating it efficiently, finding products, and getting to the point of purchase.
+This is the single decision point when you need to buy something. It answers three questions:
+1. Does CreditClaw have a verified skill for this merchant?
+2. What platform is the merchant using?
+3. Which files should you read for navigation and checkout?
 
 ---
 
@@ -33,37 +36,74 @@ If no vendor skill exists → continue to Step 2.
 
 ## Step 2: Identify the Platform
 
-Land on the site and run platform detection. This tells you what e-commerce platform powers the site, which determines how to navigate, browse, and eventually check out.
+Land on the merchant's site and run platform detection. This determines how to navigate, browse, and check out.
 
 **Run this via `evaluate` (OpenClaw) or `javascript_tool` (Claude) on any page:**
 
 ```javascript
 var p = 'unknown';
 if (typeof Shopify !== 'undefined' && Shopify.shop) p = 'shopify';
-else if (document.querySelector('link[href*="woocommerce"], .woocommerce')) p = 'woocommerce';
-else if (document.querySelector('script[src*="squarespace.com"]')) p = 'squarespace';
+else if (document.querySelector('link[href*="woocommerce"], script[src*="woocommerce"], .woocommerce')) p = 'woocommerce';
+else if (document.querySelector('script[src*="squarespace.com"]') || typeof Static !== 'undefined') p = 'squarespace';
 else if (document.querySelector('script[src*="cdn-bc.com"]') || typeof BCData !== 'undefined') p = 'bigcommerce';
-else if (document.querySelector('meta[name="generator"][content*="Wix"]')) p = 'wix';
+else if (document.querySelector('meta[name="generator"][content*="Wix"]') || document.querySelector('script[src*="wixstatic.com"]')) p = 'wix';
+else if (typeof require !== 'undefined' && document.querySelector('script[src*="mage"]')) p = 'magento';
+else if (typeof ue !== 'undefined' && typeof AmazonUIPageJS !== 'undefined') p = 'amazon';
 p;
 ```
 
-**Route to the platform guide:**
+---
 
-| Result | Platform Guide | Checkout Guide |
-|--------|---------------|----------------|
-| `shopify` | → `platforms/SHOPIFY.md` | → `checkouts/SHOPIFY.md` |
-| `woocommerce` | → `platforms/GENERIC.md` | → `checkouts/GENERIC.md` |
-| `squarespace` | → `platforms/GENERIC.md` | → `checkouts/GENERIC.md` |
-| `bigcommerce` | → `platforms/GENERIC.md` | → `checkouts/GENERIC.md` |
-| `unknown` | → `platforms/GENERIC.md` | → `checkouts/GENERIC.md` |
+## Step 3: Route to the Right Files
 
-**Read the matching platform guide** for navigation instructions, URL patterns, and shopping flow.
+Use your detection result to pick the correct navigation and checkout guides:
+
+| Platform | Navigation Guide | Checkout Guide |
+|----------|-----------------|----------------|
+| `shopify` | `platforms/SHOPIFY.md` | `checkouts/SHOPIFY.md` |
+| `amazon` | `platforms/AMAZON.md` | *(uses saved payment methods)* |
+| `woocommerce` | `platforms/GENERIC.md` | `checkouts/GENERIC.md` |
+| `squarespace` | `platforms/GENERIC.md` | `checkouts/GENERIC.md` |
+| `bigcommerce` | `platforms/GENERIC.md` | `checkouts/GENERIC.md` |
+| `wix` | `platforms/GENERIC.md` | `checkouts/GENERIC.md` |
+| `magento` | `platforms/GENERIC.md` | `checkouts/GENERIC.md` |
+| `unknown` | `platforms/GENERIC.md` | `checkouts/GENERIC.md` |
+
+1. **Read the navigation guide** for URL patterns, browsing, and how to get to checkout
+2. **Read the checkout guide** for how to fill the payment form
 
 ---
 
-## Step 3: Browse & Select Products
+## Step 4: Identify the Payment Form
 
-Follow the platform guide to:
+Once you're on the checkout page, determine what kind of payment form you're dealing with before filling any fields:
+
+```bash
+openclaw browser snapshot --efficient --selector "form"
+```
+
+If no form found:
+```bash
+openclaw browser snapshot --efficient --depth 4
+```
+
+From the snapshot, determine:
+
+| What you see | Payment type | Checkout guide section |
+|-------------|-------------|----------------------|
+| Card fields as regular `<input>` elements | **Inline** | `checkouts/GENERIC.md` → Inline Card Fields |
+| `iframe[src*="js.stripe.com"]` | **Stripe Elements** | `checkouts/GENERIC.md` → Stripe Elements |
+| `iframe[name*="braintree"]` | **Braintree** | `checkouts/GENERIC.md` → Braintree / Adyen |
+| `iframe[src*="adyen"]` | **Adyen** | `checkouts/GENERIC.md` → Braintree / Adyen |
+| `iframe[name^="card-fields-"]` on Shopify | **Shopify iframes** | `checkouts/SHOPIFY.md` → Phase 2 |
+| Multiple pages/sections with "Continue" buttons | **Multi-step** | `checkouts/GENERIC.md` → Multi-Step Checkout |
+| No card fields visible, payment method tabs/radios | Select "Credit Card" first, then re-check |
+
+---
+
+## Step 5: Browse & Select Products
+
+Follow the navigation guide to:
 1. Navigate to the product or collection page
 2. Select the correct variant (size, color, quantity)
 3. Add to cart or use "Buy it now"
@@ -75,12 +115,12 @@ Follow the platform guide to:
 
 ---
 
-## Step 4: Proceed to Checkout
+## Step 6: Proceed to Checkout
 
 When ready to purchase:
-1. Navigate to or trigger checkout (platform guide explains how)
-2. Switch to `CHECKOUT-GUIDE.md` for the purchase flow
-3. The checkout guide handles: approval, decryption, form filling, confirmation
+1. Navigate to or trigger checkout (navigation guide explains how)
+2. Follow the checkout guide for your platform to fill the payment form
+3. For the full purchase API flow (approval, decryption, confirmation), see your agent platform's guide in the Secure Card Handoff table in `SKILL.md`
 
 ---
 
