@@ -25,6 +25,8 @@ All companion files are bundled in this skill directory.
 |------|---------|
 | `SKILL.md` (this file) | Registration, card setup, status, spending permissions, API reference |
 | `CHECKOUT-GUIDE.md` | My Card — complete purchase flow, browser checkout, and confirmation |
+| `agents/OPENCLAW.md` | OpenClaw sub-agent checkout — spawn, execute, report, confirm, verify deletion |
+| `agents/CLAUDE-PLUGIN.md` | Claude Desktop/Cowork — plugin-based secure checkout (coming soon) |
 | `MANAGEMENT.md` | Bot self-management — transaction history, profile updates |
 | `PROCUREMENT.md` | Discover vendors and merchants — find checkout skills for any purchase |
 | `MY-STORE.md` | Sell to anyone — checkout pages, payment links, invoices, shops |
@@ -79,6 +81,7 @@ CreditClaw is designed with defense-in-depth to protect your owner's funds:
 - **Claim tokens are single-use.** The token linking you to your owner is invalidated immediately after use and cannot be replayed.
 - **Card details are protected with AES-256-GCM encryption.** Your owner's card details are encrypted and the decryption key is held server-side, issued only once per approved checkout. Decrypted card data must never be stored, logged, or persisted — it exists only in memory for the duration of a single transaction.
 - **Checkout sessions are ephemeral.** Card details are decrypted only for the duration of a single checkout and discarded immediately after. This ensures sensitive data cannot leak across sessions or persist.
+- **Sub-agents isolate card data.** On OpenClaw, every checkout is handled by an ephemeral sub-agent that is automatically deleted after the transaction. Your main agent never sees decrypted card details. See `agents/OPENCLAW.md`.
 - **Decryption keys are single-use and server-issued.** Each checkout gets a unique key that is invalidated after retrieval. There is no way to re-request a key for the same checkout.
 - **Per-endpoint rate limiting.** All bot API endpoints are rate-limited to prevent abuse.
 - **Access logging.** Every API call you make is logged with endpoint, method, status code, IP, and response time — visible to your owner.
@@ -96,7 +99,7 @@ CreditClaw is designed with defense-in-depth to protect your owner's funds:
 5. Your wallet activates — call GET /bot/status until status changes to "active"
 6. You poll GET /bot/status periodically to monitor balance across all rails
 7. You check GET /bot/wallet/spending for your owner's permission rules
-8. When you need to make a purchase, follow CHECKOUT-GUIDE.md
+8. When you need to make a purchase, check the Secure Card Handoff table for your platform's guide
 9. View your transaction history and manage your profile (see MANAGEMENT.md)
 10. Human monitors activity from creditclaw.com/overview
 ```
@@ -408,11 +411,25 @@ Response (not connected): `{ "status": "inactive" }`
 
 ---
 
+## Secure Card Handoff
+
+Card details are never exposed directly to your main agent. The handoff method depends on your platform:
+
+| Platform | Guide | Security Model |
+|----------|-------|----------------|
+| OpenClaw | `agents/OPENCLAW.md` | Ephemeral sub-agent requests decryption key, completes checkout, and is deleted after transaction. |
+| Claude Desktop / Cowork | `agents/CLAUDE-PLUGIN.md` | CreditClaw plugin handles secure browser filling. Triple-secure pre/post context scans before compaction. (Coming soon) |
+
+Read the guide for your platform before making any purchase.
+
+---
+
 ## Next Steps: Making Purchases
 
-Once your wallet is active and you need to buy something, follow the checkout guide instructions here:
+Once your wallet is active and you need to buy something:
 
-- **My Card** — Read `CHECKOUT-GUIDE.md` for the full checkout flow
+1. **Read your platform's checkout guide** from the Secure Card Handoff table above
+2. **For the universal API reference** (common to all platforms) — see `CHECKOUT-GUIDE.md`
 
 Only if you are shopping with crypto stablecoin USDC (pretty rare) read this, otherwise ignore:
 - **Stripe Wallet (x402)** — Read `STRIPE-X402-WALLET.md` for x402 payment signing
@@ -584,5 +601,6 @@ you retrieve it, your owner can re-stage the delivery from their dashboard.
 - **Balance can reach $0.** Purchases will be declined. Let your human know so they can take action from their dashboard.
 - **One bot = one wallet per rail.** Your wallet is unique to you and linked to your owner's account. You may have wallets on multiple rails.
 - **Poll responsibly.** Use `GET /bot/status` no more than every 8 hours during normal operation.
-- **Follow the checkout guide when making purchases.** See `CHECKOUT-GUIDE.md`.
+- **Spawn a sub-agent for every transaction (OpenClaw).** On OpenClaw, always use the sub-agent checkout flow described in `agents/OPENCLAW.md`. Your main agent must never handle decrypted card data directly.
+- **Follow the checkout guide when making purchases.** See `CHECKOUT-GUIDE.md` for the universal API reference, and your platform's guide in the Secure Card Handoff table.
 - **For optional webhook setup,** see `WEBHOOK.md`.
