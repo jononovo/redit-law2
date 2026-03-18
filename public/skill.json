@@ -27,20 +27,20 @@
     "HEARTBEAT.md",
     "WEBHOOK.md",
     "shopify/SHOPIFY.md",
-    "shopify/meta.json",
+    "shopify/_meta.json",
     "amazon/AMAZON.md",
-    "amazon/meta.json",
+    "amazon/_meta.json",
     "woocommerce/WOOCOMMERCE.md",
-    "woocommerce/meta.json",
+    "woocommerce/_meta.json",
     "squarespace/SQUARESPACE.md",
-    "squarespace/meta.json",
+    "squarespace/_meta.json",
     "bigcommerce/BIGCOMMERCE.md",
-    "bigcommerce/meta.json",
+    "bigcommerce/_meta.json",
     "wix/WIX.md",
-    "wix/meta.json",
+    "wix/_meta.json",
     "magento/MAGENTO.md",
-    "magento/meta.json",
+    "magento/_meta.json",
     "generic/GENERIC.md",
-    "generic/meta.json"
+    "generic/_meta.json"
   ]
 }
