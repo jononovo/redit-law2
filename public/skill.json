@@ -18,6 +18,8 @@
   "files": [
     "SKILL.md",
     "CHECKOUT-GUIDE.md",
+    "agents/OPENCLAW.md",
+    "agents/CLAUDE-PLUGIN.md",
     "STRIPE-X402-WALLET.md",
     "MANAGEMENT.md",
     "PROCUREMENT.md",
