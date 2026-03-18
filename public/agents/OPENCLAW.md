@@ -223,24 +223,9 @@ It exists only in memory for this single transaction. After checkout, the sub-ag
 
 ## Step 6: Detect Platform & Fill Checkout (Sub-Agent)
 
-### 6a. Platform Detection
+### 6a. Platform Detection & Routing
 
-Before filling any fields, detect the platform. Take one snapshot of the page head:
-
-```bash
-openclaw browser snapshot --efficient --selector "head" --depth 2
-```
-
-Match against these signals:
-
-| Signal in page source | Platform | Guide |
-|-----------------------|----------|-------|
-| `cdn.shopify.com` or `Shopify.theme` or `checkout.shopify.com` | **Shopify** | → `checkouts/SHOPIFY.md` |
-| `js.stripe.com` in script/iframe | **Stripe Elements** | → `checkouts/GENERIC.md` (Stripe iframe section) |
-| `/wp-content/plugins/woocommerce/` | **WooCommerce** | → `checkouts/GENERIC.md` |
-| `static.squarespace.com` | **Squarespace** | → `checkouts/GENERIC.md` |
-| `braintreegateway.com` | **Braintree** | → `checkouts/GENERIC.md` |
-| None of the above | **Generic** | → `checkouts/GENERIC.md` |
+See `PROCUREMENT.md` for merchant detection and routing. It has the canonical platform detection script, the routing table that maps each platform to its navigation and checkout guides, and the payment form pre-check to identify inline vs iframe fields.
 
 **Read the matching checkout guide file before proceeding.**
 

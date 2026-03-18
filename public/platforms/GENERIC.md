@@ -1,54 +1,19 @@
 ---
 name: platform-generic
 platform: generic
-updated: 2026-03-16
-phase: procurement / browsing / navigation
+updated: 2026-03-18
+phase: browsing / navigation
 ---
 
 # Generic — Platform Guide
 
-Use this guide when the site doesn't match any known platform (Shopify, Amazon, etc.). Covers how to identify what you're dealing with and navigate it efficiently.
+Use this guide when the site doesn't match any known platform (Shopify, Amazon, etc.). Covers how to navigate and interact with WooCommerce, Squarespace, BigCommerce, and unknown stores.
 
----
-
-## Platform Detection Script
-
-Run this on any page to identify the platform:
-
-```javascript
-var platform = 'unknown';
-
-// Shopify
-if (typeof Shopify !== 'undefined' && Shopify.shop) platform = 'shopify';
-// WooCommerce
-else if (document.querySelector('link[href*="woocommerce"], script[src*="woocommerce"], .woocommerce')) platform = 'woocommerce';
-// Squarespace
-else if (document.querySelector('script[src*="squarespace.com"]') || typeof Static !== 'undefined') platform = 'squarespace';
-// BigCommerce
-else if (document.querySelector('script[src*="cdn-bc.com"]') || typeof BCData !== 'undefined') platform = 'bigcommerce';
-// Wix
-else if (document.querySelector('meta[name="generator"][content*="Wix"]') || document.querySelector('script[src*="wixstatic.com"]')) platform = 'wix';
-// Magento
-else if (typeof require !== 'undefined' && document.querySelector('script[src*="mage"]')) platform = 'magento';
-
-platform;
-```
-
-**Result → action:**
-
-| Platform | Guide |
-|----------|-------|
-| `shopify` | → `platforms/SHOPIFY.md` |
-| `woocommerce` | → this file (WooCommerce section below) |
-| `squarespace` | → this file (Squarespace section below) |
-| `bigcommerce` | → this file (BigCommerce section below) |
-| `unknown` | → this file (Unknown site section below) |
+> **For platform detection and routing,** see `PROCUREMENT.md`. It will tell you which files to read.
 
 ---
 
 ## WooCommerce
-
-**Detection:** `woocommerce` in stylesheet/script URLs, or `.woocommerce` CSS class on the body.
 
 **URL patterns:**
 - Products: `/product/{slug}/` or `/shop/`
@@ -64,8 +29,6 @@ platform;
 
 ## Squarespace
 
-**Detection:** `static.squarespace.com` in scripts, or `Static` JS global.
-
 **Navigation:** Squarespace sites vary heavily by template. Products are typically at `/shop` or `/store`. Add-to-cart buttons use `.sqs-add-to-cart-button`.
 
 **Checkout:** Stripe Elements or Squarespace's built-in checkout. See `checkouts/GENERIC.md`.
@@ -73,8 +36,6 @@ platform;
 ---
 
 ## BigCommerce
-
-**Detection:** `cdn-bc.com` in scripts, or `BCData` JS global.
 
 **URL patterns:**
 - Products: `/{slug}/` (flat URLs)
@@ -94,13 +55,7 @@ If no platform is detected:
    - Cart icons or links in the header
    - Price elements near product images
 
-2. **Look for payment stack:**
-   - `iframe[src*="stripe"]` → Stripe Elements
-   - `iframe[src*="braintree"]` → Braintree
-   - `iframe[src*="adyen"]` → Adyen
-   - No iframes with card fields → likely inline checkout
-
-3. **Navigate cautiously:**
+2. **Navigate cautiously:**
    - Use `--efficient` snapshots scoped to forms
    - Don't snapshot entire pages on unknown sites — they may be very large
    - Look for standard e-commerce patterns: "Add to cart", "Buy now", "Checkout"
