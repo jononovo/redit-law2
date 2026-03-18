@@ -1,10 +1,10 @@
 ---
-name: platform-amazon
+name: merchant-amazon
 platform: amazon
-updated: 2026-03-16
+updated: 2026-03-18
 ---
 
-# Amazon Platform Guide
+# Amazon — Merchant Guide
 
 Amazon requires **account authentication** — no guest checkout. Uses saved payment methods and addresses from the account. No raw card entry at checkout.
 
@@ -12,7 +12,7 @@ Amazon requires **account authentication** — no guest checkout. Uses saved pay
 
 ---
 
-## Platform Detection
+## Detection
 
 ```javascript
 var isAmazon = (typeof ue !== 'undefined' && typeof AmazonUIPageJS !== 'undefined');
@@ -22,7 +22,9 @@ Other signals: `P` global, CDN hosts `images-na.ssl-images-amazon.com` and `m.me
 
 ---
 
-## URL Patterns
+## Navigation
+
+### URL Patterns
 
 | Page | Pattern |
 |------|---------|
@@ -32,9 +34,7 @@ Other signals: `P` global, CDN hosts `images-na.ssl-images-amazon.com` and `m.me
 | Sign-in | `/ap/signin` |
 | Checkout | `/checkout/entry/cart` |
 
----
-
-## Search Results (`/s?k=...`)
+### Search Results (`/s?k=...`)
 
 - Container: `[data-component-type="s-search-results"]`
 - Each card: `[data-component-type="s-search-result"]` with `data-asin`
@@ -44,7 +44,9 @@ Other signals: `P` global, CDN hosts `images-na.ssl-images-amazon.com` and `m.me
 
 ---
 
-## Product Page (`/dp/{ASIN}`)
+## Product Selection
+
+### Product Page (`/dp/{ASIN}`)
 
 | Element | Selector |
 |---------|----------|
@@ -60,9 +62,7 @@ Other signals: `P` global, CDN hosts `images-na.ssl-images-amazon.com` and `m.me
 
 **Add to Cart flow:** select variants → set quantity → click `#add-to-cart-button` → confirmation page at `/cart/smart-wagon?newItems=...` → navigate to `/gp/cart/view.html`.
 
----
-
-## Cart (`/gp/cart/view.html`)
+### Cart (`/gp/cart/view.html`)
 
 | Element | Selector |
 |---------|----------|
@@ -74,7 +74,9 @@ Other signals: `P` global, CDN hosts `images-na.ssl-images-amazon.com` and `m.me
 
 ---
 
-## Authentication
+## Checkout
+
+### Authentication
 
 Amazon **always requires sign-in** before checkout.
 
@@ -86,9 +88,7 @@ Amazon **always requires sign-in** before checkout.
 
 **Session:** If already logged in, "Proceed to checkout" goes directly to checkout. Amazon sessions persist if "Keep me signed in" is checked. Check sign-in state via the nav bar text ("Hello, Sign in" vs "Hello, {Name}").
 
----
-
-## Checkout (Post-Authentication)
+### Payment (Post-Authentication)
 
 Amazon checkout uses **saved payment methods and addresses** — no raw card entry.
 
@@ -102,7 +102,7 @@ The CreditClaw card must be **already added to the Amazon account**. The agent s
 
 ---
 
-## Agent Tips
+## Tips & Pitfalls
 
 1. **Don't scan full pages** — Amazon pages are massive. Use targeted selectors (`#add-to-cart-button`, `#productTitle`) instead of full snapshots.
 2. **ASIN is king** — use `/dp/{ASIN}` for direct product navigation.

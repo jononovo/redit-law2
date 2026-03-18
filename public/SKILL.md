@@ -28,16 +28,19 @@ All companion files are bundled in this skill directory.
 | `agents/OPENCLAW.md` | OpenClaw sub-agent checkout — spawn, execute, report, confirm, verify deletion |
 | `agents/CLAUDE-PLUGIN.md` | Claude Desktop/Cowork — plugin-based secure checkout (coming soon) |
 | `MANAGEMENT.md` | Bot self-management — transaction history, profile updates |
-| `PROCUREMENT.md` | Discover vendors and merchants — find checkout skills for any purchase |
+| `SHOPPING-GUIDE.md` | Discover vendors and merchants — find checkout skills for any purchase |
 | `MY-STORE.md` | Sell to anyone — checkout pages, payment links, invoices, shops |
 | `HEARTBEAT.md` | Lightweight polling routine for balance and spending checks |
 | `STRIPE-X402-WALLET.md` | x402 payment signing, USDC balance, Stripe Wallet transactions |
 | `WEBHOOK.md` | Optional webhook setup, events, and signature verification |
-| `checkouts/SHOPIFY.md` | Shopify checkout flow |
-| `checkouts/GENERIC.md` | Generic web checkout flow |
-| `platforms/SHOPIFY.md` | Shopify platform integration |
-| `platforms/GENERIC.md` | Generic platform integration |
-| `platforms/AMAZON.md` | Amazon platform integration |
+| `shopify/SHOPIFY.md` | Shopify — detection, navigation, checkout (iframe card fields) |
+| `amazon/AMAZON.md` | Amazon — detection, navigation, checkout (saved payment methods) |
+| `woocommerce/WOOCOMMERCE.md` | WooCommerce — detection, navigation, checkout (Stripe Elements) |
+| `squarespace/SQUARESPACE.md` | Squarespace — detection, navigation, checkout (Stripe Elements) |
+| `bigcommerce/BIGCOMMERCE.md` | BigCommerce — detection, navigation, checkout (multi-step) |
+| `wix/WIX.md` | Wix — detection, navigation, checkout (experimental) |
+| `magento/MAGENTO.md` | Magento — detection, navigation, checkout (multi-step, experimental) |
+| `generic/GENERIC.md` | Universal fallback — dropdowns, iframes, troubleshooting, budgets |
 | `skill.json` | Machine-readable skill metadata |
 
 **Base URL:** `https://creditclaw.com/api/v1`
@@ -99,9 +102,10 @@ CreditClaw is designed with defense-in-depth to protect your owner's funds:
 5. Your wallet activates — call GET /bot/status until status changes to "active"
 6. You poll GET /bot/status periodically to monitor balance across all rails
 7. You check GET /bot/wallet/spending for your owner's permission rules
-8. When you need to make a purchase, check the Secure Card Handoff table for your platform's guide
-9. View your transaction history and manage your profile (see MANAGEMENT.md)
-10. Human monitors activity from creditclaw.com/overview
+8. When you need to buy something, start with SHOPPING-GUIDE.md — detect the merchant, navigate the store, find the product, and add to cart
+9. When ready to check out, follow CHECKOUT-GUIDE.md for approval, decryption, and payment form filling (check the Secure Card Handoff table for your platform's guide)
+10. View your transaction history and manage your profile (see MANAGEMENT.md)
+11. Human monitors activity from creditclaw.com/overview
 ```
 
 ---
@@ -479,8 +483,8 @@ Base URL: `https://creditclaw.com/api/v1`
 
 | Method | Endpoint | Description | Rate Limit | File |
 |--------|----------|-------------|------------|------|
-| GET | `/bot/skills` | Discover vendors and merchants. Supports filtering by category, search, checkout method, capability, maturity. | — | `PROCUREMENT.md` |
-| GET | `/bot/skills/{slug}` | Get a vendor's full checkout skill (returns Markdown). | — | `PROCUREMENT.md` |
+| GET | `/bot/skills` | Discover vendors and merchants. Supports filtering by category, search, checkout method, capability, maturity. | — | `SHOPPING-GUIDE.md` |
+| GET | `/bot/skills/{slug}` | Get a vendor's full checkout skill (returns Markdown). | — | `SHOPPING-GUIDE.md` |
 
 ## Error Responses
 

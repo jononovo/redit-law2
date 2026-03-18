@@ -1,14 +1,30 @@
 ---
-name: checkout-generic
+name: merchant-generic
 platform: generic
 updated: 2026-03-18
 ---
 
-# Generic Checkout
+# Generic — Universal Checkout Reference
 
-Use this guide when no platform-specific checkout guide exists. Covers inline card fields, Stripe Elements iframes, Braintree/Adyen, WooCommerce, and multi-step checkouts.
+This is **not** a platform guide. It is the universal browser-control shopping reference for when no specific merchant guide applies, or when a merchant guide references shared mechanics.
 
-> **For platform detection and form identification,** see `PROCUREMENT.md`. It will tell you which checkout guide to use and what type of payment form you're dealing with.
+> **For platform detection and routing,** see `SHOPPING-GUIDE.md`. It will tell you which merchant file to read.
+
+---
+
+## Unknown Sites — Browsing Strategy
+
+If no platform is detected:
+
+1. **Look for product/cart patterns:**
+   - Forms with add-to-cart actions
+   - Cart icons or links in the header
+   - Price elements near product images
+
+2. **Navigate cautiously:**
+   - Use `--efficient` snapshots scoped to forms
+   - Don't snapshot entire pages on unknown sites — they may be very large
+   - Look for standard e-commerce patterns: "Add to cart", "Buy now", "Checkout"
 
 ---
 
@@ -56,21 +72,6 @@ openclaw browser type e<ref> "<decrypted cvv>"
 ```
 
 **Important:** The submit button is always on the main page, not inside the iframe. Take a new main-page snapshot to find and click it.
-
----
-
-## WooCommerce
-
-WooCommerce usually uses Stripe Elements for card fields. The checkout form is `form.checkout`.
-
-```bash
-openclaw browser snapshot --efficient --selector "form.checkout"
-```
-
-1. Fill billing fields (name, address, email, phone) on the main page
-2. If a payment method selector exists, click "Credit Card (Stripe)" if not already selected
-3. Follow the **Stripe Elements** instructions above for card fields
-4. Submit is typically a "Place order" button on the main page
 
 ---
 
@@ -146,7 +147,7 @@ openclaw browser press Enter               # select
 
 ---
 
-## Budget
+## Snapshot Budget
 
 | Checkout type | Target | Max |
 |---------------|--------|-----|

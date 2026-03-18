@@ -15,7 +15,7 @@ credentials: [CREDITCLAW_API_KEY]
 This is the single decision point when you need to buy something. It answers three questions:
 1. Does CreditClaw have a verified skill for this merchant?
 2. What platform is the merchant using?
-3. Which files should you read for navigation and checkout?
+3. What kind of payment form does the checkout use?
 
 ---
 
@@ -42,15 +42,43 @@ Land on the merchant's site and run platform detection. This determines how to n
 
 ```javascript
 var p = 'unknown';
-if (typeof Shopify !== 'undefined' && Shopify.shop) p = 'shopify';
-else if (document.querySelector('link[href*="woocommerce"], script[src*="woocommerce"], .woocommerce')) p = 'woocommerce';
-else if (document.querySelector('script[src*="squarespace.com"]') || typeof Static !== 'undefined') p = 'squarespace';
-else if (document.querySelector('script[src*="cdn-bc.com"]') || typeof BCData !== 'undefined') p = 'bigcommerce';
-else if (document.querySelector('meta[name="generator"][content*="Wix"]') || document.querySelector('script[src*="wixstatic.com"]')) p = 'wix';
-else if (typeof require !== 'undefined' && document.querySelector('script[src*="mage"]')) p = 'magento';
-else if (typeof ue !== 'undefined' && typeof AmazonUIPageJS !== 'undefined') p = 'amazon';
+
+// Shopify
+if ((typeof Shopify !== 'undefined' && Shopify.shop)
+  || document.querySelector('script[src*="cdn.shopify.com"]')
+  || document.querySelector('link[href*="monorail-edge.shopifysvc.com"]')
+  || document.querySelector('[id^="shopify-section"]')) p = 'shopify';
+
+// Amazon
+else if ((typeof ue !== 'undefined' && typeof AmazonUIPageJS !== 'undefined')
+  || (document.querySelector('#nav-logo-sprites') && document.querySelector('#twotabsearchtextbox'))
+  || document.querySelector('script[src*="images-na.ssl-images-amazon.com"]')) p = 'amazon';
+
+// WooCommerce
+else if (document.querySelector('link[href*="woocommerce"], script[src*="woocommerce"], .woocommerce')
+  || document.querySelector('script[src*="wp-content/plugins/woocommerce"]')) p = 'woocommerce';
+
+// Squarespace
+else if (document.querySelector('script[src*="squarespace.com"]')
+  || typeof Static !== 'undefined') p = 'squarespace';
+
+// BigCommerce
+else if (document.querySelector('script[src*="cdn-bc.com"]')
+  || typeof BCData !== 'undefined') p = 'bigcommerce';
+
+// Wix
+else if (document.querySelector('meta[name="generator"][content*="Wix"]')
+  || document.querySelector('script[src*="wixstatic.com"]')) p = 'wix';
+
+// Magento
+else if (document.querySelector('script[src*="mage/"]')
+  || document.querySelector('script[src*="varien"]')
+  || document.querySelector('script[src*="requirejs/require"]')) p = 'magento';
+
 p;
 ```
+
+> **Why this order matters:** Shopify and Amazon are checked first because they have the most reliable signals and are the most common purchase targets. Generic platforms (WooCommerce, etc.) are checked after to avoid false positives from third-party scripts loaded on major platforms.
 
 ---
 
@@ -74,9 +102,37 @@ Use your detection result to pick the correct navigation and checkout guides:
 
 ---
 
-## Step 4: Identify the Payment Form
+## Step 4: Browse & Select Products
 
-Once you're on the checkout page, determine what kind of payment form you're dealing with before filling any fields:
+Follow the navigation guide to:
+1. Navigate to the product or collection page
+2. Select the correct variant (size, color, quantity)
+3. Add to cart or use "Buy it now"
+
+**General tips (all platforms):**
+- Don't snapshot full pages — scope to product forms or specific sections
+- Use URL patterns when possible (faster than clicking through navigation)
+- Confirm price and item name before proceeding to checkout
+
+---
+
+## Step 5: Proceed to Checkout
+
+When ready to purchase:
+1. Navigate to or trigger checkout (navigation guide explains how)
+2. For the full purchase API flow (approval, decryption, confirmation), see your agent platform's guide in the Secure Card Handoff table in `SKILL.md`
+
+---
+
+## Step 6: Identify the Payment Form
+
+Once you're on the checkout page (after approval and decryption), determine what kind of payment form you're dealing with before filling any fields.
+
+**If you already know it's Shopify** → go directly to `checkouts/SHOPIFY.md`. Shopify checkout always uses cross-origin iframes (`card-fields-*` pattern).
+
+**If you already know it's Amazon** → skip this step. Amazon uses saved payment methods, not card form entry.
+
+**For all other platforms**, take a scoped snapshot:
 
 ```bash
 openclaw browser snapshot --efficient --selector "form"
@@ -99,28 +155,7 @@ From the snapshot, determine:
 | Multiple pages/sections with "Continue" buttons | **Multi-step** | `checkouts/GENERIC.md` → Multi-Step Checkout |
 | No card fields visible, payment method tabs/radios | Select "Credit Card" first, then re-check |
 
----
-
-## Step 5: Browse & Select Products
-
-Follow the navigation guide to:
-1. Navigate to the product or collection page
-2. Select the correct variant (size, color, quantity)
-3. Add to cart or use "Buy it now"
-
-**General tips (all platforms):**
-- Don't snapshot full pages — scope to product forms or specific sections
-- Use URL patterns when possible (faster than clicking through navigation)
-- Confirm price and item name before proceeding to checkout
-
----
-
-## Step 6: Proceed to Checkout
-
-When ready to purchase:
-1. Navigate to or trigger checkout (navigation guide explains how)
-2. Follow the checkout guide for your platform to fill the payment form
-3. For the full purchase API flow (approval, decryption, confirmation), see your agent platform's guide in the Secure Card Handoff table in `SKILL.md`
+Follow the matched checkout guide section to fill the payment form.
 
 ---
 
