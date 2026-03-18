@@ -138,11 +138,11 @@ Perform AES-256-GCM decryption using `key_hex`, `iv_hex`, and the encrypted card
 
 ## Step 4: Detect Platform & Fill Checkout
 
-### 4a. Platform Detection & Routing
+### 4a. Platform & Payment Form Detection
 
-See `PROCUREMENT.md` for merchant detection and routing. It has the canonical platform detection script, the routing table that maps each platform to its navigation and checkout guides, and the payment form pre-check to identify inline vs iframe fields.
+If you haven't already detected the platform via `PROCUREMENT.md`, do it now — see PROCUREMENT.md Step 2 (platform detection) and Step 6 (payment form identification).
 
-**Read the matching checkout guide file before proceeding.**
+If you already ran detection during the browsing phase, skip to 4b.
 
 ### 4b. Browser Interaction Rules (All Platforms)
 

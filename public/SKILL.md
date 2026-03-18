@@ -99,9 +99,10 @@ CreditClaw is designed with defense-in-depth to protect your owner's funds:
 5. Your wallet activates — call GET /bot/status until status changes to "active"
 6. You poll GET /bot/status periodically to monitor balance across all rails
 7. You check GET /bot/wallet/spending for your owner's permission rules
-8. When you need to make a purchase, check the Secure Card Handoff table for your platform's guide
-9. View your transaction history and manage your profile (see MANAGEMENT.md)
-10. Human monitors activity from creditclaw.com/overview
+8. When you need to buy something, start with PROCUREMENT.md — detect the merchant, navigate the store, find the product, and add to cart
+9. When ready to check out, follow CHECKOUT-GUIDE.md for approval, decryption, and payment form filling (check the Secure Card Handoff table for your platform's guide)
+10. View your transaction history and manage your profile (see MANAGEMENT.md)
+11. Human monitors activity from creditclaw.com/overview
 ```
 
 ---
