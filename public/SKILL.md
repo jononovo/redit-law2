@@ -33,11 +33,14 @@ All companion files are bundled in this skill directory.
 | `HEARTBEAT.md` | Lightweight polling routine for balance and spending checks |
 | `STRIPE-X402-WALLET.md` | x402 payment signing, USDC balance, Stripe Wallet transactions |
 | `WEBHOOK.md` | Optional webhook setup, events, and signature verification |
-| `checkouts/SHOPIFY.md` | Shopify checkout flow |
-| `checkouts/GENERIC.md` | Generic web checkout flow |
-| `platforms/SHOPIFY.md` | Shopify platform integration |
-| `platforms/GENERIC.md` | Generic platform integration |
-| `platforms/AMAZON.md` | Amazon platform integration |
+| `shopify/SHOPIFY.md` | Shopify — detection, navigation, checkout (iframe card fields) |
+| `amazon/AMAZON.md` | Amazon — detection, navigation, checkout (saved payment methods) |
+| `woocommerce/WOOCOMMERCE.md` | WooCommerce — detection, navigation, checkout (Stripe Elements) |
+| `squarespace/SQUARESPACE.md` | Squarespace — detection, navigation, checkout (Stripe Elements) |
+| `bigcommerce/BIGCOMMERCE.md` | BigCommerce — detection, navigation, checkout (multi-step) |
+| `wix/WIX.md` | Wix — detection, navigation, checkout (experimental) |
+| `magento/MAGENTO.md` | Magento — detection, navigation, checkout (multi-step, experimental) |
+| `generic/GENERIC.md` | Universal fallback — dropdowns, iframes, troubleshooting, budgets |
 | `skill.json` | Machine-readable skill metadata |
 
 **Base URL:** `https://creditclaw.com/api/v1`

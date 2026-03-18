@@ -82,23 +82,22 @@ p;
 
 ---
 
-## Step 3: Route to the Right Files
+## Step 3: Route to the Right Guide
 
-Use your detection result to pick the correct navigation and checkout guides:
+Use your detection result to load the merchant guide. Each guide covers the full flow — detection, navigation, product selection, and checkout — in a single file.
 
-| Platform | Navigation Guide | Checkout Guide |
-|----------|-----------------|----------------|
-| `shopify` | `platforms/SHOPIFY.md` | `checkouts/SHOPIFY.md` |
-| `amazon` | `platforms/AMAZON.md` | *(uses saved payment methods)* |
-| `woocommerce` | `platforms/GENERIC.md` | `checkouts/GENERIC.md` |
-| `squarespace` | `platforms/GENERIC.md` | `checkouts/GENERIC.md` |
-| `bigcommerce` | `platforms/GENERIC.md` | `checkouts/GENERIC.md` |
-| `wix` | `platforms/GENERIC.md` | `checkouts/GENERIC.md` |
-| `magento` | `platforms/GENERIC.md` | `checkouts/GENERIC.md` |
-| `unknown` | `platforms/GENERIC.md` | `checkouts/GENERIC.md` |
+| Platform | Guide |
+|----------|-------|
+| `shopify` | `shopify/SHOPIFY.md` |
+| `amazon` | `amazon/AMAZON.md` |
+| `woocommerce` | `woocommerce/WOOCOMMERCE.md` |
+| `squarespace` | `squarespace/SQUARESPACE.md` |
+| `bigcommerce` | `bigcommerce/BIGCOMMERCE.md` |
+| `wix` | `wix/WIX.md` |
+| `magento` | `magento/MAGENTO.md` |
+| `unknown` | `generic/GENERIC.md` |
 
-1. **Read the navigation guide** for URL patterns, browsing, and how to get to checkout
-2. **Read the checkout guide** for how to fill the payment form
+Read the guide for your detected platform. It contains everything you need from browsing through checkout.
 
 ---
 
@@ -128,7 +127,7 @@ When ready to purchase:
 
 Once you're on the checkout page (after approval and decryption), determine what kind of payment form you're dealing with before filling any fields.
 
-**If you already know it's Shopify** → go directly to `checkouts/SHOPIFY.md`. Shopify checkout always uses cross-origin iframes (`card-fields-*` pattern).
+**If you already know it's Shopify** → go directly to `shopify/SHOPIFY.md` → Checkout section. Shopify checkout always uses cross-origin iframes (`card-fields-*` pattern).
 
 **If you already know it's Amazon** → skip this step. Amazon uses saved payment methods, not card form entry.
 
@@ -145,17 +144,17 @@ openclaw browser snapshot --efficient --depth 4
 
 From the snapshot, determine:
 
-| What you see | Payment type | Checkout guide section |
-|-------------|-------------|----------------------|
-| Card fields as regular `<input>` elements | **Inline** | `checkouts/GENERIC.md` → Inline Card Fields |
-| `iframe[src*="js.stripe.com"]` | **Stripe Elements** | `checkouts/GENERIC.md` → Stripe Elements |
-| `iframe[name*="braintree"]` | **Braintree** | `checkouts/GENERIC.md` → Braintree / Adyen |
-| `iframe[src*="adyen"]` | **Adyen** | `checkouts/GENERIC.md` → Braintree / Adyen |
-| `iframe[name^="card-fields-"]` on Shopify | **Shopify iframes** | `checkouts/SHOPIFY.md` → Phase 2 |
-| Multiple pages/sections with "Continue" buttons | **Multi-step** | `checkouts/GENERIC.md` → Multi-Step Checkout |
+| What you see | Payment type | Guide |
+|-------------|-------------|-------|
+| Card fields as regular `<input>` elements | **Inline** | `generic/GENERIC.md` → Inline Card Fields |
+| `iframe[src*="js.stripe.com"]` | **Stripe Elements** | `generic/GENERIC.md` → Stripe Elements |
+| `iframe[name*="braintree"]` | **Braintree** | `generic/GENERIC.md` → Braintree / Adyen |
+| `iframe[src*="adyen"]` | **Adyen** | `generic/GENERIC.md` → Braintree / Adyen |
+| `iframe[name^="card-fields-"]` on Shopify | **Shopify iframes** | `shopify/SHOPIFY.md` → Checkout |
+| Multiple pages/sections with "Continue" buttons | **Multi-step** | `generic/GENERIC.md` → Multi-Step Checkout |
 | No card fields visible, payment method tabs/radios | Select "Credit Card" first, then re-check |
 
-Follow the matched checkout guide section to fill the payment form.
+Follow the matched guide section to fill the payment form.
 
 ---
 
