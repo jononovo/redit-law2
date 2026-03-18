@@ -1,5 +1,5 @@
 ---
-name: creditclaw-procurement
+name: creditclaw-shopping-guide
 version: 2.9.0
 updated: 2026-03-18
 description: "Merchant detection, routing, and vendor discovery — the single decision point before checkout."

@@ -140,7 +140,7 @@ Perform AES-256-GCM decryption using `key_hex`, `iv_hex`, and the encrypted card
 
 ### 4a. Platform & Payment Form Detection
 
-If you haven't already detected the platform via `PROCUREMENT.md`, do it now — see PROCUREMENT.md Step 2 (platform detection) and Step 6 (payment form identification).
+If you haven't already detected the platform via `SHOPPING-GUIDE.md`, do it now — see SHOPPING-GUIDE.md Step 2 (platform detection) and Step 6 (payment form identification).
 
 If you already ran detection during the browsing phase, skip to 4b.
 

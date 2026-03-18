@@ -9,7 +9,7 @@ phase: browsing / navigation
 
 Use this guide when the site doesn't match any known platform (Shopify, Amazon, etc.). Covers how to navigate and interact with WooCommerce, Squarespace, BigCommerce, and unknown stores.
 
-> **For platform detection and routing,** see `PROCUREMENT.md`. It will tell you which files to read.
+> **For platform detection and routing,** see `SHOPPING-GUIDE.md`. It will tell you which files to read.
 
 ---
 

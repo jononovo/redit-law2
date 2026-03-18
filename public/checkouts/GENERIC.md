@@ -8,7 +8,7 @@ updated: 2026-03-18
 
 Use this guide when no platform-specific checkout guide exists. Covers inline card fields, Stripe Elements iframes, Braintree/Adyen, WooCommerce, and multi-step checkouts.
 
-> **For platform detection and form identification,** see `PROCUREMENT.md`. It will tell you which checkout guide to use and what type of payment form you're dealing with.
+> **For platform detection and form identification,** see `SHOPPING-GUIDE.md`. It will tell you which checkout guide to use and what type of payment form you're dealing with.
 
 ---
 
