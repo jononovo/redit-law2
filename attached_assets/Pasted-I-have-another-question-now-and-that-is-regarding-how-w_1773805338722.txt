@@ -1,0 +1,182 @@
+I have another question now and that is regarding how we should manage our merchant-specific skills/files.
+
+    folder per merchant ( with single or more files) or folder including all merchants as a single file each. ( like the "agents" folder). If we had a folder for merchant, we could add a meta-data file in there, and it would also be easy to add a skill file in there per merchant if we need/wanted to segment more completely. 
+
+    Unify the two files per merchant into 1 (procurement & checkout in 1 file.)
+    Any thoughts on this?
+
+11:28 PM
+
+Good questions. Let me think through both.
+
+On question 1 — folder per merchant vs. single folder with all merchants:
+
+Folder per merchant is the stronger choice. Here's why:
+
+Right now you have platforms/SHOPIFY.md and checkouts/SHOPIFY.md — two files about the same merchant split across two folders organized by phase. That means when you want to update everything about Shopify, you're hunting across two directories. A folder-per-merchant structure flips this: shopify/platform.md and shopify/checkout.md live together. Everything about one merchant in one place.
+
+The metadata file point you raised is the real win. A shopify/meta.json could carry structured data — platform detection signals, agent friendliness score, supported checkout methods, last verified date. The PROCUREMENT.md detection script could eventually be generated from these meta files rather than hand-maintained. And when the Skill Builder auto-generates vendor skills, it already produces a skill.json per vendor — that maps cleanly to a meta.json in a vendor folder.
+
+It also aligns with the standalone skill direction from your earlier conversation — each merchant folder can optionally include a SKILL.md (or INDEX.md) that makes it usable independently if someone only needs that one merchant.
+
+The "agents" folder pattern (single folder, one file per agent) works there because agent files are thin wrappers with minimal cross-referencing. Merchant files are heavier — they have platform-specific detection, navigation patterns, checkout quirks, and potentially multiple files as merchants get more complex. Amazon is already complex enough that it could warrant separate files for search, checkout, and order tracking. A single merchants/ folder with flat files would get crowded fast.
+
+On question 2 — unifying procurement and checkout into one file per merchant:
+
+I'd unify them. For Shopify specifically, platforms/SHOPIFY.md is 142 lines and checkouts/SHOPIFY.md is 153 lines. Combined that's around 295 lines — manageable for a single file. And the content flows naturally: detect → navigate → browse → add to cart → fill checkout form. Splitting that across two files forces the agent to context-switch mid-purchase for no real benefit.
+
+The only reason they were separate was because the old structure organized by phase (platforms/ and checkouts/), not by merchant. Once you organize by merchant, the split doesn't serve a purpose anymore.
+
+For the generic files it's a tighter call — platforms/GENERIC.md covers WooCommerce, Squarespace, BigCommerce, and unknown sites all in one file, and checkouts/GENERIC.md covers Stripe, Braintree, Adyen, inline fields, and multi-step. Those are broader reference files, not merchant-specific. I'd keep generic as two files (navigation and checkout) since they're not really "one merchant" — they're fallback reference guides that cover many scenarios.
+
+So the structure I'd suggest:
+
+shopify/
+  SHOPIFY.md          ← unified: detection, navigation, checkout
+  meta.json           ← structured metadata
+
+amazon/
+  AMAZON.md           ← unified: detection, navigation, checkout (saved payment methods)
+  meta.json
+
+generic/
+  NAVIGATION.md       ← browsing patterns for WooCommerce, Squarespace, BigCommerce, unknown
+  CHECKOUT.md         ← form filling for Stripe, Braintree, Adyen, inline, multi-step
+
+PROCUREMENT.md stays as the routing brain that points to the right merchant folder. The per-merchant files become self-contained — an agent reads PROCUREMENT.md, gets told "you're on Shopify," and then reads one file (shopify/SHOPIFY.md) that takes it from navigation through checkout.
+
+Want me to draft what the unified shopify/SHOPIFY.md would look like by merging the two existing files?
+
+I think we should add a folder for each of the platforms, including big commerce and magento 
+I don't see why we need to merge them into generic folder, generic should have its own folder with its own generic advice for everything that we're not sure about, and that the agent still needs to navigate with. 
+
+Perhaps there's just generic sort of wisdom about browser-control shopping and finding stuff that is helpful. And speeds things up for the agent a bit.
+
+Does that make sense?
+
+Can you create a plan that segments each platform into its own folder?
+
+Does that make sense?
+11:36 PM
+
+Yes, makes total sense. Every platform gets its own folder — even the ones that currently share the generic files. Each folder is self-contained. The generic folder becomes purely "I don't know what this is" fallback advice plus general browser-control wisdom.
+
+Let me map out what exists today and what each folder would need.
+
+Current files and where their content goes:
+Current file	Content	New home
+platforms/SHOPIFY.md (142 lines)	Detection signals, URL patterns, navigation, variant selection, themes	shopify/SHOPIFY.md (merged with checkout)
+checkouts/SHOPIFY.md (153 lines)	Iframe layout, shipping fill, card fields digit-by-digit, submit, troubleshooting	shopify/SHOPIFY.md (merged with platform)
+platforms/AMAZON.md (111 lines)	Detection, URL patterns, search results, product page, cart, auth, checkout	amazon/AMAZON.md
+platforms/GENERIC.md — WooCommerce section (lines 49–62)	URL patterns, add to cart, checkout note	woocommerce/WOOCOMMERCE.md
+platforms/GENERIC.md — Squarespace section (lines 65–71)	Detection, navigation, checkout note	squarespace/SQUARESPACE.md
+platforms/GENERIC.md — BigCommerce section (lines 75–84)	URL patterns, cart, multi-step note	bigcommerce/BIGCOMMERCE.md
+platforms/GENERIC.md — Wix (not documented yet)	Only in detection script	wix/WIX.md (new — needs content)
+platforms/GENERIC.md — Magento (not documented yet)	Only in detection script	magento/MAGENTO.md (new — needs content)
+checkouts/GENERIC.md — Stripe Elements (lines 50–74)	Single iframe, split iframe, submit button note	Shared across woocommerce/, squarespace/, and others that use Stripe
+checkouts/GENERIC.md — Inline fields (lines 30–47)	Type into regular inputs, separate month/year dropdowns	Goes into platforms that use inline checkout
+checkouts/GENERIC.md — Braintree/Adyen (lines 93–107)	Iframe targeting for both	Goes into platforms that use these processors
+checkouts/GENERIC.md — Multi-step (lines 110–124)	Continue → wait → snapshot → repeat	Goes into bigcommerce/ and magento/
+checkouts/GENERIC.md — Dropdowns (lines 128–148)	Native select, custom/React, arrow key fallback	generic/GENERIC.md (universal advice)
+checkouts/GENERIC.md — Troubleshooting (lines 152–161)	Field not visible, click fails, overlay, dropdown won't open	generic/GENERIC.md (universal advice)
+checkouts/GENERIC.md — Budget table (lines 165–173)	Snapshot budgets per checkout type	generic/GENERIC.md (universal advice)
+
+Proposed folder structure:
+
+shopify/
+  SHOPIFY.md          ← merged platform + checkout (detection, navigation, iframe checkout)
+  meta.json           ← structured metadata
+
+amazon/
+  AMAZON.md           ← merged platform + checkout (detection, navigation, saved payment methods)
+  meta.json
+
+woocommerce/
+  WOOCOMMERCE.md      ← detection, URL patterns, navigation, Stripe Elements checkout
+  meta.json
+
+squarespace/
+  SQUARESPACE.md      ← detection, navigation, Stripe/built-in checkout
+  meta.json
+
+bigcommerce/
+  BIGCOMMERCE.md      ← detection, URL patterns, multi-step checkout
+  meta.json
+
+wix/
+  WIX.md              ← detection, navigation patterns (needs research/content)
+  meta.json
+
+magento/
+  MAGENTO.md          ← detection, URL patterns, multi-step checkout (needs research/content)
+  meta.json
+
+generic/
+  GENERIC.md          ← unknown platform fallback: browser-control tips, dropdown handling,
+                         troubleshooting, snapshot budgets, payment form identification,
+                         general shopping patterns (add to cart, cart icons, price elements)
+  meta.json
+
+What each platform file contains (unified structure):
+
+Every platform file follows the same template:
+
+    Detection — confirmation signals specific to this platform
+    Navigation — URL patterns, how to browse, how to search
+    Product selection — add to cart, variant handling, "buy it now" shortcuts
+    Checkout — how to fill the payment form on this specific platform (iframe patterns, field quirks, submit flow)
+    Tips & pitfalls — platform-specific gotchas
+
+What generic/GENERIC.md becomes:
+
+Not a platform guide — it's the universal browser-control shopping reference. Content:
+
+    General e-commerce patterns (finding add-to-cart buttons, cart icons, price elements)
+    Dropdown handling (native <select>, custom/React, arrow key fallback)
+    Iframe detection and interaction (Stripe, Braintree, Adyen patterns)
+    Multi-step checkout flow (Continue → wait → snapshot → repeat)
+    Inline card field filling
+    Troubleshooting table (field not visible, click fails, overlay, etc.)
+    Snapshot budget guidelines
+    "Unknown site" browsing strategy
+
+An agent reading any platform file might still reference generic/GENERIC.md for the universal bits — for example, woocommerce/WOOCOMMERCE.md would say "for Stripe iframe filling, see generic/GENERIC.md" rather than duplicating those instructions.
+
+What needs to be written from scratch:
+
+    wix/WIX.md — Wix has very little documented right now. Would need research on their URL patterns, product page structure, and checkout flow.
+    magento/MAGENTO.md — Same situation. Magento 2 has a known multi-step checkout but the specifics aren't in the current files.
+    meta.json for each folder — structured data (detection signals, agent friendliness, checkout methods, last verified date).
+
+What changes in PROCUREMENT.md:
+
+The routing table updates from pointing to platforms/ and checkouts/ to pointing to the unified merchant folders:
+markdown
+
+| Platform | Guide |
+|----------|-------|
+| `shopify` | → `shopify/SHOPIFY.md` |
+| `amazon` | → `amazon/AMAZON.md` |
+| `woocommerce` | → `woocommerce/WOOCOMMERCE.md` |
+| `squarespace` | → `squarespace/SQUARESPACE.md` |
+| `bigcommerce` | → `bigcommerce/BIGCOMMERCE.md` |
+| `wix` | → `wix/WIX.md` |
+| `magento` | → `magento/MAGENTO.md` |
+| `unknown` | → `generic/GENERIC.md` |
+
+Single column now — one file per platform instead of separate navigation + checkout columns.
+
+What gets deleted:
+
+    platforms/SHOPIFY.md — absorbed into shopify/SHOPIFY.md
+    platforms/AMAZON.md — absorbed into amazon/AMAZON.md
+    platforms/GENERIC.md — split across individual platform folders + generic/GENERIC.md
+    checkouts/SHOPIFY.md — absorbed into shopify/SHOPIFY.md
+    checkouts/GENERIC.md — split across individual platform folders + generic/GENERIC.md
+    The platforms/ and checkouts/ folders themselves
+
+Cross-referencing pattern:
+
+Platform files should be self-contained for their own checkout flow but can reference generic/GENERIC.md for shared mechanics. For example, WooCommerce typically uses Stripe Elements — woocommerce/WOOCOMMERCE.md would include a section on "Checkout: Stripe Elements" that either has the Stripe iframe instructions inline or says "follow the Stripe Elements section in generic/GENERIC.md." I'd lean toward keeping it inline in each platform file so they stay truly self-contained, even if it means some duplication of the Stripe iframe instructions across WooCommerce, Squarespace, etc. The duplication is small (maybe 15 lines) and the payoff is that an agent only ever needs to read one file per merchant.
+
+Want me to start building these files, or do you want to adjust the plan first?
