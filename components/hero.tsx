@@ -82,10 +82,10 @@ export function Hero() {
   };
 
   const avatars = [
-    { type: 'image' as const, src: '/images/avatar_1.jpg' },
+    { type: 'image' as const, src: '/assets/images/avatar_1.jpg' },
     { type: 'initial' as const, text: 'JD', color: 'bg-blue-100 text-blue-700' },
-    { type: 'image' as const, src: '/images/avatar_2.jpg' },
-    { type: 'image' as const, src: '/images/avatar_3.jpg' },
+    { type: 'image' as const, src: '/assets/images/avatar_2.jpg' },
+    { type: 'image' as const, src: '/assets/images/avatar_3.jpg' },
     { type: 'initial' as const, text: 'TS', color: 'bg-orange-100 text-orange-700' },
   ];
 
