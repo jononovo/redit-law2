@@ -1,0 +1,12 @@
+A few thoughts:
+One disagreement: the merchants/ parent folder.
+The plan adds a merchants/ wrapper folder, making paths like merchants/shopify/SHOPIFY.md. I'd push back on this. You said earlier you wanted to keep the folder structure flat with only one level of subfolders. Adding merchants/ creates two levels of nesting (merchants/shopify/SHOPIFY.md) and makes every path longer for no functional benefit. The public/ root won't get cluttered — these merchant folders replace the platforms/ and checkouts/ folders that are being deleted, so the total folder count stays roughly the same.
+shopify/SHOPIFY.md is cleaner than merchants/shopify/SHOPIFY.md. It also matters for the standalone skill use case — if someone pulls just the shopify/ folder to use independently, having it named shopify/ is self-explanatory. Having it be merchants/shopify/ implies a parent context that won't exist when it's extracted.
+The content duplication strategy is the right call.
+Inlining Stripe iframe instructions in WooCommerce, Squarespace, etc. rather than always pointing to generic — correct. An agent reading woocommerce/WOOCOMMERCE.md should be able to complete the entire checkout without reading another file. The ~15 lines of Stripe instructions duplicated across 3-4 files is a small price for that self-containment. And generic keeps the canonical version for unknown platforms.
+Dropdowns, troubleshooting, and budgets staying only in generic makes sense too — those are truly universal and don't benefit from being duplicated into every merchant file.
+The meta.json schema is good but could use one addition.
+Consider adding a detection_script field — the actual JavaScript snippet for this platform, not just human-readable signal descriptions. That way the PROCUREMENT.md detection script could eventually be assembled programmatically from the meta.json files rather than hand-maintained. Something like:
+json{
+  "detection_script": "(typeof Shopify !== 'undefined' && Shopify.shop) || document.querySelector('script[src*=\"cdn.shopify.com\"]') || document.querySelector('link[href*=\"monorail-edge.shopifysvc.com\"]') || document.querySelector('[id^=\"shopify-section\"]')"
+}
