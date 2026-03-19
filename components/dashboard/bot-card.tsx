@@ -18,13 +18,14 @@ interface BotCardProps {
   description?: string | null;
   walletStatus: string;
   webhookStatus?: string;
+  tunnelStatus?: string;
   callbackUrl?: string | null;
   createdAt: string;
   claimedAt?: string | null;
   onUpdated?: () => void;
 }
 
-export function BotCard({ botName, botId, description, walletStatus, webhookStatus, callbackUrl, createdAt, claimedAt, onUpdated }: BotCardProps) {
+export function BotCard({ botName, botId, description, walletStatus, webhookStatus, tunnelStatus, callbackUrl, createdAt, claimedAt, onUpdated }: BotCardProps) {
   const isActive = walletStatus === "active";
   const [spendingOpen, setSpendingOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -117,6 +118,7 @@ export function BotCard({ botName, botId, description, walletStatus, webhookStat
         botName={botName}
         callbackUrl={callbackUrl}
         webhookStatus={webhookStatus}
+        tunnelStatus={tunnelStatus}
         description={description}
         onUpdated={onUpdated || (() => {})}
       />

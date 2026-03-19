@@ -129,6 +129,20 @@ CreditClaw features a public landing page and a protected dashboard. Key functio
 
 The system supports multiple payment methods per owner, webhook notifications for bots (HMAC-SHA256, exponential backoff), and owner notifications (in-app, email). Operational safety includes daily wallet reconciliation and health checks.
 
+### Managed Cloudflare Tunnels
+Bots without a `callback_url` get a managed Cloudflare tunnel provisioned at registration. Architecture follows two-layer separation:
+- **Cloudflare API layer:** `lib/cloudflare-tunnel.ts` — low-level Cloudflare API calls only. `provisionBotTunnel(botId, localPort)`, `deleteBotTunnel(tunnelId, botId)`, `getTunnelToken(tunnelId)`, `resolveLocalPort(localPort?, botType?)`, `resolveWebhookPath(webhookPath?, botType?)`. Uses plain `fetch` against Cloudflare API. No business logic, no DB access.
+- **Provisioning service:** `lib/tunnel-provisioning.ts` — orchestration layer between Cloudflare API and registration route. `provisionTunnelForBot(botId, botType?, localPort?, webhookPath?)` resolves defaults, calls Cloudflare, generates webhook secret, and returns a structured `TunnelProvisionOutput` containing both `dbFields` (for DB insert) and `responseData` (for API response including `tunnel_setup` object). `cleanupTunnel(tunnelId, botId)` wraps error cleanup. The `tunnel_setup` response structure (steps, headers, retry policy) is defined in one place via `buildTunnelSetupResponse()` — no duplication across registration paths.
+- **Schema:** `bots` table has `botType`, `tunnelId`, `tunnelToken`, `tunnelStatus`, `tunnelLocalPort` columns (migrations `drizzle/0004_low_morph.sql`, `drizzle/0005_melted_the_fury.sql`).
+- **Registration fields:** `bot_type` (optional, defaults to `"openclaw"`), `local_port` (optional integer 1–65535), and `webhook_path` (optional string starting with `/`, max 200 chars) in the registration request schema.
+- **Port resolution:** If `local_port` is provided → use it. Else if `bot_type` is `"openclaw"` → 18789. Else → 8080. Stored in `tunnelLocalPort`.
+- **Path resolution:** If `webhook_path` is provided → use it. Else if `bot_type` is `"openclaw"` → `/hooks/creditclaw`. Else → `/webhook`. Appended to tunnel URL to form the full `callbackUrl` (e.g. `https://bot-abc123.nortonbot.com/hooks/creditclaw`).
+- **Flow:** Registration calls `provisionTunnelForBot()` → spreads `dbFields` into DB insert → attaches `responseData` to API response. Bot runs `cloudflared tunnel run --token <token>` and starts local listener on the resolved port.
+- **Webhook status:** Tunnel-provisioned bots start with `webhookStatus: "pending"` (not `"active"`) until the tunnel connects.
+- **Cleanup:** If registration fails after tunnel provisioning, `cleanupTunnel(tunnelId, botId)` is called to clean up both DNS and tunnel.
+- **Dashboard:** Bot settings dialog shows tunnel URL as read-only with a `TunnelStatusIndicator` when a tunnel is provisioned.
+- **Required secrets:** `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_ZONE_ID` (not yet added — provisioning is best-effort, registration still succeeds without them).
+
 Advanced features:
 - **Payment Links:** Bots generate Stripe Checkout Sessions for receiving payments.
 - **Wallet Freeze:** Owners can freeze bot wallets, preventing transactions.

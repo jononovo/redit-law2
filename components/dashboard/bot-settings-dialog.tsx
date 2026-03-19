@@ -19,6 +19,7 @@ interface BotSettingsDialogProps {
   botName: string;
   callbackUrl?: string | null;
   webhookStatus?: string;
+  tunnelStatus?: string;
   description?: string | null;
   onUpdated: () => void;
 }
@@ -26,6 +27,7 @@ interface BotSettingsDialogProps {
 function WebhookStatusIndicator({ status }: { status: string }) {
   const config: Record<string, { color: string; label: string }> = {
     active: { color: "bg-green-500", label: "Active" },
+    pending: { color: "bg-blue-500", label: "Awaiting connection" },
     degraded: { color: "bg-amber-500", label: "Degraded" },
     unreachable: { color: "bg-red-500", label: "Unreachable" },
     none: { color: "bg-neutral-300", label: "Not configured" },
@@ -40,6 +42,24 @@ function WebhookStatusIndicator({ status }: { status: string }) {
   );
 }
 
+function TunnelStatusIndicator({ status }: { status: string }) {
+  const config: Record<string, { color: string; label: string }> = {
+    provisioned: { color: "bg-blue-500", label: "Provisioned" },
+    connected: { color: "bg-green-500", label: "Connected" },
+    disconnected: { color: "bg-amber-500", label: "Disconnected" },
+    error: { color: "bg-red-500", label: "Error" },
+    none: { color: "bg-neutral-300", label: "None" },
+  };
+  const { color, label } = config[status] || config.none;
+
+  return (
+    <div className="flex items-center gap-2" data-testid="status-tunnel">
+      <span className={`w-2.5 h-2.5 rounded-full ${color}`} />
+      <span className="text-sm text-neutral-600">{label}</span>
+    </div>
+  );
+}
+
 export function BotSettingsDialog({
   open,
   onOpenChange,
@@ -47,6 +67,7 @@ export function BotSettingsDialog({
   botName: initialBotName,
   callbackUrl: initialCallbackUrl,
   webhookStatus: initialWebhookStatus,
+  tunnelStatus: initialTunnelStatus,
   description: initialDescription,
   onUpdated,
 }: BotSettingsDialogProps) {
@@ -197,13 +218,28 @@ export function BotSettingsDialog({
                 <label className="text-sm font-medium text-neutral-700">Webhook URL</label>
                 <WebhookStatusIndicator status={webhookStatus} />
               </div>
-              <Input
-                value={webhookUrl}
-                onChange={(e) => setWebhookUrl(e.target.value)}
-                placeholder="https://your-server.com/webhook"
-                className="rounded-xl"
-                data-testid="input-webhook-url"
-              />
+              {initialTunnelStatus && initialTunnelStatus !== "none" ? (
+                <div className="space-y-2">
+                  <Input
+                    readOnly
+                    value={webhookUrl}
+                    className="rounded-xl bg-neutral-50 text-neutral-600 font-mono text-sm"
+                    data-testid="input-webhook-url"
+                  />
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-neutral-500">Managed tunnel</span>
+                    <TunnelStatusIndicator status={initialTunnelStatus} />
+                  </div>
+                </div>
+              ) : (
+                <Input
+                  value={webhookUrl}
+                  onChange={(e) => setWebhookUrl(e.target.value)}
+                  placeholder="https://your-server.com/webhook"
+                  className="rounded-xl"
+                  data-testid="input-webhook-url"
+                />
+              )}
             </div>
 
             {error && (

@@ -29,6 +29,20 @@
       "when": 1773407600000,
       "tag": "0003_unify_master_guardrails_approval",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1773885523766,
+      "tag": "0004_low_morph",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1773887493256,
+      "tag": "0005_melted_the_fury",
+      "breakpoints": true
     }
   ]
 }

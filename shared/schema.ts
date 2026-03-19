@@ -18,6 +18,11 @@ export const bots = pgTable("bots", {
   webhookStatus: text("webhook_status").notNull().default("none"),
   webhookFailCount: integer("webhook_fail_count").notNull().default(0),
   defaultRail: text("default_rail"),
+  botType: text("bot_type"),
+  tunnelId: text("tunnel_id"),
+  tunnelToken: text("tunnel_token"),
+  tunnelStatus: text("tunnel_status").notNull().default("none"),
+  tunnelLocalPort: integer("tunnel_local_port"),
   claimedAt: timestamp("claimed_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
@@ -177,6 +182,9 @@ export const registerBotRequestSchema = z.object({
   description: z.string().max(500).optional(),
   callback_url: z.string().url().optional(),
   pairing_code: z.string().length(6).regex(/^\d{6}$/).optional(),
+  bot_type: z.string().max(50).optional(),
+  local_port: z.number().int().min(1).max(65535).optional(),
+  webhook_path: z.string().max(200).startsWith("/").optional(),
 });
 
 export const claimBotRequestSchema = z.object({

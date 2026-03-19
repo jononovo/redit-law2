@@ -7,6 +7,7 @@ import { generateBotId, generateApiKey, generateClaimToken, hashApiKey, getApiKe
 import { sendOwnerRegistrationEmail } from "@/lib/email";
 import { fireWebhook } from "@/lib/webhooks";
 import { notifyWalletActivated } from "@/lib/notifications";
+import { provisionTunnelForBot, cleanupTunnel, type TunnelProvisionOutput } from "@/lib/tunnel-provisioning";
 
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
 const RATE_LIMIT = 3;
@@ -29,7 +30,16 @@ function checkRateLimit(ip: string): boolean {
   return true;
 }
 
+function attachTunnelResponse(response: Record<string, unknown>, tunnel: TunnelProvisionOutput) {
+  response.webhook_url = tunnel.responseData.webhook_url;
+  response.tunnel_token = tunnel.responseData.tunnel_token;
+  response.tunnel_setup = tunnel.responseData.tunnel_setup;
+}
+
 export async function POST(request: NextRequest) {
+  let tunnel: TunnelProvisionOutput | null = null;
+  let botId: string = "";
+
   try {
     const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
 
@@ -58,7 +68,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { bot_name, owner_email, description, callback_url, pairing_code } = parsed.data;
+    const { bot_name, owner_email, description, callback_url, pairing_code, bot_type, local_port, webhook_path } = parsed.data;
 
     const isDuplicate = await storage.checkDuplicateRegistration(bot_name, owner_email);
     if (isDuplicate) {
@@ -79,12 +89,24 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const botId = generateBotId();
+    botId = generateBotId();
     const apiKey = generateApiKey();
     const claimToken = pairing_code ? null : generateClaimToken();
     const apiKeyHash = await hashApiKey(apiKey);
     const apiKeyPrefix = getApiKeyPrefix(apiKey);
-    const webhookSecret = callback_url ? generateWebhookSecret() : null;
+
+    const effectiveBotType = bot_type || "openclaw";
+
+    let effectiveCallbackUrl = callback_url || null;
+    let webhookSecret: string | null = callback_url ? generateWebhookSecret() : null;
+
+    if (!callback_url) {
+      tunnel = await provisionTunnelForBot(botId, effectiveBotType, local_port, webhook_path);
+      if (tunnel) {
+        effectiveCallbackUrl = tunnel.dbFields.callbackUrl;
+        webhookSecret = tunnel.dbFields.webhookSecret;
+      }
+    }
 
     if (pairingCodeRecord && pairing_code) {
       const result = await db.transaction(async (tx) => {
@@ -97,12 +119,17 @@ export async function POST(request: NextRequest) {
           apiKeyPrefix,
           claimToken: null,
           walletStatus: "active",
-          callbackUrl: callback_url || null,
+          callbackUrl: effectiveCallbackUrl,
           webhookSecret,
-          webhookStatus: callback_url ? "active" : "none",
+          webhookStatus: tunnel ? "pending" : (effectiveCallbackUrl ? "active" : "none"),
           webhookFailCount: 0,
           ownerUid: pairingCodeRecord.ownerUid,
           claimedAt: new Date(),
+          botType: effectiveBotType,
+          tunnelId: tunnel?.dbFields.tunnelId || null,
+          tunnelToken: tunnel?.dbFields.tunnelToken || null,
+          tunnelStatus: tunnel ? "provisioned" : "none",
+          tunnelLocalPort: tunnel?.dbFields.tunnelLocalPort || null,
         }).returning();
 
         const [claimed] = await tx
@@ -152,6 +179,10 @@ export async function POST(request: NextRequest) {
         response.webhook_note = "Save your webhook_secret now — it cannot be retrieved later. Use it to verify HMAC signatures on incoming webhook payloads.";
       }
 
+      if (tunnel) {
+        attachTunnelResponse(response, tunnel);
+      }
+
       return NextResponse.json(response, { status: 201 });
     }
 
@@ -164,12 +195,17 @@ export async function POST(request: NextRequest) {
       apiKeyPrefix,
       claimToken,
       walletStatus: "pending",
-      callbackUrl: callback_url || null,
+      callbackUrl: effectiveCallbackUrl,
       webhookSecret,
-      webhookStatus: callback_url ? "active" : "none",
+      webhookStatus: tunnel ? "pending" : (effectiveCallbackUrl ? "active" : "none"),
       webhookFailCount: 0,
       ownerUid: null,
       claimedAt: null,
+      botType: effectiveBotType,
+      tunnelId: tunnel?.dbFields.tunnelId || null,
+      tunnelToken: tunnel?.dbFields.tunnelToken || null,
+      tunnelStatus: tunnel ? "provisioned" : "none",
+      tunnelLocalPort: tunnel?.dbFields.tunnelLocalPort || null,
     });
 
     sendOwnerRegistrationEmail({
@@ -195,8 +231,15 @@ export async function POST(request: NextRequest) {
       response.webhook_note = "Save your webhook_secret now — it cannot be retrieved later. Use it to verify HMAC signatures on incoming webhook payloads.";
     }
 
+    if (tunnel) {
+      attachTunnelResponse(response, tunnel);
+    }
+
     return NextResponse.json(response, { status: 201 });
   } catch (error: any) {
+    if (tunnel) {
+      cleanupTunnel(tunnel.dbFields.tunnelId, botId);
+    }
     if (error?.message === "PAIRING_RACE") {
       return NextResponse.json(
         { error: "pairing_failed", message: "Pairing code was claimed by another request. Please try again." },
