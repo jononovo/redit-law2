@@ -7,7 +7,7 @@ import { generateBotId, generateApiKey, generateClaimToken, hashApiKey, getApiKe
 import { sendOwnerRegistrationEmail } from "@/lib/email";
 import { fireWebhook } from "@/lib/webhooks";
 import { notifyWalletActivated } from "@/lib/notifications";
-import { provisionBotTunnel, deleteBotTunnel } from "@/lib/cloudflare-tunnel";
+import { provisionBotTunnel, deleteBotTunnel, resolveLocalPort } from "@/lib/cloudflare-tunnel";
 
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
 const RATE_LIMIT = 3;
@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { bot_name, owner_email, description, callback_url, pairing_code } = parsed.data;
+    const { bot_name, owner_email, description, callback_url, pairing_code, bot_type, local_port } = parsed.data;
 
     const isDuplicate = await storage.checkDuplicateRegistration(bot_name, owner_email);
     if (isDuplicate) {
@@ -86,13 +86,16 @@ export async function POST(request: NextRequest) {
     const apiKeyHash = await hashApiKey(apiKey);
     const apiKeyPrefix = getApiKeyPrefix(apiKey);
 
+    const effectiveBotType = bot_type || "openclaw";
+    const resolvedPort = resolveLocalPort(local_port, effectiveBotType);
+
     let tunnelResult: { tunnelId: string; tunnelToken: string; webhookUrl: string } | null = null;
     let effectiveCallbackUrl = callback_url || null;
     let webhookSecret: string | null = callback_url ? generateWebhookSecret() : null;
 
     if (!callback_url) {
       try {
-        tunnelResult = await provisionBotTunnel(botId);
+        tunnelResult = await provisionBotTunnel(botId, resolvedPort);
         if (tunnelResult) {
           effectiveCallbackUrl = tunnelResult.webhookUrl;
           webhookSecret = generateWebhookSecret();
@@ -119,9 +122,11 @@ export async function POST(request: NextRequest) {
           webhookFailCount: 0,
           ownerUid: pairingCodeRecord.ownerUid,
           claimedAt: new Date(),
+          botType: effectiveBotType,
           tunnelId: tunnelResult?.tunnelId || null,
           tunnelToken: tunnelResult?.tunnelToken || null,
           tunnelStatus: tunnelResult ? "provisioned" : "none",
+          tunnelLocalPort: tunnelResult ? resolvedPort : null,
         }).returning();
 
         const [claimed] = await tx
@@ -174,7 +179,8 @@ export async function POST(request: NextRequest) {
       if (tunnelResult) {
         response.webhook_url = tunnelResult.webhookUrl;
         response.tunnel_token = tunnelResult.tunnelToken;
-        response.tunnel_instructions = "Run: cloudflared tunnel run --token <your-tunnel_token> — then start a local webhook listener on port 3456 to receive events.";
+        response.tunnel_local_port = resolvedPort;
+        response.tunnel_instructions = `Run: cloudflared tunnel run --token <your-tunnel_token> — then start a local webhook listener on port ${resolvedPort} to receive events.`;
       }
 
       return NextResponse.json(response, { status: 201 });
@@ -195,9 +201,11 @@ export async function POST(request: NextRequest) {
       webhookFailCount: 0,
       ownerUid: null,
       claimedAt: null,
+      botType: effectiveBotType,
       tunnelId: tunnelResult?.tunnelId || null,
       tunnelToken: tunnelResult?.tunnelToken || null,
       tunnelStatus: tunnelResult ? "provisioned" : "none",
+      tunnelLocalPort: tunnelResult ? resolvedPort : null,
     });
 
     sendOwnerRegistrationEmail({
@@ -226,13 +234,14 @@ export async function POST(request: NextRequest) {
     if (tunnelResult) {
       response.webhook_url = tunnelResult.webhookUrl;
       response.tunnel_token = tunnelResult.tunnelToken;
-      response.tunnel_instructions = "Run: cloudflared tunnel run --token <your-tunnel_token> — then start a local webhook listener on port 3456 to receive events.";
+      response.tunnel_local_port = resolvedPort;
+      response.tunnel_instructions = `Run: cloudflared tunnel run --token <your-tunnel_token> — then start a local webhook listener on port ${resolvedPort} to receive events.`;
     }
 
     return NextResponse.json(response, { status: 201 });
   } catch (error: any) {
     if (tunnelResult) {
-      deleteBotTunnel(tunnelResult.tunnelId).catch((e) =>
+      deleteBotTunnel(tunnelResult.tunnelId, botId).catch((e) =>
         console.error("[registration] Tunnel cleanup failed:", e)
       );
     }

@@ -1,6 +1,7 @@
 const CF_API_BASE = "https://api.cloudflare.com/client/v4";
 const WEBHOOK_DOMAIN = "nortonbot.com";
-const BOT_LOCAL_PORT = 3456;
+const DEFAULT_OPENCLAW_PORT = 18789;
+const DEFAULT_OTHER_PORT = 8080;
 
 function getConfig() {
   const apiToken = process.env.CLOUDFLARE_API_TOKEN;
@@ -27,7 +28,13 @@ export interface TunnelProvisionResult {
   webhookUrl: string;
 }
 
-export async function provisionBotTunnel(botId: string): Promise<TunnelProvisionResult | null> {
+export function resolveLocalPort(localPort?: number, botType?: string): number {
+  if (localPort) return localPort;
+  if (!botType || botType === "openclaw") return DEFAULT_OPENCLAW_PORT;
+  return DEFAULT_OTHER_PORT;
+}
+
+export async function provisionBotTunnel(botId: string, localPort: number): Promise<TunnelProvisionResult | null> {
   const config = getConfig();
   if (!config) {
     console.warn("[cloudflare-tunnel] Missing Cloudflare config, skipping tunnel provisioning");
@@ -67,7 +74,7 @@ export async function provisionBotTunnel(botId: string): Promise<TunnelProvision
       body: JSON.stringify({
         config: {
           ingress: [
-            { hostname, service: `http://localhost:${BOT_LOCAL_PORT}` },
+            { hostname, service: `http://localhost:${localPort}` },
             { service: "http_status:404" },
           ],
         },

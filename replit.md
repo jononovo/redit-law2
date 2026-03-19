@@ -131,11 +131,13 @@ The system supports multiple payment methods per owner, webhook notifications fo
 
 ### Managed Cloudflare Tunnels
 Bots without a `callback_url` get a managed Cloudflare tunnel provisioned at registration. Architecture:
-- **Module:** `lib/cloudflare-tunnel.ts` — `provisionBotTunnel(botId)`, `deleteBotTunnel(tunnelId)`, `getTunnelToken(tunnelId)` using plain `fetch` against Cloudflare API.
-- **Schema:** `bots` table has `tunnelId`, `tunnelToken`, `tunnelStatus` columns (migration `drizzle/0004_low_morph.sql`).
-- **Flow:** Registration auto-provisions tunnel → creates DNS `bot-{id}.nortonbot.com` → stores tunnel credentials → returns `webhook_url` + `tunnel_token` in response. Bot runs `cloudflared tunnel run --token <token>` and starts local listener on port 3456.
+- **Module:** `lib/cloudflare-tunnel.ts` — `provisionBotTunnel(botId, localPort)`, `deleteBotTunnel(tunnelId, botId)`, `getTunnelToken(tunnelId)`, `resolveLocalPort(localPort?, botType?)` using plain `fetch` against Cloudflare API.
+- **Schema:** `bots` table has `botType`, `tunnelId`, `tunnelToken`, `tunnelStatus`, `tunnelLocalPort` columns (migrations `drizzle/0004_low_morph.sql`, `drizzle/0005_melted_the_fury.sql`).
+- **Registration fields:** `bot_type` (optional, defaults to `"openclaw"`) and `local_port` (optional integer 1–65535) in the registration request schema.
+- **Port resolution:** If `local_port` is provided → use it. Else if `bot_type` is `"openclaw"` → 18789. Else → 8080. Stored in `tunnelLocalPort`.
+- **Flow:** Registration auto-provisions tunnel with resolved port → creates DNS `bot-{id}.nortonbot.com` → stores tunnel credentials → returns `webhook_url` + `tunnel_token` + `tunnel_local_port` in response. Bot runs `cloudflared tunnel run --token <token>` and starts local listener on the resolved port.
 - **Webhook status:** Tunnel-provisioned bots start with `webhookStatus: "pending"` (not `"active"`) until the tunnel connects.
-- **Cleanup:** If registration fails after tunnel provisioning, `deleteBotTunnel` is called to avoid orphaned resources.
+- **Cleanup:** If registration fails after tunnel provisioning, `deleteBotTunnel(tunnelId, botId)` is called to clean up both DNS and tunnel.
 - **Dashboard:** Bot settings dialog shows tunnel URL as read-only with a `TunnelStatusIndicator` when a tunnel is provisioned.
 - **Required secrets:** `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_ZONE_ID` (not yet added — provisioning is best-effort, registration still succeeds without them).
 
