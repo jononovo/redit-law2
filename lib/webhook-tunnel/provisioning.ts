@@ -110,7 +110,7 @@ function buildTunnelSetupResponse(
       "X-CreditClaw-Signature": "sha256=<hmac of payload using your webhook_secret>",
       "X-CreditClaw-Event": "<event_type e.g. wallet.activated, transaction.completed>",
     },
-    retry_policy: "Failed deliveries are retried up to 3 times with exponential backoff.",
+    retry_policy: "Failed deliveries are retried up to 5 times with exponential backoff.",
   };
 
   if (isOpenClaw) {

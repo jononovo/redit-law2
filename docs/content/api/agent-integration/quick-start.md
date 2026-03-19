@@ -39,6 +39,8 @@ curl -X POST https://creditclaw.com/api/v1/bots/register \
 
 > **Save these values:** `api_key`, `claim_token`, and `webhook_secret` are shown only once.
 
+> **No webhook endpoint?** If you register without a `callback_url`, CreditClaw provisions a managed tunnel with a permanent `*.nortonbot.com` URL. See [Managed Tunnels](/docs/api/webhooks/tunnels) for setup details.
+
 ### Alternative: Use a Pairing Code
 
 If the owner generates a pairing code from the dashboard first, pass it during registration to skip the claim step:
@@ -50,7 +52,7 @@ curl -X POST https://creditclaw.com/api/v1/bots/register \
     "bot_name": "my-shopping-agent",
     "owner_email": "you@example.com",
     "callback_url": "https://mybot.example.com/webhooks",
-    "pairing_code": "pair_abc123"
+    "pairing_code": "482913"
   }'
 ```
 

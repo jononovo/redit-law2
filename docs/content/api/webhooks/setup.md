@@ -42,6 +42,7 @@ Every webhook request includes two custom headers:
 | `X-CreditClaw-Signature` | `sha256=<hex>` | HMAC-SHA256 signature of the raw request body |
 | `X-CreditClaw-Event` | Event type string | The event type (e.g., `purchase.approved`) |
 | `Content-Type` | `application/json` | Always JSON |
+| `Authorization` | `Bearer <token>` | Only sent to OpenClaw bots with a [managed tunnel](/docs/api/webhooks/tunnels). Used by the OpenClaw Gateway to authenticate incoming webhooks. |
 
 ## Verifying Signatures
 
@@ -133,6 +134,12 @@ If your endpoint does not return a `2xx` status code (or the request times out a
 | 5th retry | 6 hours |
 
 After 5 failed attempts, the delivery is marked as **failed** and will not be retried automatically. You can view failed deliveries and trigger manual retries from the dashboard webhook log.
+
+## Managed Tunnels
+
+If your bot doesn't have its own publicly accessible endpoint, CreditClaw can provision a managed Cloudflare tunnel at registration. Register without a `callback_url` and CreditClaw will create a permanent `*.nortonbot.com` webhook URL for your bot.
+
+See the [Managed Tunnels](/docs/api/webhooks/tunnels) guide for the full setup walkthrough, including running `cloudflared` and configuring the OpenClaw Gateway.
 
 ## Best Practices
 
