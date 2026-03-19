@@ -7,7 +7,7 @@ import { generateBotId, generateApiKey, generateClaimToken, hashApiKey, getApiKe
 import { sendOwnerRegistrationEmail } from "@/lib/email";
 import { fireWebhook } from "@/lib/webhooks";
 import { notifyWalletActivated } from "@/lib/notifications";
-import { provisionBotTunnel, deleteBotTunnel, resolveLocalPort, resolveWebhookPath } from "@/lib/cloudflare-tunnel";
+import { provisionTunnelForBot, cleanupTunnel, type TunnelProvisionOutput } from "@/lib/tunnel-provisioning";
 
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
 const RATE_LIMIT = 3;
@@ -30,7 +30,16 @@ function checkRateLimit(ip: string): boolean {
   return true;
 }
 
+function attachTunnelResponse(response: Record<string, unknown>, tunnel: TunnelProvisionOutput) {
+  response.webhook_url = tunnel.responseData.webhook_url;
+  response.tunnel_token = tunnel.responseData.tunnel_token;
+  response.tunnel_setup = tunnel.responseData.tunnel_setup;
+}
+
 export async function POST(request: NextRequest) {
+  let tunnel: TunnelProvisionOutput | null = null;
+  let botId: string = "";
+
   try {
     const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
 
@@ -80,29 +89,22 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const botId = generateBotId();
+    botId = generateBotId();
     const apiKey = generateApiKey();
     const claimToken = pairing_code ? null : generateClaimToken();
     const apiKeyHash = await hashApiKey(apiKey);
     const apiKeyPrefix = getApiKeyPrefix(apiKey);
 
     const effectiveBotType = bot_type || "openclaw";
-    const resolvedPort = resolveLocalPort(local_port, effectiveBotType);
-    const resolvedPath = resolveWebhookPath(webhook_path, effectiveBotType);
 
-    let tunnelResult: { tunnelId: string; tunnelToken: string; webhookUrl: string } | null = null;
     let effectiveCallbackUrl = callback_url || null;
     let webhookSecret: string | null = callback_url ? generateWebhookSecret() : null;
 
     if (!callback_url) {
-      try {
-        tunnelResult = await provisionBotTunnel(botId, resolvedPort);
-        if (tunnelResult) {
-          effectiveCallbackUrl = `${tunnelResult.webhookUrl}${resolvedPath}`;
-          webhookSecret = generateWebhookSecret();
-        }
-      } catch (err) {
-        console.error("[registration] Tunnel provisioning failed (non-blocking):", err);
+      tunnel = await provisionTunnelForBot(botId, effectiveBotType, local_port, webhook_path);
+      if (tunnel) {
+        effectiveCallbackUrl = tunnel.dbFields.callbackUrl;
+        webhookSecret = tunnel.dbFields.webhookSecret;
       }
     }
 
@@ -119,15 +121,15 @@ export async function POST(request: NextRequest) {
           walletStatus: "active",
           callbackUrl: effectiveCallbackUrl,
           webhookSecret,
-          webhookStatus: tunnelResult ? "pending" : (effectiveCallbackUrl ? "active" : "none"),
+          webhookStatus: tunnel ? "pending" : (effectiveCallbackUrl ? "active" : "none"),
           webhookFailCount: 0,
           ownerUid: pairingCodeRecord.ownerUid,
           claimedAt: new Date(),
           botType: effectiveBotType,
-          tunnelId: tunnelResult?.tunnelId || null,
-          tunnelToken: tunnelResult?.tunnelToken || null,
-          tunnelStatus: tunnelResult ? "provisioned" : "none",
-          tunnelLocalPort: tunnelResult ? resolvedPort : null,
+          tunnelId: tunnel?.dbFields.tunnelId || null,
+          tunnelToken: tunnel?.dbFields.tunnelToken || null,
+          tunnelStatus: tunnel ? "provisioned" : "none",
+          tunnelLocalPort: tunnel?.dbFields.tunnelLocalPort || null,
         }).returning();
 
         const [claimed] = await tx
@@ -177,28 +179,8 @@ export async function POST(request: NextRequest) {
         response.webhook_note = "Save your webhook_secret now — it cannot be retrieved later. Use it to verify HMAC signatures on incoming webhook payloads.";
       }
 
-      if (tunnelResult) {
-        response.webhook_url = effectiveCallbackUrl;
-        response.tunnel_token = tunnelResult.tunnelToken;
-        response.tunnel_setup = {
-          webhook_url: effectiveCallbackUrl,
-          tunnel_token: tunnelResult.tunnelToken,
-          cloudflared_command: `cloudflared tunnel run --token ${tunnelResult.tunnelToken}`,
-          local_port: resolvedPort,
-          webhook_path: resolvedPath,
-          steps: [
-            "1. Install cloudflared: https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/",
-            `2. Run: cloudflared tunnel run --token ${tunnelResult.tunnelToken}`,
-            `3. Start your webhook server on port ${resolvedPort}, listening for POST requests at ${resolvedPath}`,
-            "4. CreditClaw sends JSON with headers X-CreditClaw-Signature (sha256 HMAC) and X-CreditClaw-Event (event type)",
-            "5. Use your webhook_secret to verify the X-CreditClaw-Signature header on incoming payloads",
-          ],
-          webhook_headers: {
-            "X-CreditClaw-Signature": "sha256=<hmac of payload using your webhook_secret>",
-            "X-CreditClaw-Event": "<event_type e.g. wallet.activated, transaction.completed>",
-          },
-          retry_policy: "Failed deliveries are retried up to 3 times with exponential backoff.",
-        };
+      if (tunnel) {
+        attachTunnelResponse(response, tunnel);
       }
 
       return NextResponse.json(response, { status: 201 });
@@ -215,15 +197,15 @@ export async function POST(request: NextRequest) {
       walletStatus: "pending",
       callbackUrl: effectiveCallbackUrl,
       webhookSecret,
-      webhookStatus: tunnelResult ? "pending" : (effectiveCallbackUrl ? "active" : "none"),
+      webhookStatus: tunnel ? "pending" : (effectiveCallbackUrl ? "active" : "none"),
       webhookFailCount: 0,
       ownerUid: null,
       claimedAt: null,
       botType: effectiveBotType,
-      tunnelId: tunnelResult?.tunnelId || null,
-      tunnelToken: tunnelResult?.tunnelToken || null,
-      tunnelStatus: tunnelResult ? "provisioned" : "none",
-      tunnelLocalPort: tunnelResult ? resolvedPort : null,
+      tunnelId: tunnel?.dbFields.tunnelId || null,
+      tunnelToken: tunnel?.dbFields.tunnelToken || null,
+      tunnelStatus: tunnel ? "provisioned" : "none",
+      tunnelLocalPort: tunnel?.dbFields.tunnelLocalPort || null,
     });
 
     sendOwnerRegistrationEmail({
@@ -249,36 +231,14 @@ export async function POST(request: NextRequest) {
       response.webhook_note = "Save your webhook_secret now — it cannot be retrieved later. Use it to verify HMAC signatures on incoming webhook payloads.";
     }
 
-    if (tunnelResult) {
-      response.webhook_url = effectiveCallbackUrl;
-      response.tunnel_token = tunnelResult.tunnelToken;
-      response.tunnel_setup = {
-        webhook_url: effectiveCallbackUrl,
-        tunnel_token: tunnelResult.tunnelToken,
-        cloudflared_command: `cloudflared tunnel run --token ${tunnelResult.tunnelToken}`,
-        local_port: resolvedPort,
-        webhook_path: resolvedPath,
-        steps: [
-          "1. Install cloudflared: https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/",
-          `2. Run: cloudflared tunnel run --token ${tunnelResult.tunnelToken}`,
-          `3. Start your webhook server on port ${resolvedPort}, listening for POST requests at ${resolvedPath}`,
-          "4. CreditClaw sends JSON with headers X-CreditClaw-Signature (sha256 HMAC) and X-CreditClaw-Event (event type)",
-          "5. Use your webhook_secret to verify the X-CreditClaw-Signature header on incoming payloads",
-        ],
-        webhook_headers: {
-          "X-CreditClaw-Signature": "sha256=<hmac of payload using your webhook_secret>",
-          "X-CreditClaw-Event": "<event_type e.g. wallet.activated, transaction.completed>",
-        },
-        retry_policy: "Failed deliveries are retried up to 3 times with exponential backoff.",
-      };
+    if (tunnel) {
+      attachTunnelResponse(response, tunnel);
     }
 
     return NextResponse.json(response, { status: 201 });
   } catch (error: any) {
-    if (tunnelResult) {
-      deleteBotTunnel(tunnelResult.tunnelId, botId).catch((e) =>
-        console.error("[registration] Tunnel cleanup failed:", e)
-      );
+    if (tunnel) {
+      cleanupTunnel(tunnel.dbFields.tunnelId, botId);
     }
     if (error?.message === "PAIRING_RACE") {
       return NextResponse.json(
