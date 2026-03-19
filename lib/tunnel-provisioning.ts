@@ -12,6 +12,21 @@ export interface TunnelDbFields {
   tunnelLocalPort: number;
 }
 
+export interface OpenClawGatewayConfig {
+  hooks: {
+    enabled: true;
+    token: string;
+    mappings: Array<{
+      match: { path: string };
+      action: string;
+      name: string;
+      agentId: string;
+      messageTemplate: string;
+      deliver: boolean;
+    }>;
+  };
+}
+
 export interface TunnelSetupResponse {
   webhook_url: string;
   tunnel_token: string;
@@ -21,6 +36,7 @@ export interface TunnelSetupResponse {
   steps: string[];
   webhook_headers: Record<string, string>;
   retry_policy: string;
+  openclaw_gateway_config?: OpenClawGatewayConfig;
 }
 
 export interface TunnelProvisionOutput {
@@ -32,31 +48,73 @@ export interface TunnelProvisionOutput {
   };
 }
 
+function buildOpenClawGatewayConfig(): OpenClawGatewayConfig {
+  return {
+    hooks: {
+      enabled: true,
+      token: "<your-openclaw-hooks-token>",
+      mappings: [
+        {
+          match: { path: "creditclaw" },
+          action: "agent",
+          name: "CreditClaw",
+          agentId: "main",
+          messageTemplate: "CreditClaw event {{event}}: {{description}}",
+          deliver: false,
+        },
+      ],
+    },
+  };
+}
+
 function buildTunnelSetupResponse(
   webhookUrl: string,
   tunnelToken: string,
   localPort: number,
   webhookPath: string,
+  botType: string,
 ): TunnelSetupResponse {
-  return {
+  const isOpenClaw = botType === "openclaw";
+
+  const steps = [
+    "1. Install cloudflared: https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/",
+    `2. Run: cloudflared tunnel run --token ${tunnelToken}`,
+  ];
+
+  if (isOpenClaw) {
+    steps.push(
+      '3. Add the CreditClaw hook mapping to your ~/.openclaw/openclaw.json (see openclaw_gateway_config below). Set hooks.token to a dedicated secret — do not reuse your Gateway auth token.',
+      `4. The Gateway will accept CreditClaw webhooks at POST /hooks/creditclaw on port ${localPort}`,
+      "5. CreditClaw sends JSON with headers X-CreditClaw-Signature (sha256 HMAC) and X-CreditClaw-Event (event type)",
+      "6. Use your webhook_secret to verify the X-CreditClaw-Signature header on incoming payloads",
+    );
+  } else {
+    steps.push(
+      `3. Start your webhook server on port ${localPort}, listening for POST requests at ${webhookPath}`,
+      "4. CreditClaw sends JSON with headers X-CreditClaw-Signature (sha256 HMAC) and X-CreditClaw-Event (event type)",
+      "5. Use your webhook_secret to verify the X-CreditClaw-Signature header on incoming payloads",
+    );
+  }
+
+  const response: TunnelSetupResponse = {
     webhook_url: webhookUrl,
     tunnel_token: tunnelToken,
     cloudflared_command: `cloudflared tunnel run --token ${tunnelToken}`,
     local_port: localPort,
     webhook_path: webhookPath,
-    steps: [
-      "1. Install cloudflared: https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/",
-      `2. Run: cloudflared tunnel run --token ${tunnelToken}`,
-      `3. Start your webhook server on port ${localPort}, listening for POST requests at ${webhookPath}`,
-      "4. CreditClaw sends JSON with headers X-CreditClaw-Signature (sha256 HMAC) and X-CreditClaw-Event (event type)",
-      "5. Use your webhook_secret to verify the X-CreditClaw-Signature header on incoming payloads",
-    ],
+    steps,
     webhook_headers: {
       "X-CreditClaw-Signature": "sha256=<hmac of payload using your webhook_secret>",
       "X-CreditClaw-Event": "<event_type e.g. wallet.activated, transaction.completed>",
     },
     retry_policy: "Failed deliveries are retried up to 3 times with exponential backoff.",
   };
+
+  if (isOpenClaw) {
+    response.openclaw_gateway_config = buildOpenClawGatewayConfig();
+  }
+
+  return response;
 }
 
 export async function provisionTunnelForBot(
@@ -90,7 +148,7 @@ export async function provisionTunnelForBot(
       responseData: {
         webhook_url: callbackUrl,
         tunnel_token: tunnelResult.tunnelToken,
-        tunnel_setup: buildTunnelSetupResponse(callbackUrl, tunnelResult.tunnelToken, resolvedPort, resolvedPath),
+        tunnel_setup: buildTunnelSetupResponse(callbackUrl, tunnelResult.tunnelToken, resolvedPort, resolvedPath, effectiveBotType),
       },
     };
   } catch (err) {
