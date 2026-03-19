@@ -7,7 +7,7 @@ import { generateBotId, generateApiKey, generateClaimToken, hashApiKey, getApiKe
 import { sendOwnerRegistrationEmail } from "@/lib/email";
 import { fireWebhook } from "@/lib/webhooks";
 import { notifyWalletActivated } from "@/lib/notifications";
-import { provisionTunnelForBot, cleanupTunnel, type TunnelProvisionOutput } from "@/lib/tunnel-provisioning";
+import { provisionTunnelForBot, cleanupTunnel, type TunnelProvisionOutput } from "@/lib/webhook-tunnel";
 
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
 const RATE_LIMIT = 3;

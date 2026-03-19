@@ -1,4 +1,4 @@
-import { provisionBotTunnel, deleteBotTunnel, resolveLocalPort, resolveWebhookPath } from "@/lib/cloudflare-tunnel";
+import { provisionBotTunnel, deleteBotTunnel, resolveLocalPort, resolveWebhookPath } from "./cloudflare";
 import { generateWebhookSecret } from "@/lib/agent-management/crypto";
 
 export interface TunnelDbFields {
