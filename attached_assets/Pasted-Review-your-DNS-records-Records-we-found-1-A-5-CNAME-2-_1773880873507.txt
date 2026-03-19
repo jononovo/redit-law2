@@ -1,0 +1,189 @@
+Review your DNS records
+
+Records we found:
+
+1 A
+
+5 CNAME
+
+2 MX
+
+7 TXT
+
+Our scan may have missed uncommon records or custom subdomains. Compare the list below to your current DNS provider (most likely your registrar) and add any missing records. Pay close attention to all records on the zone apex, records of the type A, AAAA, and CNAME and records needed for email like MX, SPF, DMARC, DKIM, and MTA-STS.
+
+An A, AAAA or CNAME record for the www subdomain is required for the creditclaw.com subdomain to resolve.
+Your traffic is almost ready to proxy
+
+Your DNS records tell Cloudflare where your web content is hosted, so we can hide the origin and proxy your web traffic.
+
+Proxied: HTTP traffic goes through the Cloudflare network. Required for services like caching, smart routing, and Web Application Firewall.
+
+DNS only: HTTP traffic bypasses Cloudflare and goes directly to the origin, but DNS resolution still benefits from our fast and secure network. A gray cloud means proxying is off, no cloud means the record is not eligible for proxying.
+DNS management for creditclaw.com
+DNS Setup: Full
+
+Search DNS Records
+Your search yielded 15 results
+		Type
+	Name
+	Content
+	Proxy status
+	TTL
+	Actions
+	
+
+	A
+		
+	
+
+Proxied
+	
+Auto
+	Delete
+	
+	CNAME
+		
+	
+
+Proxied
+	
+Auto
+	Delete
+	
+	CNAME
+		
+	
+
+Proxied
+	
+Auto
+	Delete
+	
+	CNAME
+		
+	
+
+Proxied
+	
+Auto
+	Delete
+	
+	CNAME
+		
+	
+
+Proxied
+	
+Auto
+	Delete
+	
+	CNAME
+		
+	
+
+Proxied
+	
+Auto
+	Delete
+		MX
+	
+creditclaw.com
+	
+mailsec.protonmail.ch
+	
+
+DNS only
+	
+Auto
+	
+		MX
+	
+creditclaw.com
+	
+mail.protonmail.ch
+	
+
+DNS only
+	
+Auto
+	
+		TXT
+	
+creditclaw.com
+	
+"v=spf1 include:sendgrid.net ~all"
+	
+
+DNS only
+	
+Auto
+	
+		TXT
+	
+creditclaw.com
+	
+"v=spf1 include:_spf.protonmail.ch ~all"
+	
+
+DNS only
+	
+Auto
+	
+		TXT
+	
+creditclaw.com
+	
+"replit-verify=89296d20-74da-43ec-8204-367df2a223d5"
+	
+
+DNS only
+	
+Auto
+	
+		TXT
+	
+creditclaw.com
+	
+"protonmail-verification=053ed4132518930455b1fdd3e054661e398472a0"
+	
+
+DNS only
+	
+Auto
+	
+		TXT
+	
+creditclaw.com
+	
+"google-site-verification=q6_zFFqt6tFVgWHEPpjsFBfFMhAoZXFcgdakz4kTvW8"
+	
+
+DNS only
+	
+Auto
+	
+		TXT
+	
+_dmarc
+	
+"v=DMARC1; p=quarantine"
+	
+
+DNS only
+	
+Auto
+	
+		TXT
+	
+_dmarc
+	
+"v=DMARC1; p=none;"
+	
+
+DNS only
+	
+Auto
+	
+
+    Support
