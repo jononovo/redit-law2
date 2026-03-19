@@ -85,7 +85,7 @@ export async function POST(request: NextRequest) {
 
     const payloadJson = JSON.stringify(payload);
     const signature = signPayload(payloadJson, bot.webhookSecret);
-    const result = await attemptDelivery(bot.callbackUrl, payloadJson, signature, "rail5.card.delivered");
+    const result = await attemptDelivery(bot.callbackUrl, payloadJson, signature, "rail5.card.delivered", bot.openclawHooksToken);
 
     if (result.success) {
       return NextResponse.json({

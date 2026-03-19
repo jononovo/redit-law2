@@ -34,6 +34,10 @@ function attachTunnelResponse(response: Record<string, unknown>, tunnel: TunnelP
   response.webhook_url = tunnel.responseData.webhook_url;
   response.tunnel_token = tunnel.responseData.tunnel_token;
   response.tunnel_setup = tunnel.responseData.tunnel_setup;
+  if (tunnel.responseData.openclaw_hooks_token) {
+    response.openclaw_hooks_token = tunnel.responseData.openclaw_hooks_token;
+    response.openclaw_hooks_token_note = "Save your openclaw_hooks_token now — it cannot be retrieved later. Set it as CREDITCLAW_HOOKS_TOKEN in your OpenClaw environment.";
+  }
 }
 
 export async function POST(request: NextRequest) {
@@ -130,6 +134,7 @@ export async function POST(request: NextRequest) {
           tunnelToken: tunnel?.dbFields.tunnelToken || null,
           tunnelStatus: tunnel ? "provisioned" : "none",
           tunnelLocalPort: tunnel?.dbFields.tunnelLocalPort || null,
+          openclawHooksToken: tunnel?.dbFields.openclawHooksToken || null,
         }).returning();
 
         const [claimed] = await tx
@@ -206,6 +211,7 @@ export async function POST(request: NextRequest) {
       tunnelToken: tunnel?.dbFields.tunnelToken || null,
       tunnelStatus: tunnel ? "provisioned" : "none",
       tunnelLocalPort: tunnel?.dbFields.tunnelLocalPort || null,
+      openclawHooksToken: tunnel?.dbFields.openclawHooksToken || null,
     });
 
     sendOwnerRegistrationEmail({
