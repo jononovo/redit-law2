@@ -50,14 +50,14 @@ export function ChoosePath({ currentStep, totalSteps, onNext }: ChoosePathProps)
       totalSteps={totalSteps}
       showBack={false}
     >
-      <div className="space-y-2">
+      <div className="space-y-3">
         {agentTypes.map((type) => {
           const Icon = type.icon;
           return (
             <button
               key={type.id}
               onClick={() => type.enabled && onNext(type.id)}
-              className={`w-full px-4 py-3 rounded-2xl border-2 text-left transition-all ${
+              className={`w-full px-5 py-4 rounded-2xl border-2 text-left transition-all ${
                 type.enabled
                   ? "border-neutral-200 bg-white hover:border-primary hover:bg-primary/5 cursor-pointer"
                   : "border-neutral-100 bg-neutral-50 opacity-60 cursor-not-allowed"
