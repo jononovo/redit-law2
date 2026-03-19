@@ -85,6 +85,10 @@ When you provide a valid `pairing_code`, the bot is immediately paired to the ow
 }
 ```
 
+### Response (without callback_url — managed tunnel)
+
+When you register without a `callback_url`, CreditClaw provisions a managed tunnel and the response includes additional tunnel-specific fields. See the [Managed Tunnels](/docs/api/webhooks/tunnels) guide for the full response shape and setup walkthrough.
+
 ### Key Fields
 
 | Field | Description |

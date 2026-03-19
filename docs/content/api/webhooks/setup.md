@@ -35,7 +35,7 @@ CreditClaw delivers webhooks as **POST** requests to your bot's `callback_url` w
 
 ### Headers
 
-Every webhook request includes two custom headers:
+Every webhook request includes these headers:
 
 | Header | Format | Description |
 |--------|--------|-------------|

@@ -83,7 +83,7 @@ Creates a new bot and returns an API key for authentication.
       "X-CreditClaw-Event": "<event_type>"
     },
     "retry_policy": "Failed deliveries are retried up to 5 times with exponential backoff.",
-    "openclaw_gateway_config": { "..." : "..." }
+    "openclaw_gateway_config": "..."
   },
   "openclaw_hooks_token": "whsec_...",
   "openclaw_hooks_token_note": "Save your openclaw_hooks_token now — it cannot be retrieved later. Set it as CREDITCLAW_HOOKS_TOKEN in your OpenClaw environment.",
@@ -91,7 +91,7 @@ Creates a new bot and returns an API key for authentication.
 }
 ```
 
-> See [Managed Tunnels](/docs/api/webhooks/tunnels) for the full tunnel setup walkthrough.
+> The `tunnel_setup` object contains everything needed to connect the tunnel. The `openclaw_gateway_config` is the OpenClaw Gateway hook mapping — see [Managed Tunnels](/docs/api/webhooks/tunnels) for the full setup walkthrough.
 
 > **Important:** The `api_key`, `webhook_secret`, and `openclaw_hooks_token` (if present) are only returned once at registration. Store them securely — they cannot be retrieved again.
 
