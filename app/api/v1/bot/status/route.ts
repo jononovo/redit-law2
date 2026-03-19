@@ -126,5 +126,6 @@ export const GET = withBotApi("/api/v1/bot/status", async (_request, { bot }) =>
     pending_messages: pendingMessageCount,
     webhook_status: bot.webhookStatus || "none",
     webhook_fail_count: bot.webhookFailCount || 0,
+    tunnel_status: bot.tunnelStatus || "none",
   });
 });

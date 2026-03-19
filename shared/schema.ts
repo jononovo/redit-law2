@@ -18,6 +18,9 @@ export const bots = pgTable("bots", {
   webhookStatus: text("webhook_status").notNull().default("none"),
   webhookFailCount: integer("webhook_fail_count").notNull().default(0),
   defaultRail: text("default_rail"),
+  tunnelId: text("tunnel_id"),
+  tunnelToken: text("tunnel_token"),
+  tunnelStatus: text("tunnel_status").notNull().default("none"),
   claimedAt: timestamp("claimed_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });

@@ -129,6 +129,16 @@ CreditClaw features a public landing page and a protected dashboard. Key functio
 
 The system supports multiple payment methods per owner, webhook notifications for bots (HMAC-SHA256, exponential backoff), and owner notifications (in-app, email). Operational safety includes daily wallet reconciliation and health checks.
 
+### Managed Cloudflare Tunnels
+Bots without a `callback_url` get a managed Cloudflare tunnel provisioned at registration. Architecture:
+- **Module:** `lib/cloudflare-tunnel.ts` — `provisionBotTunnel(botId)`, `deleteBotTunnel(tunnelId)`, `getTunnelToken(tunnelId)` using plain `fetch` against Cloudflare API.
+- **Schema:** `bots` table has `tunnelId`, `tunnelToken`, `tunnelStatus` columns (migration `drizzle/0004_low_morph.sql`).
+- **Flow:** Registration auto-provisions tunnel → creates DNS `bot-{id}.nortonbot.com` → stores tunnel credentials → returns `webhook_url` + `tunnel_token` in response. Bot runs `cloudflared tunnel run --token <token>` and starts local listener on port 3456.
+- **Webhook status:** Tunnel-provisioned bots start with `webhookStatus: "pending"` (not `"active"`) until the tunnel connects.
+- **Cleanup:** If registration fails after tunnel provisioning, `deleteBotTunnel` is called to avoid orphaned resources.
+- **Dashboard:** Bot settings dialog shows tunnel URL as read-only with a `TunnelStatusIndicator` when a tunnel is provisioned.
+- **Required secrets:** `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_ZONE_ID` (not yet added — provisioning is best-effort, registration still succeeds without them).
+
 Advanced features:
 - **Payment Links:** Bots generate Stripe Checkout Sessions for receiving payments.
 - **Wallet Freeze:** Owners can freeze bot wallets, preventing transactions.

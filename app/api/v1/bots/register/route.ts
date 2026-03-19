@@ -7,6 +7,7 @@ import { generateBotId, generateApiKey, generateClaimToken, hashApiKey, getApiKe
 import { sendOwnerRegistrationEmail } from "@/lib/email";
 import { fireWebhook } from "@/lib/webhooks";
 import { notifyWalletActivated } from "@/lib/notifications";
+import { provisionBotTunnel, deleteBotTunnel } from "@/lib/cloudflare-tunnel";
 
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
 const RATE_LIMIT = 3;
@@ -84,7 +85,22 @@ export async function POST(request: NextRequest) {
     const claimToken = pairing_code ? null : generateClaimToken();
     const apiKeyHash = await hashApiKey(apiKey);
     const apiKeyPrefix = getApiKeyPrefix(apiKey);
-    const webhookSecret = callback_url ? generateWebhookSecret() : null;
+
+    let tunnelResult: { tunnelId: string; tunnelToken: string; webhookUrl: string } | null = null;
+    let effectiveCallbackUrl = callback_url || null;
+    let webhookSecret: string | null = callback_url ? generateWebhookSecret() : null;
+
+    if (!callback_url) {
+      try {
+        tunnelResult = await provisionBotTunnel(botId);
+        if (tunnelResult) {
+          effectiveCallbackUrl = tunnelResult.webhookUrl;
+          webhookSecret = generateWebhookSecret();
+        }
+      } catch (err) {
+        console.error("[registration] Tunnel provisioning failed (non-blocking):", err);
+      }
+    }
 
     if (pairingCodeRecord && pairing_code) {
       const result = await db.transaction(async (tx) => {
@@ -97,12 +113,15 @@ export async function POST(request: NextRequest) {
           apiKeyPrefix,
           claimToken: null,
           walletStatus: "active",
-          callbackUrl: callback_url || null,
+          callbackUrl: effectiveCallbackUrl,
           webhookSecret,
-          webhookStatus: callback_url ? "active" : "none",
+          webhookStatus: tunnelResult ? "pending" : (effectiveCallbackUrl ? "active" : "none"),
           webhookFailCount: 0,
           ownerUid: pairingCodeRecord.ownerUid,
           claimedAt: new Date(),
+          tunnelId: tunnelResult?.tunnelId || null,
+          tunnelToken: tunnelResult?.tunnelToken || null,
+          tunnelStatus: tunnelResult ? "provisioned" : "none",
         }).returning();
 
         const [claimed] = await tx
@@ -152,6 +171,12 @@ export async function POST(request: NextRequest) {
         response.webhook_note = "Save your webhook_secret now — it cannot be retrieved later. Use it to verify HMAC signatures on incoming webhook payloads.";
       }
 
+      if (tunnelResult) {
+        response.webhook_url = tunnelResult.webhookUrl;
+        response.tunnel_token = tunnelResult.tunnelToken;
+        response.tunnel_instructions = "Run: cloudflared tunnel run --token <your-tunnel_token> — then start a local webhook listener on port 3456 to receive events.";
+      }
+
       return NextResponse.json(response, { status: 201 });
     }
 
@@ -164,12 +189,15 @@ export async function POST(request: NextRequest) {
       apiKeyPrefix,
       claimToken,
       walletStatus: "pending",
-      callbackUrl: callback_url || null,
+      callbackUrl: effectiveCallbackUrl,
       webhookSecret,
-      webhookStatus: callback_url ? "active" : "none",
+      webhookStatus: tunnelResult ? "pending" : (effectiveCallbackUrl ? "active" : "none"),
       webhookFailCount: 0,
       ownerUid: null,
       claimedAt: null,
+      tunnelId: tunnelResult?.tunnelId || null,
+      tunnelToken: tunnelResult?.tunnelToken || null,
+      tunnelStatus: tunnelResult ? "provisioned" : "none",
     });
 
     sendOwnerRegistrationEmail({
@@ -195,8 +223,19 @@ export async function POST(request: NextRequest) {
       response.webhook_note = "Save your webhook_secret now — it cannot be retrieved later. Use it to verify HMAC signatures on incoming webhook payloads.";
     }
 
+    if (tunnelResult) {
+      response.webhook_url = tunnelResult.webhookUrl;
+      response.tunnel_token = tunnelResult.tunnelToken;
+      response.tunnel_instructions = "Run: cloudflared tunnel run --token <your-tunnel_token> — then start a local webhook listener on port 3456 to receive events.";
+    }
+
     return NextResponse.json(response, { status: 201 });
   } catch (error: any) {
+    if (tunnelResult) {
+      deleteBotTunnel(tunnelResult.tunnelId).catch((e) =>
+        console.error("[registration] Tunnel cleanup failed:", e)
+      );
+    }
     if (error?.message === "PAIRING_RACE") {
       return NextResponse.json(
         { error: "pairing_failed", message: "Pairing code was claimed by another request. Please try again." },

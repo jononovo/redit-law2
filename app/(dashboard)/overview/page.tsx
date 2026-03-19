@@ -40,6 +40,7 @@ interface BotData {
   description: string | null;
   wallet_status: string;
   webhook_status: string;
+  tunnel_status: string;
   callback_url: string | null;
   created_at: string;
   claimed_at: string | null;
@@ -335,6 +336,7 @@ export default function DashboardOverview() {
                 description={bot.description}
                 walletStatus={bot.wallet_status}
                 webhookStatus={bot.webhook_status}
+                tunnelStatus={bot.tunnel_status}
                 callbackUrl={bot.callback_url}
                 createdAt={bot.created_at}
                 claimedAt={bot.claimed_at}
