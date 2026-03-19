@@ -19,6 +19,13 @@ const agentTypes = [
     enabled: true,
   },
   {
+    id: "claude_cowork",
+    label: "Claude CoWork",
+    description: "Install the Claude CoWork Plugin",
+    icon: Bot,
+    enabled: false,
+  },
+  {
     id: "agent",
     label: "Agent",
     description: "No write permissions.",
