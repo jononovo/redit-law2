@@ -184,6 +184,7 @@ export const registerBotRequestSchema = z.object({
   pairing_code: z.string().length(6).regex(/^\d{6}$/).optional(),
   bot_type: z.string().max(50).optional(),
   local_port: z.number().int().min(1).max(65535).optional(),
+  webhook_path: z.string().max(200).startsWith("/").optional(),
 });
 
 export const claimBotRequestSchema = z.object({

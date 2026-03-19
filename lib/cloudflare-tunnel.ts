@@ -34,6 +34,12 @@ export function resolveLocalPort(localPort?: number, botType?: string): number {
   return DEFAULT_OTHER_PORT;
 }
 
+export function resolveWebhookPath(webhookPath?: string, botType?: string): string {
+  if (webhookPath) return webhookPath;
+  if (!botType || botType === "openclaw") return "/hooks/creditclaw";
+  return "/webhook";
+}
+
 export async function provisionBotTunnel(botId: string, localPort: number): Promise<TunnelProvisionResult | null> {
   const config = getConfig();
   if (!config) {

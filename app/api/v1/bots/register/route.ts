@@ -7,7 +7,7 @@ import { generateBotId, generateApiKey, generateClaimToken, hashApiKey, getApiKe
 import { sendOwnerRegistrationEmail } from "@/lib/email";
 import { fireWebhook } from "@/lib/webhooks";
 import { notifyWalletActivated } from "@/lib/notifications";
-import { provisionBotTunnel, deleteBotTunnel, resolveLocalPort } from "@/lib/cloudflare-tunnel";
+import { provisionBotTunnel, deleteBotTunnel, resolveLocalPort, resolveWebhookPath } from "@/lib/cloudflare-tunnel";
 
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
 const RATE_LIMIT = 3;
@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { bot_name, owner_email, description, callback_url, pairing_code, bot_type, local_port } = parsed.data;
+    const { bot_name, owner_email, description, callback_url, pairing_code, bot_type, local_port, webhook_path } = parsed.data;
 
     const isDuplicate = await storage.checkDuplicateRegistration(bot_name, owner_email);
     if (isDuplicate) {
@@ -88,6 +88,7 @@ export async function POST(request: NextRequest) {
 
     const effectiveBotType = bot_type || "openclaw";
     const resolvedPort = resolveLocalPort(local_port, effectiveBotType);
+    const resolvedPath = resolveWebhookPath(webhook_path, effectiveBotType);
 
     let tunnelResult: { tunnelId: string; tunnelToken: string; webhookUrl: string } | null = null;
     let effectiveCallbackUrl = callback_url || null;
@@ -97,7 +98,7 @@ export async function POST(request: NextRequest) {
       try {
         tunnelResult = await provisionBotTunnel(botId, resolvedPort);
         if (tunnelResult) {
-          effectiveCallbackUrl = tunnelResult.webhookUrl;
+          effectiveCallbackUrl = `${tunnelResult.webhookUrl}${resolvedPath}`;
           webhookSecret = generateWebhookSecret();
         }
       } catch (err) {
@@ -177,10 +178,11 @@ export async function POST(request: NextRequest) {
       }
 
       if (tunnelResult) {
-        response.webhook_url = tunnelResult.webhookUrl;
+        response.webhook_url = effectiveCallbackUrl;
         response.tunnel_token = tunnelResult.tunnelToken;
         response.tunnel_local_port = resolvedPort;
-        response.tunnel_instructions = `Run: cloudflared tunnel run --token <your-tunnel_token> — then start a local webhook listener on port ${resolvedPort} to receive events.`;
+        response.webhook_path = resolvedPath;
+        response.tunnel_instructions = `Run: cloudflared tunnel run --token <your-tunnel_token> — then start a local webhook listener on port ${resolvedPort}. CreditClaw will POST events to ${resolvedPath} on your server.`;
       }
 
       return NextResponse.json(response, { status: 201 });
@@ -232,10 +234,11 @@ export async function POST(request: NextRequest) {
     }
 
     if (tunnelResult) {
-      response.webhook_url = tunnelResult.webhookUrl;
+      response.webhook_url = effectiveCallbackUrl;
       response.tunnel_token = tunnelResult.tunnelToken;
       response.tunnel_local_port = resolvedPort;
-      response.tunnel_instructions = `Run: cloudflared tunnel run --token <your-tunnel_token> — then start a local webhook listener on port ${resolvedPort} to receive events.`;
+      response.webhook_path = resolvedPath;
+      response.tunnel_instructions = `Run: cloudflared tunnel run --token <your-tunnel_token> — then start a local webhook listener on port ${resolvedPort}. CreditClaw will POST events to ${resolvedPath} on your server.`;
     }
 
     return NextResponse.json(response, { status: 201 });

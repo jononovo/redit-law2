@@ -133,8 +133,9 @@ The system supports multiple payment methods per owner, webhook notifications fo
 Bots without a `callback_url` get a managed Cloudflare tunnel provisioned at registration. Architecture:
 - **Module:** `lib/cloudflare-tunnel.ts` — `provisionBotTunnel(botId, localPort)`, `deleteBotTunnel(tunnelId, botId)`, `getTunnelToken(tunnelId)`, `resolveLocalPort(localPort?, botType?)` using plain `fetch` against Cloudflare API.
 - **Schema:** `bots` table has `botType`, `tunnelId`, `tunnelToken`, `tunnelStatus`, `tunnelLocalPort` columns (migrations `drizzle/0004_low_morph.sql`, `drizzle/0005_melted_the_fury.sql`).
-- **Registration fields:** `bot_type` (optional, defaults to `"openclaw"`) and `local_port` (optional integer 1–65535) in the registration request schema.
+- **Registration fields:** `bot_type` (optional, defaults to `"openclaw"`), `local_port` (optional integer 1–65535), and `webhook_path` (optional string starting with `/`, max 200 chars) in the registration request schema.
 - **Port resolution:** If `local_port` is provided → use it. Else if `bot_type` is `"openclaw"` → 18789. Else → 8080. Stored in `tunnelLocalPort`.
+- **Path resolution:** If `webhook_path` is provided → use it. Else if `bot_type` is `"openclaw"` → `/hooks/creditclaw`. Else → `/webhook`. Appended to tunnel URL to form the full `callbackUrl` (e.g. `https://bot-abc123.nortonbot.com/hooks/creditclaw`).
 - **Flow:** Registration auto-provisions tunnel with resolved port → creates DNS `bot-{id}.nortonbot.com` → stores tunnel credentials → returns `webhook_url` + `tunnel_token` + `tunnel_local_port` in response. Bot runs `cloudflared tunnel run --token <token>` and starts local listener on the resolved port.
 - **Webhook status:** Tunnel-provisioned bots start with `webhookStatus: "pending"` (not `"active"`) until the tunnel connects.
 - **Cleanup:** If registration fails after tunnel provisioning, `deleteBotTunnel(tunnelId, botId)` is called to clean up both DNS and tunnel.
