@@ -180,9 +180,25 @@ export async function POST(request: NextRequest) {
       if (tunnelResult) {
         response.webhook_url = effectiveCallbackUrl;
         response.tunnel_token = tunnelResult.tunnelToken;
-        response.tunnel_local_port = resolvedPort;
-        response.webhook_path = resolvedPath;
-        response.tunnel_instructions = `Run: cloudflared tunnel run --token <your-tunnel_token> — then start a local webhook listener on port ${resolvedPort}. CreditClaw will POST events to ${resolvedPath} on your server.`;
+        response.tunnel_setup = {
+          webhook_url: effectiveCallbackUrl,
+          tunnel_token: tunnelResult.tunnelToken,
+          cloudflared_command: `cloudflared tunnel run --token ${tunnelResult.tunnelToken}`,
+          local_port: resolvedPort,
+          webhook_path: resolvedPath,
+          steps: [
+            "1. Install cloudflared: https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/",
+            `2. Run: cloudflared tunnel run --token ${tunnelResult.tunnelToken}`,
+            `3. Start your webhook server on port ${resolvedPort}, listening for POST requests at ${resolvedPath}`,
+            "4. CreditClaw sends JSON with headers X-CreditClaw-Signature (sha256 HMAC) and X-CreditClaw-Event (event type)",
+            "5. Use your webhook_secret to verify the X-CreditClaw-Signature header on incoming payloads",
+          ],
+          webhook_headers: {
+            "X-CreditClaw-Signature": "sha256=<hmac of payload using your webhook_secret>",
+            "X-CreditClaw-Event": "<event_type e.g. wallet.activated, transaction.completed>",
+          },
+          retry_policy: "Failed deliveries are retried up to 3 times with exponential backoff.",
+        };
       }
 
       return NextResponse.json(response, { status: 201 });
@@ -236,9 +252,25 @@ export async function POST(request: NextRequest) {
     if (tunnelResult) {
       response.webhook_url = effectiveCallbackUrl;
       response.tunnel_token = tunnelResult.tunnelToken;
-      response.tunnel_local_port = resolvedPort;
-      response.webhook_path = resolvedPath;
-      response.tunnel_instructions = `Run: cloudflared tunnel run --token <your-tunnel_token> — then start a local webhook listener on port ${resolvedPort}. CreditClaw will POST events to ${resolvedPath} on your server.`;
+      response.tunnel_setup = {
+        webhook_url: effectiveCallbackUrl,
+        tunnel_token: tunnelResult.tunnelToken,
+        cloudflared_command: `cloudflared tunnel run --token ${tunnelResult.tunnelToken}`,
+        local_port: resolvedPort,
+        webhook_path: resolvedPath,
+        steps: [
+          "1. Install cloudflared: https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/",
+          `2. Run: cloudflared tunnel run --token ${tunnelResult.tunnelToken}`,
+          `3. Start your webhook server on port ${resolvedPort}, listening for POST requests at ${resolvedPath}`,
+          "4. CreditClaw sends JSON with headers X-CreditClaw-Signature (sha256 HMAC) and X-CreditClaw-Event (event type)",
+          "5. Use your webhook_secret to verify the X-CreditClaw-Signature header on incoming payloads",
+        ],
+        webhook_headers: {
+          "X-CreditClaw-Signature": "sha256=<hmac of payload using your webhook_secret>",
+          "X-CreditClaw-Event": "<event_type e.g. wallet.activated, transaction.completed>",
+        },
+        retry_policy: "Failed deliveries are retried up to 3 times with exponential backoff.",
+      };
     }
 
     return NextResponse.json(response, { status: 201 });
