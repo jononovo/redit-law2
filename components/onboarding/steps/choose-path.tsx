@@ -50,14 +50,14 @@ export function ChoosePath({ currentStep, totalSteps, onNext }: ChoosePathProps)
       totalSteps={totalSteps}
       showBack={false}
     >
-      <div className="space-y-4">
+      <div className="space-y-2">
         {agentTypes.map((type) => {
           const Icon = type.icon;
           return (
             <button
               key={type.id}
               onClick={() => type.enabled && onNext(type.id)}
-              className={`w-full p-6 rounded-2xl border-2 text-left transition-all ${
+              className={`w-full px-4 py-3 rounded-2xl border-2 text-left transition-all ${
                 type.enabled
                   ? "border-neutral-200 bg-white hover:border-primary hover:bg-primary/5 cursor-pointer"
                   : "border-neutral-100 bg-neutral-50 opacity-60 cursor-not-allowed"
@@ -65,11 +65,11 @@ export function ChoosePath({ currentStep, totalSteps, onNext }: ChoosePathProps)
               disabled={!type.enabled}
               data-testid={`option-${type.id}`}
             >
-              <div className="flex items-start gap-4">
-                <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+              <div className="flex items-center gap-3">
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
                   type.enabled ? "bg-neutral-100" : "bg-neutral-100/50"
                 }`}>
-                  <Icon className={`w-6 h-6 ${type.enabled ? "text-neutral-500" : "text-neutral-400"}`} />
+                  <Icon className={`w-5 h-5 ${type.enabled ? "text-neutral-500" : "text-neutral-400"}`} />
                 </div>
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
@@ -85,7 +85,7 @@ export function ChoosePath({ currentStep, totalSteps, onNext }: ChoosePathProps)
                       </span>
                     )}
                   </div>
-                  <p className={`${wt.bodySmall} mt-1 ${type.enabled ? "text-neutral-500" : "text-neutral-400"}`}>
+                  <p className={`${wt.bodySmall} ${type.enabled ? "text-neutral-500" : "text-neutral-400"}`}>
                     {type.description}
                   </p>
                 </div>
