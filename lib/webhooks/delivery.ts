@@ -129,6 +129,14 @@ export async function fireWebhook(
       responseStatus: result.status,
       responseBody: result.body,
     });
+
+    const currentStatus = bot.webhookStatus || "none";
+    if (currentStatus !== "active" || (bot.webhookFailCount || 0) > 0) {
+      storage.updateBotWebhookHealth(bot.botId, "active", 0).catch((err) =>
+        console.error(`[fireWebhook] Failed to reset webhook health for ${bot.botId}:`, err)
+      );
+    }
+
     return true;
   } else {
     const nextRetry = getNextRetryAt(1);
@@ -140,6 +148,11 @@ export async function fireWebhook(
       responseStatus: result.status,
       responseBody: result.body,
     });
+
+    storage.updateBotWebhookHealth(bot.botId, "failure", 0).catch((err) =>
+      console.error(`[fireWebhook] Failed to update webhook health for ${bot.botId}:`, err)
+    );
+
     return false;
   }
 }
@@ -153,6 +166,7 @@ export async function retryWebhookDelivery(
   currentAttempts: number,
   maxAttempts: number,
   hooksToken?: string | null,
+  botId?: string,
 ): Promise<void> {
   const signature = signPayload(payloadJson, webhookSecret);
   const result = await attemptDelivery(callbackUrl, payloadJson, signature, eventType, hooksToken);
@@ -167,6 +181,12 @@ export async function retryWebhookDelivery(
       responseBody: result.body,
       nextRetryAt: null,
     });
+
+    if (botId) {
+      storage.updateBotWebhookHealth(botId, "active", 0).catch((err) =>
+        console.error(`[retryWebhookDelivery] Failed to reset webhook health for ${botId}:`, err)
+      );
+    }
   } else {
     const nextRetry = newAttempts < maxAttempts ? getNextRetryAt(newAttempts) : null;
     await storage.updateWebhookDelivery(deliveryId, {
@@ -199,6 +219,7 @@ export async function retryPendingWebhooksForBot(botId: string): Promise<number>
         delivery.attempts,
         delivery.maxAttempts,
         bot.openclawHooksToken,
+        delivery.botId,
       );
       retried++;
     } catch (err) {
@@ -235,6 +256,7 @@ export async function retryAllPendingWebhooks(): Promise<number> {
         delivery.attempts,
         delivery.maxAttempts,
         bot.openclawHooksToken,
+        delivery.botId,
       );
       retried++;
     } catch (err) {
