@@ -23,6 +23,7 @@ export const bots = pgTable("bots", {
   tunnelToken: text("tunnel_token"),
   tunnelStatus: text("tunnel_status").notNull().default("none"),
   tunnelLocalPort: integer("tunnel_local_port"),
+  openclawHooksToken: text("openclaw_hooks_token"),
   claimedAt: timestamp("claimed_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });

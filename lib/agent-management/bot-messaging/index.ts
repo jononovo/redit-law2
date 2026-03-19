@@ -24,24 +24,15 @@ export async function sendToBot(
   if (bot?.callbackUrl && bot?.webhookSecret) {
     const status = bot.webhookStatus || "none";
 
-    if (status === "active" || status === "degraded") {
+    if (status === "active" || status === "degraded" || status === "pending") {
       try {
         const success = await fireWebhook(bot, eventType as WebhookEventType, payload);
         if (success) {
-          if (status === "degraded" || (bot.webhookFailCount || 0) > 0) {
-            storage.updateBotWebhookHealth(botId, "active", 0).catch((err) =>
-              console.error(`[sendToBot] Failed to reset webhook health for ${botId}:`, err)
-            );
-          }
           return { delivered: true, method: "webhook" };
         }
       } catch (err) {
         console.error(`[sendToBot] Webhook delivery failed for bot ${botId}:`, err);
       }
-
-      storage.updateBotWebhookHealth(botId, "failure", 0).catch((err) =>
-        console.error(`[sendToBot] Failed to update webhook health for ${botId}:`, err)
-      );
     }
   }
 

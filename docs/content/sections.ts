@@ -127,6 +127,7 @@ export const sections: DocSection[] = [
       { title: "Setup & Signing", slug: "setup" },
       { title: "Event Types", slug: "events" },
       { title: "Health & Reliability", slug: "health" },
+      { title: "Managed Tunnels", slug: "tunnels" },
     ],
   },
   {

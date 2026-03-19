@@ -47,18 +47,25 @@ export async function attemptDelivery(
   payloadJson: string,
   signature: string,
   eventType: string,
+  hooksToken?: string | null,
 ): Promise<{ success: boolean; status?: number; body?: string }> {
   try {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), WEBHOOK_TIMEOUT_MS);
 
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+      "X-CreditClaw-Signature": `sha256=${signature}`,
+      "X-CreditClaw-Event": eventType,
+    };
+
+    if (hooksToken) {
+      headers["Authorization"] = `Bearer ${hooksToken}`;
+    }
+
     const res = await fetch(callbackUrl, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-CreditClaw-Signature": `sha256=${signature}`,
-        "X-CreditClaw-Event": eventType,
-      },
+      headers,
       body: payloadJson,
       signal: controller.signal,
     });
@@ -112,7 +119,7 @@ export async function fireWebhook(
     maxAttempts: 5,
   });
 
-  const result = await attemptDelivery(bot.callbackUrl, payloadJson, signature, eventType);
+  const result = await attemptDelivery(bot.callbackUrl, payloadJson, signature, eventType, bot.openclawHooksToken);
 
   if (result.success) {
     await storage.updateWebhookDelivery(delivery.id, {
@@ -122,6 +129,14 @@ export async function fireWebhook(
       responseStatus: result.status,
       responseBody: result.body,
     });
+
+    const currentStatus = bot.webhookStatus || "none";
+    if (currentStatus !== "active" || (bot.webhookFailCount || 0) > 0) {
+      storage.updateBotWebhookHealth(bot.botId, "active", 0).catch((err) =>
+        console.error(`[fireWebhook] Failed to reset webhook health for ${bot.botId}:`, err)
+      );
+    }
+
     return true;
   } else {
     const nextRetry = getNextRetryAt(1);
@@ -133,6 +148,11 @@ export async function fireWebhook(
       responseStatus: result.status,
       responseBody: result.body,
     });
+
+    storage.updateBotWebhookHealth(bot.botId, "failure", 0).catch((err) =>
+      console.error(`[fireWebhook] Failed to update webhook health for ${bot.botId}:`, err)
+    );
+
     return false;
   }
 }
@@ -145,9 +165,11 @@ export async function retryWebhookDelivery(
   eventType: string,
   currentAttempts: number,
   maxAttempts: number,
+  hooksToken?: string | null,
+  botId?: string,
 ): Promise<void> {
   const signature = signPayload(payloadJson, webhookSecret);
-  const result = await attemptDelivery(callbackUrl, payloadJson, signature, eventType);
+  const result = await attemptDelivery(callbackUrl, payloadJson, signature, eventType, hooksToken);
   const newAttempts = currentAttempts + 1;
 
   if (result.success) {
@@ -159,6 +181,12 @@ export async function retryWebhookDelivery(
       responseBody: result.body,
       nextRetryAt: null,
     });
+
+    if (botId) {
+      storage.updateBotWebhookHealth(botId, "active", 0).catch((err) =>
+        console.error(`[retryWebhookDelivery] Failed to reset webhook health for ${botId}:`, err)
+      );
+    }
   } else {
     const nextRetry = newAttempts < maxAttempts ? getNextRetryAt(newAttempts) : null;
     await storage.updateWebhookDelivery(deliveryId, {
@@ -190,6 +218,8 @@ export async function retryPendingWebhooksForBot(botId: string): Promise<number>
         delivery.eventType,
         delivery.attempts,
         delivery.maxAttempts,
+        bot.openclawHooksToken,
+        delivery.botId,
       );
       retried++;
     } catch (err) {
@@ -225,6 +255,8 @@ export async function retryAllPendingWebhooks(): Promise<number> {
         delivery.eventType,
         delivery.attempts,
         delivery.maxAttempts,
+        bot.openclawHooksToken,
+        delivery.botId,
       );
       retried++;
     } catch (err) {

@@ -43,6 +43,13 @@
       "when": 1773887493256,
       "tag": "0005_melted_the_fury",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1773891372887,
+      "tag": "0006_fast_frog_thor",
+      "breakpoints": true
     }
   ]
 }

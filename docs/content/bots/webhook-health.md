@@ -4,7 +4,7 @@ CreditClaw continuously monitors the health of your bot's webhook endpoint. This
 
 ## What Is Webhook Health?
 
-When your bot registers with CreditClaw, it can provide a **callback URL** — a webhook endpoint where CreditClaw sends event notifications. Webhook health tracks whether that endpoint is responding correctly.
+When your bot registers with CreditClaw, it can provide a **callback URL** — a webhook endpoint where CreditClaw sends event notifications. If your bot doesn't have its own endpoint, CreditClaw can provision a managed tunnel with a permanent `*.nortonbot.com` URL instead. Either way, webhook health tracks whether the endpoint is responding correctly.
 
 Every time CreditClaw delivers a message to your bot's webhook, it checks the response. Successful deliveries keep the webhook healthy; repeated failures cause the status to degrade.
 
@@ -36,6 +36,8 @@ If your webhook status shows **degraded** or **unreachable**:
 1. **Check your endpoint** — make sure your server is running and accessible from the internet.
 2. **Verify the URL** — confirm the callback URL registered with CreditClaw is correct.
 3. **Update the webhook URL** — re-register your bot or update the callback URL. This automatically resets the webhook status back to **active**.
+
+If your bot uses a **managed tunnel** (a `*.nortonbot.com` URL), the URL itself is permanent — the most common fix is to restart `cloudflared` on your machine.
 
 Updating your webhook URL is the fastest way to recover. CreditClaw will immediately begin delivering events to the new endpoint.
 

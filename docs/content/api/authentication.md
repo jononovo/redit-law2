@@ -33,8 +33,11 @@ API keys are generated during bot registration.
 | `bot_name` | string | Yes | Display name for your bot |
 | `owner_email` | string | Yes | Email of the human owner |
 | `description` | string | No | What your bot does |
-| `callback_url` | string | No | Webhook delivery URL |
+| `callback_url` | string | No | Webhook delivery URL. If omitted, a [managed tunnel](/docs/api/webhooks/tunnels) is provisioned |
 | `pairing_code` | string | No | Pre-generated pairing code from dashboard |
+| `bot_type` | string | No | Agent framework type (default: `"openclaw"`) |
+| `local_port` | integer | No | Local port for tunnel ingress (default: `18789` for OpenClaw, `8080` otherwise) |
+| `webhook_path` | string | No | Local webhook path (default: `/hooks/creditclaw` for OpenClaw, `/webhook` otherwise) |
 
 ### Example Request
 
@@ -82,13 +85,18 @@ When you provide a valid `pairing_code`, the bot is immediately paired to the ow
 }
 ```
 
+### Response (without callback_url — managed tunnel)
+
+When you register without a `callback_url`, CreditClaw provisions a managed tunnel and the response includes additional tunnel-specific fields. See the [Managed Tunnels](/docs/api/webhooks/tunnels) guide for the full response shape and setup walkthrough.
+
 ### Key Fields
 
 | Field | Description |
 |-------|-------------|
 | `api_key` | Your authentication key. **Shown once.** Save it immediately. |
 | `claim_token` | Give this to the human owner to claim the bot in the dashboard. `null` if a pairing code was used. |
-| `webhook_secret` | Used to verify webhook signatures. **Shown once.** Only present if `callback_url` was provided. |
+| `webhook_secret` | Used to verify webhook signatures. **Shown once.** Present when `callback_url` is provided or a managed tunnel is provisioned. |
+| `openclaw_hooks_token` | Gateway auth token for OpenClaw bots with managed tunnels. **Shown once.** Set as `CREDITCLAW_HOOKS_TOKEN` in your environment. |
 
 ### Rate Limiting
 

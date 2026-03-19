@@ -1,4 +1,4 @@
-import { provisionBotTunnel, deleteBotTunnel, resolveLocalPort, resolveWebhookPath } from "@/lib/cloudflare-tunnel";
+import { provisionBotTunnel, deleteBotTunnel, resolveLocalPort, resolveWebhookPath } from "./cloudflare";
 import { generateWebhookSecret } from "@/lib/agent-management/crypto";
 
 export interface TunnelDbFields {
@@ -10,6 +10,7 @@ export interface TunnelDbFields {
   tunnelToken: string;
   tunnelStatus: "provisioned";
   tunnelLocalPort: number;
+  openclawHooksToken: string | null;
 }
 
 export interface OpenClawGatewayConfig {
@@ -45,6 +46,7 @@ export interface TunnelProvisionOutput {
     webhook_url: string;
     tunnel_token: string;
     tunnel_setup: TunnelSetupResponse;
+    openclaw_hooks_token?: string;
   };
 }
 
@@ -52,7 +54,7 @@ function buildOpenClawGatewayConfig(): OpenClawGatewayConfig {
   return {
     hooks: {
       enabled: true,
-      token: "<your-openclaw-hooks-token>",
+      token: "${CREDITCLAW_HOOKS_TOKEN}",
       mappings: [
         {
           match: { path: "creditclaw" },
@@ -83,10 +85,11 @@ function buildTunnelSetupResponse(
 
   if (isOpenClaw) {
     steps.push(
-      '3. Add the CreditClaw hook mapping to your ~/.openclaw/openclaw.json (see openclaw_gateway_config below). Set hooks.token to a dedicated secret — do not reuse your Gateway auth token.',
-      `4. The Gateway will accept CreditClaw webhooks at POST /hooks/creditclaw on port ${localPort}`,
-      "5. CreditClaw sends JSON with headers X-CreditClaw-Signature (sha256 HMAC) and X-CreditClaw-Event (event type)",
-      "6. Use your webhook_secret to verify the X-CreditClaw-Signature header on incoming payloads",
+      "3. Set the CREDITCLAW_HOOKS_TOKEN env var in your OpenClaw environment to the openclaw_hooks_token value from this response",
+      "4. Add the CreditClaw hook mapping to your ~/.openclaw/openclaw.json (see openclaw_gateway_config below). The config reads the token from your CREDITCLAW_HOOKS_TOKEN env var.",
+      `5. The Gateway will accept CreditClaw webhooks at POST /hooks/creditclaw on port ${localPort}`,
+      "6. CreditClaw sends JSON with headers X-CreditClaw-Signature (sha256 HMAC), X-CreditClaw-Event (event type), and Authorization (Bearer token for Gateway auth)",
+      "7. Use your webhook_secret to verify the X-CreditClaw-Signature header on incoming payloads",
     );
   } else {
     steps.push(
@@ -107,7 +110,7 @@ function buildTunnelSetupResponse(
       "X-CreditClaw-Signature": "sha256=<hmac of payload using your webhook_secret>",
       "X-CreditClaw-Event": "<event_type e.g. wallet.activated, transaction.completed>",
     },
-    retry_policy: "Failed deliveries are retried up to 3 times with exponential backoff.",
+    retry_policy: "Failed deliveries are retried up to 5 times with exponential backoff.",
   };
 
   if (isOpenClaw) {
@@ -133,6 +136,18 @@ export async function provisionTunnelForBot(
 
     const callbackUrl = `${tunnelResult.webhookUrl}${resolvedPath}`;
     const webhookSecret = generateWebhookSecret();
+    const isOpenClaw = effectiveBotType === "openclaw";
+    const openclawHooksToken = isOpenClaw ? generateWebhookSecret() : null;
+
+    const responseData: TunnelProvisionOutput["responseData"] = {
+      webhook_url: callbackUrl,
+      tunnel_token: tunnelResult.tunnelToken,
+      tunnel_setup: buildTunnelSetupResponse(callbackUrl, tunnelResult.tunnelToken, resolvedPort, resolvedPath, effectiveBotType),
+    };
+
+    if (openclawHooksToken) {
+      responseData.openclaw_hooks_token = openclawHooksToken;
+    }
 
     return {
       dbFields: {
@@ -144,12 +159,9 @@ export async function provisionTunnelForBot(
         tunnelToken: tunnelResult.tunnelToken,
         tunnelStatus: "provisioned",
         tunnelLocalPort: resolvedPort,
+        openclawHooksToken,
       },
-      responseData: {
-        webhook_url: callbackUrl,
-        tunnel_token: tunnelResult.tunnelToken,
-        tunnel_setup: buildTunnelSetupResponse(callbackUrl, tunnelResult.tunnelToken, resolvedPort, resolvedPath, effectiveBotType),
-      },
+      responseData,
     };
   } catch (err) {
     console.error("[tunnel-provisioning] Provisioning failed (non-blocking):", err);
