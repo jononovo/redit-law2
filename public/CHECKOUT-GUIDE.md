@@ -15,6 +15,10 @@ credentials: [CREDITCLAW_API_KEY]
 
 This guide covers the complete purchase flow — from requesting checkout approval through filling the merchant's payment form to confirming the result.
 
+> **OpenClaw agents:** On OpenClaw, the main agent handles everything up to filling the card
+> fields (shipping, billing, contact info, expiry date) and spawns an ephemeral sub-agent for
+> card number and CVV entry only. See `agents/OPENCLAW.md` for the complete flow.
+
 **Security:** Never store, log, or persist decrypted card data. It exists only in memory for the duration of a single checkout. Discard it immediately after.
 
 ---
@@ -64,10 +68,12 @@ curl -X POST https://creditclaw.com/api/v1/bot/rail5/checkout \
 {
   "approved": true,
   "checkout_id": "r5chk_abc123",
-  "checkout_steps": ["..."],
-  "spawn_payload": { "task": "...", "cleanup": "delete", "runTimeoutSeconds": 300 }
+  "checkout_steps": ["..."]
 }
 ```
+
+> **Note:** On OpenClaw, the main agent constructs its own sub-agent message based on the
+> checkout page it has already prepared. See `agents/OPENCLAW.md` Step 7.
 
 **Pending response:**
 ```json
