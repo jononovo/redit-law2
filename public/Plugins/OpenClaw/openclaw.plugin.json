@@ -1,0 +1,24 @@
+{
+  "id": "creditclaw",
+  "name": "CreditClaw",
+  "version": "1.0.0",
+  "description": "Secure card checkout for AI agents. Fills card number and CVV without exposing card data to the agent.",
+  "author": "CreditClaw",
+  "homepage": "https://creditclaw.com",
+  "repository": "https://github.com/creditclaw/creditclaw-openclaw",
+  "license": "MIT",
+  "entry": "src/index.ts",
+  "openclaw": {
+    "minVersion": "0.7.0",
+    "requires": {
+      "env": ["CREDITCLAW_API_KEY"],
+      "tools": ["browser"]
+    }
+  },
+  "tools": [
+    {
+      "name": "creditclaw_fill_card",
+      "group": "creditclaw"
+    }
+  ]
+}

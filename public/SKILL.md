@@ -25,8 +25,10 @@ All companion files are bundled in this skill directory.
 |------|---------|
 | `SKILL.md` (this file) | Registration, card setup, status, spending permissions, API reference |
 | `CHECKOUT-GUIDE.md` | My Card — complete purchase flow, browser checkout, and confirmation |
-| `agents/OPENCLAW.md` | OpenClaw sub-agent checkout — main agent fills the form, sub-agent handles card number and CVV only |
+| `agents/OPENCLAW.md` | OpenClaw plugin checkout — main agent fills the form, CreditClaw plugin handles card number and CVV |
+| `agents/OPENCLAW_legacy.md` | OpenClaw sub-agent checkout — legacy fallback when plugin is not installed |
 | `agents/CLAUDE-PLUGIN.md` | Claude Desktop/Cowork — plugin-based secure checkout (coming soon) |
+| `Plugins/OpenClaw/` | CreditClaw OpenClaw plugin source — `creditclaw_fill_card` tool |
 | `MANAGEMENT.md` | Bot self-management — transaction history, profile updates |
 | `SHOPPING-GUIDE.md` | Discover vendors and merchants — find checkout skills for any purchase |
 | `MY-STORE.md` | Sell to anyone — checkout pages, payment links, invoices, shops |
@@ -84,7 +86,8 @@ CreditClaw is designed with defense-in-depth to protect your owner's funds:
 - **Claim tokens are single-use.** The token linking you to your owner is invalidated immediately after use and cannot be replayed.
 - **Card details are protected with AES-256-GCM encryption.** Your owner's card details are encrypted and the decryption key is held server-side, issued only once per approved checkout. Decrypted card data must never be stored, logged, or persisted — it exists only in memory for the duration of a single transaction.
 - **Checkout sessions are ephemeral.** Card details are decrypted only for the duration of a single checkout and discarded immediately after. This ensures sensitive data cannot leak across sessions or persist.
-- **Sub-agents isolate card data.** On OpenClaw, your main agent fills shipping, billing, and expiry — everything except the card number and CVV. An ephemeral sub-agent is spawned only for those two fields. The sub-agent decrypts, fills card number and CVV, submits, and is automatically deleted. Your main agent never sees decrypted card details. See `agents/OPENCLAW.md`.
+- **Plugin-based card isolation.** On OpenClaw with the CreditClaw plugin installed, card data never enters any agent's context. The plugin decrypts and fills card number and CVV internally — the agent sees only a success/failure result. Card data is zeroed from memory immediately after filling. See `agents/OPENCLAW.md`.
+- **Sub-agent fallback.** If the CreditClaw plugin is not installed, an ephemeral sub-agent handles card fields instead. The sub-agent decrypts, fills card number and CVV, and is automatically deleted. Your main agent never sees decrypted card details. See `agents/OPENCLAW_legacy.md`.
 - **Decryption keys are single-use and server-issued.** Each checkout gets a unique key that is invalidated after retrieval. There is no way to re-request a key for the same checkout.
 - **Per-endpoint rate limiting.** All bot API endpoints are rate-limited to prevent abuse.
 - **Access logging.** Every API call you make is logged with endpoint, method, status code, IP, and response time — visible to your owner.
@@ -421,7 +424,8 @@ Card details are never exposed directly to your main agent. The handoff method d
 
 | Platform | Guide | Security Model |
 |----------|-------|----------------|
-| OpenClaw | `agents/OPENCLAW.md` | Main agent fills shipping/billing/expiry, spawns ephemeral sub-agent for card number and CVV only. Sub-agent decrypts, fills card fields, submits, and is deleted. |
+| OpenClaw (plugin) | `agents/OPENCLAW.md` | Main agent fills shipping/billing/expiry, calls `creditclaw_fill_card` plugin for card number and CVV. Plugin decrypts and fills fields internally — card data never enters agent context. |
+| OpenClaw (legacy) | `agents/OPENCLAW_legacy.md` | Fallback without plugin: spawns ephemeral sub-agent for card number and CVV. Sub-agent decrypts, fills card fields, and is deleted. |
 | Claude Desktop / Cowork | `agents/CLAUDE-PLUGIN.md` | CreditClaw plugin handles secure browser filling. Triple-secure pre/post context scans before compaction. (Coming soon) |
 
 Read the guide for your platform before making any purchase.
@@ -605,6 +609,6 @@ you retrieve it, your owner can re-stage the delivery from their dashboard.
 - **Balance can reach $0.** Purchases will be declined. Let your human know so they can take action from their dashboard.
 - **One bot = one wallet per rail.** Your wallet is unique to you and linked to your owner's account. You may have wallets on multiple rails.
 - **Poll responsibly.** Use `GET /bot/status` no more than every 8 hours during normal operation.
-- **Spawn a sub-agent for card fields only (OpenClaw).** On OpenClaw, your main agent fills everything except the card number and CVV, then spawns a sub-agent for those two fields. See `agents/OPENCLAW.md`. Your main agent must never handle decrypted card data directly.
+- **Use the CreditClaw plugin for card fields (OpenClaw).** On OpenClaw, your main agent fills everything except the card number and CVV, then calls `creditclaw_fill_card` to fill those two fields securely. If the plugin is not installed, use the sub-agent fallback in `agents/OPENCLAW_legacy.md`. Your main agent must never handle decrypted card data directly.
 - **Follow the checkout guide when making purchases.** See `CHECKOUT-GUIDE.md` for the universal API reference, and your platform's guide in the Secure Card Handoff table.
 - **For optional webhook setup,** see `WEBHOOK.md`.
