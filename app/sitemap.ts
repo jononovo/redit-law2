@@ -1,5 +1,7 @@
 import type { MetadataRoute } from "next";
 import { sections } from "@/docs/content/sections";
+import { getAllPosts, getAllTags } from "@/content/blog/posts";
+import { categories } from "@/content/blog/taxonomy";
 
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || "https://creditclaw.com";
 
@@ -73,5 +75,23 @@ export default function sitemap(): MetadataRoute.Sitemap {
     }
   }
 
-  return [...staticPages, ...docPages];
+  const blogPostPages: MetadataRoute.Sitemap = getAllPosts().map((post) => ({
+    url: `${BASE_URL}/newsroom/${post.slug}`,
+    changeFrequency: "monthly",
+    priority: 0.6,
+  }));
+
+  const blogCategoryPages: MetadataRoute.Sitemap = categories.map((cat) => ({
+    url: `${BASE_URL}/newsroom/category/${cat.slug}`,
+    changeFrequency: "monthly",
+    priority: 0.5,
+  }));
+
+  const blogTagPages: MetadataRoute.Sitemap = getAllTags().map((tagSlug) => ({
+    url: `${BASE_URL}/newsroom/tag/${tagSlug}`,
+    changeFrequency: "monthly",
+    priority: 0.4,
+  }));
+
+  return [...staticPages, ...docPages, ...blogPostPages, ...blogCategoryPages, ...blogTagPages];
 }
