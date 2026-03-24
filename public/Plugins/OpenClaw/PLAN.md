@@ -31,12 +31,14 @@ kill, verify cleanup. Timeout recovery with key_delivered check.
 
 ```
 Steps 1-4:  Main agent browses, fills form, confirms fields, gets approval
-Step 5:     Main agent calls creditclaw_fill_card tool
-Step 6:     Main agent handles result (owner comms, confirm, announce)
+Step 5:     Main agent calls creditclaw_fill_card tool (fills card number + CVV only)
+Step 6:     Main agent clicks submit, detects result
+Step 7:     Main agent handles result (owner comms, confirm, announce)
 ```
 
-6 steps. No sub-agent lifecycle. No spawn/focus/yield/kill. No timeout recovery.
-The plugin handles: key retrieval, decryption, field filling, submission, result detection.
+7 steps. No sub-agent lifecycle. No spawn/focus/yield/kill. No timeout recovery.
+The plugin handles: key retrieval, decryption, card number + CVV field filling.
+The agent handles: submit, result detection, owner communication, confirmation.
 
 ---
 
@@ -73,14 +75,13 @@ export default definePluginEntry({
       description:
         "Securely fills card number and CVV fields on a checkout page. " +
         "Decrypts the card internally — the agent never sees card data. " +
-        "Returns success/rejected with order details.",
+        "Does NOT click submit — the agent handles submission and result detection.",
       parameters: {
         type: "object",
         properties: {
           checkout_id:    { type: "string", description: "Approved checkout ID from POST /bot/rail5/checkout" },
           card_file_path: { type: "string", description: "Path to encrypted card file (e.g. .creditclaw/cards/Card-ChaseD-9547.md)" },
-          frame_hint:     { type: "string", description: "Optional CSS selector for payment iframe (e.g. iframe[src*='stripe.com']). Omit if card fields are on the main page." },
-          submit:         { type: "boolean", description: "Whether to click the submit/pay button after filling. Default true." }
+          frame_hint:     { type: "string", description: "Optional CSS selector for payment iframe (e.g. iframe[src*='stripe.com']). Omit if card fields are on the main page." }
         },
         required: ["checkout_id", "card_file_path"]
       },
@@ -170,21 +171,22 @@ async function fillCardFieldsCDP(browser, card, frameHint?) {
 }
 ```
 
-**4. Plugin does NOT call /bot/rail5/confirm**
+**4. Plugin fills fields only — no submit, no result detection, no confirm**
 
-The plugin fills card fields, submits, and detects the result — but returns control
-to the main agent for owner communication and confirmation. This matches the current
-design philosophy: the main agent owns the relationship with the owner and CreditClaw.
+The plugin's scope is narrow: decrypt the card, fill card number and CVV, return.
+The agent handles everything else: clicking submit, detecting the result, owner
+communication, and calling /bot/rail5/confirm. This keeps the agent fully in control
+of the checkout flow and matches the current design philosophy.
 
 Return shape:
 ```typescript
-// On success
-{ status: "success", order_id: "ORD-12345", message: "Payment submitted successfully." }
+// Fields filled successfully
+{ status: "filled", fields_filled: ["card_number", "cvv"], message: "Card number and CVV filled." }
 
-// On rejection (payment declined, field error, etc.)
-{ status: "rejected", reason: "Card declined", message: "The payment was rejected by the processor." }
+// Field filling failed (couldn't find field, type failed, etc.)
+{ status: "fill_failed", reason: "card_number_not_found", message: "Could not locate the card number input." }
 
-// On error (key retrieval failed, decryption failed, browser error)
+// Error before filling (key retrieval failed, decryption failed, file not found)
 { status: "error", reason: "key_retrieval_failed", message: "Could not retrieve decryption key." }
 ```
 
@@ -347,10 +349,13 @@ Main Agent:
        card_file_path: ".creditclaw/cards/Card-ChaseD-9547.md",
        frame_hint: "iframe[src*='stripe.com']"  // optional
      })
-  6. Handle result:
+     → Plugin returns: { status: "filled" } or { status: "fill_failed" } or { status: "error" }
+  6. If "filled" → click submit, wait for result, detect success/failure
+     If "fill_failed" → analyze, fix, retry tool call (max 2)
+     If "error" → check checkout status, re-initiate if safe
+  7. Handle result:
      - success → screenshot, inform owner, wait 2 min, confirm, announce
-     - rejected → analyze cause, retry (call tool again) or confirm failed
-     - error → check checkout status, re-initiate if safe
+     - payment declined → confirm failed, announce
 ```
 
 ### What Gets Removed from OPENCLAW.md
@@ -421,7 +426,7 @@ a legacy fallback in `OPENCLAW_legacy.md` (which already exists).
   "description": "Secure card checkout for AI agents. Fills card number and CVV without exposing card data to the agent.",
   "author": "CreditClaw",
   "homepage": "https://creditclaw.com",
-  "repository": "https://github.com/creditclaw/openclaw-plugin",
+  "repository": "https://github.com/creditclaw/creditclaw-openclaw",
   "license": "MIT",
   "entry": "src/index.ts",
   "openclaw": {
@@ -471,26 +476,26 @@ a legacy fallback in `OPENCLAW_legacy.md` (which already exists).
 
 ---
 
+## Resolved Decisions
+
+1. **Plugin fills fields only — no submit, no result detection.**
+   The agent clicks submit and detects the result. Plugin scope: decrypt → fill → return.
+
+2. **Plugin does NOT call /bot/rail5/confirm.**
+   Agent handles owner communication and confirmation.
+
+3. **Plugin fills card number and CVV only — NOT expiry.**
+   Agent fills expiry (it's not sensitive). Plugin stays narrowly scoped.
+
+4. **npm package name: `creditclaw-openclaw`**
+
 ## Open Questions
 
-1. **Should the plugin handle submit + result detection, or just fill fields?**
-   Current plan: plugin fills fields, clicks submit, detects result, returns status.
-   Alternative: plugin only fills fields, agent clicks submit and detects result.
-   Recommendation: plugin handles everything (cleaner, less back-and-forth).
-
-2. **Should the plugin call /bot/rail5/confirm?**
-   Current plan: No — plugin returns result, agent handles owner comms + confirm.
-   This keeps the agent in control of the relationship with owner and CreditClaw.
-
-3. **Expiry date: should the plugin fill it too?**
-   Currently the main agent fills expiry (it's not sensitive). But if the plugin
-   is already inside the payment iframe, it could fill expiry as well for reliability.
-   The card data includes exp_month and exp_year.
-
-4. **npm package name?**
-   Options: `@creditclaw/openclaw-plugin`, `openclaw-plugin-creditclaw`, 
-   `creditclaw-openclaw`. Need to align with OpenClaw community naming conventions.
-
-5. **Does `api.runtime.browser` support the `--frame` scoping?**
+1. **Does `api.runtime.browser` support the `--frame` scoping?**
    Research strongly suggests yes, but this needs validation against the actual
    OpenClaw SDK. If not, we fall back to Tier 2 immediately.
+
+2. **Should the plugin expose a second tool for card field detection?**
+   e.g. `creditclaw_detect_card_fields` that returns whether fields are in an
+   iframe and what the selector is — helping the agent provide a better `frame_hint`.
+   Not required for MVP, but could improve reliability.
