@@ -148,12 +148,27 @@ export type VendorTier =
 
 After:
 ```typescript
-export type VendorTier =
-  | "top_luxury" | "luxury" | "premium" | "mid_range"
-  | "value" | "fast_fashion" | "utility";
+export type BrandTier =
+  | "ultra_luxury" | "luxury" | "premium" | "mid_range"
+  | "value" | "budget" | "commodity";
 ```
 
-Remove `wholesale` and `marketplace` from `TIER_LABELS` as well.
+Full replacement of `TIER_LABELS`:
+```typescript
+export const BRAND_TIER_LABELS: Record<BrandTier, string> = {
+  ultra_luxury: "Ultra Luxury",
+  luxury: "Luxury",
+  premium: "Premium",
+  mid_range: "Mid-Range",
+  value: "Value",
+  budget: "Budget",
+  commodity: "Commodity / Essentials",
+};
+```
+
+**Removed values:** `top_luxury` (renamed → `ultra_luxury`), `fast_fashion` (business model, not a tier), `utility` (replaced by `commodity`), `wholesale` (business model), `marketplace` (business model)
+
+**Note:** The type name itself changes from `VendorTier` to `BrandTier` to match the unified naming convention. All files importing `VendorTier` must be updated.
 
 **Data migration for existing rows (4 brands affected):**
 
@@ -328,7 +343,13 @@ Clean up any remaining references (imports, type annotations, comments).
 | `getAllVendors` | `searchBrands({})` (already exists) |
 | `/api/v1/vendors` | Deprecated or rewritten to serve from `brand_index` |
 | `vendorType` (on vendors) | `brand_type` (on brand_index) |
-| Tier values `marketplace`, `wholesale` | Removed from tier — moved to `brand_type` |
+| `VendorTier` type | `BrandTier` type |
+| `TIER_LABELS` | `BRAND_TIER_LABELS` |
+| `top_luxury` tier | `ultra_luxury` (renamed to proper industry term) |
+| `fast_fashion` tier | Removed (business model, not a tier) |
+| `utility` tier | `commodity` (clearer label) |
+| `marketplace`, `wholesale` tiers | Removed — moved to `brand_type` |
+| Added tiers | `budget` (cheapest option) |
 
 ---
 
@@ -342,17 +363,20 @@ Pure business model classification:
 - `chain` — multi-location standardized retail
 - `independent` — single-owner small business
 
-### `tier` (CLEANED UP)
-Pure affordability/price positioning scale:
-- `top_luxury` — Top Luxury
-- `luxury` — Luxury
-- `premium` — Premium
-- `mid_range` — Mid-Range
-- `value` — Value
-- `fast_fashion` — Fast Fashion
-- `utility` — Utility
+### `tier` (FULLY REWORKED — renamed to `BrandTier`)
+Pure affordability/price positioning scale (7 tiers, highest to lowest):
 
-**Removed from tier:** `marketplace` (→ `brand_type`), `wholesale` (→ `brand_type: chain` or `retailer`)
+| Value | Label | Think of it as... | Examples |
+|---|---|---|---|
+| `ultra_luxury` | Ultra Luxury | The absolute top — exclusive, often appreciates in value | Hermès, Cartier, Richard Mille |
+| `luxury` | Luxury | Prestigious, globally iconic | Gucci, Louis Vuitton, Prada |
+| `premium` | Premium | Quality over price — willing to pay more | Apple, Dyson, Patagonia |
+| `mid_range` | Mid-Range | Standard — most mainstream brands | Nike, Adidas, Gap |
+| `value` | Value | Price-conscious — deals and savings | Walmart, Target, Amazon |
+| `budget` | Budget | Cheapest option — volume over quality | Shein, Temu, AliExpress |
+| `commodity` | Commodity / Essentials | Functional — you buy it because you need it, not because you want it | Grainger, Uline, Staples |
+
+**Removed from tier:** `top_luxury` (renamed → `ultra_luxury`), `fast_fashion` (business model, not a price tier), `utility` (replaced by `commodity`), `marketplace` (→ `brand_type`), `wholesale` (→ `brand_type`)
 
 ---
 
