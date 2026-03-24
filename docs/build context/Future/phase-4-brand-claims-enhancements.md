@@ -822,3 +822,42 @@ Step 7 (Test checklist)          ← depends on all above
 - Partial unique index change — future phase
 - "You manage this" indicator on catalog grid cards — low priority, deferred
 - Moving My Skills page to a new URL — stays at `/skill-builder/submit` for now to avoid breaking existing bookmarks/links
+
+---
+
+## Phase 5 backlog: Catalog source-of-truth switchover + follow-ups
+
+The items below should be tackled in the next phase. They are listed here so nothing gets lost.
+
+### 1. Switch catalog UI from in-memory registry to database (HIGH PRIORITY)
+Currently two sources of truth exist side by side:
+- **Bot-facing API** (`/api/v1/bot/skills`) reads from `brand_index` in the database — correct, up to date.
+- **Human-facing catalog** (`app/skills/page.tsx` and `app/skills/[vendor]/page.tsx`) imports `VENDOR_REGISTRY` and `getVendorBySlug()` from `lib/procurement-skills/registry.ts` — stale TypeScript files.
+
+This means:
+- Brand claims that update `maturity` to "official" in the DB are invisible on the catalog.
+- New brands added through the Skill Builder pipeline appear for bots but not for humans.
+- Filter facets (sectors, tiers) on the catalog only reflect the 14 hardcoded vendors, not new DB entries.
+
+**What to do:**
+- `app/skills/page.tsx` — Replace `VENDOR_REGISTRY` import with a fetch to `/api/v1/bot/skills` (or a server-side call to `storage.searchBrands()`). Use the facets response from `storage.getAllBrandFacets()` for filter sidebar options.
+- `app/skills/[vendor]/page.tsx` — Replace `getVendorBySlug()` with a fetch to the DB (or server-side `storage.getBrandBySlug()`).
+- Remove the in-memory `.filter()` chains and use the API's query parameters for filtering/sorting.
+
+### 2. Switch export route to database
+- `/api/v1/skills/export` still imports `VENDOR_REGISTRY` from the TypeScript registry. When exporting to ClawHub or skills.sh, it reads from the old source. Switch to read from `brand_index`.
+
+### 3. Multi-user role system (admin/editor)
+- Add `role` column to `brand_claims` (`admin` / `editor`)
+- Change partial unique index from `(brand_slug)` to `(brand_slug, claimer_uid)` WHERE status = 'verified'
+- First verified claimer = admin, same-domain subsequent claimers = editor
+- Admin revoke cascades to editors
+- Update `verifyClaim` to only set `brand_index.claimed_by` for admin claims
+
+### 4. "You manage this" indicator on catalog cards
+- Once catalog reads from DB, optionally show a subtle badge on cards for brands the logged-in user has claimed
+- Requires client-side fetch to `/api/v1/brands/claims/mine` and cross-referencing with catalog results
+
+### 5. Consider renaming the My Skills page URL
+- Currently stays at `/skill-builder/submit` for backward compatibility
+- Once the switchover is stable, consider moving to a cleaner URL like `/my-skills` with a redirect from the old path
