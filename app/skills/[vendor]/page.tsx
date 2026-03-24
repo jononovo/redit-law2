@@ -121,21 +121,39 @@ function BrandClaimButton({ slug }: { slug: string }) {
     }
   }, [slug]);
 
-  if (!user) return null;
+  if (!user) {
+    return (
+      <Link href="/login">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="text-[11px] text-neutral-400 hover:text-primary rounded-full px-3 h-7"
+          data-testid="button-claim-brand-login"
+        >
+          <Shield className="w-3 h-3 mr-1" />
+          Claim this brand
+        </Button>
+      </Link>
+    );
+  }
 
   if (claimState === "verified") {
     return (
-      <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 text-xs border" data-testid="badge-claim-verified">
-        <CheckCircle2 className="w-3 h-3 mr-1" /> Claimed
-      </Badge>
+      <Link href="/skill-builder/submit">
+        <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 text-xs border cursor-pointer hover:bg-emerald-200/60 transition-colors" data-testid="badge-claim-verified">
+          <CheckCircle2 className="w-3 h-3 mr-1" /> Claimed
+        </Badge>
+      </Link>
     );
   }
 
   if (claimState === "pending") {
     return (
-      <Badge className="bg-amber-100 text-amber-700 border-amber-200 text-xs border" data-testid="badge-claim-pending">
-        <Clock className="w-3 h-3 mr-1" /> Claim Pending
-      </Badge>
+      <Link href="/skill-builder/submit">
+        <Badge className="bg-amber-100 text-amber-700 border-amber-200 text-xs border cursor-pointer hover:bg-amber-200/60 transition-colors" data-testid="badge-claim-pending">
+          <Clock className="w-3 h-3 mr-1" /> Claim Pending
+        </Badge>
+      </Link>
     );
   }
 
@@ -150,14 +168,15 @@ function BrandClaimButton({ slug }: { slug: string }) {
   return (
     <div className="flex items-center gap-2">
       <Button
-        variant="outline"
+        variant="ghost"
         size="sm"
-        className="text-xs rounded-full"
+        className="text-[11px] text-neutral-400 hover:text-primary rounded-full px-3 h-7"
         onClick={handleClaim}
         disabled={claimState === "loading"}
         data-testid="button-claim-brand"
       >
-        {claimState === "loading" ? "Claiming..." : "Claim Brand"}
+        <Shield className="w-3 h-3 mr-1" />
+        {claimState === "loading" ? "Claiming..." : "Claim this brand"}
       </Button>
       {claimState === "error" && <span className="text-xs text-red-500" data-testid="text-claim-error">{errorMsg}</span>}
     </div>

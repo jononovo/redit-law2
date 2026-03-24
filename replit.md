@@ -305,7 +305,7 @@ Self-service brand ownership verification. Brand owners claim their brand from t
 - Transactional `verifyClaim` upgrades `brand_index.maturity` to "official", sets `claimed_by`/`claim_id`
 - Transactional `revokeClaim` reverts brand to "community" maturity; only affects brand_index if claim_id matches
 - API endpoints: `POST /api/v1/brands/[slug]/claim`, `GET /api/v1/brands/claims/mine`, `POST /api/v1/brands/claims/[id]/revoke`, `GET /api/v1/brands/claims/review` (admin), `POST /api/v1/brands/claims/[id]/review` (admin verify/reject)
-- UI: Claim button on vendor detail page (`app/skills/[vendor]/page.tsx`), My Claims page (`app/brands/claims/page.tsx`), Admin review queue (`app/admin/brand-claims/page.tsx`)
+- UI: Claim button on vendor detail page (`app/skills/[vendor]/page.tsx` — ghost button, shows for logged-out too, links badges to My Skills), unified "My Skills" page (`app/(dashboard)/skill-builder/submit/page.tsx` — submissions + claims in one list, claim search modal), Admin review queue (`app/admin123/brand-claims/page.tsx` — behind admin auth gate)
 
 **UI** — Catalog page (`app/skills/page.tsx`) with sector/tier/category/capability filters in sidebar, sub-sector tags on cards, deals badges. Vendor detail page (`app/skills/[vendor]/page.tsx`) with search discovery, buying config, deals & promotions, taxonomy panels, and brand claim button.
 
