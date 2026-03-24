@@ -490,31 +490,31 @@ This file exports 6 functions:
 5. `getVendorsByTier(tier)`
 6. `searchVendors(query)`
 
-### 6B. Delete individual vendor files
-**Delete entire directory:** `lib/procurement-skills/vendors/`
+### 6B. Keep the `vendors/` directory (DO NOT delete)
 
-Contents: `index.ts`, `amazon.ts`, `amazon_business.ts`, `bh_photo.ts`, `grainger.ts`, `home_depot.ts`, `lowes.ts`, `mcmaster_carr.ts`, `newegg.ts`, `office_depot.ts`, `shopify.ts`, `staples.ts`, `uline.ts`, `walmart.ts`, `walmart_business.ts`
+**Decision (confirmed during review):** The `vendors/` directory stays. The seed script (`scripts/seed-brand-index.ts`) imports directly from `lib/procurement-skills/vendors/` — deleting it would break the ability to re-seed after a DB issue. Since `registry.ts` (the barrel that all runtime code imports) is deleted, the individual vendor files become dead code with no runtime importers. This is harmless and keeps the seed pipeline functional.
 
 ### 6C. Codebase-wide import search
-After deletion, search for any remaining imports to catch build-breaking references:
+After deleting `registry.ts`, search for any remaining imports to catch build-breaking references:
 
 ```bash
 grep -r "from.*procurement-skills/registry" --include="*.ts" --include="*.tsx"
-grep -r "from.*procurement-skills/vendors" --include="*.ts" --include="*.tsx"
 grep -r "VENDOR_REGISTRY" --include="*.ts" --include="*.tsx"
-grep -r "getVendorBySlug" --include="*.ts" --include="*.tsx"
 grep -r "getVendorsByCategory" --include="*.ts" --include="*.tsx"
 grep -r "getVendorsBySector" --include="*.ts" --include="*.tsx"
 grep -r "getVendorsByTier" --include="*.ts" --include="*.tsx"
 grep -r "searchVendors" --include="*.ts" --include="*.tsx"
 ```
 
-Expected: zero matches. If any remain, update them.
+Expected: zero matches (excluding docs/attached_assets). If any remain, update them.
+
+Note: `getVendorBySlug` also exists on `server/storage/vendors.ts` (the `vendors` DB table, unrelated to the procurement skills registry). That one stays.
 
 **DO NOT delete:**
-- `lib/procurement-skills/types.ts` — type definitions, label maps, color maps (still used by catalog UI)
+- `lib/procurement-skills/types.ts` — type definitions, label maps, color maps, `computeAgentFriendliness()` (still used by catalog UI, generator, skill-json, description-md — stays as a standalone utility function)
 - `lib/procurement-skills/taxonomy/` — taxonomy label definitions (still used by catalog UI)
-- `lib/procurement-skills/generator.ts` — skill markdown generator (still used by vendor detail preview and Skill Builder)
+- `lib/procurement-skills/generator.ts` — skill markdown generator (still used by vendor detail preview and Skill Builder; internally calls `computeAgentFriendliness()`)
+- `lib/procurement-skills/vendors/` — individual vendor data files (still used by seed script)
 - `scripts/seed-brand-index.ts` — still needed for initial seeding and refreshing JSONB data
 
 ---
@@ -545,7 +545,8 @@ Expected: zero matches. If any remain, update them.
 - **brandData JSONB type safety** — casting JSONB to VendorSkill is inherently unsafe. If a stored object is missing a field the UI reads (e.g. `vendor.methodConfig[method]`), it will crash. Mitigate with optional chaining (`vendor.methodConfig?.[method]`) and the pre-build validation step.
 
 ### Not a risk
-- **The seed script** — It imports from `lib/procurement-skills/vendors/` which we're deleting. BUT the seed script only needs to run once (or when refreshing data). By Phase 5, all brands are in the DB. If we ever need to re-seed, we can either: (a) keep the seed script as a standalone archive, or (b) build a new seed script that reads from a JSON file instead of TypeScript imports. The seed script is NOT a runtime dependency.
+- **The seed script** — It imports from `lib/procurement-skills/vendors/` which we are keeping. The seed pipeline remains fully functional.
+- **`computeAgentFriendliness`** — Stays in `types.ts` as a standalone function. Used by `generator.ts`, `skill-json.ts`, `description-md.ts`. Not touched by Phase 5. The catalog pages stop calling it directly (they use the pre-computed `agentReadiness` DB score instead), but nothing is removed.
 
 ---
 
@@ -562,8 +563,10 @@ Expected: zero matches. If any remain, update them.
 | Edit | `app/skills/[vendor]/page.tsx` | Fetch from internal API, cast brandData |
 | Edit | `app/api/v1/skills/export/route.ts` | Replace VENDOR_REGISTRY with DB query |
 | Edit | `app/(dashboard)/skill-builder/submit/page.tsx` | Claim modal search → internal API |
-| Delete | `lib/procurement-skills/registry.ts` | Vendor registry barrel |
-| Delete | `lib/procurement-skills/vendors/` (15 files) | Individual vendor definitions |
+| Delete | `lib/procurement-skills/registry.ts` | Vendor registry barrel (only runtime entry point) |
+| Keep | `lib/procurement-skills/vendors/` (15 files) | Kept for seed script — no runtime importers after registry.ts deleted |
+| Keep | `lib/procurement-skills/types.ts` | Label maps, color maps, `computeAgentFriendliness()` — standalone utility |
+| Keep | `lib/procurement-skills/generator.ts` | Skill markdown generator — calls `computeAgentFriendliness()` |
 | Edit | `replit.md` | Update documentation |
 
-**Total: 4 creates/edits to storage layer, 4 page edits, 1 API edit, 16 file deletions**
+**Total: 4 creates/edits to storage layer, 4 page edits, 1 API edit, 1 file deletion**
