@@ -242,13 +242,45 @@ A config-driven build system at `skill-variants/` (project root) that generates 
 **CI/CD:** GitHub Actions workflow for auto-publishing to ClawHub lives at `skill-variants/publish-skills.yml` (reference copy). Must be manually copied to `.github/workflows/publish-skills.yml` on the GitHub side — the `.github/` folder is not managed by Replit to avoid sync conflicts. See `skill-variants/DEPLOYMENT.md` for full setup instructions.
 
 ### Procurement Skills Module
-A `/skills/` module provides a curated library of vendor shopping skills.
-- **Types:** Defines CheckoutMethod taxonomy, VendorCapability, SkillMaturity, and VendorSkill interface.
-- **Registry:** A static TypeScript catalog of 14 vendors with capabilities, checkout methods, and tips.
-- **Generator:** Converts VendorSkill configs into `SKILL.md` files for agents.
-- **Discovery API:** Bot-facing endpoints to discover and load vendor skills.
-- **Catalog Page:** Public browsable directory with search, filters, vendor cards, and friendliness scores.
-- **Vendor Detail Pages:** Per-vendor pages with capabilities, checkout details, and `SKILL.md` preview.
+A `/skills/` module provides a curated library of vendor shopping skills. **Modularized under `lib/procurement-skills/`:**
+
+**Taxonomy** (`lib/procurement-skills/taxonomy/`):
+Each concern has its own file with type definition + label map. Barrel-exported via `index.ts`.
+- `sectors.ts` — `VendorSector` type + `SECTOR_LABELS` (20 sectors: retail, office, fashion, health, home, electronics, industrial, etc.)
+- `tiers.ts` — `VendorTier` type + `TIER_LABELS` (9 tiers: top_luxury through marketplace)
+- `categories.ts` — `VendorCategory` type + `CATEGORY_LABELS` (6 legacy categories)
+- `checkout-methods.ts` — `CheckoutMethod` type + `CHECKOUT_METHOD_LABELS` + `CHECKOUT_METHOD_COLORS`
+- `capabilities.ts` — `VendorCapability` type + `CAPABILITY_LABELS`
+- `payment-methods.ts` — `PaymentMethod` type + `PAYMENT_METHOD_LABELS` (11 methods: card, ach, crypto, apple_pay, etc.)
+- `checkout-providers.ts` — `CheckoutProvider` type + `CHECKOUT_PROVIDER_LABELS`
+- `ordering.ts` — `OrderingPermission` type + `ORDERING_PERMISSION_LABELS`
+- `maturity.ts` — `SkillMaturity` type
+
+**Core types** (`lib/procurement-skills/types.ts`):
+Re-exports all taxonomy types/labels from `taxonomy/`. Defines domain interfaces: `VendorSkill`, `SearchDiscovery`, `BuyingConfig`, `DealsConfig`, `TaxonomyConfig`, `MethodConfig`. Also exports `computeAgentFriendliness()`.
+
+**Vendors** (`lib/procurement-skills/vendors/`):
+Each vendor is its own file exporting a single `VendorSkill` object. Barrel-exported via `index.ts`.
+- 14 vendor files: `amazon.ts`, `shopify.ts`, `amazon-business.ts`, `walmart.ts`, `walmart-business.ts`, `staples.ts`, `home-depot.ts`, `lowes.ts`, `office-depot.ts`, `uline.ts`, `grainger.ts`, `newegg.ts`, `bh-photo.ts`, `mcmaster-carr.ts`
+
+**Registry** (`lib/procurement-skills/registry.ts`):
+Imports all vendor objects from `vendors/`, assembles `VENDOR_REGISTRY` array. Exports lookup helpers: `getVendorBySlug`, `getVendorsByCategory`, `getVendorsBySector`, `getVendorsByTier`, `searchVendors`.
+
+**Generator** (`lib/procurement-skills/generator.ts`):
+Converts `VendorSkill` objects into `SKILL.md` markdown with frontmatter, taxonomy, discovery, buying, and deals sections.
+
+**Package exports** (`lib/procurement-skills/package/`):
+- `skill-json.ts` — JSON package format including taxonomy/searchDiscovery/buying/deals blocks
+- `payments-md.ts` — Payment instructions markdown
+- `description-md.ts` — Description markdown
+
+**Builder** (`lib/procurement-skills/builder/`):
+LLM-powered skill generation. `types.ts` includes `LLMCheckoutAnalysis` with taxonomy inference fields.
+
+**Discovery API** (`app/api/v1/bot/skills/route.ts`):
+Query params: `category`, `search`, `checkout`, `capability`, `maturity`, `sector`, `tier`, `sub_sector`, `ordering_permission`, `payment_method`, `has_deals`, `search_api`, `mcp`. Response includes full taxonomy/buying/deals metadata per vendor plus `sectors` and `tiers` facets.
+
+**UI** — Catalog page (`app/skills/page.tsx`) with sector/tier/category/capability filters in sidebar, sub-sector tags on cards, deals badges. Vendor detail page (`app/skills/[vendor]/page.tsx`) with search discovery, buying config, deals & promotions, and taxonomy panels.
 
 ### Community Submissions Module
 Registered users can submit vendor websites for analysis, contributing to the procurement skills library.
