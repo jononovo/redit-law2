@@ -1091,10 +1091,10 @@ export const insertVendorSchema = z.object({
   supportedCountries: z.array(z.string()).default(["US"]),
 });
 
-export const merchantAccounts = pgTable("merchant_accounts", {
+export const brandLoginAccounts = pgTable("brand_login_accounts", {
   id: serial("id").primaryKey(),
   ownerUid: text("owner_uid").notNull(),
-  vendorId: integer("vendor_id").notNull(),
+  brandId: integer("brand_id").notNull(),
   botId: text("bot_id"),
   accountIdentifier: text("account_identifier"),
   encryptedCredentials: text("encrypted_credentials"),
@@ -1104,16 +1104,23 @@ export const merchantAccounts = pgTable("merchant_accounts", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 }, (table) => [
-  index("merchant_accounts_owner_uid_idx").on(table.ownerUid),
-  index("merchant_accounts_vendor_id_idx").on(table.vendorId),
+  index("brand_login_accounts_owner_uid_idx").on(table.ownerUid),
+  index("brand_login_accounts_brand_id_idx").on(table.brandId),
 ]);
 
-export type MerchantAccount = typeof merchantAccounts.$inferSelect;
-export type InsertMerchantAccount = typeof merchantAccounts.$inferInsert;
+export type BrandLoginAccount = typeof brandLoginAccounts.$inferSelect;
+export type InsertBrandLoginAccount = typeof brandLoginAccounts.$inferInsert;
 
-export const insertMerchantAccountSchema = z.object({
+/** @deprecated Use BrandLoginAccount */
+export type MerchantAccount = BrandLoginAccount;
+/** @deprecated Use InsertBrandLoginAccount */
+export type InsertMerchantAccount = InsertBrandLoginAccount;
+/** @deprecated Use brandLoginAccounts */
+export const merchantAccounts = brandLoginAccounts;
+
+export const insertBrandLoginAccountSchema = z.object({
   ownerUid: z.string().min(1),
-  vendorId: z.number().int().positive(),
+  brandId: z.number().int().positive(),
   botId: z.string().optional().nullable(),
   accountIdentifier: z.string().max(500).optional().nullable(),
   encryptedCredentials: z.string().optional().nullable(),
@@ -1121,6 +1128,9 @@ export const insertMerchantAccountSchema = z.object({
   status: z.string().default("active"),
   metadata: z.record(z.any()).optional().nullable(),
 });
+
+/** @deprecated Use insertBrandLoginAccountSchema */
+export const insertMerchantAccountSchema = insertBrandLoginAccountSchema;
 
 export const orders = pgTable("orders", {
   id: serial("id").primaryKey(),
@@ -1496,6 +1506,7 @@ export const brandIndex = pgTable("brand_index", {
   sector: text("sector").notNull(),
   subSectors: text("sub_sectors").array().notNull().default([]),
   tier: text("tier"),
+  brandType: text("brand_type"),
   tags: text("tags").array().default([]),
 
   carriesBrands: text("carries_brands").array().default([]),

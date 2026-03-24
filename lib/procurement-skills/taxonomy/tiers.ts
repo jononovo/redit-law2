@@ -1,22 +1,23 @@
-export type VendorTier =
-  | "top_luxury"
+export type BrandTier =
+  | "ultra_luxury"
   | "luxury"
   | "premium"
   | "mid_range"
   | "value"
-  | "fast_fashion"
-  | "utility"
-  | "wholesale"
-  | "marketplace";
+  | "budget"
+  | "commodity";
 
-export const TIER_LABELS: Record<VendorTier, string> = {
-  top_luxury: "Top Luxury",
+export const BRAND_TIER_LABELS: Record<BrandTier, string> = {
+  ultra_luxury: "Ultra Luxury",
   luxury: "Luxury",
   premium: "Premium",
   mid_range: "Mid-Range",
   value: "Value",
-  fast_fashion: "Fast Fashion",
-  utility: "Utility",
-  wholesale: "Wholesale",
-  marketplace: "Marketplace",
+  budget: "Budget",
+  commodity: "Commodity / Essentials",
 };
+
+/** @deprecated Use BrandTier instead */
+export type VendorTier = BrandTier;
+/** @deprecated Use BRAND_TIER_LABELS instead */
+export const TIER_LABELS: Record<BrandTier, string> = BRAND_TIER_LABELS;

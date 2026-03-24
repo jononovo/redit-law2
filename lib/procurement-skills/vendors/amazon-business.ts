@@ -36,7 +36,7 @@ export const amazon_business: VendorSkill = {
   taxonomy: {
     sector: "office",
     subSectors: ["business supplies", "bulk purchasing", "office equipment"],
-    tier: "wholesale",
+    tier: "value",
     tags: ["b2b", "tax exempt", "quantity discounts", "business prime"],
   },
   searchDiscovery: {

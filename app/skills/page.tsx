@@ -32,12 +32,12 @@ import {
   CAPABILITY_LABELS,
   CATEGORY_LABELS,
   SECTOR_LABELS,
-  TIER_LABELS,
+  BRAND_TIER_LABELS,
   CheckoutMethod,
   VendorCapability,
   VendorCategory,
   VendorSector,
-  VendorTier,
+  BrandTier,
   SkillMaturity,
   VendorSkill,
 } from "@/lib/procurement-skills/types";
@@ -77,7 +77,7 @@ function VendorCard({ brand }: { brand: BrandIndex }) {
   const checkoutMethods = (brand.checkoutMethods ?? []) as CheckoutMethod[];
   const capabilities = (brand.capabilities ?? []) as VendorCapability[];
   const subSectors = brand.subSectors ?? [];
-  const tier = brand.tier as VendorTier | null;
+  const tier = brand.tier as BrandTier | null;
 
   return (
     <Link
@@ -100,7 +100,7 @@ function VendorCard({ brand }: { brand: BrandIndex }) {
               {tier && (
                 <>
                   <span className="text-neutral-300 mx-0.5">·</span>
-                  <span>{TIER_LABELS[tier]}</span>
+                  <span>{BRAND_TIER_LABELS[tier]}</span>
                 </>
               )}
             </div>
@@ -198,7 +198,7 @@ type FilterState = {
   capabilities: VendorCapability[];
   maturity: SkillMaturity[];
   sectors: VendorSector[];
-  tiers: VendorTier[];
+  tiers: BrandTier[];
 };
 
 function FilterCheckbox({
@@ -361,9 +361,9 @@ export default function SkillsCatalogPage() {
           {facets.tiers.map(tier => (
             <FilterCheckbox
               key={tier}
-              label={TIER_LABELS[tier as VendorTier] ?? tier}
-              checked={filters.tiers.includes(tier as VendorTier)}
-              onChange={() => toggleFilter("tiers", tier as VendorTier)}
+              label={BRAND_TIER_LABELS[tier as BrandTier] ?? tier}
+              checked={filters.tiers.includes(tier as BrandTier)}
+              onChange={() => toggleFilter("tiers", tier as BrandTier)}
               testId={`filter-tier-${tier}`}
             />
           ))}

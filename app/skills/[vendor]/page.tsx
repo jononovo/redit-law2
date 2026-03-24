@@ -41,7 +41,7 @@ import {
   CAPABILITY_LABELS,
   CATEGORY_LABELS,
   SECTOR_LABELS,
-  TIER_LABELS,
+  BRAND_TIER_LABELS,
   ORDERING_PERMISSION_LABELS,
   PAYMENT_METHOD_LABELS,
   CHECKOUT_PROVIDER_LABELS,
@@ -310,7 +310,7 @@ export default function VendorDetailPage({ params }: { params: Promise<{ vendor:
                             <span className="font-medium">{SECTOR_LABELS[vendor.taxonomy.sector]}</span>
                           </div>
                           <span className="text-neutral-300">·</span>
-                          <span className="font-medium">{TIER_LABELS[vendor.taxonomy.tier]}</span>
+                          <span className="font-medium">{BRAND_TIER_LABELS[vendor.taxonomy.tier]}</span>
                         </>
                       )}
                       <a
@@ -717,7 +717,7 @@ export default function VendorDetailPage({ params }: { params: Promise<{ vendor:
                         </div>
                         <div className="flex justify-between">
                           <span className="text-neutral-500 font-medium">Tier</span>
-                          <span className="font-semibold text-neutral-900">{TIER_LABELS[vendor.taxonomy.tier]}</span>
+                          <span className="font-semibold text-neutral-900">{BRAND_TIER_LABELS[vendor.taxonomy.tier]}</span>
                         </div>
                       </div>
                     </div>

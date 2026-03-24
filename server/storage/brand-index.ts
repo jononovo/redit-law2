@@ -30,6 +30,7 @@ export interface BrandSearchFilters {
 type BrandIndexMethods = Pick<IStorage,
   | "searchBrands"
   | "searchBrandsCount"
+  | "getBrandById"
   | "getBrandBySlug"
   | "getRetailersForBrand"
   | "upsertBrandIndex"
@@ -186,6 +187,11 @@ export const brandIndexMethods: BrandIndexMethods = {
 
     const [row] = await withWhere;
     return row?.total ?? 0;
+  },
+
+  async getBrandById(id: number): Promise<BrandIndex | null> {
+    const [row] = await db.select().from(brandIndex).where(eq(brandIndex.id, id)).limit(1);
+    return row ?? null;
   },
 
   async getBrandBySlug(slug: string): Promise<BrandIndex | null> {

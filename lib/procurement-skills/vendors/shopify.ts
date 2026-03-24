@@ -41,7 +41,7 @@ export const shopify: VendorSkill = {
   taxonomy: {
     sector: "retail",
     subSectors: ["platform", "dtc brands", "independent stores"],
-    tier: "marketplace",
+    tier: "mid_range",
     tags: ["platform", "shopify payments", "dtc"],
   },
   searchDiscovery: {

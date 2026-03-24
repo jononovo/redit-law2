@@ -18,7 +18,7 @@ export async function PATCH(
       return NextResponse.json({ error: "invalid_id" }, { status: 400 });
     }
 
-    const accounts = await storage.getMerchantAccountsByOwner(user.uid);
+    const accounts = await storage.getBrandLoginAccountsByOwner(user.uid);
     const existing = accounts.find((a) => a.id === accountId);
     if (!existing) {
       return NextResponse.json({ error: "not_found" }, { status: 404 });
@@ -32,7 +32,7 @@ export async function PATCH(
     if (body.status !== undefined) updates.status = body.status;
     if (body.metadata !== undefined) updates.metadata = body.metadata;
 
-    const updated = await storage.updateMerchantAccount(accountId, updates as any);
+    const updated = await storage.updateBrandLoginAccount(accountId, updates as any);
     if (!updated) {
       return NextResponse.json({ error: "update_failed" }, { status: 500 });
     }
@@ -60,13 +60,13 @@ export async function DELETE(
       return NextResponse.json({ error: "invalid_id" }, { status: 400 });
     }
 
-    const accounts = await storage.getMerchantAccountsByOwner(user.uid);
+    const accounts = await storage.getBrandLoginAccountsByOwner(user.uid);
     const existing = accounts.find((a) => a.id === accountId);
     if (!existing) {
       return NextResponse.json({ error: "not_found" }, { status: 404 });
     }
 
-    await storage.deleteMerchantAccount(accountId);
+    await storage.deleteBrandLoginAccount(accountId);
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("DELETE /api/v1/merchant-accounts/[id] error:", error);

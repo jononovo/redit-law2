@@ -36,7 +36,7 @@ export const uline: VendorSkill = {
   taxonomy: {
     sector: "industrial",
     subSectors: ["packaging", "shipping supplies", "janitorial", "warehouse equipment", "safety"],
-    tier: "utility",
+    tier: "commodity",
     tags: ["fast shipping", "quantity breaks", "net 30", "13 warehouses"],
   },
   searchDiscovery: {

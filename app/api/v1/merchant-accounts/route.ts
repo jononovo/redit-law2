@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth/session";
 import { storage } from "@/server/storage";
-import { insertMerchantAccountSchema } from "@/shared/schema";
+import { insertBrandLoginAccountSchema } from "@/shared/schema";
 
 export async function GET(request: NextRequest) {
   try {
@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Authentication required" }, { status: 401 });
     }
 
-    const accounts = await storage.getMerchantAccountsByOwner(user.uid);
+    const accounts = await storage.getBrandLoginAccountsByOwner(user.uid);
     return NextResponse.json({ accounts });
   } catch (error) {
     console.error("GET /api/v1/merchant-accounts error:", error);
@@ -26,17 +26,17 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const parsed = insertMerchantAccountSchema.safeParse({ ...body, ownerUid: user.uid });
+    const parsed = insertBrandLoginAccountSchema.safeParse({ ...body, ownerUid: user.uid });
     if (!parsed.success) {
       return NextResponse.json({ error: "validation_error", details: parsed.error.flatten() }, { status: 400 });
     }
 
-    const vendor = await storage.getVendorById(parsed.data.vendorId);
-    if (!vendor) {
-      return NextResponse.json({ error: "vendor_not_found" }, { status: 404 });
+    const brand = await storage.getBrandById(parsed.data.brandId);
+    if (!brand) {
+      return NextResponse.json({ error: "brand_not_found" }, { status: 404 });
     }
 
-    const account = await storage.createMerchantAccount(parsed.data);
+    const account = await storage.createBrandLoginAccount(parsed.data);
     return NextResponse.json({ account }, { status: 201 });
   } catch (error) {
     console.error("POST /api/v1/merchant-accounts error:", error);

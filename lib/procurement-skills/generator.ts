@@ -1,4 +1,4 @@
-import { VendorSkill, CHECKOUT_METHOD_LABELS, CAPABILITY_LABELS, SECTOR_LABELS, TIER_LABELS, ORDERING_PERMISSION_LABELS, PAYMENT_METHOD_LABELS, computeAgentFriendliness } from "./types";
+import { VendorSkill, CHECKOUT_METHOD_LABELS, CAPABILITY_LABELS, SECTOR_LABELS, BRAND_TIER_LABELS, ORDERING_PERMISSION_LABELS, PAYMENT_METHOD_LABELS, computeAgentFriendliness } from "./types";
 
 export function generateVendorSkill(vendor: VendorSkill): string {
   const primaryMethod = vendor.checkoutMethods[0];
@@ -79,7 +79,7 @@ curl -X POST https://creditclaw.com/api/v1/${primaryMethod === "native_api" ? "c
 
 - **Sector:** ${SECTOR_LABELS[vendor.taxonomy.sector]}
 - **Sub-sectors:** ${vendor.taxonomy.subSectors.join(", ")}
-- **Tier:** ${TIER_LABELS[vendor.taxonomy.tier]}
+- **Tier:** ${BRAND_TIER_LABELS[vendor.taxonomy.tier]}
 ${vendor.taxonomy.tags?.length ? `- **Tags:** ${vendor.taxonomy.tags.join(", ")}` : ""}
 `
     : "";
