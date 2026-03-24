@@ -282,23 +282,12 @@ Each section includes setup, inputs, expected behavior, and pass/fail criteria.
 
 ## Running Tests
 
-### For agents
-- Tests T1–T3, T9–T11 can be run by writing small Node.js scripts that import individual modules
-- Tests T4–T8 can be run by calling `findFieldRef()` / `detectPaymentIframe()` / `attemptFill()` with mock data
-- Test T12 requires a live browser session with the OpenClaw runtime
+### Runnable now
+- `npx tsx tests/test-field-detection.ts` — covers T4–T7 and T10 (field detection, boundaries, iframe detection, error sanitization)
 
-### For developers
-- Set up a local test harness that mocks `api.runtime.browser` with canned snapshot strings
-- Use the boundary test cases from T5 and T6 as regression inputs whenever label lists are modified
-- Run T9 with a debugger to verify buffer contents post-wipe
-
-### Mock browser helper pattern
-```ts
-function mockBrowser(snapshot: string): BrowserAPI {
-  return {
-    snapshot: async () => snapshot,
-    type: async (ref, text) => { /* record calls */ },
-    click: async (ref) => { /* record calls */ },
-  };
-}
-```
+### Requires live environment
+- T1–T3 (decryption) — need a real encrypted card file and key material
+- T8 (retry logic) — need a browser session to test snapshot/type failures
+- T9 (data wiping) — need to inspect memory after execution
+- T11 (key single-use) — need a live CreditClaw API connection
+- T12 (end-to-end) — need full OpenClaw runtime with browser
