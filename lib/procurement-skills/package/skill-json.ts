@@ -1,4 +1,5 @@
 import { VendorSkill, CheckoutMethod, computeAgentFriendliness } from "../types";
+import type { TaxonomyConfig, SearchDiscovery, BuyingConfig, DealsConfig } from "../types";
 
 export interface SkillJsonPackage {
   slug: string;
@@ -39,6 +40,10 @@ export interface SkillJsonPackage {
   };
   generatedBy: string;
   lastVerified: string;
+  taxonomy?: TaxonomyConfig;
+  searchDiscovery?: SearchDiscovery;
+  buying?: BuyingConfig;
+  deals?: DealsConfig;
 }
 
 export function generateSkillJson(vendor: VendorSkill): SkillJsonPackage {
@@ -64,6 +69,10 @@ export function generateSkillJson(vendor: VendorSkill): SkillJsonPackage {
     },
     generatedBy: vendor.generatedBy,
     lastVerified: vendor.lastVerified,
+    taxonomy: vendor.taxonomy,
+    searchDiscovery: vendor.searchDiscovery,
+    buying: vendor.buying,
+    deals: vendor.deals,
   };
 }
 

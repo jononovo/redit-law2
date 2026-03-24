@@ -1,4 +1,4 @@
-import { VendorSkill, CHECKOUT_METHOD_LABELS, CAPABILITY_LABELS, computeAgentFriendliness } from "./types";
+import { VendorSkill, CHECKOUT_METHOD_LABELS, CAPABILITY_LABELS, SECTOR_LABELS, TIER_LABELS, ORDERING_PERMISSION_LABELS, PAYMENT_METHOD_LABELS, computeAgentFriendliness } from "./types";
 
 export function generateVendorSkill(vendor: VendorSkill): string {
   const primaryMethod = vendor.checkoutMethods[0];
@@ -73,6 +73,52 @@ curl -X POST https://creditclaw.com/api/v1/${primaryMethod === "native_api" ? "c
     ? "Order tracking is available. Poll the status endpoint for shipping updates."
     : "Order tracking is not yet available for this vendor. Monitor email for shipping confirmation.";
 
+  const taxonomySection = vendor.taxonomy
+    ? `
+## Taxonomy
+
+- **Sector:** ${SECTOR_LABELS[vendor.taxonomy.sector]}
+- **Sub-sectors:** ${vendor.taxonomy.subSectors.join(", ")}
+- **Tier:** ${TIER_LABELS[vendor.taxonomy.tier]}
+${vendor.taxonomy.tags?.length ? `- **Tags:** ${vendor.taxonomy.tags.join(", ")}` : ""}
+`
+    : "";
+
+  const discoverySection = vendor.searchDiscovery
+    ? `
+## Search Discovery
+
+- **Search API:** ${vendor.searchDiscovery.searchApi ? "Available" : "Not available"}
+- **MCP Support:** ${vendor.searchDiscovery.mcp ? "Supported" : "Not supported"}
+- **Internal Search:** ${vendor.searchDiscovery.searchInternal ? "Available" : "Not available"}
+${vendor.searchDiscovery.apiDocUrl ? `- **API Docs:** ${vendor.searchDiscovery.apiDocUrl}` : ""}
+`
+    : "";
+
+  const buyingSection = vendor.buying
+    ? `
+## Buying Configuration
+
+- **Ordering:** ${ORDERING_PERMISSION_LABELS[vendor.buying.orderingPermission]}
+- **Payment Methods:** ${vendor.buying.paymentMethods.map(m => PAYMENT_METHOD_LABELS[m]).join(", ")}
+- **Delivery:** ${vendor.buying.deliveryOptions}
+${vendor.buying.freeDelivery ? `- **Free Delivery:** ${vendor.buying.freeDelivery}` : ""}
+${vendor.buying.returnsPolicy ? `- **Returns:** ${vendor.buying.returnsPolicy}` : ""}
+${vendor.buying.returnsWindow ? `- **Returns Window:** ${vendor.buying.returnsWindow}` : ""}
+`
+    : "";
+
+  const dealsSection = vendor.deals
+    ? `
+## Deals & Promotions
+
+- **Active Deals:** ${vendor.deals.currentDeals ? "Yes" : "No"}
+${vendor.deals.dealsUrl ? `- **Deals Page:** ${vendor.deals.dealsUrl}` : ""}
+${vendor.deals.dealsApiEndpoint ? `- **Deals API:** ${vendor.deals.dealsApiEndpoint}` : ""}
+${vendor.deals.loyaltyProgram ? `- **Loyalty Program:** ${vendor.deals.loyaltyProgram}` : ""}
+`
+    : "";
+
   return `---
 name: creditclaw-shop-${vendor.slug}
 version: ${vendor.version}
@@ -82,6 +128,14 @@ requires: [creditclaw]
 maturity: ${vendor.maturity}
 agent_friendliness: ${friendliness}/5
 last_verified: ${vendor.lastVerified}
+${vendor.taxonomy ? `sector: ${vendor.taxonomy.sector}
+tier: ${vendor.taxonomy.tier}
+sub_sectors: [${vendor.taxonomy.subSectors.join(", ")}]` : ""}
+${vendor.buying ? `ordering_permission: ${vendor.buying.orderingPermission}
+payment_methods: [${vendor.buying.paymentMethods.join(", ")}]` : ""}
+${vendor.searchDiscovery ? `search_api: ${vendor.searchDiscovery.searchApi}
+mcp: ${vendor.searchDiscovery.mcp}` : ""}
+${vendor.deals ? `current_deals: ${vendor.deals.currentDeals}` : ""}
 ---
 
 # Shopping at ${vendor.name}
@@ -120,6 +174,10 @@ ${primaryConfig?.searchEndpoint ? `\nCall \`POST ${primaryConfig.searchEndpoint}
 ${shippingLines}
 
 ---
+${taxonomySection}---
+${discoverySection}---
+${buyingSection}---
+${dealsSection}---
 
 ## Tips
 
