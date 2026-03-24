@@ -44,6 +44,7 @@ import {
 
 const MATURITY_CONFIG: Record<SkillMaturity, { label: string; className: string }> = {
   verified: { label: "Verified", className: "bg-green-100 text-green-700 border-green-200" },
+  official: { label: "Official", className: "bg-emerald-100 text-emerald-700 border-emerald-200" },
   beta: { label: "Beta", className: "bg-yellow-100 text-yellow-700 border-yellow-200" },
   community: { label: "Community", className: "bg-blue-100 text-blue-700 border-blue-200" },
   draft: { label: "Draft", className: "bg-neutral-100 text-neutral-600 border-neutral-200" },

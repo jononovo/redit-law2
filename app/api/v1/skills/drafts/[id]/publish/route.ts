@@ -2,8 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth/session";
 import { storage } from "@/server/storage";
 import { prepareVersionData } from "@/lib/procurement-skills/versioning";
+import { generateVendorSkill } from "@/lib/procurement-skills/generator";
 import type { VendorSkill } from "@/lib/procurement-skills/types";
 import type { SourceType } from "@/lib/procurement-skills/versioning";
+import type { InsertBrandIndex } from "@/shared/schema";
 
 export async function POST(
   _req: NextRequest,
@@ -75,6 +77,56 @@ export async function POST(
 
     if (draft.submitterUid && draft.submissionSource === "community") {
       await storage.incrementSubmitterStat(draft.submitterUid, "skillsPublished");
+    }
+
+    try {
+      const skillMd = generateVendorSkill(vendor);
+      const domain = (() => { try { return new URL(vendor.url).hostname.replace(/^www\./, ""); } catch { return null; } })();
+      const brandRow: InsertBrandIndex = {
+        slug: vendorSlug,
+        name: vendor.name,
+        domain,
+        url: vendor.url,
+        logoUrl: vendor.logoUrl ?? null,
+        description: `Shop ${vendor.name} using CreditClaw payment rails.`,
+        sector: vendor.taxonomy?.sector ?? vendor.category ?? "retail",
+        subSectors: vendor.taxonomy?.subSectors ?? [],
+        tier: vendor.taxonomy?.tier ?? null,
+        tags: vendor.taxonomy?.tags ?? [],
+        carriesBrands: [],
+        hasMcp: vendor.searchDiscovery?.mcp ?? false,
+        hasApi: vendor.searchDiscovery?.searchApi ?? false,
+        siteSearch: vendor.searchDiscovery?.searchInternal ?? true,
+        productFeed: false,
+        capabilities: vendor.capabilities ?? [],
+        checkoutMethods: vendor.checkoutMethods ?? [],
+        ordering: vendor.buying?.orderingPermission ?? (vendor.checkout?.guestCheckout ? "guest" : "registered"),
+        checkoutProvider: vendor.buying?.checkoutProviders?.[0] ?? null,
+        paymentMethodsAccepted: vendor.buying?.paymentMethods ?? [],
+        creditclawSupports: [],
+        businessAccount: vendor.capabilities?.includes("business_invoicing") ?? false,
+        taxExemptSupported: vendor.checkout?.taxExemptField ?? false,
+        poNumberSupported: vendor.checkout?.poNumberField ?? false,
+        deliveryOptions: vendor.buying?.deliveryOptions?.split(",").map((s: string) => s.trim()) ?? [],
+        freeShippingThreshold: vendor.shipping?.freeThreshold?.toString() ?? null,
+        shipsInternationally: false,
+        supportedCountries: ["US"],
+        hasDeals: vendor.deals?.currentDeals ?? false,
+        dealsUrl: vendor.deals?.dealsUrl ?? null,
+        dealsApi: vendor.deals?.dealsApiEndpoint ?? null,
+        loyaltyProgram: vendor.deals?.loyaltyProgram ?? null,
+        maturity: vendor.maturity ?? "draft",
+        submittedBy: user.uid,
+        submitterType: draft.submitterType ?? "community",
+        version: newVersion.version,
+        lastVerified: vendor.lastVerified ?? null,
+        activeVersionId: newVersion.id,
+        brandData: vendor as unknown as Record<string, unknown>,
+        skillMd,
+      };
+      await storage.upsertBrandIndex(brandRow);
+    } catch (brandErr) {
+      console.error("Failed to sync brand_index after publish:", brandErr);
     }
 
     return NextResponse.json({

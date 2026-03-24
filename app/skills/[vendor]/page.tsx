@@ -53,6 +53,7 @@ import {
 
 const MATURITY_CONFIG: Record<SkillMaturity, { label: string; className: string; description: string }> = {
   verified: { label: "Verified", className: "bg-green-100 text-green-700 border-green-200", description: "Tested and confirmed working by the CreditClaw team" },
+  official: { label: "Official", className: "bg-emerald-100 text-emerald-700 border-emerald-200", description: "Brand-claimed and verified by the brand owner" },
   beta: { label: "Beta", className: "bg-yellow-100 text-yellow-700 border-yellow-200", description: "Functional but may have edge cases not yet covered" },
   community: { label: "Community", className: "bg-blue-100 text-blue-700 border-blue-200", description: "Submitted by a community member" },
   draft: { label: "Draft", className: "bg-neutral-100 text-neutral-600 border-neutral-200", description: "Initial version, not yet fully tested" },

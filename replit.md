@@ -277,8 +277,23 @@ Converts `VendorSkill` objects into `SKILL.md` markdown with frontmatter, taxono
 **Builder** (`lib/procurement-skills/builder/`):
 LLM-powered skill generation. `types.ts` includes `LLMCheckoutAnalysis` with taxonomy inference fields.
 
+**Brand Index** (`brand_index` table, `server/storage/brand-index.ts`):
+Database-backed brand/vendor registry replacing the in-memory `VENDOR_REGISTRY` for the agent-facing API. Single denormalized PostgreSQL table with:
+- Flat indexed columns for every filterable field (sector, tier, maturity, ordering, etc.)
+- `carries_brands` text[] array (GIN-indexed) — distinguishes retailers from HQ brands (populated = retailer)
+- `brand_data` jsonb — full VendorSkill object for retrieval
+- `skill_md` text — pre-generated skill markdown
+- `search_vector` tsvector with trigger (name+description at A, tags/sub_sectors/carries_brands at B, sector at C)
+- `agent_readiness` integer score (MCP=25, API=20, guest=15, programmatic_checkout=10, deals=5, feed=5, verified=5)
+- B2B columns: `tax_exempt_supported`, `po_number_supported`, `business_account`
+- Maturity progression: draft → community → official (brand claimed) → verified (CreditClaw audited)
+- Storage methods: `searchBrands`, `getBrandBySlug`, `getRetailersForBrand`, `upsertBrandIndex`, `recomputeReadiness`
+- 22+ indexes (5 btree, 7 GIN on arrays, 1 GIN on tsvector, 7 partial)
+
 **Discovery API** (`app/api/v1/bot/skills/route.ts`):
-Query params: `category`, `search`, `checkout`, `capability`, `maturity`, `sector`, `tier`, `sub_sector`, `ordering_permission`, `payment_method`, `has_deals`, `search_api`, `mcp`. Response includes full taxonomy/buying/deals metadata per vendor plus `sectors` and `tiers` facets.
+Now queries `brand_index` table via storage layer instead of in-memory registry. Query params: `category` (deprecated alias for `sector`), `search` (full-text), `sector`, `tier`, `maturity`, `checkout`, `capability`, `ordering_permission`, `payment_method`, `has_deals`, `search_api`, `mcp`, `carries_brand`, `ships_to`, `tax_exempt`, `po_number`. Response includes full taxonomy/buying/deals metadata plus `agent_readiness`, `carries_brands`, `domain` per vendor, and `sectors`/`tiers` facets.
+
+**Post-publish hook**: When a skill draft is published (`app/api/v1/skills/drafts/[id]/publish/route.ts`), it auto-syncs the brand_index row via `upsertBrandIndex`.
 
 **UI** — Catalog page (`app/skills/page.tsx`) with sector/tier/category/capability filters in sidebar, sub-sector tags on cards, deals badges. Vendor detail page (`app/skills/[vendor]/page.tsx`) with search discovery, buying config, deals & promotions, and taxonomy panels.
 

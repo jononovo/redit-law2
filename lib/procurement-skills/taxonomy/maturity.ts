@@ -1,1 +1,1 @@
-export type SkillMaturity = "verified" | "beta" | "community" | "draft";
+export type SkillMaturity = "verified" | "official" | "beta" | "community" | "draft";

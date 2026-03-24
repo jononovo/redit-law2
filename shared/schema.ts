@@ -1,4 +1,4 @@
-import { pgTable, serial, text, timestamp, integer, boolean, index, bigint, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, timestamp, integer, boolean, index, bigint, jsonb, numeric, uniqueIndex } from "drizzle-orm/pg-core";
 import { z } from "zod";
 import { GUARDRAIL_DEFAULTS } from "@/lib/guardrails/defaults";
 
@@ -1481,3 +1481,81 @@ export const createInvoiceSchema = z.object({
   due_date: z.string().datetime().optional().nullable(),
   notes: z.string().max(2000).optional().nullable(),
 });
+
+// ─── Brand Index (agent-searchable brand/vendor registry) ────────────────────
+
+export const brandIndex = pgTable("brand_index", {
+  id: serial("id").primaryKey(),
+  slug: text("slug").notNull().unique(),
+  name: text("name").notNull(),
+  domain: text("domain"),
+  url: text("url").notNull(),
+  logoUrl: text("logo_url"),
+  description: text("description").notNull(),
+
+  sector: text("sector").notNull(),
+  subSectors: text("sub_sectors").array().notNull().default([]),
+  tier: text("tier"),
+  tags: text("tags").array().default([]),
+
+  carriesBrands: text("carries_brands").array().default([]),
+
+  hasMcp: boolean("has_mcp").notNull().default(false),
+  mcpUrl: text("mcp_url"),
+  hasApi: boolean("has_api").notNull().default(false),
+  apiEndpoint: text("api_endpoint"),
+  apiAuthRequired: boolean("api_auth_required").default(false),
+  apiDocsUrl: text("api_docs_url"),
+  hasCli: boolean("has_cli").notNull().default(false),
+  cliInstallCommand: text("cli_install_command"),
+  siteSearch: boolean("site_search").notNull().default(true),
+  productFeed: boolean("product_feed").notNull().default(false),
+
+  capabilities: text("capabilities").array().notNull().default([]),
+  checkoutMethods: text("checkout_methods").array().notNull().default([]),
+
+  ordering: text("ordering"),
+  checkoutProvider: text("checkout_provider"),
+  paymentMethodsAccepted: text("payment_methods_accepted").array().default([]),
+  creditclawSupports: text("creditclaw_supports").array().default([]),
+  businessAccount: boolean("business_account").default(false),
+  taxExemptSupported: boolean("tax_exempt_supported").default(false),
+  poNumberSupported: boolean("po_number_supported").default(false),
+
+  deliveryOptions: text("delivery_options").array().default([]),
+  freeShippingThreshold: numeric("free_shipping_threshold"),
+  shipsInternationally: boolean("ships_internationally").default(false),
+  supportedCountries: text("supported_countries").array().default([]),
+
+  hasDeals: boolean("has_deals").default(false),
+  dealsUrl: text("deals_url"),
+  dealsApi: text("deals_api"),
+  loyaltyProgram: text("loyalty_program"),
+
+  maturity: text("maturity").notNull().default("draft"),
+  claimedBy: text("claimed_by"),
+  claimId: integer("claim_id"),
+  submittedBy: text("submitted_by").notNull(),
+  submitterType: text("submitter_type").notNull().default("ai_generated"),
+
+  version: text("version").notNull().default("1.0.0"),
+  lastVerified: text("last_verified"),
+  activeVersionId: integer("active_version_id"),
+
+  agentReadiness: integer("agent_readiness").default(0),
+
+  brandData: jsonb("brand_data").notNull(),
+  skillMd: text("skill_md"),
+
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+}, (table) => [
+  index("brand_index_domain_idx").on(table.domain),
+  index("brand_index_sector_idx").on(table.sector),
+  index("brand_index_tier_idx").on(table.tier),
+  index("brand_index_maturity_idx").on(table.maturity),
+  index("brand_index_readiness_idx").on(table.agentReadiness),
+]);
+
+export type BrandIndex = typeof brandIndex.$inferSelect;
+export type InsertBrandIndex = typeof brandIndex.$inferInsert;

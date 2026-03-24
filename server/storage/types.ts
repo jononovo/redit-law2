@@ -47,11 +47,13 @@ import {
   type BasePayPayment, type InsertBasePayPayment,
   type QrPayment, type InsertQrPayment,
   type BotPendingMessage,
+  type BrandIndex, type InsertBrandIndex,
 } from "@/shared/schema";
 
 import type { OrderFilters } from "./orders";
 import type { SaleFilters } from "./sales";
 import type { InvoiceFilters } from "./invoices";
+import type { BrandSearchFilters } from "./brand-index";
 
 export interface IStorage {
   getOwnerByUid(uid: string): Promise<Owner | null>;
@@ -347,4 +349,11 @@ export interface IStorage {
   ackMessage(id: number, botId: string): Promise<boolean>;
   purgeExpiredMessages(): Promise<number>;
   deletePendingMessagesByRef(botId: string, eventType: string, refKey: string, refValue: string): Promise<number>;
+
+  searchBrands(filters: BrandSearchFilters): Promise<BrandIndex[]>;
+  getBrandBySlug(slug: string): Promise<BrandIndex | null>;
+  getRetailersForBrand(brandName: string): Promise<BrandIndex[]>;
+  upsertBrandIndex(data: InsertBrandIndex): Promise<BrandIndex>;
+  recomputeReadiness(slug: string): Promise<number>;
+  getAllBrandFacets(): Promise<{ sectors: string[]; tiers: string[]; categories: string[] }>;
 }

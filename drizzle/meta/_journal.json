@@ -50,6 +50,13 @@
       "when": 1773891372887,
       "tag": "0006_fast_frog_thor",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1774377978478,
+      "tag": "0007_marvelous_wong",
+      "breakpoints": true
     }
   ]
 }
