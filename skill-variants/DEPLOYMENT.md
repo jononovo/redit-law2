@@ -2,7 +2,7 @@
 
 ## Overview
 
-This system generates variant OpenClaw skill packages from the master files in `public/`. Each variant has its own config, and all variants share the same file set with differences in name, description, version, URL prefix, and title.
+This system generates variant skill packages from the master files in `public/`. Each variant has its own config, and all variants share the same file set with differences in name, description, version, URL prefix, and title.
 
 ---
 
@@ -23,16 +23,16 @@ Example config:
   "source": "public",
   "urlPrefix": "stripe",
   "overrides": {
-    "name": "creditclaw-stripe",
-    "version": "2.3.1",
+    "name": "stripe",
+    "version": "2.3.3",
     "description": "Stripe-focused skill description"
   },
   "skillJsonOverrides": {
-    "name": "creditclaw-stripe",
-    "version": "2.3.1",
+    "name": "stripe",
+    "version": "2.3.3",
     "description": "Stripe-focused skill description"
   },
-  "titleOverride": "CreditClaw Stripe — Payments for AI Agents"
+  "titleOverride": "CreditClaw — Stripe-powered wallets and payments for AI Agents"
 }
 ```
 
@@ -79,14 +79,14 @@ Each publish is a **full replacement** — ClawHub creates a new version with al
 ### Slug Rules
 
 - Must be lowercase and URL-safe: `^[a-z0-9][a-z0-9-]*$`
-- Main skill slug: `creditclaw` (from `name: creditclaw` in `public/skill.md`)
-- Variant slugs: `creditclaw-stripe`, `creditclaw-creditcard`, etc. (from `overrides.name` in each variant config)
+- Main skill slug: `creditclaw` (from `name: creditclaw` in `public/SKILL.md`)
+- Variant slugs use the `overrides.name` from each variant config (e.g., `stripe`, `creditcard`)
 
 ### Version Bumping
 
 Every publish to ClawHub must have a **new version number**. If you try to publish the same version twice, it will fail. When you update skill content:
 
-1. Bump the `version` field in `public/skill.md` frontmatter
+1. Bump the `version` field in `public/skill.json` and `public/_meta.json`
 2. For variants, bump the `version` in each `variant.config.json` (both `overrides.version` and `skillJsonOverrides.version`)
 
 ---
@@ -122,7 +122,7 @@ Normal app code changes (frontend, backend, styles, etc.) do NOT trigger a publi
    ```bash
    clawhub publish ./public \
      --slug creditclaw \
-     --version 2.5.0 \
+     --version <extracted version> \
      --tags latest \
      --no-input
    ```
@@ -199,8 +199,8 @@ The full pipeline becomes:
 3. **Publishes each variant** — reads `overrides.name` and `overrides.version` from each variant's `variant.config.json`, then runs:
    ```bash
    clawhub publish ./skill-variants/<name>/dist \
-     --slug creditclaw-<name> \
-     --version <version> \
+     --slug <overrides.name> \
+     --version <overrides.version> \
      --tags latest \
      --no-input
    ```
@@ -238,26 +238,22 @@ To enable automated publishing:
 You can always publish manually from your local machine or from Replit:
 
 ```bash
-# Install the CLI
 npm install -g clawhub
 
-# Authenticate
 clawhub login
 
-# Publish the main skill
 clawhub publish ./public \
   --slug creditclaw \
-  --version 2.5.0 \
+  --version <current version from skill.json> \
   --tags latest
 
-# Build and publish variants (when ready)
 npx tsx skill-variants/build-variants.ts
 
 clawhub publish ./skill-variants/stripe/dist \
-  --slug stripe --version 2.3.1 --tags latest
+  --slug stripe --version <version from variant config> --tags latest
 
 clawhub publish ./skill-variants/creditcard/dist \
-  --slug creditcard --version 2.3.1 --tags latest
+  --slug creditcard --version <version from variant config> --tags latest
 ```
 
 ### First-Time Publish
@@ -268,7 +264,7 @@ Before the GitHub Action can publish automatically, you should do one manual pub
 clawhub login
 clawhub publish ./public \
   --slug creditclaw \
-  --version 2.5.0 \
+  --version <current version from skill.json> \
   --tags latest
 ```
 
@@ -278,10 +274,10 @@ This establishes the skill under your account. After that, the GitHub Action han
 
 ## Current Variants
 
-| Variant | Slug | Version | Config Location |
-|---------|------|---------|-----------------|
-| Stripe | `stripe` | 2.3.1 | `skill-variants/stripe/variant.config.json` |
-| Credit Card | `creditcard` | 2.3.1 | `skill-variants/creditcard/variant.config.json` |
+| Variant | Slug | Config Location |
+|---------|------|-----------------|
+| Stripe | `stripe` | `skill-variants/stripe/variant.config.json` |
+| Credit Card | `creditcard` | `skill-variants/creditcard/variant.config.json` |
 
 ---
 

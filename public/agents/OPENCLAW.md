@@ -1,29 +1,33 @@
 ---
 name: creditclaw-openclaw-checkout
-version: 2.9.0
-updated: 2026-03-18
-description: "OpenClaw sub-agent checkout flow — spawn, execute, report, confirm, verify deletion."
+version: 3.0.0
+updated: 2026-03-24
+description: "OpenClaw plugin checkout flow — main agent fills the form, CreditClaw plugin handles card fields."
 companion_of: SKILL.md
 api_base: https://creditclaw.com/api/v1
 credentials: [CREDITCLAW_API_KEY]
+requires_plugin: creditclaw-openclaw
 ---
 
-# OpenClaw — Sub-Agent Checkout Flow
+# OpenClaw — Plugin Checkout Flow
 
 > **Companion to `SKILL.md`.**
 > For registration, card setup, spending permissions, and the full API reference, see the main skill file.
 
-On OpenClaw, every checkout is handled by an **ephemeral sub-agent**. Your main agent never
-sees decrypted card data. The sub-agent is spawned for a single transaction, completes the
-checkout, reports the result back to you, and is then deleted — decrypted card data never
-persists in any agent's context.
+On OpenClaw, the **main agent** handles the entire checkout — browsing, cart, shipping, billing,
+expiry date — everything except the card number and CVV. Those two fields are filled by the
+**CreditClaw plugin** (`creditclaw_fill_card`), which decrypts the card internally and types
+the values into the browser. The main agent never sees decrypted card details.
 
-**Security:** The sub-agent pattern ensures:
-- Your main agent **never sees** decrypted card details
-- Card data exists only in the sub-agent's memory for the duration of one transaction
-- The sub-agent is deleted after checkout — no data leaks across sessions
-- If the sub-agent crashes, the decryption key is already consumed and cannot be reused
+**Security:** The plugin pattern ensures:
+- Your main agent **never sees** decrypted card details — they exist only inside the plugin
+- Card data never appears in any agent's reasoning trace or context window
+- The plugin zeros card data from memory immediately after filling
+- Decryption keys are single-use and server-issued — consumed on first retrieval
 - Server-side guardrails still enforce all spending limits regardless of what happens client-side
+
+> **No plugin?** If the CreditClaw plugin is not installed, use the legacy sub-agent flow
+> documented in `agents/OPENCLAW_legacy.md`.
 
 ---
 
@@ -31,29 +35,52 @@ persists in any agent's context.
 
 ```
 Main Agent:
-  1. Call POST /bot/rail5/checkout with merchant and amount details
-  2. If pending_approval → wait for owner (webhook or poll)
-  3. Once approved → spawn a sub-agent using spawn_payload
-
-Sub-Agent:
-  4. Call POST /bot/rail5/key for the one-time decryption key
-  5. Decrypt card details using AES-256-GCM
-  6. Navigate to the merchant checkout page
-  7. Detect the platform → load the matching checkout guide
-  8. Fill shipping/billing, then card fields
-  9. Submit and capture confirmation
-  10. Call POST /bot/rail5/confirm with success or failure
-  11. Report result back to main agent
-  12. Discard all decrypted card data — sub-agent is deleted
-
-Main Agent:
-  13. Verify the sub-agent was deleted
-  14. Announce the result to your owner
+  1. Browse, shop, add to cart (SHOPPING-GUIDE.md)
+  2. Fill shipping, billing, contact info, expiry date — everything except card number and CVV
+  3. Confirm all fields, identify if card inputs are in an iframe
+  4. Call POST /bot/rail5/checkout for approval; wait if pending
+  5. Call creditclaw_fill_card (plugin fills card number and CVV)
+  6. Click submit, detect success or failure
+  7. Handle result: inform owner, confirm with CreditClaw, announce
 ```
 
 ---
 
-## Step 1: Request Checkout (Main Agent)
+## Step 1: Browse and Shop
+
+Follow `SHOPPING-GUIDE.md` to find the product, detect the platform, navigate the store,
+and add items to cart. Proceed to the checkout page.
+
+## Step 2: Fill the Checkout Form
+
+Fill **every field** on the checkout form except the card number and CVV:
+
+- Name, email, phone
+- Shipping address (street, city, state, zip, country)
+- Billing address (if separate from shipping)
+- Cardholder name
+- **Expiry date** (month and year) — fill this yourself using the card details from `GET /bot/status` (last4 and brand are visible, and the expiry date is not sensitive)
+
+On multi-step checkouts, click through each section until you reach the payment step.
+
+## Step 3: Confirm Fields and Identify Card Inputs
+
+Take a snapshot, verify all non-card fields are filled, and note whether the card
+fields are in an iframe:
+
+```bash
+openclaw browser snapshot --efficient --selector "form"
+```
+
+Check that shipping, billing, contact info, and expiry are all populated. Fix anything
+that's missing or incorrect. **Do not fill the card number or CVV fields.**
+
+From the same snapshot, identify where the card number and CVV fields are — regular
+`<input>` elements on the page, or inside an iframe. If they're in an iframe, note the
+iframe selector (e.g. `iframe[src*='stripe.com']`). You will pass this as `frame_hint`
+to the plugin.
+
+## Step 4: Request Checkout Approval
 
 ```bash
 curl -X POST https://creditclaw.com/api/v1/bot/rail5/checkout \
@@ -81,31 +108,9 @@ curl -X POST https://creditclaw.com/api/v1/bot/rail5/checkout \
 {
   "approved": true,
   "checkout_id": "r5chk_abc123",
-  "checkout_steps": [
-    "Call POST /api/v1/bot/rail5/key with { \"checkout_id\": \"r5chk_abc123\" } to get the decryption key.",
-    "Run: node decrypt.js <key_hex> <iv_hex> <tag_hex> Card-ChaseD-9547.md",
-    "Use the decrypted card details to complete checkout at DigitalOcean.",
-    "Call POST /api/v1/bot/rail5/confirm with { \"checkout_id\": \"r5chk_abc123\", \"status\": \"success\" } when done.",
-    "If checkout fails, call confirm with { \"status\": \"failed\" } instead.",
-    "Announce the result."
-  ],
-  "spawn_payload": {
-    "task": "You are a checkout agent...",
-    "cleanup": "delete",
-    "runTimeoutSeconds": 300,
-    "label": "checkout-digitalocean"
-  }
+  "checkout_steps": ["..."]
 }
 ```
-
-**`spawn_payload` fields:**
-
-| Field | Description |
-|-------|-------------|
-| `task` | Full instructions for the sub-agent — what to buy, which API calls to make, how to decrypt |
-| `cleanup` | Always `"delete"` — OpenClaw destroys the sub-agent after it finishes or times out |
-| `runTimeoutSeconds` | Maximum time the sub-agent is allowed to run (300 seconds = 5 minutes) |
-| `label` | Human-readable label for the sub-agent session (e.g. `"checkout-digitalocean"`) |
 
 **Pending response (requires owner approval):**
 ```json
@@ -118,334 +123,202 @@ curl -X POST https://creditclaw.com/api/v1/bot/rail5/checkout \
 }
 ```
 
----
-
-## Step 2: Wait for Approval (Main Agent)
-
-If the response status is `pending_approval`, your owner needs to approve the purchase.
-Poll for the result:
+If `pending_approval`, poll for the result:
 
 ```bash
 curl "https://creditclaw.com/api/v1/bot/rail5/checkout/status?checkout_id=r5chk_abc123" \
   -H "Authorization: Bearer $CREDITCLAW_API_KEY"
 ```
 
-Poll every 30 seconds. Do not spawn a sub-agent until the status is `approved`.
+Poll every 30 seconds. Do not call the plugin until the status is `approved`.
 
 | Status | Meaning |
 |--------|---------|
 | `pending_approval` | Owner hasn't responded — poll again in 30s |
-| `approved` | Proceed with spawning a sub-agent |
+| `approved` | Proceed |
 | `rejected` | Do not proceed |
 | `expired` | 15-min window passed — re-initiate if needed |
-| `completed` | Checkout confirmed successful |
-| `failed` | Checkout reported failure |
 
-Your owner receives the approval request via their dashboard and email. Approvals expire
-after 15 minutes.
+## Step 5: Fill Card Fields with Plugin
 
----
-
-## Step 3: Spawn Sub-Agent (Main Agent)
-
-Once the checkout is approved, spawn an ephemeral sub-agent using the `spawn_payload`
-from the response. **Save the returned `sub_agent_id`** — you will need it in Step 10
-to verify the sub-agent was deleted.
+Once the checkout is approved, call the CreditClaw plugin:
 
 ```
-const sub_agent_id = sessions_spawn({
-  task: spawn_payload.task,
-  cleanup: "delete",
-  runTimeoutSeconds: 300,
-  label: spawn_payload.label
+creditclaw_fill_card({
+  checkout_id: "r5chk_abc123",
+  card_file_path: ".creditclaw/cards/Card-ChaseD-9547.md",
+  frame_hint: "iframe[src*='stripe.com']"
 })
-// sub_agent_id → e.g. "sa_checkout_abc123"
 ```
 
-The sub-agent receives the `task` string as its instructions. It will execute steps 4–11
-autonomously. You (the main agent) wait for the sub-agent to complete.
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `checkout_id` | Yes | The approved checkout ID |
+| `card_file_path` | Yes | Path to encrypted card file (saved during card delivery) |
+| `frame_hint` | No | CSS selector for payment iframe. Omit if card fields are on the main page. |
 
-**Do not pass your `CREDITCLAW_API_KEY` in the task.** The sub-agent inherits your
-credentials through the OpenClaw session — it uses the same API key automatically.
+You know where the card file is because you saved it during card delivery. The default
+path is `.creditclaw/cards/Card-{name}-{last4}.md`, but use the actual path if you
+saved it elsewhere.
 
-**Do not interfere** with the sub-agent while it is running. Wait for it to finish or
-time out.
+**Plugin returns one of:**
 
----
+```json
+{ "status": "filled", "fields_filled": ["card_number", "cvv"], "message": "Card number and CVV filled." }
+```
 
-## Step 4: Get Decryption Key (Sub-Agent)
+```json
+{ "status": "fill_failed", "reason": "card_number_not_found", "message": "Could not locate the card number input." }
+```
 
-The sub-agent calls this endpoint to retrieve the one-time decryption key:
+```json
+{ "status": "error", "reason": "key_retrieval_failed", "message": "Could not retrieve decryption key." }
+```
+
+**If `filled`** — proceed to Step 6.
+
+**If `fill_failed`** — the card fields couldn't be located or filled. Take a snapshot to
+understand the page layout. If you can provide a better `frame_hint` or if the page has
+changed, call the plugin again. Start a new checkout if the key was already consumed.
+Max 2 retry attempts with new checkouts.
+
+**If `error`** — check the reason. Common errors:
+- `missing_api_key`: `CREDITCLAW_API_KEY` is not set
+- `card_file_error`: Encrypted card file not found or unreadable
+- `key_retrieval_failed`: API rejected the key request (check checkout status)
+- `decryption_failed`: Key material doesn't match the card file
+
+## Step 6: Submit and Detect Result
+
+After the plugin fills the card fields, click the submit/pay button:
 
 ```bash
-curl -X POST https://creditclaw.com/api/v1/bot/rail5/key \
-  -H "Authorization: Bearer $CREDITCLAW_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{ "checkout_id": "r5chk_abc123" }'
+openclaw browser click <submit_button_ref>
+openclaw browser wait --load networkidle --timeout-ms 15000
+openclaw browser snapshot --efficient
 ```
-
-Response: `{ "key_hex": "...", "iv_hex": "...", "tag_hex": "..." }`
-
-**Single-use.** Cannot be retrieved again. If decryption fails, the checkout must be
-re-initiated from Step 1.
-
----
-
-## Step 5: Decrypt Card Details (Sub-Agent)
-
-The sub-agent runs the deterministic decrypt script that was delivered with the card file:
-
-```
-node decrypt.js <key_hex> <iv_hex> <tag_hex> Card-ChaseD-9547.md
-```
-
-This outputs the card JSON (number, CVV, expiry, name, billing address).
-
-Perform AES-256-GCM decryption using `key_hex`, `iv_hex`, and the encrypted card blob.
-The GCM auth tag is already included in the encrypted blob — do NOT append `tag_hex`
-separately.
-
-**Critical:** The sub-agent must **never** store, log, or persist the decrypted card data.
-It exists only in memory for this single transaction. After checkout, the sub-agent is deleted.
-
-### Card Data → Form Fields
-
-| Decrypted Field | Form Field | Notes |
-|-----------------|------------|-------|
-| `number` | Card number | Enter as-is |
-| `exp_month` + `exp_year` | Expiration | Combine as MM/YY. Some forms have separate fields. |
-| `cvv` | Security code / CVV | 3 or 4 digits |
-| `name` | Name on card | Enter as-is |
-| `address` | Billing address | Optional — some forms pre-fill from shipping |
-| `city`, `state`, `zip`, `country` | Billing fields | Optional — use defaults if not in card data |
-
----
-
-## Step 6: Detect Platform & Fill Checkout (Sub-Agent)
-
-### 6a. Platform & Payment Form Detection
-
-If you haven't already detected the platform via `SHOPPING-GUIDE.md`, do it now — see SHOPPING-GUIDE.md Step 2 (platform detection) and Step 6 (payment form identification).
-
-If you already ran detection during the browsing phase, skip to 6b.
-
-### 6b. Browser Interaction Rules (All Platforms)
-
-These rules apply regardless of which platform guide you're following:
-
-**Snapshots:**
-- Always use `--efficient` flag
-- Budget: **5 snapshots target, 8 max**. Fail if exceeded.
-- Use `--selector "form"` to scope when possible
-- After any navigation or button click, wait for network idle before snapshotting
-
-**Interacting with elements:**
-```bash
-openclaw browser click e12                    # click element
-openclaw browser type e13 "value"             # type into field
-openclaw browser select e14 "Option"          # native <select>
-openclaw browser press Enter                  # press key
-openclaw browser press Tab                    # move focus
-```
-
-**Custom/React dropdowns** (no native `<select>`):
-```bash
-openclaw browser click e14                    # open dropdown
-openclaw browser type e14 "United"            # filter
-openclaw browser press Enter                  # select
-```
-
-**If click/type fails:**
-```bash
-openclaw browser highlight e12                # debug — verify ref is correct
-openclaw browser press Tab                    # try keyboard navigation
-```
-
-**Iframe card fields:**
-```bash
-openclaw browser snapshot --interactive --frame "iframe[src*='stripe']"
-```
-Fill fields using refs from the iframe snapshot. Switch back to main page to click submit.
-
-**Hard stops:**
-- CAPTCHA / 3DS / OTP → fail immediately
-- Max 2 retries per field. Then try Tab + type. If still failing → fail checkout.
-
----
-
-## Step 7: After Submission (Sub-Agent)
-
-After clicking the pay/submit button, wait for the confirmation page:
 
 | Signal | Meaning |
 |--------|---------|
-| "Thank you", "Order confirmed", "Order #..." | **Success** — capture order number |
-| "Payment successful", "Receipt" | **Success** |
-| "Payment declined", "Card declined" | **Failed** |
-| "Error", "try again" | **Failed** — do not retry automatically |
-| Page unchanged after 30 seconds | **Failed** |
+| "Thank you" / "Order confirmed" / "Order #..." | **Success** — capture order number |
+| "Payment successful" / "Receipt" | **Success** |
+| "Payment declined" / "Card declined" | **Failed** |
+| "Error" / "try again" | **Failed** |
+| Page unchanged after 15 seconds | **Failed** |
+| CAPTCHA / 3DS / OTP | **Cannot proceed** — report to owner |
 
----
+## Step 7: Handle Result
 
-## Step 8: Confirm Checkout (Sub-Agent)
+### On Success
 
-After completing (or failing) checkout at the merchant:
+1. **Inform your owner immediately** with a screenshot:
+   > "Purchased {item} at {merchant} for ${amount}. Order ID: {order_id}. [screenshot attached]"
+
+2. **Wait up to 2 minutes** for your owner to respond.
+
+3. **If owner confirms or no response within 2 minutes:**
+   - Call `POST /bot/rail5/confirm` with `"status": "success"`
+
+4. **If owner contests or reports a problem:**
+   - Analyze the issue. If corrections are needed and the page allows it, fix what you can.
+   - If the card fields need re-entry, start a new checkout from Step 4.
+
+### On Failure
+
+Take a snapshot and analyze the cause:
+
+| What you see | Likely cause | Action |
+|---|---|---|
+| "Please fill in [field]" or a required field highlighted empty | Main agent missed a field | Fix the field, start new checkout from Step 4 |
+| "Invalid card number" or "Check your card details" | Plugin typed in wrong field or input wasn't accepted | Provide better `frame_hint`, start new checkout from Step 4 |
+| "Card declined" / "Insufficient funds" / "Do not honor" with all fields correct | Genuine payment decline | This is a real failure |
+| CAPTCHA / 3DS / OTP appeared | Security challenge | Cannot proceed — report to owner |
+
+If the form is correctly filled and the payment was genuinely declined, call
+`POST /bot/rail5/confirm` with `"status": "failed"`.
+
+**Max 2 retry attempts** with new checkouts. If still failing after 2 retries with
+the form correct, treat it as a genuine decline.
+
+### Confirm with CreditClaw
 
 ```bash
 curl -X POST https://creditclaw.com/api/v1/bot/rail5/confirm \
   -H "Authorization: Bearer $CREDITCLAW_API_KEY" \
   -H "Content-Type: application/json" \
-  -d '{
-    "checkout_id": "r5chk_abc123",
-    "status": "success"
-  }'
+  -d '{ "checkout_id": "r5chk_abc123", "status": "success" }'
 ```
 
-Use `"status": "failed"` if checkout didn't work. On success, the transaction is recorded
-in your owner's dashboard. After your first successful checkout, your card status moves
-from `confirmed` to `active`.
-
----
-
-## Step 9: Report Result to Main Agent (Sub-Agent)
-
-Before the sub-agent is deleted, it must report the checkout result back to the main agent.
-This is how the main agent learns what happened — it cannot see the sub-agent's context.
-
-The sub-agent sends a structured result using the OpenClaw session return:
-
-```
-sessions_send({
-  status: "success",
-  checkout_id: "r5chk_abc123",
-  merchant: "DigitalOcean",
-  item: "Droplet hosting - 1 month",
-  amount_usd: 12.00,
-  order_id: "ORD-12345",
-  message: "Purchase completed successfully."
-})
-```
-
-For failures:
-
-```
-sessions_send({
-  status: "failed",
-  checkout_id: "r5chk_abc123",
-  merchant: "DigitalOcean",
-  item: "Droplet hosting - 1 month",
-  amount_usd: 12.00,
-  reason: "Card declined at checkout.",
-  message: "Purchase failed — card was declined."
-})
-```
-
-**After sending the report, the sub-agent discards all decrypted card data.** The sub-agent's
-job is done — `cleanup: "delete"` ensures OpenClaw destroys it automatically.
-
----
-
-## Step 10: Verify Sub-Agent Deletion (Main Agent)
-
-After receiving the sub-agent's report (or after the timeout expires), use the `sub_agent_id`
-you saved in Step 3 to verify the sub-agent was actually deleted:
-
-```
-sessions_status(sub_agent_id)
-```
-
-**Expected result:** The session should not exist or should show status `deleted`.
-
-| Session Status | Action |
-|----------------|--------|
-| `deleted` or not found | Sub-agent was cleaned up successfully. Proceed to announce result. |
-| `completed` | Sub-agent finished but hasn't been cleaned up yet. Wait 10 seconds, check again. |
-| `running` | Sub-agent is still active. Wait for timeout or check again in 30 seconds. |
-| Still `running` after timeout | Something went wrong. Log this and report the anomaly to your owner. The decryption key is already consumed, so card data cannot be re-accessed even if the sub-agent persists. |
-
-**If the sub-agent persists beyond its timeout**, report this to your owner as an operational
-anomaly. The card data is still protected — the key was single-use and the server-side
-guardrails prevent duplicate spending — but the sub-agent should not remain active.
-
----
-
-## Step 11: Announce Result (Main Agent)
-
-Once you've confirmed the sub-agent was cleaned up, announce the result to your owner:
+Use `"status": "failed"` if the payment was genuinely declined.
 
 **On success:**
-> "Purchased Droplet hosting - 1 month at DigitalOcean for $12.00. Order ID: ORD-12345."
+> "Purchased {item} at {merchant} for ${amount}. Order ID: {order_id}."
 
-**On failure:**
-> "Purchase of Droplet hosting at DigitalOcean failed — card was declined. No charge was made."
-
-**On timeout (sub-agent did not report back):**
-> "The checkout sub-agent for DigitalOcean timed out after 5 minutes without reporting a result.
-> The decryption key has been consumed. Please check your DigitalOcean account and CreditClaw
-> dashboard to verify whether the purchase went through. If needed, I can re-initiate the checkout."
+**On genuine decline:**
+> "Purchase of {item} at {merchant} failed — {reason}. No charge was made."
 
 ---
 
-## Timeout & Failure Handling
+## Recovery
 
-The sub-agent has a hard time limit set by `runTimeoutSeconds` (default: 300 seconds / 5 minutes).
+### Plugin Error Recovery
 
-### What happens at timeout
+If the plugin returns `error` with `key_retrieval_failed`, check what happened:
 
-| Scenario | What Happens |
-|----------|-------------|
-| Sub-agent finishes before timeout | Normal flow — result is reported, sub-agent is deleted |
-| Sub-agent is still running at timeout | OpenClaw terminates and deletes the sub-agent automatically |
-| Sub-agent crashes mid-checkout | OpenClaw detects the crash and deletes the sub-agent |
+```bash
+curl "https://creditclaw.com/api/v1/bot/rail5/checkout/status?checkout_id=r5chk_abc123" \
+  -H "Authorization: Bearer $CREDITCLAW_API_KEY"
+```
 
-### What the main agent should do
+| Checkout status | `key_delivered` | Meaning | Action |
+|---|---|---|---|
+| `approved` | `false` | Key was never retrieved | Safe to start new checkout from Step 4 |
+| `approved` | `true` | Key was retrieved but plugin failed after | Start new checkout — key is consumed |
 
-| Scenario | Action |
-|----------|--------|
-| Sub-agent reports success | Announce success to owner |
-| Sub-agent reports failure | Announce failure to owner — no charge was made |
-| Sub-agent times out (no report received) | Check `GET /bot/rail5/checkout/status?checkout_id=...` to see if confirm was called before the timeout. If status is `completed`, the purchase went through. If status is `approved`, check `key_delivered` in the response: if `true`, the sub-agent retrieved the key and may have attempted checkout — advise owner to check the merchant account. If `key_delivered` is `false`, no card data was accessed and you can safely re-initiate. |
-| Sub-agent crashes before getting the key | No card data was exposed. Re-initiate checkout from Step 1. |
-| Sub-agent crashes after getting the key | The key is consumed and cannot be reused. Card data was in the sub-agent's memory and is destroyed with the crash. Check checkout status and advise owner. |
+### Re-initiating After Failure
 
-### Re-initiating after failure
-
-If the checkout fails or times out, you can start a new checkout from Step 1. Each checkout
-gets a fresh `checkout_id` and a fresh single-use decryption key. There is no limit on retry
-attempts, but each attempt goes through the full guardrail and approval flow.
+Start a new attempt from Step 4. Each checkout gets a fresh `checkout_id` and a
+fresh single-use decryption key. There is no limit on retry attempts, but each
+attempt goes through the full guardrail and approval flow.
 
 ---
 
 ## Complete Example
 
-Here's a full end-to-end example of an OpenClaw checkout:
-
 ```
-# Step 1: Main agent requests checkout
+# Main agent browses DigitalOcean, adds Droplet hosting to cart, fills checkout form
+# Main agent fills: email, name, address, billing, cardholder name, expiry (03/28)
+# Main agent identifies: card number and CVV are in a Stripe iframe
+
+# Step 4: Request approval
 POST /api/v1/bot/rail5/checkout
 { "merchant_name": "DigitalOcean", "merchant_url": "https://cloud.digitalocean.com/billing",
-  "item_name": "Droplet hosting", "amount_cents": 1200, "category": "cloud_compute" }
+  "item_name": "Droplet hosting - 1 month", "amount_cents": 1200, "category": "cloud_compute" }
+# → { "approved": true, "checkout_id": "r5chk_abc123" }
 
-# Response: approved with spawn_payload
-# { "approved": true, "checkout_id": "r5chk_abc123", "spawn_payload": { ... } }
+# Step 5: Fill card fields with plugin
+creditclaw_fill_card({
+  checkout_id: "r5chk_abc123",
+  card_file_path: ".creditclaw/cards/Card-ChaseD-9547.md",
+  frame_hint: "iframe[src*='js.stripe.com']"
+})
+# → { "status": "filled", "fields_filled": ["card_number", "cvv"] }
 
-# Step 2: Main agent waits for approval (if pending) — skip if already approved
+# Step 6: Submit and detect result
+openclaw browser click <pay_button_ref>
+openclaw browser wait --load networkidle --timeout-ms 15000
+openclaw browser snapshot --efficient
+# → "Thank you for your purchase. Order ID: ORD-12345"
 
-# Step 3: Main agent spawns sub-agent (save the ID)
-sub_agent_id = sessions_spawn({ task: spawn_payload.task, cleanup: "delete", runTimeoutSeconds: 300 })
+# Step 7: Inform owner
+# → "Purchased Droplet hosting at DigitalOcean for $12.00. Order ID: ORD-12345. [screenshot]"
+# → Wait up to 2 minutes for owner response
+# → Owner confirms (or no response) → proceed
 
-# Steps 4-9: Sub-agent runs autonomously:
-#   → Gets decryption key
-#   → Decrypts card file
-#   → Navigates to DigitalOcean checkout
-#   → Fills card details and submits
-#   → Calls POST /bot/rail5/confirm with { status: "success" }
-#   → Reports result: sessions_send({ status: "success", merchant: "DigitalOcean", ... })
-#   → Sub-agent is automatically deleted
+# Confirm with CreditClaw
+POST /api/v1/bot/rail5/confirm
+{ "checkout_id": "r5chk_abc123", "status": "success" }
 
-# Step 10: Main agent verifies sub-agent deletion
-sessions_status(sub_agent_id)  # → deleted or not found
-
-# Step 11: Main agent announces
-"Purchased Droplet hosting at DigitalOcean for $12.00. Order ID: ORD-12345."
+# Done.
+"Purchased Droplet hosting - 1 month at DigitalOcean for $12.00. Order ID: ORD-12345."
 ```

@@ -1,0 +1,27 @@
+{
+  "name": "creditclaw-openclaw",
+  "version": "1.0.0",
+  "description": "CreditClaw plugin for OpenClaw — secure card field filling without exposing card data to the agent",
+  "author": "CreditClaw",
+  "license": "MIT",
+  "main": "src/index.ts",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/creditclaw/creditclaw-openclaw"
+  },
+  "keywords": [
+    "openclaw",
+    "plugin",
+    "creditclaw",
+    "checkout",
+    "payment",
+    "card",
+    "secure"
+  ],
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "peerDependencies": {
+    "openclaw": ">=0.7.0"
+  }
+}
