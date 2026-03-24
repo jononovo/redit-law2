@@ -58,8 +58,8 @@ const mainNavItems: NavItem[] = [
 ];
 
 const procurementNavItems: NavItem[] = [
-  { icon: Send, label: "Submit Supplier", href: "/skill-builder/submit" },
-  { icon: Sparkles, label: "Skill Builder", href: "/skill-builder/review" },
+  { icon: Sparkles, label: "My Skills", href: "/skill-builder/submit" },
+  { icon: Send, label: "Skill Builder", href: "/skill-builder/review" },
   { icon: Store, label: "Supplier Hub", href: "/skills", external: true },
 ];
 

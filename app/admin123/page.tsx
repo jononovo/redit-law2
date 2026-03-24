@@ -54,6 +54,13 @@ const adminCards = [
     href: "/admin123/config",
     ready: false,
   },
+  {
+    icon: Shield,
+    title: "Brand Claims",
+    description: "Review and manage brand ownership claims.",
+    href: "/admin123/brand-claims",
+    ready: true,
+  },
 ];
 
 export default function AdminDashboard() {

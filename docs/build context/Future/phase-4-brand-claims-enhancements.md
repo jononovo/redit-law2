@@ -230,7 +230,7 @@ Extract the existing submission rendering into a `SubmissionCard` component (ext
 A new local component rendering a brand claim row in the same visual style as submission cards:
 
 ```tsx
-function ClaimCard({ claim, onRevoke }: { claim: ClaimItem; onRevoke: (id: number) => void }) {
+function ClaimCard({ claim, onRevoke, revoking }: { claim: ClaimItem; onRevoke: (id: number) => void; revoking: number | null }) {
   const claimStatus = CLAIM_STATUS_CONFIG[claim.status] || CLAIM_STATUS_CONFIG.pending;
   return (
     <div className="bg-white rounded-2xl border border-neutral-200 p-5 transition-all" data-testid={`claim-${claim.id}`}>
@@ -276,9 +276,10 @@ function ClaimCard({ claim, onRevoke }: { claim: ClaimItem; onRevoke: (id: numbe
               size="sm"
               className="text-xs text-red-500 hover:text-red-700 hover:bg-red-50"
               onClick={() => onRevoke(claim.id)}
+              disabled={revoking === claim.id}
               data-testid={`button-revoke-${claim.id}`}
             >
-              Revoke
+              {revoking === claim.id ? "Revoking..." : "Revoke"}
             </Button>
           )}
         </div>
