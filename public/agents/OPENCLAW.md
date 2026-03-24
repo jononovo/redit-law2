@@ -46,13 +46,19 @@ Sub-Agent:
   11. Fill the card number and CVV fields
   12. Click submit
   13. Detect success or failure
-  14. Call POST /bot/rail5/confirm
-  15. Report result via sessions_send
+  14. Report result via sessions_send (do NOT call confirm — main agent handles that)
 
 Main Agent:
-  16. Receive result
-  17. Kill sub-agent and verify cleanup
-  18. Announce result to owner
+  15. Receive result from sub-agent
+  16. If SUCCESS → screenshot, inform owner, wait for owner response (up to 2 min)
+      If owner confirms or no response → call confirm, kill sub-agent, done
+      If owner contests → analyze, fix, ask sub-agent to retry
+  17. If REJECTED → analyze the cause:
+      - Missing/wrong non-card field? → main agent fixes it, sub-agent retries card fields
+      - Sub-agent misidentified fields? → send sub-agent updated instructions to retry
+      - Form correct but payment declined? → genuine decline, call confirm with "failed"
+  18. Kill sub-agent and verify cleanup
+  19. Announce final result to owner
 ```
 
 ---
@@ -212,24 +218,29 @@ STEPS:
 5. Detect the result:
    openclaw browser snapshot --efficient
    "Thank you" / "Order confirmed" / "Order #" → SUCCESS (capture order number)
-   "Declined" / "Error" / "try again" → FAILED
-   Page unchanged after 15 seconds → FAILED
-   CAPTCHA / 3DS / OTP → FAILED (do not attempt)
+   "Declined" / "Error" / "try again" → REJECTED (note the exact error message)
+   Page unchanged after 15 seconds → REJECTED
+   CAPTCHA / 3DS / OTP → REJECTED (do not attempt, note what you see)
 
-6. Confirm with CreditClaw:
-   curl -X POST https://creditclaw.com/api/v1/bot/rail5/confirm \
-     -H "Authorization: Bearer $CREDITCLAW_API_KEY" \
-     -H "Content-Type: application/json" \
-     -d '{ "checkout_id": "{checkout_id}", "status": "success" }'
-   Use "failed" if checkout didn't work.
-
-7. Report back:
+6. Report back (do NOT call /bot/rail5/confirm — the main agent handles that):
+   On success:
    sessions_send({
      status: "success",
      checkout_id: "{checkout_id}",
      order_id: "<captured order number>",
      message: "Card fields filled, payment submitted successfully."
    })
+   On rejection:
+   sessions_send({
+     status: "rejected",
+     checkout_id: "{checkout_id}",
+     reason: "<exact error message from the page>",
+     message: "Payment was rejected. <describe what you saw>"
+   })
+
+7. Stay alive and wait. The main agent may ask you to retry if needed.
+   If you receive a message with updated instructions, follow them.
+   If no message arrives, you will be killed by the main agent when done.
 
 SECURITY:
 - Never log, store, or echo decrypted card data
@@ -277,15 +288,15 @@ this file.
 2. Decrypts the card file using the embedded decrypt script
 3. Fills the card number and CVV fields on the page
 4. Clicks the submit/pay button
-5. Detects success or failure from the confirmation page
-6. Calls `POST /bot/rail5/confirm` to record the result
-7. Reports back to the main agent via `sessions_send`
+5. Detects success or rejection from the confirmation page
+6. Reports back to the main agent via `sessions_send`
+7. Stays alive — the main agent may ask it to retry if needed
 
 ---
 
-## Phase C: Main Agent — After Sub-Agent Returns (Steps 16-18)
+## Phase C: Main Agent — After Sub-Agent Returns (Steps 15-19)
 
-### Step 16: Receive the Result
+### Step 15: Receive the Result
 
 After `sessions_yield` returns, you have the sub-agent's report:
 
@@ -298,20 +309,100 @@ After `sessions_yield` returns, you have the sub-agent's report:
 }
 ```
 
-Or on failure:
+Or on rejection:
 
 ```json
 {
-  "status": "failed",
+  "status": "rejected",
   "checkout_id": "r5chk_abc123",
-  "reason": "Card declined at checkout.",
-  "message": "Payment was declined."
+  "reason": "Card number field shows 'Invalid card number'.",
+  "message": "Payment was rejected. The card number field displayed an error."
 }
 ```
 
-### Step 17: Kill and Verify Cleanup
+**Do not kill the sub-agent yet.** It stays alive for potential retries.
 
-Kill the sub-agent and verify it was deleted:
+---
+
+### Step 16: On Success — Inform Owner First
+
+If the sub-agent reports `status: "success"`:
+
+1. **Take a screenshot** of the confirmation page:
+   ```bash
+   openclaw browser snapshot --efficient
+   ```
+
+2. **Inform your owner immediately** with the screenshot and result:
+   > "Purchased {item} at {merchant} for ${amount}. Order ID: {order_id}. [screenshot attached]"
+
+3. **Wait up to 2 minutes** for your owner to respond.
+
+4. **If owner confirms or no response within 2 minutes:**
+   - Call `POST /bot/rail5/confirm` with `"status": "success"`
+   - Proceed to Step 18 (kill sub-agent)
+
+5. **If owner contests or reports a problem:**
+   - Analyze what the owner is saying — do they want a different item? Was the wrong thing purchased?
+   - If the page allows corrections (e.g., the order hasn't been finalized), fix what's needed
+   - If the card fields need to be re-entered (e.g., on a new payment form), send the sub-agent
+     updated instructions:
+     ```
+     /subagents send <sub_agent_id> "The owner needs changes. Please re-fill the card number and CVV fields. The form has been reset. Take a snapshot to locate the fields."
+     ```
+   - Wait for the sub-agent's new report and repeat from Step 15
+
+---
+
+### Step 17: On Rejection — Analyze Before Failing
+
+If the sub-agent reports `status: "rejected"`, **do not immediately throw a fail flag.**
+Analyze the cause first.
+
+1. **Take a screenshot** of the current page:
+   ```bash
+   openclaw browser snapshot --efficient
+   ```
+
+2. **Determine the root cause:**
+
+   | What you see | Likely cause | Action |
+   |---|---|---|
+   | "Please fill in [non-card field]" or a required field is highlighted empty | Main agent missed a field | Fix the field yourself, then send sub-agent retry instructions |
+   | "Invalid card number" or "Check your card details" | Sub-agent may have typed in the wrong field or the field didn't accept input | Send sub-agent updated instructions to retry |
+   | "Card declined" / "Insufficient funds" / "Do not honor" with all fields correctly filled | Genuine payment decline | This is a real failure |
+   | CAPTCHA / 3DS / OTP appeared | Security challenge | Cannot proceed — report to owner |
+
+3. **If a non-card field was the problem:**
+   - Fix the field yourself (you can fill any non-card field)
+   - Take a new snapshot to confirm the fix
+   - Send the sub-agent retry instructions:
+     ```
+     /subagents send <sub_agent_id> "I fixed the missing billing zip code. Please re-fill the card number and CVV fields and resubmit. Take a snapshot to locate the fields."
+     ```
+   - Wait for the sub-agent's new report
+
+4. **If the sub-agent misidentified the fields:**
+   - Take a snapshot and identify the correct card fields
+   - Send the sub-agent more specific instructions:
+     ```
+     /subagents send <sub_agent_id> "The card number field is inside iframe[src*='stripe']. Take a snapshot of that iframe and fill the card number and CVV there."
+     ```
+   - Wait for the sub-agent's new report
+
+5. **If the form is correctly filled and the payment was genuinely declined:**
+   - This is a real failure. Now call `POST /bot/rail5/confirm` with `"status": "failed"`
+   - Proceed to Step 18 (kill sub-agent)
+   - Inform your owner: the payment was declined by the card issuer
+
+6. **Max 2 retry attempts.** If the payment is still rejected after 2 retries with the form
+   correctly filled, treat it as a genuine decline.
+
+---
+
+### Step 18: Kill Sub-Agent and Verify Cleanup
+
+Once the transaction is truly done (confirmed success or confirmed failure):
 
 ```
 /subagents kill <sub_agent_id>
@@ -326,15 +417,24 @@ Optionally, review the sub-agent's activity log:
 /subagents log <sub_agent_id> 20
 ```
 
-### Step 18: Announce Result
+### Step 19: Confirm with CreditClaw and Announce
 
-Report to your owner with the outcome and operational details:
+If you haven't already called confirm in Steps 16 or 17, do it now:
+
+```bash
+curl -X POST https://creditclaw.com/api/v1/bot/rail5/confirm \
+  -H "Authorization: Bearer $CREDITCLAW_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "checkout_id": "r5chk_abc123", "status": "success" }'
+```
+
+Use `"status": "failed"` if the payment was genuinely declined.
 
 **On success:**
-> "Purchased {item} at {merchant} for ${amount}. Order ID: {order_id}. Sub-agent completed and verified deleted."
+> "Purchased {item} at {merchant} for ${amount}. Order ID: {order_id}."
 
-**On failure:**
-> "Purchase of {item} at {merchant} failed — {reason}. No charge was made. Sub-agent verified deleted."
+**On genuine decline:**
+> "Purchase of {item} at {merchant} failed — {reason}. No charge was made."
 
 ---
 
@@ -421,13 +521,24 @@ sessions_yield
 #   → Decrypts card file
 #   → Fills card number and CVV in the Stripe iframe
 #   → Clicks submit
-#   → Confirms with CreditClaw
 #   → Reports: sessions_send({ status: "success", order_id: "ORD-12345" })
 
-# Step 17: Kill and verify
+# Step 15: Receive result — status: "success"
+
+# Step 16: Inform owner first
+openclaw browser snapshot --efficient
+# → "Purchased Droplet hosting at DigitalOcean for $12.00. Order ID: ORD-12345. [screenshot]"
+# → Wait up to 2 minutes for owner response
+# → Owner confirms (or no response) → proceed
+
+# Step 19: Confirm with CreditClaw
+POST /api/v1/bot/rail5/confirm
+{ "checkout_id": "r5chk_abc123", "status": "success" }
+
+# Step 18: Kill and verify
 /subagents kill <sub_agent_id>
 /subagents info <sub_agent_id>  # → deleted
 
-# Step 18: Announce
+# Done.
 "Purchased Droplet hosting - 1 month at DigitalOcean for $12.00. Order ID: ORD-12345."
 ```
