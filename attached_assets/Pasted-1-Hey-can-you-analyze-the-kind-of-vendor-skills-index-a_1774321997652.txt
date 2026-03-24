@@ -1,0 +1,55 @@
+1. Hey, can you analyze the kind of vendor skills index and then look at the "skills.sh" and the clawhub.ai
+
+And see how we can set this up as something that other brands can like, manage their own skills from?
+
+Does that make sense?
+
+We're gonna self manage as well and have a bunch of AI agents generating the first version of them as well, but people need to be able to claim certain brands, as official contributors, 
+
+And manage them and update them. 
+
+
+2. And the other thing is you know how there is YAML meta data that is a part of each skill, often in a supporting file like "_meta.json" or "skill.json".
+
+Well, we need to kinda define all of the key elements around shopping for each brand, including what categories they belong to, and niche, all within the meta-data.
+
+Does that make sense?
+
+So that it can be very efficiently and so that the right skills can be surfaced extremely quickly to agent searching for things.
+
+Example:
+SEARCH:
+search-api: true 
+mcp: true
+search-internal: true
+
+BUYING:
+ordering-permission: guest | registered | paywall/approval
+checkout: stripe, adyen, shopify, worldpay, in-house, other
+payment-methods: card | mpp | x402 | ACH ( etc)
+delivery-options: unconfirmed | depending on article
+free-delivery: for over $50
+
+UPDATES:
+current-deals: true (direct url or api call for promotions)
+
+
+SEARCH CATEGORIES:
+
+sector: office, fashion, health, saas, home, construction, etc
+sub-sector: womens bag, gloves, 
+tier: top luxury, luxury fast-fashion, utility
+
+
+
+3. And then we need to have a central skill that is accessible via CLI or api and that basically any agent can use to query our "Brand/merchant/vendor" skills hub and figure out where best to search for certain things. 
+
+It needs to be a hyper efficient extremely fast experience that serves information extremely quickly to any agent making a request. 
+
+Does that make sense?
+
+And I think it should basically serve the metadata for the recommended brands, which is the agent wants to, can pull the skill, and know how to access the API, or anything else within the shop directly.
+
+Does that make sense?
+
+
