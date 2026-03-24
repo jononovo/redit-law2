@@ -277,10 +277,37 @@ Converts `VendorSkill` objects into `SKILL.md` markdown with frontmatter, taxono
 **Builder** (`lib/procurement-skills/builder/`):
 LLM-powered skill generation. `types.ts` includes `LLMCheckoutAnalysis` with taxonomy inference fields.
 
-**Discovery API** (`app/api/v1/bot/skills/route.ts`):
-Query params: `category`, `search`, `checkout`, `capability`, `maturity`, `sector`, `tier`, `sub_sector`, `ordering_permission`, `payment_method`, `has_deals`, `search_api`, `mcp`. Response includes full taxonomy/buying/deals metadata per vendor plus `sectors` and `tiers` facets.
+**Brand Index** (`brand_index` table, `server/storage/brand-index.ts`):
+Database-backed brand/vendor registry replacing the in-memory `VENDOR_REGISTRY` for the agent-facing API. Single denormalized PostgreSQL table with:
+- Flat indexed columns for every filterable field (sector, tier, maturity, ordering, etc.)
+- `carries_brands` text[] array (GIN-indexed) — distinguishes retailers from HQ brands (populated = retailer)
+- `brand_data` jsonb — full VendorSkill object for retrieval
+- `skill_md` text — pre-generated skill markdown
+- `search_vector` tsvector with trigger (name+description at A, tags/sub_sectors/carries_brands at B, sector at C)
+- `agent_readiness` integer score (MCP=25, API=20, guest=15, programmatic_checkout=10, deals=5, feed=5, verified=5)
+- B2B columns: `tax_exempt_supported`, `po_number_supported`, `business_account`
+- Maturity progression: draft → community → official (brand claimed) → verified (CreditClaw audited)
+- Storage methods: `searchBrands`, `getBrandBySlug`, `getRetailersForBrand`, `upsertBrandIndex`, `recomputeReadiness`
+- 22+ indexes (5 btree, 7 GIN on arrays, 1 GIN on tsvector, 7 partial)
 
-**UI** — Catalog page (`app/skills/page.tsx`) with sector/tier/category/capability filters in sidebar, sub-sector tags on cards, deals badges. Vendor detail page (`app/skills/[vendor]/page.tsx`) with search discovery, buying config, deals & promotions, and taxonomy panels.
+**Discovery API** (`app/api/v1/bot/skills/route.ts`):
+Now queries `brand_index` table via storage layer instead of in-memory registry. Query params: `category` (deprecated alias for `sector`), `search` (full-text), `sector`, `tier`, `maturity`, `checkout`, `capability`, `ordering_permission`, `payment_method`, `has_deals`, `search_api`, `mcp`, `carries_brand`, `ships_to`, `tax_exempt`, `po_number`. Response includes full taxonomy/buying/deals metadata plus `agent_readiness`, `carries_brands`, `domain` per vendor, and `sectors`/`tiers` facets.
+
+**Post-publish hook**: When a skill draft is published (`app/api/v1/skills/drafts/[id]/publish/route.ts`), it auto-syncs the brand_index row via `upsertBrandIndex`.
+
+**Brand Claims** (`brand_claims` table, `server/storage/brand-claims.ts`):
+Self-service brand ownership verification. Brand owners claim their brand from the vendor detail page, upgrading maturity to "official" via email domain matching. Key components:
+- `brand_claims` table with status lifecycle: pending → verified/rejected/revoked
+- Partial unique index `brand_claims_active_claim_idx ON (brand_slug) WHERE status = 'verified'` prevents race conditions
+- Domain matching logic in `lib/brand-claims/domain.ts` (exact, subdomain-of-brand, brand-subdomain-of-email)
+- Free email blocklist in `lib/brand-claims/blocklist.ts` (Gmail, Yahoo, Outlook, etc.)
+- Auto-verify if email domain matches brand domain; manual_review otherwise
+- Transactional `verifyClaim` upgrades `brand_index.maturity` to "official", sets `claimed_by`/`claim_id`
+- Transactional `revokeClaim` reverts brand to "community" maturity; only affects brand_index if claim_id matches
+- API endpoints: `POST /api/v1/brands/[slug]/claim`, `GET /api/v1/brands/claims/mine`, `POST /api/v1/brands/claims/[id]/revoke`, `GET /api/v1/brands/claims/review` (admin), `POST /api/v1/brands/claims/[id]/review` (admin verify/reject)
+- UI: Claim button on vendor detail page (`app/skills/[vendor]/page.tsx`), My Claims page (`app/brands/claims/page.tsx`), Admin review queue (`app/admin/brand-claims/page.tsx`)
+
+**UI** — Catalog page (`app/skills/page.tsx`) with sector/tier/category/capability filters in sidebar, sub-sector tags on cards, deals badges. Vendor detail page (`app/skills/[vendor]/page.tsx`) with search discovery, buying config, deals & promotions, taxonomy panels, and brand claim button.
 
 ### Community Submissions Module
 Registered users can submit vendor websites for analysis, contributing to the procurement skills library.

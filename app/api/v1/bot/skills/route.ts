@@ -1,153 +1,115 @@
 import { NextRequest, NextResponse } from "next/server";
-import { VENDOR_REGISTRY } from "@/lib/procurement-skills/registry";
-import { computeAgentFriendliness, CheckoutMethod, VendorCapability, SkillMaturity, VendorSector, VendorTier, OrderingPermission, PaymentMethod } from "@/lib/procurement-skills/types";
+import { storage } from "@/server/storage";
+import type { BrandIndex } from "@/shared/schema";
+
+function parseCSV(param: string | null): string[] | undefined {
+  if (!param) return undefined;
+  const vals = param.split(",").map(s => s.trim()).filter(Boolean);
+  return vals.length > 0 ? vals : undefined;
+}
 
 export async function GET(request: NextRequest) {
   const url = new URL(request.url);
+
   const category = url.searchParams.get("category");
-  const search = url.searchParams.get("search")?.toLowerCase();
+  const sector = url.searchParams.get("sector");
+  const search = url.searchParams.get("search");
   const checkoutParam = url.searchParams.get("checkout");
   const capabilityParam = url.searchParams.get("capability");
   const maturityParam = url.searchParams.get("maturity");
-
-  const sectorParam = url.searchParams.get("sector");
   const tierParam = url.searchParams.get("tier");
-  const subSectorParam = url.searchParams.get("sub_sector")?.toLowerCase();
+  const subSectorParam = url.searchParams.get("sub_sector");
   const orderingParam = url.searchParams.get("ordering_permission");
   const paymentMethodParam = url.searchParams.get("payment_method");
   const hasDeals = url.searchParams.get("has_deals");
   const hasSearchApi = url.searchParams.get("search_api");
   const hasMcp = url.searchParams.get("mcp");
+  const carriesBrand = url.searchParams.get("carries_brand");
+  const shipsTo = url.searchParams.get("ships_to");
+  const taxExempt = url.searchParams.get("tax_exempt");
+  const poNumber = url.searchParams.get("po_number");
 
-  const checkoutFilters = checkoutParam?.split(",").filter(Boolean) as CheckoutMethod[] | undefined;
-  const capabilityFilters = capabilityParam?.split(",").filter(Boolean) as VendorCapability[] | undefined;
-  const maturityFilters = maturityParam?.split(",").filter(Boolean) as SkillMaturity[] | undefined;
-  const sectorFilters = sectorParam?.split(",").filter(Boolean) as VendorSector[] | undefined;
-  const tierFilters = tierParam?.split(",").filter(Boolean) as VendorTier[] | undefined;
-  const orderingFilters = orderingParam?.split(",").filter(Boolean) as OrderingPermission[] | undefined;
-  const paymentMethodFilters = paymentMethodParam?.split(",").filter(Boolean) as PaymentMethod[] | undefined;
+  const sectorValues = parseCSV(sector) ?? parseCSV(category);
 
-  let vendors = VENDOR_REGISTRY;
+  const brands = await storage.searchBrands({
+    q: search ?? undefined,
+    sectors: sectorValues,
+    tiers: parseCSV(tierParam),
+    maturities: parseCSV(maturityParam),
+    hasMcp: hasMcp === "true" ? true : undefined,
+    hasApi: hasSearchApi === "true" ? true : undefined,
+    hasDeals: hasDeals === "true" ? true : undefined,
+    taxExempt: taxExempt === "true" ? true : undefined,
+    poNumber: poNumber === "true" ? true : undefined,
+    carriesBrand: carriesBrand ?? undefined,
+    shipsTo: shipsTo ?? undefined,
+    checkoutMethods: parseCSV(checkoutParam),
+    capabilities: parseCSV(capabilityParam),
+    orderings: parseCSV(orderingParam),
+    paymentMethods: parseCSV(paymentMethodParam),
+    subSector: subSectorParam ?? undefined,
+    sortBy: "readiness",
+    sortDir: "desc",
+  });
 
-  if (category) {
-    vendors = vendors.filter(v => v.category === category);
-  }
-
-  if (search) {
-    vendors = vendors.filter(
-      v =>
-        v.name.toLowerCase().includes(search) ||
-        v.slug.includes(search) ||
-        v.taxonomy?.sector.includes(search) ||
-        v.taxonomy?.subSectors.some(s => s.toLowerCase().includes(search)) ||
-        v.taxonomy?.tags?.some(t => t.toLowerCase().includes(search))
-    );
-  }
-
-  if (checkoutFilters?.length) {
-    vendors = vendors.filter(v =>
-      checkoutFilters.some(cf => v.checkoutMethods.includes(cf))
-    );
-  }
-
-  if (capabilityFilters?.length) {
-    vendors = vendors.filter(v =>
-      capabilityFilters.every(cf => v.capabilities.includes(cf))
-    );
-  }
-
-  if (maturityFilters?.length) {
-    vendors = vendors.filter(v => maturityFilters.includes(v.maturity));
-  }
-
-  if (sectorFilters?.length) {
-    vendors = vendors.filter(v =>
-      v.taxonomy && sectorFilters.includes(v.taxonomy.sector)
-    );
-  }
-
-  if (tierFilters?.length) {
-    vendors = vendors.filter(v =>
-      v.taxonomy && tierFilters.includes(v.taxonomy.tier)
-    );
-  }
-
-  if (subSectorParam) {
-    vendors = vendors.filter(v =>
-      v.taxonomy?.subSectors.some(s => s.toLowerCase().includes(subSectorParam))
-    );
-  }
-
-  if (orderingFilters?.length) {
-    vendors = vendors.filter(v =>
-      v.buying && orderingFilters.includes(v.buying.orderingPermission)
-    );
-  }
-
-  if (paymentMethodFilters?.length) {
-    vendors = vendors.filter(v =>
-      v.buying && paymentMethodFilters.some(pm => v.buying!.paymentMethods.includes(pm))
-    );
-  }
-
-  if (hasDeals === "true") {
-    vendors = vendors.filter(v => v.deals?.currentDeals === true);
-  }
-
-  if (hasSearchApi === "true") {
-    vendors = vendors.filter(v => v.searchDiscovery?.searchApi === true);
-  }
-
-  if (hasMcp === "true") {
-    vendors = vendors.filter(v => v.searchDiscovery?.mcp === true);
-  }
+  const facets = await storage.getAllBrandFacets();
 
   return NextResponse.json({
-    vendors: vendors.map(v => ({
-      slug: v.slug,
-      name: v.name,
-      category: v.category,
-      url: v.url,
-      checkout_methods: v.checkoutMethods,
-      capabilities: v.capabilities,
-      maturity: v.maturity,
-      agent_friendliness: computeAgentFriendliness(v),
-      guest_checkout: v.checkout.guestCheckout,
-      bulk_pricing: v.capabilities.includes("bulk_pricing"),
-      free_shipping_above: v.shipping.freeThreshold ?? null,
-      skill_url: `https://creditclaw.com/api/v1/bot/skills/${v.slug}`,
-      catalog_url: `https://creditclaw.com/skills/${v.slug}`,
-      version: v.version,
-      last_verified: v.lastVerified,
-      success_rate: v.feedbackStats?.successRate ?? null,
-      taxonomy: v.taxonomy ? {
-        sector: v.taxonomy.sector,
-        sub_sectors: v.taxonomy.subSectors,
-        tier: v.taxonomy.tier,
-        tags: v.taxonomy.tags ?? [],
-      } : null,
-      search_discovery: v.searchDiscovery ? {
-        search_api: v.searchDiscovery.searchApi,
-        mcp: v.searchDiscovery.mcp,
-        search_internal: v.searchDiscovery.searchInternal,
-      } : null,
-      buying: v.buying ? {
-        ordering_permission: v.buying.orderingPermission,
-        checkout_providers: v.buying.checkoutProviders,
-        payment_methods: v.buying.paymentMethods,
-        delivery_options: v.buying.deliveryOptions,
-        free_delivery: v.buying.freeDelivery ?? null,
-        returns_policy: v.buying.returnsPolicy ?? null,
-      } : null,
-      deals: v.deals ? {
-        current_deals: v.deals.currentDeals,
-        deals_url: v.deals.dealsUrl ?? null,
-        loyalty_program: v.deals.loyaltyProgram ?? null,
-      } : null,
-    })),
-    total: vendors.length,
-    categories: [...new Set(VENDOR_REGISTRY.map(v => v.category))],
-    sectors: [...new Set(VENDOR_REGISTRY.map(v => v.taxonomy?.sector).filter(Boolean))],
-    tiers: [...new Set(VENDOR_REGISTRY.map(v => v.taxonomy?.tier).filter(Boolean))],
+    vendors: brands.map(brandToVendorResponse),
+    total: brands.length,
+    categories: facets.categories,
+    sectors: facets.sectors,
+    tiers: facets.tiers,
   });
+}
+
+function brandToVendorResponse(b: BrandIndex) {
+  const brandData = b.brandData as Record<string, unknown>;
+  const feedbackStats = brandData?.feedbackStats as { successRate?: number } | undefined;
+
+  return {
+    slug: b.slug,
+    name: b.name,
+    category: b.sector,
+    url: b.url,
+    checkout_methods: b.checkoutMethods,
+    capabilities: b.capabilities,
+    maturity: b.maturity,
+    agent_friendliness: Math.min(Math.floor((b.agentReadiness ?? 0) / 20) + 1, 5),
+    guest_checkout: b.ordering === "guest",
+    bulk_pricing: b.capabilities.includes("bulk_pricing"),
+    free_shipping_above: b.freeShippingThreshold ? parseFloat(b.freeShippingThreshold) : null,
+    skill_url: `https://creditclaw.com/api/v1/bot/skills/${b.slug}`,
+    catalog_url: `https://creditclaw.com/skills/${b.slug}`,
+    version: b.version,
+    last_verified: b.lastVerified,
+    success_rate: feedbackStats?.successRate ?? null,
+    taxonomy: {
+      sector: b.sector,
+      sub_sectors: b.subSectors,
+      tier: b.tier,
+      tags: b.tags ?? [],
+    },
+    search_discovery: {
+      search_api: b.hasApi,
+      mcp: b.hasMcp,
+      search_internal: b.siteSearch,
+    },
+    buying: {
+      ordering_permission: b.ordering,
+      checkout_providers: b.checkoutProvider ? [b.checkoutProvider] : [],
+      payment_methods: b.paymentMethodsAccepted ?? [],
+      delivery_options: (b.deliveryOptions ?? []).join(", "),
+      free_delivery: b.freeShippingThreshold ? `for orders over $${b.freeShippingThreshold}` : null,
+      returns_policy: null,
+    },
+    deals: b.hasDeals ? {
+      current_deals: b.hasDeals,
+      deals_url: b.dealsUrl ?? null,
+      loyalty_program: b.loyaltyProgram ?? null,
+    } : null,
+    agent_readiness: b.agentReadiness,
+    carries_brands: b.carriesBrands ?? [],
+    domain: b.domain,
+  };
 }

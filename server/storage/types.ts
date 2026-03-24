@@ -47,11 +47,14 @@ import {
   type BasePayPayment, type InsertBasePayPayment,
   type QrPayment, type InsertQrPayment,
   type BotPendingMessage,
+  type BrandIndex, type InsertBrandIndex,
+  type BrandClaim, type InsertBrandClaim,
 } from "@/shared/schema";
 
 import type { OrderFilters } from "./orders";
 import type { SaleFilters } from "./sales";
 import type { InvoiceFilters } from "./invoices";
+import type { BrandSearchFilters } from "./brand-index";
 
 export interface IStorage {
   getOwnerByUid(uid: string): Promise<Owner | null>;
@@ -347,4 +350,21 @@ export interface IStorage {
   ackMessage(id: number, botId: string): Promise<boolean>;
   purgeExpiredMessages(): Promise<number>;
   deletePendingMessagesByRef(botId: string, eventType: string, refKey: string, refValue: string): Promise<number>;
+
+  searchBrands(filters: BrandSearchFilters): Promise<BrandIndex[]>;
+  getBrandBySlug(slug: string): Promise<BrandIndex | null>;
+  getRetailersForBrand(brandName: string): Promise<BrandIndex[]>;
+  upsertBrandIndex(data: InsertBrandIndex): Promise<BrandIndex>;
+  recomputeReadiness(slug: string): Promise<number>;
+  getAllBrandFacets(): Promise<{ sectors: string[]; tiers: string[]; categories: string[] }>;
+
+  createBrandClaim(data: InsertBrandClaim): Promise<BrandClaim>;
+  getBrandClaimById(id: number): Promise<BrandClaim | null>;
+  getActiveClaimForBrand(brandSlug: string): Promise<BrandClaim | null>;
+  getPendingClaimForBrand(brandSlug: string, claimerUid: string): Promise<BrandClaim | null>;
+  getClaimsByUser(claimerUid: string): Promise<BrandClaim[]>;
+  getPendingClaims(): Promise<BrandClaim[]>;
+  verifyClaim(id: number, reviewedBy?: string): Promise<BrandClaim>;
+  rejectClaim(id: number, reason: string, reviewedBy: string): Promise<BrandClaim>;
+  revokeClaim(id: number): Promise<BrandClaim>;
 }
