@@ -48,6 +48,7 @@ import {
   type QrPayment, type InsertQrPayment,
   type BotPendingMessage,
   type BrandIndex, type InsertBrandIndex,
+  type BrandClaim, type InsertBrandClaim,
 } from "@/shared/schema";
 
 import type { OrderFilters } from "./orders";
@@ -356,4 +357,14 @@ export interface IStorage {
   upsertBrandIndex(data: InsertBrandIndex): Promise<BrandIndex>;
   recomputeReadiness(slug: string): Promise<number>;
   getAllBrandFacets(): Promise<{ sectors: string[]; tiers: string[]; categories: string[] }>;
+
+  createBrandClaim(data: InsertBrandClaim): Promise<BrandClaim>;
+  getBrandClaimById(id: number): Promise<BrandClaim | null>;
+  getActiveClaimForBrand(brandSlug: string): Promise<BrandClaim | null>;
+  getPendingClaimForBrand(brandSlug: string, claimerUid: string): Promise<BrandClaim | null>;
+  getClaimsByUser(claimerUid: string): Promise<BrandClaim[]>;
+  getPendingClaims(): Promise<BrandClaim[]>;
+  verifyClaim(id: number, reviewedBy?: string): Promise<BrandClaim>;
+  rejectClaim(id: number, reason: string, reviewedBy: string): Promise<BrandClaim>;
+  revokeClaim(id: number): Promise<BrandClaim>;
 }

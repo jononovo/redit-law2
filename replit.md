@@ -295,7 +295,19 @@ Now queries `brand_index` table via storage layer instead of in-memory registry.
 
 **Post-publish hook**: When a skill draft is published (`app/api/v1/skills/drafts/[id]/publish/route.ts`), it auto-syncs the brand_index row via `upsertBrandIndex`.
 
-**UI** — Catalog page (`app/skills/page.tsx`) with sector/tier/category/capability filters in sidebar, sub-sector tags on cards, deals badges. Vendor detail page (`app/skills/[vendor]/page.tsx`) with search discovery, buying config, deals & promotions, and taxonomy panels.
+**Brand Claims** (`brand_claims` table, `server/storage/brand-claims.ts`):
+Self-service brand ownership verification. Brand owners claim their brand from the vendor detail page, upgrading maturity to "official" via email domain matching. Key components:
+- `brand_claims` table with status lifecycle: pending → verified/rejected/revoked
+- Partial unique index `brand_claims_active_claim_idx ON (brand_slug) WHERE status = 'verified'` prevents race conditions
+- Domain matching logic in `lib/brand-claims/domain.ts` (exact, subdomain-of-brand, brand-subdomain-of-email)
+- Free email blocklist in `lib/brand-claims/blocklist.ts` (Gmail, Yahoo, Outlook, etc.)
+- Auto-verify if email domain matches brand domain; manual_review otherwise
+- Transactional `verifyClaim` upgrades `brand_index.maturity` to "official", sets `claimed_by`/`claim_id`
+- Transactional `revokeClaim` reverts brand to "community" maturity; only affects brand_index if claim_id matches
+- API endpoints: `POST /api/v1/brands/[slug]/claim`, `GET /api/v1/brands/claims/mine`, `POST /api/v1/brands/claims/[id]/revoke`, `GET /api/v1/brands/claims/review` (admin), `POST /api/v1/brands/claims/[id]/review` (admin verify/reject)
+- UI: Claim button on vendor detail page (`app/skills/[vendor]/page.tsx`), My Claims page (`app/brands/claims/page.tsx`), Admin review queue (`app/admin/brand-claims/page.tsx`)
+
+**UI** — Catalog page (`app/skills/page.tsx`) with sector/tier/category/capability filters in sidebar, sub-sector tags on cards, deals badges. Vendor detail page (`app/skills/[vendor]/page.tsx`) with search discovery, buying config, deals & promotions, taxonomy panels, and brand claim button.
 
 ### Community Submissions Module
 Registered users can submit vendor websites for analysis, contributing to the procurement skills library.

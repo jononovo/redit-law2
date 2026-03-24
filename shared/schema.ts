@@ -1559,3 +1559,26 @@ export const brandIndex = pgTable("brand_index", {
 
 export type BrandIndex = typeof brandIndex.$inferSelect;
 export type InsertBrandIndex = typeof brandIndex.$inferInsert;
+
+// ─── Brand Claims ────────────────────────────────────────────────────────────
+
+export const brandClaims = pgTable("brand_claims", {
+  id: serial("id").primaryKey(),
+  brandSlug: text("brand_slug").notNull(),
+  claimerUid: text("claimer_uid").notNull(),
+  claimerEmail: text("claimer_email").notNull(),
+  claimType: text("claim_type").notNull().default("domain_match"),
+  status: text("status").notNull().default("pending"),
+  rejectionReason: text("rejection_reason"),
+  verifiedAt: timestamp("verified_at"),
+  revokedAt: timestamp("revoked_at"),
+  reviewedBy: text("reviewed_by"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (table) => [
+  index("brand_claims_brand_slug_idx").on(table.brandSlug),
+  index("brand_claims_claimer_uid_idx").on(table.claimerUid),
+  index("brand_claims_status_idx").on(table.status),
+]);
+
+export type BrandClaim = typeof brandClaims.$inferSelect;
+export type InsertBrandClaim = typeof brandClaims.$inferInsert;
