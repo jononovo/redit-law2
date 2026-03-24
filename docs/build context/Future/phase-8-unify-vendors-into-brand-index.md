@@ -116,6 +116,22 @@ Update `shared/schema.ts` to add `brandType` to the `brandIndex` table definitio
 
 **Note on `config` JSONB from vendors table**: Any existing `config` data (merchant integration settings) will be merged into the `brandData` JSONB field during data migration. No new column needed — `brandData` already holds the full operational profile.
 
+### Step 1A-addendum: Add `getBrandById` storage method
+
+**Gap identified during review:** The current brand-index storage only has `getBrandBySlug(slug)`. There is no `getBrandById(id)` method. This is needed because:
+- The merchant-accounts POST handler currently validates `storage.getVendorById(vendorId)` before creating an account
+- After migration, it needs `storage.getBrandById(brandId)` to validate the brand exists
+
+**Add to** `server/storage/brand-index.ts`:
+```typescript
+async getBrandById(id: number): Promise<BrandIndex | null> {
+  const [brand] = await db.select().from(brandIndex).where(eq(brandIndex.id, id)).limit(1);
+  return brand || null;
+}
+```
+
+Add to `IStorage` interface in `server/storage/types.ts` and compose in `server/storage/index.ts`.
+
 ### Step 1B: Clean up tier taxonomy
 
 **Remove `marketplace` and `wholesale` from tier.** These are business model types, not price positioning tiers. Tier should be a pure affordability scale.
@@ -139,12 +155,25 @@ export type VendorTier =
 
 Remove `wholesale` and `marketplace` from `TIER_LABELS` as well.
 
-**Data migration for existing rows:**
-- Any brand currently with `tier = 'marketplace'` → set `brand_type = 'marketplace'`, set `tier` to an appropriate price tier (e.g., `value` for Amazon, `mid_range` for Etsy)
-- Any brand currently with `tier = 'wholesale'` → set `brand_type = 'chain'` or `'retailer'` as appropriate, set `tier` to `value` or `mid_range`
-- Review each affected brand individually during migration
+**Data migration for existing rows (4 brands affected):**
 
-**Affected files to check**: any code that references the `marketplace` or `wholesale` tier values in filters, UI rendering, or business logic.
+| Brand | Current tier | New `brand_type` | New `tier` | Rationale |
+|---|---|---|---|---|
+| Amazon (`amazon.ts`) | `marketplace` | `marketplace` | `value` | Amazon is a marketplace; value-priced for most categories |
+| Shopify (`shopify.ts`) | `marketplace` | `marketplace` | `mid_range` | Shopify stores are marketplace-like platforms; pricing varies but generally mid-range |
+| Amazon Business (`amazon-business.ts`) | `wholesale` | `marketplace` | `value` | It's still Amazon's marketplace, just the B2B version |
+| Walmart Business (`walmart-business.ts`) | `wholesale` | `chain` | `value` | Walmart is a chain store; wholesale-like pricing but retail chain model |
+
+These changes must be applied in:
+1. The TypeScript vendor files in `lib/procurement-skills/vendors/` (source data for seed script)
+2. The `brand_index` database rows (via migration script)
+3. The `brandData` JSONB blobs (which contain the full VendorSkill including `tier` in `taxonomy.tier`)
+
+**Affected files to check**: The `/skills` catalog page dynamically populates tier filters from `getAllBrandFacets()` — after removing these values from the taxonomy type, the facets method will naturally stop returning them once no DB rows use them. The UI uses `TIER_LABELS` to display labels — removing the entries from the labels map means any stale DB rows with old values would display raw slugs. The migration must update all rows BEFORE the code change.
+
+**Obfuscation catalog is NOT affected**: `lib/obfuscation-merchants/catalog.ts` uses `category: "marketplace"` on dummy merchant entries — this is a completely separate `category` field on a different data structure, not the tier taxonomy.
+
+**`VendorDetailsFields` interface is NOT affected**: This interface (in `shared/schema.ts`) is used by the orders JSONB column and contains fields like `url`, `category`, `vendorSlug`. Despite having "vendor" in its name, it describes order-level merchant details and is used across 10+ files. Renaming it is cosmetic and out of scope for this phase.
 
 ### Step 2: Rename `merchant_accounts` → `brand_login_accounts`
 
@@ -327,6 +356,24 @@ Pure affordability/price positioning scale:
 
 ---
 
+## Build order (critical sequencing)
+
+The implementation MUST follow this order to avoid breakage:
+
+1. **Add `getBrandById` method** (Step 1A-addendum) — needed before merchant-accounts route can be updated
+2. **Add `brand_type` column + taxonomy file** (Step 1) — schema-only, no runtime breakage
+3. **Run data migration** (Step 4) — update tier values, set brand_type, merge vendor data, remap FKs. This must happen BEFORE the tier taxonomy code change
+4. **Update tier taxonomy** (Step 1B) — remove `marketplace`/`wholesale` from type and labels. Safe only after all DB rows have been migrated
+5. **Update vendor source files** (Step 1B data) — update the 4 vendor .ts files with new tier values
+6. **Rename table + columns** (Steps 2, 3) — `merchant_accounts` → `brand_login_accounts`, `vendor_id` → `brand_id`
+7. **Update storage layer** (Step 5) — rename file + methods
+8. **Update API routes** (Step 6) — point to new storage methods
+9. **Update order creation** (Step 7) — rename vendorId → brandId in types and callers
+10. **Drop vendors table** (Step 8) — only after all references confirmed clean
+11. **Update docs** (Step 9)
+
+The key constraint: **data migration before code changes**. If we remove `marketplace` from the tier type before updating the DB rows, the facets endpoint and seed script will produce type errors. If we rename the table before updating the storage methods, queries will fail.
+
 ## Risk assessment
 
 ### Low risk
@@ -334,19 +381,23 @@ Pure affordability/price positioning scale:
 - **Table rename is safe** — `ALTER TABLE RENAME TO` is also metadata-only
 - **No data loss** — all vendor data is migrated into brand_index before the table is dropped
 - **Login account CRUD is simple** — 5 methods with straightforward field renames
+- **`orders.vendorId` is unused in practice** — no fulfillment handler or checkout route actually passes a vendorId when calling recordOrder. They only use `vendor` (string) and `vendorDetails` (JSONB). The column rename is safe.
+- **`VendorDetailsFields` is not affected** — separate interface for order-level JSONB, different naming domain
+- **Obfuscation catalog is not affected** — uses its own `category` field, not the tier taxonomy
 
 ### Medium risk
 - **Data migration script correctness** — the slug-based join between `vendors` and `brand_index` must match every row. Any `vendors` row without a `brand_index` match needs a new brand_index insert. Validate with counts before and after.
 - **API backward compatibility** — if external bots call `POST /api/v1/merchant-accounts` with `vendorId`, they'll break unless we accept both `vendorId` and `brandId` during a transition period
-- **Orders with orphaned vendorId** — old orders may reference a `vendors.id` that maps to a different `brand_index.id`. The migration script must handle this mapping correctly.
-- **Tier cleanup** — any existing brands with `tier = 'marketplace'` or `tier = 'wholesale'` need manual review to assign correct tier and brand_type values. Automated assignment may be wrong for edge cases.
+- **`brandData` JSONB contains stale tier values** — the `brandData` JSONB blob stores the full VendorSkill including `taxonomy.tier`. After migrating the top-level `tier` column, the nested JSONB value will still say "marketplace" or "wholesale". This is a display risk if any code reads tier from `brandData` instead of the column. The migration script should update the JSONB blob too.
+- **Missing `getBrandById` method** — plan now includes it (Step 1A-addendum), but this must be built and tested before any route changes
 
 ### Mitigations
 - Run migration in a transaction with rollback capability
 - Add backward-compatible `vendorId` alias in merchant-accounts API for one release cycle
 - Validate all FK mappings with SQL queries before dropping the vendors table
 - Keep a backup of the vendors table data (export to JSON) before dropping
-- Review each tier-reassigned brand manually before committing
+- Update both column-level tier AND JSONB-level tier in the migration script
+- Test `getBrandById` method independently before wiring into routes
 
 ---
 
