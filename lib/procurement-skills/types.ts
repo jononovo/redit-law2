@@ -28,6 +28,94 @@ export type VendorCategory =
   | "industrial"
   | "specialty";
 
+export type VendorSector =
+  | "retail"
+  | "office"
+  | "fashion"
+  | "health"
+  | "beauty"
+  | "saas"
+  | "home"
+  | "construction"
+  | "automotive"
+  | "electronics"
+  | "food"
+  | "sports"
+  | "industrial"
+  | "specialty"
+  | "luxury"
+  | "travel"
+  | "entertainment"
+  | "education"
+  | "pets"
+  | "garden";
+
+export type VendorTier =
+  | "top_luxury"
+  | "luxury"
+  | "premium"
+  | "mid_range"
+  | "value"
+  | "fast_fashion"
+  | "utility"
+  | "wholesale"
+  | "marketplace";
+
+export type OrderingPermission = "guest" | "registered" | "approval";
+
+export type CheckoutProvider =
+  | "stripe"
+  | "adyen"
+  | "shopify"
+  | "worldpay"
+  | "paypal"
+  | "in_house"
+  | "other";
+
+export type PaymentMethod =
+  | "card"
+  | "mpp"
+  | "x402"
+  | "ach"
+  | "wire"
+  | "invoice"
+  | "crypto"
+  | "apple_pay"
+  | "google_pay"
+  | "klarna"
+  | "afterpay";
+
+export interface SearchDiscovery {
+  searchApi: boolean;
+  mcp: boolean;
+  searchInternal: boolean;
+  apiDocUrl?: string;
+}
+
+export interface BuyingConfig {
+  orderingPermission: OrderingPermission;
+  checkoutProviders: CheckoutProvider[];
+  paymentMethods: PaymentMethod[];
+  deliveryOptions: string;
+  freeDelivery?: string;
+  returnsPolicy?: string;
+  returnsWindow?: string;
+}
+
+export interface DealsConfig {
+  currentDeals: boolean;
+  dealsUrl?: string;
+  dealsApiEndpoint?: string;
+  loyaltyProgram?: string;
+}
+
+export interface TaxonomyConfig {
+  sector: VendorSector;
+  subSectors: string[];
+  tier: VendorTier;
+  tags?: string[];
+}
+
 export interface MethodConfig {
   locatorFormat?: string;
   searchEndpoint?: string;
@@ -76,6 +164,11 @@ export interface VendorSkill {
     lastFailure?: string;
     failureReason?: string;
   };
+
+  taxonomy?: TaxonomyConfig;
+  searchDiscovery?: SearchDiscovery;
+  buying?: BuyingConfig;
+  deals?: DealsConfig;
 }
 
 export function computeAgentFriendliness(vendor: VendorSkill): number {
@@ -85,6 +178,8 @@ export function computeAgentFriendliness(vendor: VendorSkill): number {
   if (primaryMethod && !vendor.methodConfig[primaryMethod]?.requiresAuth) score += 1;
   if (vendor.capabilities.includes("programmatic_checkout")) score += 2;
   if ((vendor.feedbackStats?.successRate ?? 0) > 0.85) score += 1;
+  if (vendor.searchDiscovery?.searchApi) score += 1;
+  if (vendor.searchDiscovery?.mcp) score += 1;
   return Math.min(score, 5);
 }
 
@@ -126,4 +221,69 @@ export const CATEGORY_LABELS: Record<VendorCategory, string> = {
   electronics: "Electronics",
   industrial: "Industrial",
   specialty: "Specialty",
+};
+
+export const SECTOR_LABELS: Record<VendorSector, string> = {
+  retail: "Retail",
+  office: "Office",
+  fashion: "Fashion",
+  health: "Health",
+  beauty: "Beauty",
+  saas: "SaaS",
+  home: "Home",
+  construction: "Construction",
+  automotive: "Automotive",
+  electronics: "Electronics",
+  food: "Food & Beverage",
+  sports: "Sports & Outdoors",
+  industrial: "Industrial",
+  specialty: "Specialty",
+  luxury: "Luxury",
+  travel: "Travel",
+  entertainment: "Entertainment",
+  education: "Education",
+  pets: "Pets",
+  garden: "Garden & Outdoor",
+};
+
+export const TIER_LABELS: Record<VendorTier, string> = {
+  top_luxury: "Top Luxury",
+  luxury: "Luxury",
+  premium: "Premium",
+  mid_range: "Mid-Range",
+  value: "Value",
+  fast_fashion: "Fast Fashion",
+  utility: "Utility",
+  wholesale: "Wholesale",
+  marketplace: "Marketplace",
+};
+
+export const ORDERING_PERMISSION_LABELS: Record<OrderingPermission, string> = {
+  guest: "Guest",
+  registered: "Registered Account",
+  approval: "Approval Required",
+};
+
+export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
+  card: "Credit/Debit Card",
+  mpp: "Mobile Payment",
+  x402: "x402 Protocol",
+  ach: "ACH Transfer",
+  wire: "Wire Transfer",
+  invoice: "Invoice / Net Terms",
+  crypto: "Cryptocurrency",
+  apple_pay: "Apple Pay",
+  google_pay: "Google Pay",
+  klarna: "Klarna",
+  afterpay: "Afterpay",
+};
+
+export const CHECKOUT_PROVIDER_LABELS: Record<CheckoutProvider, string> = {
+  stripe: "Stripe",
+  adyen: "Adyen",
+  shopify: "Shopify Payments",
+  worldpay: "Worldpay",
+  paypal: "PayPal",
+  in_house: "In-House",
+  other: "Other",
 };

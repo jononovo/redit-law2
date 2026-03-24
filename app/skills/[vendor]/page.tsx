@@ -26,6 +26,11 @@ import {
   ShoppingCart,
   Cpu,
   Info,
+  Layers,
+  Tag,
+  Search as SearchIcon,
+  Truck,
+  Wallet,
 } from "lucide-react";
 import { getVendorBySlug } from "@/lib/procurement-skills/registry";
 import { generateVendorSkill } from "@/lib/procurement-skills/generator";
@@ -35,6 +40,11 @@ import {
   CHECKOUT_METHOD_COLORS,
   CAPABILITY_LABELS,
   CATEGORY_LABELS,
+  SECTOR_LABELS,
+  TIER_LABELS,
+  ORDERING_PERMISSION_LABELS,
+  PAYMENT_METHOD_LABELS,
+  CHECKOUT_PROVIDER_LABELS,
   CheckoutMethod,
   VendorCapability,
   VendorCategory,
@@ -159,6 +169,17 @@ export default function VendorDetailPage({ params }: { params: Promise<{ vendor:
                         {CATEGORY_ICONS[vendor.category]}
                         <span className="font-medium">{CATEGORY_LABELS[vendor.category]}</span>
                       </div>
+                      {vendor.taxonomy && (
+                        <>
+                          <span className="text-neutral-300">·</span>
+                          <div className="flex items-center gap-1.5">
+                            <Layers className="w-4 h-4 text-purple-500" />
+                            <span className="font-medium">{SECTOR_LABELS[vendor.taxonomy.sector]}</span>
+                          </div>
+                          <span className="text-neutral-300">·</span>
+                          <span className="font-medium">{TIER_LABELS[vendor.taxonomy.tier]}</span>
+                        </>
+                      )}
                       <a
                         href={vendor.url}
                         target="_blank"
@@ -171,6 +192,28 @@ export default function VendorDetailPage({ params }: { params: Promise<{ vendor:
                     </div>
                   </div>
                 </div>
+
+                {vendor.taxonomy && vendor.taxonomy.subSectors.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 mb-4">
+                    {vendor.taxonomy.subSectors.map(sub => (
+                      <span
+                        key={sub}
+                        className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium bg-purple-50 text-purple-700 border border-purple-100"
+                      >
+                        {sub}
+                      </span>
+                    ))}
+                    {vendor.taxonomy.tags && vendor.taxonomy.tags.map(tag => (
+                      <span
+                        key={tag}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium bg-neutral-50 text-neutral-600 border border-neutral-100"
+                      >
+                        <Tag className="w-3 h-3" />
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                )}
 
                 <div className="flex items-center gap-6 mb-8">
                   <div className="flex items-center gap-1" data-testid="score-agent-friendliness">
@@ -193,6 +236,12 @@ export default function VendorDetailPage({ params }: { params: Promise<{ vendor:
                         {Math.round(vendor.feedbackStats.successRate * 100)}% success rate
                       </span>
                     </div>
+                  )}
+                  {vendor.deals?.currentDeals && (
+                    <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-100">
+                      <Tag className="w-3 h-3" />
+                      Active Deals
+                    </span>
                   )}
                 </div>
 
@@ -261,6 +310,94 @@ export default function VendorDetailPage({ params }: { params: Promise<{ vendor:
                   </div>
                 </div>
 
+                {vendor.searchDiscovery && (
+                  <div className="bg-white rounded-2xl border border-neutral-100 p-6 mb-8">
+                    <h3 className="font-bold text-neutral-900 mb-4 flex items-center gap-2">
+                      <SearchIcon className="w-4 h-4 text-blue-500" />
+                      Search Discovery
+                    </h3>
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className="flex items-center gap-2">
+                        {vendor.searchDiscovery.searchApi ? (
+                          <CheckCircle2 className="w-4 h-4 text-green-500" />
+                        ) : (
+                          <XCircle className="w-4 h-4 text-neutral-300" />
+                        )}
+                        <span className="text-sm font-medium text-neutral-700">Search API</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {vendor.searchDiscovery.mcp ? (
+                          <CheckCircle2 className="w-4 h-4 text-green-500" />
+                        ) : (
+                          <XCircle className="w-4 h-4 text-neutral-300" />
+                        )}
+                        <span className="text-sm font-medium text-neutral-700">MCP Support</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {vendor.searchDiscovery.searchInternal ? (
+                          <CheckCircle2 className="w-4 h-4 text-green-500" />
+                        ) : (
+                          <XCircle className="w-4 h-4 text-neutral-300" />
+                        )}
+                        <span className="text-sm font-medium text-neutral-700">Internal Search</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {vendor.buying && (
+                  <div className="bg-white rounded-2xl border border-neutral-100 p-6 mb-8">
+                    <h3 className="font-bold text-neutral-900 mb-4 flex items-center gap-2">
+                      <Wallet className="w-4 h-4 text-indigo-500" />
+                      Buying Configuration
+                    </h3>
+                    <div className="grid sm:grid-cols-2 gap-6">
+                      <div>
+                        <h4 className="text-xs font-bold uppercase tracking-wider text-neutral-400 mb-2">Ordering</h4>
+                        <Badge className="text-xs bg-indigo-50 text-indigo-700 border-indigo-100">
+                          {ORDERING_PERMISSION_LABELS[vendor.buying.orderingPermission]}
+                        </Badge>
+                      </div>
+                      <div>
+                        <h4 className="text-xs font-bold uppercase tracking-wider text-neutral-400 mb-2">Checkout Providers</h4>
+                        <div className="flex flex-wrap gap-1">
+                          {vendor.buying.checkoutProviders.map(p => (
+                            <Badge key={p} className="text-[10px] bg-neutral-50 text-neutral-600 border-neutral-200">
+                              {CHECKOUT_PROVIDER_LABELS[p]}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                      <div>
+                        <h4 className="text-xs font-bold uppercase tracking-wider text-neutral-400 mb-2">Payment Methods</h4>
+                        <div className="flex flex-wrap gap-1">
+                          {vendor.buying.paymentMethods.map(m => (
+                            <Badge key={m} className="text-[10px] bg-blue-50 text-blue-600 border-blue-100">
+                              {PAYMENT_METHOD_LABELS[m]}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                      <div>
+                        <h4 className="text-xs font-bold uppercase tracking-wider text-neutral-400 mb-2">Delivery</h4>
+                        <p className="text-sm text-neutral-700 font-medium">{vendor.buying.deliveryOptions}</p>
+                        {vendor.buying.freeDelivery && (
+                          <p className="text-xs text-green-600 font-medium mt-1">
+                            <Truck className="w-3 h-3 inline mr-1" />
+                            Free: {vendor.buying.freeDelivery}
+                          </p>
+                        )}
+                      </div>
+                      {vendor.buying.returnsPolicy && (
+                        <div className="sm:col-span-2">
+                          <h4 className="text-xs font-bold uppercase tracking-wider text-neutral-400 mb-2">Returns</h4>
+                          <p className="text-sm text-neutral-700 font-medium">{vendor.buying.returnsPolicy}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
                 <div className="grid sm:grid-cols-3 gap-4 mb-8">
                   <div className="bg-white rounded-2xl border border-neutral-100 p-5">
                     <h4 className="text-xs font-bold uppercase tracking-wider text-neutral-400 mb-2">Search</h4>
@@ -316,6 +453,43 @@ export default function VendorDetailPage({ params }: { params: Promise<{ vendor:
                     </div>
                   </div>
                 </div>
+
+                {vendor.deals && (vendor.deals.currentDeals || vendor.deals.loyaltyProgram) && (
+                  <div className="bg-emerald-50 rounded-2xl border border-emerald-100 p-6 mb-8">
+                    <h3 className="font-bold text-neutral-900 mb-3 flex items-center gap-2">
+                      <Tag className="w-4 h-4 text-emerald-500" />
+                      Deals & Promotions
+                    </h3>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex items-center gap-2">
+                        {vendor.deals.currentDeals ? (
+                          <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                        ) : (
+                          <XCircle className="w-4 h-4 text-neutral-300" />
+                        )}
+                        <span className="font-medium text-neutral-700">Active deals available</span>
+                        {vendor.deals.dealsUrl && (
+                          <a
+                            href={vendor.deals.dealsUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-primary text-xs font-semibold hover:underline inline-flex items-center gap-1"
+                          >
+                            View <ExternalLink className="w-3 h-3" />
+                          </a>
+                        )}
+                      </div>
+                      {vendor.deals.loyaltyProgram && (
+                        <div className="flex items-center gap-2">
+                          <Star className="w-4 h-4 text-amber-500" />
+                          <span className="font-medium text-neutral-700">
+                            Loyalty: {vendor.deals.loyaltyProgram}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
 
                 {vendor.tips.length > 0 && (
                   <div className="bg-amber-50 rounded-2xl border border-amber-100 p-6 mb-8">
@@ -396,6 +570,25 @@ export default function VendorDetailPage({ params }: { params: Promise<{ vendor:
                       )}
                     </Button>
                   </div>
+
+                  {vendor.taxonomy && (
+                    <div className="bg-white rounded-2xl border border-neutral-100 p-6 shadow-sm">
+                      <h3 className="font-bold text-sm text-neutral-900 mb-4 flex items-center gap-2">
+                        <Layers className="w-4 h-4 text-purple-500" />
+                        Taxonomy
+                      </h3>
+                      <div className="space-y-2 text-sm">
+                        <div className="flex justify-between">
+                          <span className="text-neutral-500 font-medium">Sector</span>
+                          <span className="font-semibold text-neutral-900">{SECTOR_LABELS[vendor.taxonomy.sector]}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-neutral-500 font-medium">Tier</span>
+                          <span className="font-semibold text-neutral-900">{TIER_LABELS[vendor.taxonomy.tier]}</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
 
                   <div className="bg-white rounded-2xl border border-neutral-100 p-6 shadow-sm">
                     <h3 className="font-bold text-sm text-neutral-900 mb-4 flex items-center gap-2">

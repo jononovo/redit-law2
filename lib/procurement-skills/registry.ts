@@ -40,6 +40,29 @@ export const VENDOR_REGISTRY: VendorSkill[] = [
     lastVerified: "2026-02-15",
     generatedBy: "manual",
     feedbackStats: { successRate: 0.94 },
+    taxonomy: {
+      sector: "retail",
+      subSectors: ["general merchandise", "electronics", "home goods", "books", "grocery"],
+      tier: "marketplace",
+      tags: ["everything store", "prime", "aws", "fba"],
+    },
+    searchDiscovery: {
+      searchApi: true,
+      mcp: false,
+      searchInternal: true,
+    },
+    buying: {
+      orderingPermission: "guest",
+      checkoutProviders: ["in_house"],
+      paymentMethods: ["card", "apple_pay", "google_pay"],
+      deliveryOptions: "same-day, next-day, standard",
+      freeDelivery: "for orders over $35 or with Prime",
+    },
+    deals: {
+      currentDeals: true,
+      dealsUrl: "https://www.amazon.com/deals",
+      loyaltyProgram: "Amazon Prime",
+    },
   },
   {
     slug: "shopify",
@@ -79,6 +102,27 @@ export const VENDOR_REGISTRY: VendorSkill[] = [
     lastVerified: "2026-02-15",
     generatedBy: "manual",
     feedbackStats: { successRate: 0.87 },
+    taxonomy: {
+      sector: "retail",
+      subSectors: ["platform", "dtc brands", "independent stores"],
+      tier: "marketplace",
+      tags: ["platform", "shopify payments", "dtc"],
+    },
+    searchDiscovery: {
+      searchApi: true,
+      mcp: false,
+      searchInternal: true,
+    },
+    buying: {
+      orderingPermission: "guest",
+      checkoutProviders: ["shopify"],
+      paymentMethods: ["card", "apple_pay", "google_pay", "klarna", "afterpay"],
+      deliveryOptions: "varies by store",
+      freeDelivery: "varies by store",
+    },
+    deals: {
+      currentDeals: false,
+    },
   },
   {
     slug: "amazon-business",
@@ -113,6 +157,29 @@ export const VENDOR_REGISTRY: VendorSkill[] = [
     version: "1.0.0",
     lastVerified: "2026-02-10",
     generatedBy: "manual",
+    taxonomy: {
+      sector: "office",
+      subSectors: ["business supplies", "bulk purchasing", "office equipment"],
+      tier: "wholesale",
+      tags: ["b2b", "tax exempt", "quantity discounts", "business prime"],
+    },
+    searchDiscovery: {
+      searchApi: false,
+      mcp: false,
+      searchInternal: true,
+    },
+    buying: {
+      orderingPermission: "registered",
+      checkoutProviders: ["in_house"],
+      paymentMethods: ["card", "invoice", "ach"],
+      deliveryOptions: "same-day, next-day, standard",
+      freeDelivery: "with Business Prime",
+    },
+    deals: {
+      currentDeals: true,
+      dealsUrl: "https://business.amazon.com/en/discover-products/deals",
+      loyaltyProgram: "Business Prime",
+    },
   },
   {
     slug: "walmart",
@@ -151,6 +218,29 @@ export const VENDOR_REGISTRY: VendorSkill[] = [
     version: "1.0.0",
     lastVerified: "2026-02-10",
     generatedBy: "manual",
+    taxonomy: {
+      sector: "retail",
+      subSectors: ["general merchandise", "grocery", "home goods", "electronics"],
+      tier: "value",
+      tags: ["everyday low prices", "walmart+", "in-store pickup"],
+    },
+    searchDiscovery: {
+      searchApi: false,
+      mcp: false,
+      searchInternal: true,
+    },
+    buying: {
+      orderingPermission: "guest",
+      checkoutProviders: ["in_house"],
+      paymentMethods: ["card", "apple_pay", "google_pay"],
+      deliveryOptions: "standard, express, in-store pickup",
+      freeDelivery: "for orders over $35 or with Walmart+",
+    },
+    deals: {
+      currentDeals: true,
+      dealsUrl: "https://www.walmart.com/shop/deals",
+      loyaltyProgram: "Walmart+",
+    },
   },
   {
     slug: "walmart-business",
@@ -184,6 +274,27 @@ export const VENDOR_REGISTRY: VendorSkill[] = [
     version: "0.1.0",
     lastVerified: "2026-02-08",
     generatedBy: "manual",
+    taxonomy: {
+      sector: "office",
+      subSectors: ["business supplies", "bulk purchasing", "janitorial"],
+      tier: "wholesale",
+      tags: ["b2b", "tax exempt", "business+"],
+    },
+    searchDiscovery: {
+      searchApi: false,
+      mcp: false,
+      searchInternal: true,
+    },
+    buying: {
+      orderingPermission: "registered",
+      checkoutProviders: ["in_house"],
+      paymentMethods: ["card", "invoice"],
+      deliveryOptions: "standard, bulk delivery",
+      freeDelivery: "for orders over $35 or with Business+",
+    },
+    deals: {
+      currentDeals: false,
+    },
   },
   {
     slug: "staples",
@@ -218,6 +329,29 @@ export const VENDOR_REGISTRY: VendorSkill[] = [
     version: "1.0.0",
     lastVerified: "2026-02-10",
     generatedBy: "manual",
+    taxonomy: {
+      sector: "office",
+      subSectors: ["office supplies", "ink & toner", "furniture", "technology"],
+      tier: "mid_range",
+      tags: ["staples advantage", "next-day delivery", "office essentials"],
+    },
+    searchDiscovery: {
+      searchApi: false,
+      mcp: false,
+      searchInternal: true,
+    },
+    buying: {
+      orderingPermission: "guest",
+      checkoutProviders: ["in_house"],
+      paymentMethods: ["card", "invoice", "apple_pay"],
+      deliveryOptions: "next-day, standard, in-store pickup",
+      freeDelivery: "for orders over $49.99",
+    },
+    deals: {
+      currentDeals: true,
+      dealsUrl: "https://www.staples.com/deals/deals/BI1703",
+      loyaltyProgram: "Staples Rewards",
+    },
   },
   {
     slug: "home-depot",
@@ -252,6 +386,29 @@ export const VENDOR_REGISTRY: VendorSkill[] = [
     version: "1.0.0",
     lastVerified: "2026-02-10",
     generatedBy: "manual",
+    taxonomy: {
+      sector: "home",
+      subSectors: ["building materials", "tools", "appliances", "plumbing", "electrical", "paint"],
+      tier: "mid_range",
+      tags: ["pro xtra", "diy", "contractors", "home improvement"],
+    },
+    searchDiscovery: {
+      searchApi: false,
+      mcp: false,
+      searchInternal: true,
+    },
+    buying: {
+      orderingPermission: "guest",
+      checkoutProviders: ["in_house"],
+      paymentMethods: ["card", "apple_pay", "google_pay"],
+      deliveryOptions: "standard, express, ship-to-store, in-store pickup",
+      freeDelivery: "for orders over $45",
+    },
+    deals: {
+      currentDeals: true,
+      dealsUrl: "https://www.homedepot.com/c/savings_center",
+      loyaltyProgram: "Pro Xtra",
+    },
   },
   {
     slug: "lowes",
@@ -286,6 +443,29 @@ export const VENDOR_REGISTRY: VendorSkill[] = [
     version: "1.0.0",
     lastVerified: "2026-02-10",
     generatedBy: "manual",
+    taxonomy: {
+      sector: "home",
+      subSectors: ["building materials", "tools", "appliances", "plumbing", "electrical"],
+      tier: "mid_range",
+      tags: ["pro accounts", "price match", "home improvement"],
+    },
+    searchDiscovery: {
+      searchApi: false,
+      mcp: false,
+      searchInternal: true,
+    },
+    buying: {
+      orderingPermission: "guest",
+      checkoutProviders: ["in_house"],
+      paymentMethods: ["card", "apple_pay", "google_pay"],
+      deliveryOptions: "standard, express, in-store pickup",
+      freeDelivery: "for orders over $45",
+    },
+    deals: {
+      currentDeals: true,
+      dealsUrl: "https://www.lowes.com/l/shop/weekly-ad",
+      loyaltyProgram: "MyLowe's Rewards",
+    },
   },
   {
     slug: "office-depot",
@@ -319,6 +499,28 @@ export const VENDOR_REGISTRY: VendorSkill[] = [
     version: "0.1.0",
     lastVerified: "2026-02-05",
     generatedBy: "manual",
+    taxonomy: {
+      sector: "office",
+      subSectors: ["office supplies", "ink & toner", "furniture", "technology", "cleaning"],
+      tier: "mid_range",
+      tags: ["bsd accounts", "contract pricing", "next-day delivery"],
+    },
+    searchDiscovery: {
+      searchApi: false,
+      mcp: false,
+      searchInternal: true,
+    },
+    buying: {
+      orderingPermission: "guest",
+      checkoutProviders: ["in_house"],
+      paymentMethods: ["card", "invoice"],
+      deliveryOptions: "next-day, standard, in-store pickup",
+      freeDelivery: "for orders over $45",
+    },
+    deals: {
+      currentDeals: true,
+      dealsUrl: "https://www.officedepot.com/a/browse/deals/N=5+588062/",
+    },
   },
   {
     slug: "uline",
@@ -353,6 +555,27 @@ export const VENDOR_REGISTRY: VendorSkill[] = [
     version: "0.1.0",
     lastVerified: "2026-02-05",
     generatedBy: "manual",
+    taxonomy: {
+      sector: "industrial",
+      subSectors: ["packaging", "shipping supplies", "janitorial", "warehouse equipment", "safety"],
+      tier: "utility",
+      tags: ["fast shipping", "quantity breaks", "net 30", "13 warehouses"],
+    },
+    searchDiscovery: {
+      searchApi: false,
+      mcp: false,
+      searchInternal: true,
+    },
+    buying: {
+      orderingPermission: "guest",
+      checkoutProviders: ["in_house"],
+      paymentMethods: ["card", "invoice", "ach"],
+      deliveryOptions: "1-2 day from nearest warehouse",
+      returnsPolicy: "365-day returns",
+    },
+    deals: {
+      currentDeals: false,
+    },
   },
   {
     slug: "grainger",
@@ -387,6 +610,26 @@ export const VENDOR_REGISTRY: VendorSkill[] = [
     version: "0.1.0",
     lastVerified: "2026-02-05",
     generatedBy: "manual",
+    taxonomy: {
+      sector: "industrial",
+      subSectors: ["mro", "safety", "electrical", "plumbing", "hvac", "hand tools", "power tools"],
+      tier: "premium",
+      tags: ["mro leader", "contract pricing", "sds available", "same-day shipping"],
+    },
+    searchDiscovery: {
+      searchApi: false,
+      mcp: false,
+      searchInternal: true,
+    },
+    buying: {
+      orderingPermission: "registered",
+      checkoutProviders: ["in_house"],
+      paymentMethods: ["card", "invoice", "ach", "wire"],
+      deliveryOptions: "same-day, next-day, standard",
+    },
+    deals: {
+      currentDeals: false,
+    },
   },
   {
     slug: "newegg",
@@ -421,6 +664,28 @@ export const VENDOR_REGISTRY: VendorSkill[] = [
     version: "0.1.0",
     lastVerified: "2026-02-05",
     generatedBy: "manual",
+    taxonomy: {
+      sector: "electronics",
+      subSectors: ["computer components", "peripherals", "networking", "gaming", "consumer electronics"],
+      tier: "mid_range",
+      tags: ["pc building", "shell shocker", "tech deals", "spec filtering"],
+    },
+    searchDiscovery: {
+      searchApi: false,
+      mcp: false,
+      searchInternal: true,
+    },
+    buying: {
+      orderingPermission: "guest",
+      checkoutProviders: ["in_house"],
+      paymentMethods: ["card", "apple_pay", "google_pay", "crypto"],
+      deliveryOptions: "standard, expedited",
+      returnsPolicy: "30-day returns on most items",
+    },
+    deals: {
+      currentDeals: true,
+      dealsUrl: "https://www.newegg.com/todays-deals",
+    },
   },
   {
     slug: "bh-photo",
@@ -455,6 +720,29 @@ export const VENDOR_REGISTRY: VendorSkill[] = [
     version: "0.1.0",
     lastVerified: "2026-02-05",
     generatedBy: "manual",
+    taxonomy: {
+      sector: "electronics",
+      subSectors: ["cameras", "audio", "lighting", "pro video", "computers", "drones"],
+      tier: "premium",
+      tags: ["no sales tax", "pro gear", "used equipment", "photography"],
+    },
+    searchDiscovery: {
+      searchApi: false,
+      mcp: false,
+      searchInternal: true,
+    },
+    buying: {
+      orderingPermission: "guest",
+      checkoutProviders: ["in_house"],
+      paymentMethods: ["card", "apple_pay", "google_pay"],
+      deliveryOptions: "standard, expedited",
+      freeDelivery: "for orders over $49",
+      returnsPolicy: "30-day returns",
+    },
+    deals: {
+      currentDeals: true,
+      dealsUrl: "https://www.bhphotovideo.com/c/browse/Deal-Zone/ci/17906",
+    },
   },
   {
     slug: "mcmaster-carr",
@@ -488,6 +776,26 @@ export const VENDOR_REGISTRY: VendorSkill[] = [
     version: "0.1.0",
     lastVerified: "2026-02-05",
     generatedBy: "manual",
+    taxonomy: {
+      sector: "industrial",
+      subSectors: ["fasteners", "raw materials", "pneumatics", "hydraulics", "bearings", "hardware"],
+      tier: "premium",
+      tags: ["next-day delivery", "cad models", "fixed pricing", "engineering grade"],
+    },
+    searchDiscovery: {
+      searchApi: false,
+      mcp: false,
+      searchInternal: true,
+    },
+    buying: {
+      orderingPermission: "registered",
+      checkoutProviders: ["in_house"],
+      paymentMethods: ["card", "invoice", "ach"],
+      deliveryOptions: "next-day standard",
+    },
+    deals: {
+      currentDeals: false,
+    },
   },
 ];
 
@@ -499,9 +807,23 @@ export function getVendorsByCategory(category: string): VendorSkill[] {
   return VENDOR_REGISTRY.filter(v => v.category === category);
 }
 
+export function getVendorsBySector(sector: string): VendorSkill[] {
+  return VENDOR_REGISTRY.filter(v => v.taxonomy?.sector === sector);
+}
+
+export function getVendorsByTier(tier: string): VendorSkill[] {
+  return VENDOR_REGISTRY.filter(v => v.taxonomy?.tier === tier);
+}
+
 export function searchVendors(query: string): VendorSkill[] {
   const q = query.toLowerCase();
   return VENDOR_REGISTRY.filter(
-    v => v.name.toLowerCase().includes(q) || v.slug.includes(q) || v.category.includes(q)
+    v =>
+      v.name.toLowerCase().includes(q) ||
+      v.slug.includes(q) ||
+      v.category.includes(q) ||
+      v.taxonomy?.sector.includes(q) ||
+      v.taxonomy?.subSectors.some(s => s.toLowerCase().includes(q)) ||
+      v.taxonomy?.tags?.some(t => t.toLowerCase().includes(q))
   );
 }

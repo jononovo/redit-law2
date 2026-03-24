@@ -52,4 +52,19 @@ export interface LLMCheckoutAnalysis {
   businessShipping: boolean;
   capabilities: string[];
   tips: string[];
+  sector?: string;
+  subSectors?: string[];
+  tier?: string;
+  tags?: string[];
+  searchApi?: boolean;
+  mcp?: boolean;
+  orderingPermission?: string;
+  checkoutProviders?: string[];
+  paymentMethods?: string[];
+  deliveryOptions?: string;
+  freeDelivery?: string;
+  returnsPolicy?: string;
+  currentDeals?: boolean;
+  dealsUrl?: string;
+  loyaltyProgram?: string;
 }

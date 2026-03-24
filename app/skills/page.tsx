@@ -21,6 +21,8 @@ import {
   CheckCircle2,
   Package,
   TrendingUp,
+  Layers,
+  Tag,
 } from "lucide-react";
 import { VENDOR_REGISTRY } from "@/lib/procurement-skills/registry";
 import {
@@ -29,9 +31,13 @@ import {
   CHECKOUT_METHOD_COLORS,
   CAPABILITY_LABELS,
   CATEGORY_LABELS,
+  SECTOR_LABELS,
+  TIER_LABELS,
   CheckoutMethod,
   VendorCapability,
   VendorCategory,
+  VendorSector,
+  VendorTier,
   SkillMaturity,
   VendorSkill,
 } from "@/lib/procurement-skills/types";
@@ -83,6 +89,12 @@ function VendorCard({ vendor }: { vendor: VendorSkill }) {
             <div className="flex items-center gap-1.5 text-xs text-neutral-500">
               {CATEGORY_ICONS[vendor.category]}
               <span>{CATEGORY_LABELS[vendor.category]}</span>
+              {vendor.taxonomy && (
+                <>
+                  <span className="text-neutral-300 mx-0.5">·</span>
+                  <span>{TIER_LABELS[vendor.taxonomy.tier]}</span>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -90,6 +102,24 @@ function VendorCard({ vendor }: { vendor: VendorSkill }) {
           {maturity.label}
         </Badge>
       </div>
+
+      {vendor.taxonomy && vendor.taxonomy.subSectors.length > 0 && (
+        <div className="flex flex-wrap gap-1 mb-3">
+          {vendor.taxonomy.subSectors.slice(0, 3).map(sub => (
+            <span
+              key={sub}
+              className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-medium bg-purple-50 text-purple-600 border border-purple-100"
+            >
+              {sub}
+            </span>
+          ))}
+          {vendor.taxonomy.subSectors.length > 3 && (
+            <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-medium bg-neutral-50 text-neutral-500">
+              +{vendor.taxonomy.subSectors.length - 3} more
+            </span>
+          )}
+        </div>
+      )}
 
       <div className="flex flex-wrap gap-1.5 mb-4">
         {vendor.checkoutMethods.slice(0, 3).map(method => (
@@ -132,14 +162,22 @@ function VendorCard({ vendor }: { vendor: VendorSkill }) {
           ))}
           <span className="text-xs text-neutral-500 ml-1">Agent Score</span>
         </div>
-        {vendor.feedbackStats?.successRate != null && (
-          <div className="flex items-center gap-1 text-xs" data-testid={`stat-success-${vendor.slug}`}>
-            <TrendingUp className="w-3 h-3 text-green-500" />
-            <span className="font-semibold text-green-700">
-              {Math.round(vendor.feedbackStats.successRate * 100)}%
+        <div className="flex items-center gap-2">
+          {vendor.deals?.currentDeals && (
+            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-100" data-testid={`badge-deals-${vendor.slug}`}>
+              <Tag className="w-2.5 h-2.5" />
+              Deals
             </span>
-          </div>
-        )}
+          )}
+          {vendor.feedbackStats?.successRate != null && (
+            <div className="flex items-center gap-1 text-xs" data-testid={`stat-success-${vendor.slug}`}>
+              <TrendingUp className="w-3 h-3 text-green-500" />
+              <span className="font-semibold text-green-700">
+                {Math.round(vendor.feedbackStats.successRate * 100)}%
+              </span>
+            </div>
+          )}
+        </div>
       </div>
     </Link>
   );
@@ -151,6 +189,8 @@ type FilterState = {
   checkoutMethods: CheckoutMethod[];
   capabilities: VendorCapability[];
   maturity: SkillMaturity[];
+  sectors: VendorSector[];
+  tiers: VendorTier[];
 };
 
 function FilterCheckbox({
@@ -190,8 +230,26 @@ export default function SkillsCatalogPage() {
     checkoutMethods: [],
     capabilities: [],
     maturity: [],
+    sectors: [],
+    tiers: [],
   });
   const [showMobileFilters, setShowMobileFilters] = useState(false);
+
+  const availableSectors = useMemo(() => {
+    const sectors = new Set<VendorSector>();
+    for (const v of VENDOR_REGISTRY) {
+      if (v.taxonomy) sectors.add(v.taxonomy.sector);
+    }
+    return [...sectors];
+  }, []);
+
+  const availableTiers = useMemo(() => {
+    const tiers = new Set<VendorTier>();
+    for (const v of VENDOR_REGISTRY) {
+      if (v.taxonomy) tiers.add(v.taxonomy.tier);
+    }
+    return [...tiers];
+  }, []);
 
   const filteredVendors = useMemo(() => {
     let results = VENDOR_REGISTRY;
@@ -199,7 +257,12 @@ export default function SkillsCatalogPage() {
     if (filters.search) {
       const q = filters.search.toLowerCase();
       results = results.filter(
-        v => v.name.toLowerCase().includes(q) || v.slug.includes(q)
+        v =>
+          v.name.toLowerCase().includes(q) ||
+          v.slug.includes(q) ||
+          v.taxonomy?.sector.includes(q) ||
+          v.taxonomy?.subSectors.some(s => s.toLowerCase().includes(q)) ||
+          v.taxonomy?.tags?.some(t => t.toLowerCase().includes(q))
       );
     }
 
@@ -223,6 +286,18 @@ export default function SkillsCatalogPage() {
       results = results.filter(v => filters.maturity.includes(v.maturity));
     }
 
+    if (filters.sectors.length > 0) {
+      results = results.filter(v =>
+        v.taxonomy && filters.sectors.includes(v.taxonomy.sector)
+      );
+    }
+
+    if (filters.tiers.length > 0) {
+      results = results.filter(v =>
+        v.taxonomy && filters.tiers.includes(v.taxonomy.tier)
+      );
+    }
+
     return results;
   }, [filters]);
 
@@ -230,7 +305,9 @@ export default function SkillsCatalogPage() {
     filters.categories.length +
     filters.checkoutMethods.length +
     filters.capabilities.length +
-    filters.maturity.length;
+    filters.maturity.length +
+    filters.sectors.length +
+    filters.tiers.length;
 
   const toggleFilter = <K extends keyof FilterState>(
     key: K,
@@ -246,19 +323,51 @@ export default function SkillsCatalogPage() {
   };
 
   const clearFilters = () =>
-    setFilters({ search: "", categories: [], checkoutMethods: [], capabilities: [], maturity: [] });
+    setFilters({ search: "", categories: [], checkoutMethods: [], capabilities: [], maturity: [], sectors: [], tiers: [] });
 
   const groupedVendors = useMemo(() => {
     const groups: Record<string, VendorSkill[]> = {};
     for (const v of filteredVendors) {
-      if (!groups[v.category]) groups[v.category] = [];
-      groups[v.category].push(v);
+      const key = v.taxonomy?.sector || v.category;
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(v);
     }
     return groups;
   }, [filteredVendors]);
 
   const filterSidebar = (
     <div className="space-y-6">
+      <div>
+        <h4 className="font-bold text-sm uppercase tracking-wider text-neutral-400 mb-3">Sector</h4>
+        <div className="space-y-2">
+          {availableSectors.map(sector => (
+            <FilterCheckbox
+              key={sector}
+              label={SECTOR_LABELS[sector]}
+              checked={filters.sectors.includes(sector)}
+              onChange={() => toggleFilter("sectors", sector)}
+              icon={<Layers className="w-4 h-4 text-purple-500" />}
+              testId={`filter-sector-${sector}`}
+            />
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <h4 className="font-bold text-sm uppercase tracking-wider text-neutral-400 mb-3">Tier</h4>
+        <div className="space-y-2">
+          {availableTiers.map(tier => (
+            <FilterCheckbox
+              key={tier}
+              label={TIER_LABELS[tier]}
+              checked={filters.tiers.includes(tier)}
+              onChange={() => toggleFilter("tiers", tier)}
+              testId={`filter-tier-${tier}`}
+            />
+          ))}
+        </div>
+      </div>
+
       <div>
         <h4 className="font-bold text-sm uppercase tracking-wider text-neutral-400 mb-3">Category</h4>
         <div className="space-y-2">
@@ -352,7 +461,7 @@ export default function SkillsCatalogPage() {
               </h1>
               <p className="text-xl text-neutral-500 font-medium leading-relaxed">
                 Curated procurement skills that teach your AI agent how to shop at {VENDOR_REGISTRY.length}+ vendors.
-                Search, compare, and purchase — all through CreditClaw.
+                Search by sector, tier, payment method, or capability.
               </p>
             </div>
 
@@ -361,7 +470,7 @@ export default function SkillsCatalogPage() {
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400" />
                 <Input
                   type="text"
-                  placeholder="Search vendors (e.g., Walmart, Staples, electronics...)"
+                  placeholder="Search by vendor, sector, sub-sector, or tag..."
                   className="h-14 pl-12 pr-6 rounded-2xl bg-white border-2 border-neutral-100 shadow-lg shadow-neutral-900/5 text-base placeholder:text-neutral-400 focus-visible:ring-primary focus-visible:border-primary"
                   value={filters.search}
                   onChange={e => setFilters(prev => ({ ...prev, search: e.target.value }))}
@@ -375,7 +484,9 @@ export default function SkillsCatalogPage() {
               <span className="text-neutral-300">|</span>
               <span>{VENDOR_REGISTRY.filter(v => v.maturity === "verified").length} verified</span>
               <span className="text-neutral-300">|</span>
-              <span>{new Set(VENDOR_REGISTRY.map(v => v.category)).size} categories</span>
+              <span>{availableSectors.length} sectors</span>
+              <span className="text-neutral-300">|</span>
+              <span>{availableTiers.length} tiers</span>
             </div>
           </div>
         </section>
@@ -384,7 +495,7 @@ export default function SkillsCatalogPage() {
           <div className="container mx-auto px-6">
             <div className="flex gap-8">
               <aside className="hidden lg:block w-64 flex-shrink-0">
-                <div className="sticky top-24 bg-white rounded-2xl border border-neutral-100 p-6 shadow-sm">
+                <div className="sticky top-24 bg-white rounded-2xl border border-neutral-100 p-6 shadow-sm max-h-[calc(100vh-8rem)] overflow-y-auto">
                   <div className="flex items-center gap-2 mb-6">
                     <Filter className="w-4 h-4 text-neutral-500" />
                     <h3 className="font-bold text-neutral-900">Filters</h3>
@@ -444,15 +555,15 @@ export default function SkillsCatalogPage() {
                   </div>
                 ) : (
                   <div className="space-y-10">
-                    {(Object.entries(groupedVendors) as [VendorCategory, VendorSkill[]][]).map(
-                      ([category, vendors]) => (
-                        <div key={category}>
+                    {Object.entries(groupedVendors).map(
+                      ([groupKey, vendors]) => (
+                        <div key={groupKey}>
                           <div className="flex items-center gap-2 mb-4">
                             <div className="w-8 h-8 rounded-lg bg-neutral-100 flex items-center justify-center">
-                              {CATEGORY_ICONS[category]}
+                              {CATEGORY_ICONS[groupKey as VendorCategory] || <Layers className="w-4 h-4 text-purple-500" />}
                             </div>
                             <h2 className="text-lg font-bold text-neutral-900">
-                              {CATEGORY_LABELS[category]}
+                              {SECTOR_LABELS[groupKey as VendorSector] || CATEGORY_LABELS[groupKey as VendorCategory] || groupKey}
                             </h2>
                             <span className="text-sm text-neutral-400 font-medium">
                               ({vendors.length})
@@ -477,11 +588,17 @@ export default function SkillsCatalogPage() {
                   Bot Discovery API
                 </h3>
                 <p className="text-neutral-500 font-medium mb-6">
-                  Your agent can discover and load vendor skills programmatically.
+                  Your agent can discover and load vendor skills programmatically — filter by sector, tier, payment method, and more.
                 </p>
-                <div className="bg-neutral-900 rounded-xl p-4 text-left">
-                  <code className="text-sm text-green-400 font-mono">
-                    GET /api/v1/bot/skills?category=office&capability=bulk_pricing
+                <div className="bg-neutral-900 rounded-xl p-4 text-left space-y-2">
+                  <code className="text-sm text-green-400 font-mono block">
+                    GET /api/v1/bot/skills?sector=office&tier=mid_range
+                  </code>
+                  <code className="text-sm text-green-400 font-mono block">
+                    GET /api/v1/bot/skills?payment_method=card&ordering_permission=guest
+                  </code>
+                  <code className="text-sm text-green-400 font-mono block">
+                    GET /api/v1/bot/skills?has_deals=true&capability=bulk_pricing
                   </code>
                 </div>
                 <div className="flex items-center justify-center gap-6 mt-6 text-sm">
