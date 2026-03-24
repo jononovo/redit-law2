@@ -263,8 +263,7 @@ Re-exports all taxonomy types/labels from `taxonomy/`. Defines domain interfaces
 Each vendor is its own file exporting a single `VendorSkill` object. Barrel-exported via `index.ts`.
 - 14 vendor files: `amazon.ts`, `shopify.ts`, `amazon-business.ts`, `walmart.ts`, `walmart-business.ts`, `staples.ts`, `home-depot.ts`, `lowes.ts`, `office-depot.ts`, `uline.ts`, `grainger.ts`, `newegg.ts`, `bh-photo.ts`, `mcmaster-carr.ts`
 
-**Registry** (`lib/procurement-skills/registry.ts`):
-Imports all vendor objects from `vendors/`, assembles `VENDOR_REGISTRY` array. Exports lookup helpers: `getVendorBySlug`, `getVendorsByCategory`, `getVendorsBySector`, `getVendorsByTier`, `searchVendors`.
+**Registry** — DELETED in Phase 5. The in-memory `VENDOR_REGISTRY` has been removed. All surfaces (catalog UI, vendor detail, export, claim modal) now read from the `brand_index` database table via the internal API or bot API.
 
 **Generator** (`lib/procurement-skills/generator.ts`):
 Converts `VendorSkill` objects into `SKILL.md` markdown with frontmatter, taxonomy, discovery, buying, and deals sections.
@@ -277,8 +276,13 @@ Converts `VendorSkill` objects into `SKILL.md` markdown with frontmatter, taxono
 **Builder** (`lib/procurement-skills/builder/`):
 LLM-powered skill generation. `types.ts` includes `LLMCheckoutAnalysis` with taxonomy inference fields.
 
+**Internal Brands API** (`app/api/internal/brands/`):
+Human-facing catalog data source. Separate from the bot API — returns raw BrandIndex rows with JSONB, no agent-specific transformations.
+- `GET /api/internal/brands/search` — paginated search with all filters (sector, tier, maturity, checkout, capability, etc.) + facets
+- `GET /api/internal/brands/[slug]` — single brand detail lookup
+
 **Brand Index** (`brand_index` table, `server/storage/brand-index.ts`):
-Database-backed brand/vendor registry replacing the in-memory `VENDOR_REGISTRY` for the agent-facing API. Single denormalized PostgreSQL table with:
+Sole source of truth for all brand data across all surfaces (bots, humans, exports). Single denormalized PostgreSQL table with:
 - Flat indexed columns for every filterable field (sector, tier, maturity, ordering, etc.)
 - `carries_brands` text[] array (GIN-indexed) — distinguishes retailers from HQ brands (populated = retailer)
 - `brand_data` jsonb — full VendorSkill object for retrieval

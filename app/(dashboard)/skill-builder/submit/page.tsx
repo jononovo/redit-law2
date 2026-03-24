@@ -294,13 +294,13 @@ export default function MySkillsPage() {
     searchTimer.current = setTimeout(async () => {
       setClaimSearching(true);
       try {
-        const res = await fetch(`/api/v1/bot/skills?search=${encodeURIComponent(q.trim())}`);
+        const res = await fetch(`/api/internal/brands/search?q=${encodeURIComponent(q.trim())}&limit=8`);
         if (res.ok) {
           const data = await res.json();
           setClaimSearchResults(
-            (data.vendors || []).slice(0, 8).map((v: { slug: string; name: string }) => ({
-              slug: v.slug,
-              name: v.name,
+            (data.brands || []).slice(0, 8).map((b: { slug: string; name: string }) => ({
+              slug: b.slug,
+              name: b.name,
             }))
           );
         }
