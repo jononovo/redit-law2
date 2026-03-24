@@ -1,0 +1,84 @@
+026-03-23 14:39:25.06
+3da95184
+User
+Error: Failed to find Server Action. This request might be from an older or newer deployment.
+2026-03-23 14:39:25.06
+3da95184
+User
+at ignore-listed frames
+2026-03-23 14:39:25.33
+3da95184
+User
+Error: Failed to find Server Action. This request might be from an older or newer deployment.
+2026-03-23 14:39:25.33
+3da95184
+User
+Read more: https://nextjs.org/docs/messages/failed-to-find-server-action
+2026-03-23 14:39:25.33
+3da95184
+User
+at ignore-listed frames
+2026-03-23 14:39:25.54
+3da95184
+User
+Error: Failed to find Server Action. This request might be from an older or newer deployment.
+2026-03-23 14:39:25.54
+3da95184
+User
+at ignore-listed frames
+2026-03-23 14:39:25.54
+3da95184
+User
+Read more: https://nextjs.org/docs/messages/failed-to-find-server-action
+2026-03-23 14:39:25.82
+3da95184
+User
+Read more: https://nextjs.org/docs/messages/failed-to-find-server-action
+2026-03-23 14:39:25.82
+3da95184
+User
+at ignore-listed frames
+2026-03-23 14:39:25.82
+3da95184
+User
+Error: Failed to find Server Action. This request might be from an older or newer deployment.
+2026-03-23 14:39:25.99
+3da95184
+User
+Error: Failed to find Server Action. This request might be from an older or newer deployment.
+2026-03-23 14:39:25.99
+3da95184
+User
+Read more: https://nextjs.org/docs/messages/failed-to-find-server-action
+2026-03-23 14:39:25.99
+3da95184
+User
+at ignore-listed frames
+2026-03-23 14:39:26.15
+3da95184
+User
+Error: Failed to find Server Action. This request might be from an older or newer deployment.
+2026-03-23 14:39:26.15
+3da95184
+User
+Read more: https://nextjs.org/docs/messages/failed-to-find-server-action
+2026-03-23 14:39:26.15
+3da95184
+User
+at ignore-listed frames
+2026-03-23 14:39:26.30
+3da95184
+User
+Error: Failed to find Server Action. This request might be from an older or newer deployment.
+2026-03-23 14:39:26.30
+3da95184
+User
+Read more: https://nextjs.org/docs/messages/failed-to-find-server-action
+2026-03-23 15:49:38.10
+3da95184
+User
+params: izxdEAktL3SaNiUM5OtfKXhyXhn1,mictown721@gmail.com,Mike Tang
+2026-03-23 15:49:38.10
+3da95184
+User
+Session creation failed: Failed query: insert into "owners" ("id", "uid", "email", "display_name", "stripe_customer_id", "flags", "onboarded_at", "created_at", "updated_at") values (default, $1, $2, $3, default, default, default, default, default) returning "id", "uid", "email", "display_name", "stripe_customer_id", "flags", "onboarded_at", "created_at", "updated_at"
