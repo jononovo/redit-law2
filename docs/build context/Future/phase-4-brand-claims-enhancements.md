@@ -527,7 +527,7 @@ const handleClaimBrand = async (slug: string) => {
 
 ### Risk assessment
 - Uses existing Dialog component (Radix-based, well-tested in codebase).
-- Uses existing search API (`/api/v1/bot/skills?search=`) — no new backend needed.
+- Uses existing search API (`/api/v1/bot/skills?search=`) — no new backend needed. **Note:** This is pragmatic for Phase 4 — we're routing human UI through the bot API to avoid creating a new endpoint. In Phase 5, when we clean up the data flow, this should be replaced with a dedicated internal route (`/api/internal/brands/search` or a server-side `storage.searchBrands()` call) so the bot API stays focused on external agent consumers.
 - Uses existing claim API (`POST /api/v1/brands/[slug]/claim`) — no changes.
 - All error states already defined by the claim API (unauthorized, already_claimed, free_email_blocked, pending_claim_exists).
 
@@ -657,6 +657,9 @@ New:
   {claimState === "loading" ? "Claiming..." : "Claim this brand"}
 </Button>
 ```
+
+#### 4D. Badge text clarification: "Claimed" vs "Official"
+The `BrandClaimButton` component only renders for the **logged-in claimer** — it shows their personal claim status ("Claimed", "Claim Pending"). Other visitors never see these badges. Instead, all visitors see the **maturity badge** from `MATURITY_CONFIG`, which already shows "Official" for brands with `maturity === 'official'`. This is correct behavior — "Official" is the public-facing label, "Claimed" is the private owner-facing label. No changes needed, but documenting this explicitly to avoid future confusion.
 
 ### Risk assessment
 - Visual changes only to one component in one file. No functional change to the claim flow.
@@ -844,9 +847,10 @@ Phase 4 is unaffected because it works entirely through database-backed APIs (cl
 ### What to do
 
 #### 1. Switch catalog pages to database
-- `app/skills/page.tsx` — Replace `VENDOR_REGISTRY` import with a fetch to `/api/v1/bot/skills` (or a server-side call to `storage.searchBrands()`). Use the facets response from `storage.getAllBrandFacets()` for filter sidebar options instead of computing from the in-memory array.
-- `app/skills/[vendor]/page.tsx` — Replace `getVendorBySlug()` with a fetch to the DB (or server-side `storage.getBrandBySlug()`).
-- Remove the in-memory `.filter()` chains and use the API's query parameters for filtering/sorting.
+- `app/skills/page.tsx` — Replace `VENDOR_REGISTRY` import with a server-side call to `storage.searchBrands()` or a dedicated internal API route. **Do NOT route through `/api/v1/bot/skills`** — that API is designed for external agent consumers with its own response shape, rate limiting, and auth model. The human-facing catalog should call storage directly (server component) or through a dedicated internal route (e.g. `/api/internal/brands/search`). Keep audiences separate even though they read from the same table. Use the facets response from `storage.getAllBrandFacets()` for filter sidebar options instead of computing from the in-memory array.
+- `app/skills/[vendor]/page.tsx` — Replace `getVendorBySlug()` with a server-side call to `storage.getBrandBySlug()`.
+- Remove the in-memory `.filter()` chains and use query parameters for filtering/sorting.
+- Also switch the Phase 4 claim modal search from `/api/v1/bot/skills?search=` to the new internal route.
 
 #### 2. Switch export route to database
 - `/api/v1/skills/export` still imports `VENDOR_REGISTRY`. Switch to read from `brand_index`.
