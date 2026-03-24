@@ -170,8 +170,12 @@ Poll every 30 seconds. Do not spawn a sub-agent until the status is `approved`.
 Construct a self-contained message for the sub-agent. The message should describe:
 1. What page the browser is on and what you've already filled
 2. Exactly where the card number and CVV fields are (or how to find them)
-3. The checkout_id and card file path
-4. What to do after filling (submit, detect result, confirm, report)
+3. The checkout_id, the encrypted card file path, and the decrypt script path
+4. What to do after filling (submit, detect result, report)
+
+You know where the card file and decrypt script are because you saved them during card
+delivery. The defaults are `.creditclaw/cards/Card-{name}-{last4}.md` and
+`.creditclaw/decrypt.js`, but update these if you saved them elsewhere.
 
 Here is a template. Replace the placeholders with your actual values:
 
@@ -192,20 +196,19 @@ If you cannot locate the fields I described, take a snapshot and look for
 the card number and CVV fields yourself.
 
 CHECKOUT_ID: {checkout_id}
-CARD_FILE: {path to encrypted card file, e.g. .creditclaw/cards/Card-ChaseD-9547.md}
+ENCRYPTED CARD FILE: {actual path, e.g. .creditclaw/cards/Card-ChaseD-9547.md}
+DECRYPT SCRIPT: {actual path, e.g. .creditclaw/decrypt.js}
 
 STEPS:
 
 1. Get the decryption key:
-   curl -X POST https://creditclaw.com/api/v1/bot/rail5/key \
-     -H "Authorization: Bearer $CREDITCLAW_API_KEY" \
-     -H "Content-Type: application/json" \
-     -d '{ "checkout_id": "{checkout_id}" }'
+   POST https://creditclaw.com/api/v1/bot/rail5/key
+   Body: { "checkout_id": "{checkout_id}" }
    Response: { "key_hex": "...", "iv_hex": "...", "tag_hex": "..." }
-   This key is single-use. If retrieval fails, abort immediately.
+   Single-use. If retrieval fails, abort immediately.
 
 2. Decrypt the card file:
-   node decrypt.js <key_hex> <iv_hex> <tag_hex> {card_file_path}
+   node {decrypt_script_path} <key_hex> <iv_hex> <tag_hex> {card_file_path}
    Output: JSON with number, exp_month, exp_year, cvv, name
 
 3. Fill the card number and CVV fields using the browser.
