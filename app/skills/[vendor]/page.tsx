@@ -32,11 +32,10 @@ import {
   Search as SearchIcon,
   Truck,
   Wallet,
+  Loader2,
 } from "lucide-react";
-import { getVendorBySlug } from "@/lib/procurement-skills/registry";
 import { generateVendorSkill } from "@/lib/procurement-skills/generator";
 import {
-  computeAgentFriendliness,
   CHECKOUT_METHOD_LABELS,
   CHECKOUT_METHOD_COLORS,
   CAPABILITY_LABELS,
@@ -50,7 +49,9 @@ import {
   VendorCapability,
   VendorCategory,
   SkillMaturity,
+  VendorSkill,
 } from "@/lib/procurement-skills/types";
+import type { BrandIndex } from "@/shared/schema";
 
 const MATURITY_CONFIG: Record<SkillMaturity, { label: string; className: string; description: string }> = {
   verified: { label: "Verified", className: "bg-green-100 text-green-700 border-green-200", description: "Tested and confirmed working by the CreditClaw team" },
@@ -185,11 +186,39 @@ function BrandClaimButton({ slug }: { slug: string }) {
 
 export default function VendorDetailPage({ params }: { params: Promise<{ vendor: string }> }) {
   const { vendor: slug } = use(params);
-  const vendor = getVendorBySlug(slug);
+  const [brand, setBrand] = useState<BrandIndex | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [notFound, setNotFound] = useState(false);
   const [copied, setCopied] = useState(false);
   const [showSkillPreview, setShowSkillPreview] = useState(false);
 
-  if (!vendor) {
+  useEffect(() => {
+    fetch(`/api/internal/brands/${slug}`)
+      .then(r => {
+        if (!r.ok) { setNotFound(true); return null; }
+        return r.json();
+      })
+      .then(data => {
+        if (data?.brand) setBrand(data.brand);
+      })
+      .catch(() => setNotFound(true))
+      .finally(() => setLoading(false));
+  }, [slug]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background text-neutral-900 font-sans">
+        <Nav />
+        <main className="py-32 text-center">
+          <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto" />
+          <p className="text-neutral-500 font-medium mt-4">Loading vendor details...</p>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  if (notFound || !brand) {
     return (
       <div className="min-h-screen bg-background text-neutral-900 font-sans">
         <Nav />
@@ -213,10 +242,11 @@ export default function VendorDetailPage({ params }: { params: Promise<{ vendor:
     );
   }
 
-  const friendliness = computeAgentFriendliness(vendor);
-  const maturity = MATURITY_CONFIG[vendor.maturity];
-  const skillMd = generateVendorSkill(vendor);
-  const skillUrl = `https://creditclaw.com/api/v1/bot/skills/${vendor.slug}`;
+  const vendor = brand.brandData as unknown as VendorSkill;
+  const friendliness = Math.min(Math.floor((brand.agentReadiness ?? 0) / 20) + 1, 5);
+  const maturity = MATURITY_CONFIG[brand.maturity as SkillMaturity] ?? MATURITY_CONFIG.draft;
+  const skillMd = brand.skillMd || generateVendorSkill(vendor);
+  const skillUrl = `https://creditclaw.com/api/v1/bot/skills/${brand.slug}`;
 
   const handleCopyUrl = () => {
     navigator.clipboard.writeText(skillUrl);
@@ -229,7 +259,7 @@ export default function VendorDetailPage({ params }: { params: Promise<{ vendor:
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `${vendor.slug}-skill.md`;
+    a.download = `${brand.slug}-skill.md`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -265,7 +295,7 @@ export default function VendorDetailPage({ params }: { params: Promise<{ vendor:
                       <Badge className={`text-xs border ${maturity.className}`} data-testid="badge-maturity">
                         {maturity.label}
                       </Badge>
-                      <BrandClaimButton slug={vendor.slug} />
+                      <BrandClaimButton slug={brand.slug} />
                     </div>
                     <div className="flex items-center gap-4 text-sm text-neutral-500">
                       <div className="flex items-center gap-1.5">
@@ -355,8 +385,8 @@ export default function VendorDetailPage({ params }: { params: Promise<{ vendor:
                       Checkout Methods
                     </h3>
                     <div className="space-y-3">
-                      {vendor.checkoutMethods.map((method, i) => {
-                        const config = vendor.methodConfig[method];
+                      {(vendor.checkoutMethods ?? []).map((method, i) => {
+                        const config = vendor.methodConfig?.[method];
                         return (
                           <div key={method} className="flex items-start gap-3">
                             <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${CHECKOUT_METHOD_COLORS[method]}`}>
@@ -395,7 +425,7 @@ export default function VendorDetailPage({ params }: { params: Promise<{ vendor:
                     </h3>
                     <div className="grid grid-cols-2 gap-2">
                       {ALL_CAPABILITIES.map(cap => {
-                        const has = vendor.capabilities.includes(cap);
+                        const has = (vendor.capabilities ?? []).includes(cap);
                         return (
                           <div key={cap} className="flex items-center gap-2">
                             {has ? (
@@ -594,7 +624,7 @@ export default function VendorDetailPage({ params }: { params: Promise<{ vendor:
                   </div>
                 )}
 
-                {vendor.tips.length > 0 && (
+                {vendor.tips?.length > 0 && (
                   <div className="bg-amber-50 rounded-2xl border border-amber-100 p-6 mb-8">
                     <h3 className="font-bold text-neutral-900 mb-3 flex items-center gap-2">
                       <Info className="w-4 h-4 text-amber-500" />

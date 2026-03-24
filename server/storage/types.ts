@@ -352,6 +352,7 @@ export interface IStorage {
   deletePendingMessagesByRef(botId: string, eventType: string, refKey: string, refValue: string): Promise<number>;
 
   searchBrands(filters: BrandSearchFilters): Promise<BrandIndex[]>;
+  searchBrandsCount(filters: BrandSearchFilters): Promise<number>;
   getBrandBySlug(slug: string): Promise<BrandIndex | null>;
   getRetailersForBrand(brandName: string): Promise<BrandIndex[]>;
   upsertBrandIndex(data: InsertBrandIndex): Promise<BrandIndex>;

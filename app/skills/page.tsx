@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import Link from "next/link";
 import { Nav } from "@/components/nav";
 import { Footer } from "@/components/footer";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Search,
   Star,
@@ -23,10 +24,9 @@ import {
   TrendingUp,
   Layers,
   Tag,
+  Loader2,
 } from "lucide-react";
-import { VENDOR_REGISTRY } from "@/lib/procurement-skills/registry";
 import {
-  computeAgentFriendliness,
   CHECKOUT_METHOD_LABELS,
   CHECKOUT_METHOD_COLORS,
   CAPABILITY_LABELS,
@@ -41,6 +41,7 @@ import {
   SkillMaturity,
   VendorSkill,
 } from "@/lib/procurement-skills/types";
+import type { BrandIndex } from "@/shared/schema";
 
 const MATURITY_CONFIG: Record<SkillMaturity, { label: string; className: string }> = {
   verified: { label: "Verified", className: "bg-green-100 text-green-700 border-green-200" },
@@ -68,45 +69,51 @@ const CHECKOUT_ICONS: Record<CheckoutMethod, React.ReactNode> = {
   browser_automation: <Monitor className="w-3 h-3" />,
 };
 
-function VendorCard({ vendor }: { vendor: VendorSkill }) {
-  const friendliness = computeAgentFriendliness(vendor);
-  const maturity = MATURITY_CONFIG[vendor.maturity];
+function VendorCard({ brand }: { brand: BrandIndex }) {
+  const vendor = brand.brandData as unknown as VendorSkill | null;
+  const friendliness = Math.min(Math.floor((brand.agentReadiness ?? 0) / 20) + 1, 5);
+  const maturity = MATURITY_CONFIG[brand.maturity as SkillMaturity] ?? MATURITY_CONFIG.draft;
+  const category = (vendor?.category ?? brand.sector) as VendorCategory;
+  const checkoutMethods = (brand.checkoutMethods ?? []) as CheckoutMethod[];
+  const capabilities = (brand.capabilities ?? []) as VendorCapability[];
+  const subSectors = brand.subSectors ?? [];
+  const tier = brand.tier as VendorTier | null;
 
   return (
     <Link
-      href={`/skills/${vendor.slug}`}
+      href={`/skills/${brand.slug}`}
       className="group block p-6 rounded-2xl bg-white border border-neutral-100 hover:border-primary/30 hover:shadow-xl transition-all duration-300"
-      data-testid={`card-vendor-${vendor.slug}`}
+      data-testid={`card-vendor-${brand.slug}`}
     >
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center gap-3">
           <div className="w-12 h-12 rounded-xl bg-neutral-50 border border-neutral-100 flex items-center justify-center text-lg font-bold text-neutral-400 group-hover:scale-105 transition-transform">
-            {vendor.name[0]}
+            {brand.name[0]}
           </div>
           <div>
             <h3 className="font-bold text-neutral-900 text-lg group-hover:text-primary transition-colors">
-              {vendor.name}
+              {brand.name}
             </h3>
             <div className="flex items-center gap-1.5 text-xs text-neutral-500">
-              {CATEGORY_ICONS[vendor.category]}
-              <span>{CATEGORY_LABELS[vendor.category]}</span>
-              {vendor.taxonomy && (
+              {CATEGORY_ICONS[category]}
+              <span>{CATEGORY_LABELS[category] ?? brand.sector}</span>
+              {tier && (
                 <>
                   <span className="text-neutral-300 mx-0.5">·</span>
-                  <span>{TIER_LABELS[vendor.taxonomy.tier]}</span>
+                  <span>{TIER_LABELS[tier]}</span>
                 </>
               )}
             </div>
           </div>
         </div>
-        <Badge className={`text-[10px] border ${maturity.className}`} data-testid={`badge-maturity-${vendor.slug}`}>
+        <Badge className={`text-[10px] border ${maturity.className}`} data-testid={`badge-maturity-${brand.slug}`}>
           {maturity.label}
         </Badge>
       </div>
 
-      {vendor.taxonomy && vendor.taxonomy.subSectors.length > 0 && (
+      {subSectors.length > 0 && (
         <div className="flex flex-wrap gap-1 mb-3">
-          {vendor.taxonomy.subSectors.slice(0, 3).map(sub => (
+          {subSectors.slice(0, 3).map(sub => (
             <span
               key={sub}
               className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-medium bg-purple-50 text-purple-600 border border-purple-100"
@@ -114,45 +121,45 @@ function VendorCard({ vendor }: { vendor: VendorSkill }) {
               {sub}
             </span>
           ))}
-          {vendor.taxonomy.subSectors.length > 3 && (
+          {subSectors.length > 3 && (
             <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-medium bg-neutral-50 text-neutral-500">
-              +{vendor.taxonomy.subSectors.length - 3} more
+              +{subSectors.length - 3} more
             </span>
           )}
         </div>
       )}
 
       <div className="flex flex-wrap gap-1.5 mb-4">
-        {vendor.checkoutMethods.slice(0, 3).map(method => (
+        {checkoutMethods.slice(0, 3).map(method => (
           <span
             key={method}
-            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold border ${CHECKOUT_METHOD_COLORS[method]}`}
+            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold border ${CHECKOUT_METHOD_COLORS[method] ?? ""}`}
           >
             {CHECKOUT_ICONS[method]}
-            {CHECKOUT_METHOD_LABELS[method]}
+            {CHECKOUT_METHOD_LABELS[method] ?? method}
           </span>
         ))}
       </div>
 
       <div className="flex flex-wrap gap-1 mb-4">
-        {vendor.capabilities.slice(0, 4).map(cap => (
+        {capabilities.slice(0, 4).map(cap => (
           <span
             key={cap}
             className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium bg-neutral-50 text-neutral-600 border border-neutral-100"
           >
             <CheckCircle2 className="w-2.5 h-2.5 text-green-500" />
-            {CAPABILITY_LABELS[cap]}
+            {CAPABILITY_LABELS[cap] ?? cap}
           </span>
         ))}
-        {vendor.capabilities.length > 4 && (
+        {capabilities.length > 4 && (
           <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-medium bg-neutral-50 text-neutral-500">
-            +{vendor.capabilities.length - 4} more
+            +{capabilities.length - 4} more
           </span>
         )}
       </div>
 
       <div className="flex items-center justify-between pt-3 border-t border-neutral-50">
-        <div className="flex items-center gap-1" data-testid={`score-friendliness-${vendor.slug}`}>
+        <div className="flex items-center gap-1" data-testid={`score-friendliness-${brand.slug}`}>
           {Array.from({ length: 5 }).map((_, i) => (
             <Star
               key={i}
@@ -164,14 +171,14 @@ function VendorCard({ vendor }: { vendor: VendorSkill }) {
           <span className="text-xs text-neutral-500 ml-1">Agent Score</span>
         </div>
         <div className="flex items-center gap-2">
-          {vendor.deals?.currentDeals && (
-            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-100" data-testid={`badge-deals-${vendor.slug}`}>
+          {brand.hasDeals && (
+            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-100" data-testid={`badge-deals-${brand.slug}`}>
               <Tag className="w-2.5 h-2.5" />
               Deals
             </span>
           )}
-          {vendor.feedbackStats?.successRate != null && (
-            <div className="flex items-center gap-1 text-xs" data-testid={`stat-success-${vendor.slug}`}>
+          {vendor?.feedbackStats?.successRate != null && (
+            <div className="flex items-center gap-1 text-xs" data-testid={`stat-success-${brand.slug}`}>
               <TrendingUp className="w-3 h-3 text-green-500" />
               <span className="font-semibold text-green-700">
                 {Math.round(vendor.feedbackStats.successRate * 100)}%
@@ -224,6 +231,8 @@ function FilterCheckbox({
   );
 }
 
+const PAGE_SIZE = 50;
+
 export default function SkillsCatalogPage() {
   const [filters, setFilters] = useState<FilterState>({
     search: "",
@@ -236,71 +245,59 @@ export default function SkillsCatalogPage() {
   });
   const [showMobileFilters, setShowMobileFilters] = useState(false);
 
-  const availableSectors = useMemo(() => {
-    const sectors = new Set<VendorSector>();
-    for (const v of VENDOR_REGISTRY) {
-      if (v.taxonomy) sectors.add(v.taxonomy.sector);
-    }
-    return [...sectors];
-  }, []);
+  const [brands, setBrands] = useState<BrandIndex[]>([]);
+  const [facets, setFacets] = useState<{ sectors: string[]; tiers: string[]; categories: string[] }>({ sectors: [], tiers: [], categories: [] });
+  const [loading, setLoading] = useState(true);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(0);
+  const searchTimer = useRef<NodeJS.Timeout | null>(null);
+  const [debouncedSearch, setDebouncedSearch] = useState("");
 
-  const availableTiers = useMemo(() => {
-    const tiers = new Set<VendorTier>();
-    for (const v of VENDOR_REGISTRY) {
-      if (v.taxonomy) tiers.add(v.taxonomy.tier);
-    }
-    return [...tiers];
-  }, []);
+  useEffect(() => {
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+    searchTimer.current = setTimeout(() => {
+      setDebouncedSearch(filters.search);
+      setPage(0);
+    }, 300);
+    return () => { if (searchTimer.current) clearTimeout(searchTimer.current); };
+  }, [filters.search]);
 
-  const filteredVendors = useMemo(() => {
-    let results = VENDOR_REGISTRY;
+  const fetchBrands = useCallback(async () => {
+    setLoading(true);
+    const params = new URLSearchParams();
+    if (debouncedSearch) params.set("q", debouncedSearch);
+    const allSectors = [...new Set([...filters.sectors, ...filters.categories])];
+    if (allSectors.length) params.set("sector", allSectors.join(","));
+    if (filters.tiers.length) params.set("tier", filters.tiers.join(","));
+    if (filters.checkoutMethods.length) params.set("checkout", filters.checkoutMethods.join(","));
+    if (filters.capabilities.length) params.set("capability", filters.capabilities.join(","));
+    if (filters.maturity.length) params.set("maturity", filters.maturity.join(","));
+    params.set("limit", String(PAGE_SIZE));
+    params.set("offset", String(page * PAGE_SIZE));
 
-    if (filters.search) {
-      const q = filters.search.toLowerCase();
-      results = results.filter(
-        v =>
-          v.name.toLowerCase().includes(q) ||
-          v.slug.includes(q) ||
-          v.taxonomy?.sector.includes(q) ||
-          v.taxonomy?.subSectors.some(s => s.toLowerCase().includes(q)) ||
-          v.taxonomy?.tags?.some(t => t.toLowerCase().includes(q))
-      );
-    }
+    try {
+      const res = await fetch(`/api/internal/brands/search?${params}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (page === 0) {
+          setBrands(data.brands ?? []);
+        } else {
+          setBrands(prev => [...prev, ...(data.brands ?? [])]);
+        }
+        setFacets(data.facets ?? { sectors: [], tiers: [], categories: [] });
+        setTotal(data.total ?? 0);
+      }
+    } catch {}
+    setLoading(false);
+  }, [debouncedSearch, filters.sectors, filters.categories, filters.tiers, filters.checkoutMethods, filters.capabilities, filters.maturity, page]);
 
-    if (filters.categories.length > 0) {
-      results = results.filter(v => filters.categories.includes(v.category));
-    }
+  useEffect(() => {
+    fetchBrands();
+  }, [fetchBrands]);
 
-    if (filters.checkoutMethods.length > 0) {
-      results = results.filter(v =>
-        filters.checkoutMethods.some(cm => v.checkoutMethods.includes(cm))
-      );
-    }
-
-    if (filters.capabilities.length > 0) {
-      results = results.filter(v =>
-        filters.capabilities.every(cap => v.capabilities.includes(cap))
-      );
-    }
-
-    if (filters.maturity.length > 0) {
-      results = results.filter(v => filters.maturity.includes(v.maturity));
-    }
-
-    if (filters.sectors.length > 0) {
-      results = results.filter(v =>
-        v.taxonomy && filters.sectors.includes(v.taxonomy.sector)
-      );
-    }
-
-    if (filters.tiers.length > 0) {
-      results = results.filter(v =>
-        v.taxonomy && filters.tiers.includes(v.taxonomy.tier)
-      );
-    }
-
-    return results;
-  }, [filters]);
+  useEffect(() => {
+    setPage(0);
+  }, [filters.sectors, filters.categories, filters.tiers, filters.checkoutMethods, filters.capabilities, filters.maturity]);
 
   const activeFilterCount =
     filters.categories.length +
@@ -323,30 +320,34 @@ export default function SkillsCatalogPage() {
     });
   };
 
-  const clearFilters = () =>
+  const clearFilters = () => {
     setFilters({ search: "", categories: [], checkoutMethods: [], capabilities: [], maturity: [], sectors: [], tiers: [] });
+    setPage(0);
+  };
 
-  const groupedVendors = useMemo(() => {
-    const groups: Record<string, VendorSkill[]> = {};
-    for (const v of filteredVendors) {
-      const key = v.taxonomy?.sector || v.category;
+  const groupedBrands = useMemo(() => {
+    const groups: Record<string, BrandIndex[]> = {};
+    for (const b of brands) {
+      const key = b.sector;
       if (!groups[key]) groups[key] = [];
-      groups[key].push(v);
+      groups[key].push(b);
     }
     return groups;
-  }, [filteredVendors]);
+  }, [brands]);
+
+  const verifiedCount = useMemo(() => brands.filter(b => b.maturity === "verified").length, [brands]);
 
   const filterSidebar = (
     <div className="space-y-6">
       <div>
         <h4 className="font-bold text-sm uppercase tracking-wider text-neutral-400 mb-3">Sector</h4>
         <div className="space-y-2">
-          {availableSectors.map(sector => (
+          {facets.sectors.map(sector => (
             <FilterCheckbox
               key={sector}
-              label={SECTOR_LABELS[sector]}
-              checked={filters.sectors.includes(sector)}
-              onChange={() => toggleFilter("sectors", sector)}
+              label={SECTOR_LABELS[sector as VendorSector] ?? sector}
+              checked={filters.sectors.includes(sector as VendorSector)}
+              onChange={() => toggleFilter("sectors", sector as VendorSector)}
               icon={<Layers className="w-4 h-4 text-purple-500" />}
               testId={`filter-sector-${sector}`}
             />
@@ -357,12 +358,12 @@ export default function SkillsCatalogPage() {
       <div>
         <h4 className="font-bold text-sm uppercase tracking-wider text-neutral-400 mb-3">Tier</h4>
         <div className="space-y-2">
-          {availableTiers.map(tier => (
+          {facets.tiers.map(tier => (
             <FilterCheckbox
               key={tier}
-              label={TIER_LABELS[tier]}
-              checked={filters.tiers.includes(tier)}
-              onChange={() => toggleFilter("tiers", tier)}
+              label={TIER_LABELS[tier as VendorTier] ?? tier}
+              checked={filters.tiers.includes(tier as VendorTier)}
+              onChange={() => toggleFilter("tiers", tier as VendorTier)}
               testId={`filter-tier-${tier}`}
             />
           ))}
@@ -461,7 +462,7 @@ export default function SkillsCatalogPage() {
                 Vendor <span className="text-primary">Skills</span> Library
               </h1>
               <p className="text-xl text-neutral-500 font-medium leading-relaxed">
-                Curated procurement skills that teach your AI agent how to shop at {VENDOR_REGISTRY.length}+ vendors.
+                Curated procurement skills that teach your AI agent how to shop at {total}+ vendors.
                 Search by sector, tier, payment method, or capability.
               </p>
             </div>
@@ -481,13 +482,13 @@ export default function SkillsCatalogPage() {
             </div>
 
             <div className="flex items-center justify-center gap-4 text-sm text-neutral-500 font-medium">
-              <span>{filteredVendors.length} vendor{filteredVendors.length !== 1 ? "s" : ""}</span>
+              <span>{total} vendor{total !== 1 ? "s" : ""}</span>
               <span className="text-neutral-300">|</span>
-              <span>{VENDOR_REGISTRY.filter(v => v.maturity === "verified").length} verified</span>
+              <span>{verifiedCount} verified</span>
               <span className="text-neutral-300">|</span>
-              <span>{availableSectors.length} sectors</span>
+              <span>{facets.sectors.length} sectors</span>
               <span className="text-neutral-300">|</span>
-              <span>{availableTiers.length} tiers</span>
+              <span>{facets.tiers.length} tiers</span>
             </div>
           </div>
         </section>
@@ -537,7 +538,31 @@ export default function SkillsCatalogPage() {
               )}
 
               <div className="flex-1 min-w-0">
-                {Object.keys(groupedVendors).length === 0 ? (
+                {loading && page === 0 ? (
+                  <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">
+                    {Array.from({ length: 6 }).map((_, i) => (
+                      <div key={i} className="p-6 rounded-2xl bg-white border border-neutral-100 animate-pulse">
+                        <div className="flex items-center gap-3 mb-4">
+                          <div className="w-12 h-12 rounded-xl bg-neutral-100" />
+                          <div className="flex-1">
+                            <div className="h-5 bg-neutral-100 rounded w-3/4 mb-2" />
+                            <div className="h-3 bg-neutral-100 rounded w-1/2" />
+                          </div>
+                        </div>
+                        <div className="flex gap-1.5 mb-4">
+                          <div className="h-5 bg-neutral-100 rounded w-20" />
+                          <div className="h-5 bg-neutral-100 rounded w-24" />
+                        </div>
+                        <div className="flex gap-1 mb-4">
+                          <div className="h-5 bg-neutral-100 rounded w-16" />
+                          <div className="h-5 bg-neutral-100 rounded w-20" />
+                          <div className="h-5 bg-neutral-100 rounded w-14" />
+                        </div>
+                        <div className="h-4 bg-neutral-100 rounded w-full mt-3 pt-3 border-t border-neutral-50" />
+                      </div>
+                    ))}
+                  </div>
+                ) : Object.keys(groupedBrands).length === 0 ? (
                   <div className="text-center py-20">
                     <div className="w-20 h-20 rounded-full bg-neutral-100 flex items-center justify-center mx-auto mb-6">
                       <Search className="w-8 h-8 text-neutral-400" />
@@ -556,8 +581,8 @@ export default function SkillsCatalogPage() {
                   </div>
                 ) : (
                   <div className="space-y-10">
-                    {Object.entries(groupedVendors).map(
-                      ([groupKey, vendors]) => (
+                    {Object.entries(groupedBrands).map(
+                      ([groupKey, groupBrands]) => (
                         <div key={groupKey}>
                           <div className="flex items-center gap-2 mb-4">
                             <div className="w-8 h-8 rounded-lg bg-neutral-100 flex items-center justify-center">
@@ -567,16 +592,37 @@ export default function SkillsCatalogPage() {
                               {SECTOR_LABELS[groupKey as VendorSector] || CATEGORY_LABELS[groupKey as VendorCategory] || groupKey}
                             </h2>
                             <span className="text-sm text-neutral-400 font-medium">
-                              ({vendors.length})
+                              ({groupBrands.length})
                             </span>
                           </div>
                           <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">
-                            {vendors.map(vendor => (
-                              <VendorCard key={vendor.slug} vendor={vendor} />
+                            {groupBrands.map(brand => (
+                              <VendorCard key={brand.slug} brand={brand} />
                             ))}
                           </div>
                         </div>
                       )
+                    )}
+
+                    {total > brands.length && (
+                      <div className="flex justify-center mt-8">
+                        <Button
+                          variant="outline"
+                          onClick={() => setPage(p => p + 1)}
+                          disabled={loading}
+                          className="rounded-2xl px-8 font-semibold"
+                          data-testid="button-load-more"
+                        >
+                          {loading ? (
+                            <>
+                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                              Loading...
+                            </>
+                          ) : (
+                            `Load more vendors (${brands.length} of ${total})`
+                          )}
+                        </Button>
+                      </div>
                     )}
                   </div>
                 )}

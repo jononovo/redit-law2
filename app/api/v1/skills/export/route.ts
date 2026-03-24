@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth/session";
 import { storage } from "@/server/storage";
-import { VENDOR_REGISTRY } from "@/lib/procurement-skills/registry";
-import type { VendorSkill } from "@/lib/procurement-skills/types";
 
 export async function GET(req: NextRequest) {
   try {
@@ -24,6 +22,13 @@ export async function GET(req: NextRequest) {
       }
     }
 
+    const allBrands = await storage.searchBrands({
+      maturities: ["verified", "official"],
+      sortBy: "name",
+      sortDir: "asc",
+      limit: 500,
+    });
+
     const report: Array<{
       vendorSlug: string;
       vendorName: string;
@@ -39,11 +44,11 @@ export async function GET(req: NextRequest) {
       };
     }> = [];
 
-    for (const vendor of VENDOR_REGISTRY) {
-      const activeVersion = await storage.getActiveVersion(vendor.slug);
+    for (const brand of allBrands) {
+      const activeVersion = await storage.getActiveVersion(brand.slug);
       if (!activeVersion) continue;
 
-      const lastExport = exportsByVendor[vendor.slug];
+      const lastExport = exportsByVendor[brand.slug];
 
       let status: "new" | "updated" | "up_to_date";
       let lastExportedVersion: string | null = null;
@@ -61,8 +66,8 @@ export async function GET(req: NextRequest) {
 
       if (status !== "up_to_date") {
         report.push({
-          vendorSlug: vendor.slug,
-          vendorName: vendor.name,
+          vendorSlug: brand.slug,
+          vendorName: brand.name,
           currentVersion: activeVersion.version,
           lastExportedVersion,
           status,
