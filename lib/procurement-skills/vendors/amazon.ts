@@ -42,7 +42,7 @@ export const amazon: VendorSkill = {
   taxonomy: {
     sector: "retail",
     subSectors: ["general merchandise", "electronics", "home goods", "books", "grocery"],
-    tier: "marketplace",
+    tier: "value",
     tags: ["everything store", "prime", "aws", "fba"],
   },
   searchDiscovery: {

@@ -3,11 +3,13 @@ export type {
   VendorCapability,
   VendorCategory,
   VendorSector,
+  BrandTier,
   VendorTier,
   OrderingPermission,
   CheckoutProvider,
   PaymentMethod,
   SkillMaturity,
+  BrandType,
 } from "./taxonomy";
 
 export {
@@ -16,14 +18,16 @@ export {
   CAPABILITY_LABELS,
   CATEGORY_LABELS,
   SECTOR_LABELS,
+  BRAND_TIER_LABELS,
   TIER_LABELS,
   ORDERING_PERMISSION_LABELS,
   CHECKOUT_PROVIDER_LABELS,
   PAYMENT_METHOD_LABELS,
+  BRAND_TYPE_LABELS,
 } from "./taxonomy";
 
 import type { VendorSector } from "./taxonomy/sectors";
-import type { VendorTier } from "./taxonomy/tiers";
+import type { BrandTier } from "./taxonomy/tiers";
 import type { VendorCategory } from "./taxonomy/categories";
 import type { CheckoutMethod } from "./taxonomy/checkout-methods";
 import type { VendorCapability } from "./taxonomy/capabilities";
@@ -59,7 +63,7 @@ export interface DealsConfig {
 export interface TaxonomyConfig {
   sector: VendorSector;
   subSectors: string[];
-  tier: VendorTier;
+  tier: BrandTier;
   tags?: string[];
 }
 

@@ -247,7 +247,8 @@ A `/skills/` module provides a curated library of vendor shopping skills. **Modu
 **Taxonomy** (`lib/procurement-skills/taxonomy/`):
 Each concern has its own file with type definition + label map. Barrel-exported via `index.ts`.
 - `sectors.ts` — `VendorSector` type + `SECTOR_LABELS` (20 sectors: retail, office, fashion, health, home, electronics, industrial, etc.)
-- `tiers.ts` — `VendorTier` type + `TIER_LABELS` (9 tiers: top_luxury through marketplace)
+- `tiers.ts` — `BrandTier` type + `BRAND_TIER_LABELS` (7 tiers: ultra_luxury, luxury, premium, mid_range, value, budget, commodity). Deprecated `VendorTier` and `TIER_LABELS` aliases are re-exported for backward compatibility.
+- `brand-types.ts` — `BrandType` type + `BRAND_TYPE_LABELS` (5 types: brand, retailer, marketplace, chain, independent)
 - `categories.ts` — `VendorCategory` type + `CATEGORY_LABELS` (6 legacy categories)
 - `checkout-methods.ts` — `CheckoutMethod` type + `CHECKOUT_METHOD_LABELS` + `CHECKOUT_METHOD_COLORS`
 - `capabilities.ts` — `VendorCapability` type + `CAPABILITY_LABELS`
@@ -283,6 +284,7 @@ Human-facing catalog data source. Separate from the bot API — returns raw Bran
 
 **Brand Index** (`brand_index` table, `server/storage/brand-index.ts`):
 Sole source of truth for all brand data across all surfaces (bots, humans, exports). Single denormalized PostgreSQL table with:
+- `brand_type` text — business model classification (brand, retailer, marketplace, chain, independent)
 - Flat indexed columns for every filterable field (sector, tier, maturity, ordering, etc.)
 - `carries_brands` text[] array (GIN-indexed) — distinguishes retailers from HQ brands (populated = retailer)
 - `brand_data` jsonb — full VendorSkill object for retrieval
@@ -291,7 +293,7 @@ Sole source of truth for all brand data across all surfaces (bots, humans, expor
 - `agent_readiness` integer score (MCP=25, API=20, guest=15, programmatic_checkout=10, deals=5, feed=5, verified=5)
 - B2B columns: `tax_exempt_supported`, `po_number_supported`, `business_account`
 - Maturity progression: draft → community → official (brand claimed) → verified (CreditClaw audited)
-- Storage methods: `searchBrands`, `getBrandBySlug`, `getRetailersForBrand`, `upsertBrandIndex`, `recomputeReadiness`
+- Storage methods: `searchBrands`, `getBrandById`, `getBrandBySlug`, `getRetailersForBrand`, `upsertBrandIndex`, `recomputeReadiness`
 - 22+ indexes (5 btree, 7 GIN on arrays, 1 GIN on tsvector, 7 partial)
 
 **Discovery API** (`app/api/v1/bot/skills/route.ts`):

@@ -40,6 +40,7 @@ import {
   type CheckoutPage, type InsertCheckoutPage,
   type Sale, type InsertSale,
   type Vendor, type InsertVendor,
+  type BrandLoginAccount, type InsertBrandLoginAccount,
   type MerchantAccount, type InsertMerchantAccount,
   type SavedShippingAddress, type InsertShippingAddress,
   type SellerProfile, type InsertSellerProfile,
@@ -305,11 +306,12 @@ export interface IStorage {
   getVendorBySlug(slug: string): Promise<Vendor | null>;
   getVendorById(id: number): Promise<Vendor | null>;
   getAllVendors(): Promise<Vendor[]>;
-  createMerchantAccount(data: InsertMerchantAccount): Promise<MerchantAccount>;
-  getMerchantAccountsByOwner(ownerUid: string): Promise<MerchantAccount[]>;
-  getMerchantAccountByVendor(ownerUid: string, vendorId: number): Promise<MerchantAccount | null>;
-  updateMerchantAccount(id: number, updates: Partial<InsertMerchantAccount>): Promise<MerchantAccount | null>;
-  deleteMerchantAccount(id: number): Promise<void>;
+
+  createBrandLoginAccount(data: InsertBrandLoginAccount): Promise<BrandLoginAccount>;
+  getBrandLoginAccountsByOwner(ownerUid: string): Promise<BrandLoginAccount[]>;
+  getBrandLoginAccountByBrand(ownerUid: string, brandId: number): Promise<BrandLoginAccount | null>;
+  updateBrandLoginAccount(id: number, updates: Partial<InsertBrandLoginAccount>): Promise<BrandLoginAccount | null>;
+  deleteBrandLoginAccount(id: number): Promise<void>;
 
   createShippingAddress(data: InsertShippingAddress): Promise<SavedShippingAddress>;
   getShippingAddressesByOwner(ownerUid: string): Promise<SavedShippingAddress[]>;
@@ -353,6 +355,7 @@ export interface IStorage {
 
   searchBrands(filters: BrandSearchFilters): Promise<BrandIndex[]>;
   searchBrandsCount(filters: BrandSearchFilters): Promise<number>;
+  getBrandById(id: number): Promise<BrandIndex | null>;
   getBrandBySlug(slug: string): Promise<BrandIndex | null>;
   getRetailersForBrand(brandName: string): Promise<BrandIndex[]>;
   upsertBrandIndex(data: InsertBrandIndex): Promise<BrandIndex>;

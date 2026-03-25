@@ -35,7 +35,7 @@ export const walmart_business: VendorSkill = {
   taxonomy: {
     sector: "office",
     subSectors: ["business supplies", "bulk purchasing", "janitorial"],
-    tier: "wholesale",
+    tier: "value",
     tags: ["b2b", "tax exempt", "business+"],
   },
   searchDiscovery: {
