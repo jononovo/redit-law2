@@ -455,25 +455,6 @@ export default function CatalogClient({
               )}
 
               <div className="flex-1 min-w-0">
-                <div className="hidden lg:flex items-center justify-end gap-1 -mt-1 mb-2">
-                  <button
-                    onClick={() => setViewMode("cards")}
-                    className={`p-2 rounded-lg transition-colors ${viewMode === "cards" ? "bg-primary/10 text-primary" : "text-neutral-400 hover:text-neutral-600 hover:bg-neutral-50"}`}
-                    data-testid="button-view-cards"
-                    title="Card view"
-                  >
-                    <LayoutGrid className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => setViewMode("table")}
-                    className={`p-2 rounded-lg transition-colors ${viewMode === "table" ? "bg-primary/10 text-primary" : "text-neutral-400 hover:text-neutral-600 hover:bg-neutral-50"}`}
-                    data-testid="button-view-table"
-                    title="Table view"
-                  >
-                    <Table2 className="w-4 h-4" />
-                  </button>
-                </div>
-
                 {loading && page === 0 ? (
                   <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">
                     {Array.from({ length: 6 }).map((_, i) => (
@@ -515,8 +496,26 @@ export default function CatalogClient({
                       Clear all filters
                     </button>
                   </div>
-                ) : viewMode === "table" ? (
+                ) : brands.length > 0 && viewMode === "table" ? (
                   <div className="space-y-4">
+                    <div className="flex items-center justify-end gap-1 mb-2">
+                      <button
+                        onClick={() => setViewMode("cards")}
+                        className={`p-2 rounded-lg transition-colors ${viewMode === "cards" ? "bg-primary/10 text-primary" : "text-neutral-400 hover:text-neutral-600 hover:bg-neutral-50"}`}
+                        data-testid="button-view-cards"
+                        title="Card view"
+                      >
+                        <LayoutGrid className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => setViewMode("table")}
+                        className={`p-2 rounded-lg transition-colors ${viewMode === "table" ? "bg-primary/10 text-primary" : "text-neutral-400 hover:text-neutral-600 hover:bg-neutral-50"}`}
+                        data-testid="button-view-table"
+                        title="Table view"
+                      >
+                        <Table2 className="w-4 h-4" />
+                      </button>
+                    </div>
                     <div className="bg-white rounded-2xl border border-neutral-100 shadow-sm overflow-hidden">
                       <div className="overflow-x-auto">
                         <table className="w-full text-sm" data-testid="table-vendors">
@@ -646,7 +645,7 @@ export default function CatalogClient({
                 ) : (
                   <div className="space-y-10">
                     {Object.entries(groupedBrands).map(
-                      ([groupKey, groupBrands]) => (
+                      ([groupKey, groupBrands], groupIdx) => (
                         <div key={groupKey}>
                           <div className="flex items-center gap-2 mb-4">
                             <div className="w-8 h-8 rounded-lg bg-neutral-100 flex items-center justify-center">
@@ -658,6 +657,26 @@ export default function CatalogClient({
                             <span className="text-sm text-neutral-400 font-medium">
                               ({groupBrands.length})
                             </span>
+                            {groupIdx === 0 && (
+                              <div className="ml-auto flex items-center gap-1">
+                                <button
+                                  onClick={() => setViewMode("cards")}
+                                  className={`p-2 rounded-lg transition-colors ${viewMode === "cards" ? "bg-primary/10 text-primary" : "text-neutral-400 hover:text-neutral-600 hover:bg-neutral-50"}`}
+                                  data-testid="button-view-cards"
+                                  title="Card view"
+                                >
+                                  <LayoutGrid className="w-4 h-4" />
+                                </button>
+                                <button
+                                  onClick={() => setViewMode("table")}
+                                  className={`p-2 rounded-lg transition-colors ${viewMode === "table" ? "bg-primary/10 text-primary" : "text-neutral-400 hover:text-neutral-600 hover:bg-neutral-50"}`}
+                                  data-testid="button-view-table"
+                                  title="Table view"
+                                >
+                                  <Table2 className="w-4 h-4" />
+                                </button>
+                              </div>
+                            )}
                           </div>
                           <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">
                             {groupBrands.map(brand => (
