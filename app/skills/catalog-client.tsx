@@ -344,7 +344,7 @@ export default function CatalogClient({
   );
 
   return (
-    <div className="min-h-screen bg-background text-neutral-900 font-sans">
+    <div className="min-h-screen text-neutral-900 font-sans">
       <Nav />
       <main>
         <section className="relative py-20 overflow-hidden">
