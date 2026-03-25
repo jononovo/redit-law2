@@ -1,18 +1,38 @@
-# Shipping Address File — Phase 2
+# Shipping Address File
 
-## Context
+## Overview
 
-The companion details file (phase 1) includes the **billing address** for each card. However, shipping addresses may differ from billing addresses. Bots need a central place to find shipping addresses for checkout forms.
+A central `.creditclaw/shipping.md` file shared across all cards. Contains all configured shipping addresses with one marked as default. Bots use the default address when a checkout requires shipping unless instructed otherwise.
 
-## Plan
+## How It Works
 
-- Create a single `.creditclaw/shipping.md` file that is shared across all cards (not per-card).
-- The file contains one or more shipping addresses.
-- One address is marked as the **default**. When a checkout requires a shipping address, the bot uses the default unless instructed otherwise.
-- The file is plaintext markdown, consistent with the companion details file format.
+- **Managed in Settings** — Users add/edit/delete shipping addresses from the Settings page (existing `ShippingAddressManager` component).
+- **Auto-pushed to bots** — Whenever shipping addresses change (create, update, delete, set-default), the updated file is automatically sent to all the owner's linked bots via the `shipping.addresses.updated` event.
+- **Bot-facing API** — Bots can also fetch the file on demand via `GET /api/v1/bot/shipping-addresses`.
+- **Checkout instructions** — Bot checkout steps reference `.creditclaw/shipping.md` and tell bots to use the default address or ask the owner to add one if none exist.
 
-## Open Questions
+## File Format
 
-- Where does the user manage shipping addresses? (Settings page? During onboarding? Both?)
-- How are addresses added/removed/reordered after initial setup?
-- Should bots be able to request a specific non-default address by label or index?
+```markdown
+# Shipping Addresses
+
+## Home (DEFAULT)
+
+- **Name:** Jane Doe
+- **Street:** 123 Main St
+- **City:** San Francisco
+- **State:** CA
+- **ZIP:** 94102
+- **Country:** US
+- **Phone:** 555-0100
+
+## Office
+
+- **Name:** Jane Doe
+- **Street:** 456 Market St
+- **Suite:** Floor 3
+- **City:** San Francisco
+- **State:** CA
+- **ZIP:** 94105
+- **Country:** US
+```

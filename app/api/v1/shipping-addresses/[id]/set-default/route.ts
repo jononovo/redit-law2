@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth/session";
 import { storage } from "@/server/storage";
+import { pushShippingFileToBots } from "@/lib/shipping/push-shipping-to-bots";
 
 export async function POST(
   request: NextRequest,
@@ -25,6 +26,11 @@ export async function POST(
     }
 
     const address = await storage.updateShippingAddress(addressId, { isDefault: true, ownerUid: user.uid });
+
+    pushShippingFileToBots(user.uid).catch((err) =>
+      console.error("[shipping-addresses/set-default] Failed to push shipping file:", err)
+    );
+
     return NextResponse.json({ address });
   } catch (error) {
     console.error("POST /api/v1/shipping-addresses/[id]/set-default error:", error);

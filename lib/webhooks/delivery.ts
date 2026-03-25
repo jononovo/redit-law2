@@ -29,6 +29,7 @@ export type WebhookEventType =
   | "rail5.checkout.failed"
   | "rails.updated"
   | "rail5.card.delivered"
+  | "shipping.addresses.updated"
   | "wallet.sale.completed";
 
 interface WebhookPayload {
