@@ -4,7 +4,7 @@ export const amazon_business: VendorSkill = {
     slug: "amazon-business",
   name: "Amazon Business",
   logoUrl: "/assets/images/vendors/amazon-business.svg",
-  category: "retail",
+  sector: "retail",
   url: "https://business.amazon.com",
   checkoutMethods: ["self_hosted_card"],
   capabilities: ["price_lookup", "bulk_pricing", "tax_exemption", "po_numbers", "order_tracking", "business_invoicing", "account_creation"],

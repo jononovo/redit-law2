@@ -21,8 +21,8 @@ import {
   Award,
   Users,
 } from "lucide-react";
-import { CHECKOUT_METHOD_LABELS, CAPABILITY_LABELS, CATEGORY_LABELS } from "@/lib/procurement-skills/types";
-import type { CheckoutMethod, VendorCapability, VendorCategory } from "@/lib/procurement-skills/types";
+import { CHECKOUT_METHOD_LABELS, CAPABILITY_LABELS, SECTOR_LABELS } from "@/lib/procurement-skills/types";
+import type { CheckoutMethod, VendorCapability, VendorSector } from "@/lib/procurement-skills/types";
 
 type EvidenceItem = {
   id: number;
@@ -418,11 +418,11 @@ export default function SkillDraftDetailPage({ params }: { params: Promise<{ id:
           onUpdate={handleFieldUpdate}
         />
         <FieldEditor
-          label="Category"
-          field="category"
-          value={vendorData.category}
-          confidence={draft.confidence.category}
-          needsReview={draft.reviewNeeded.includes("category")}
+          label="Sector"
+          field="sector"
+          value={vendorData.sector}
+          confidence={draft.confidence.sector}
+          needsReview={draft.reviewNeeded.includes("sector")}
           evidence={draft.evidence}
           onUpdate={handleFieldUpdate}
         />

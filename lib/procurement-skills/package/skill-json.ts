@@ -5,7 +5,7 @@ export interface SkillJsonPackage {
   slug: string;
   name: string;
   version: string;
-  category: string;
+  sector: string;
   url: string;
   checkoutMethods: string[];
   capabilities: string[];
@@ -51,7 +51,7 @@ export function generateSkillJson(vendor: VendorSkill): SkillJsonPackage {
     slug: vendor.slug,
     name: vendor.name,
     version: vendor.version,
-    category: vendor.category,
+    sector: vendor.sector,
     url: vendor.url,
     checkoutMethods: vendor.checkoutMethods,
     capabilities: vendor.capabilities,

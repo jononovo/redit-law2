@@ -30,12 +30,10 @@ import {
   CHECKOUT_METHOD_LABELS,
   CHECKOUT_METHOD_COLORS,
   CAPABILITY_LABELS,
-  CATEGORY_LABELS,
   SECTOR_LABELS,
   BRAND_TIER_LABELS,
   CheckoutMethod,
   VendorCapability,
-  VendorCategory,
   VendorSector,
   BrandTier,
   SkillMaturity,
@@ -51,13 +49,27 @@ const MATURITY_CONFIG: Record<SkillMaturity, { label: string; className: string 
   draft: { label: "Draft", className: "bg-neutral-100 text-neutral-600 border-neutral-200" },
 };
 
-const CATEGORY_ICONS: Record<VendorCategory, React.ReactNode> = {
+const SECTOR_ICONS: Partial<Record<VendorSector, React.ReactNode>> = {
   retail: <ShoppingCart className="w-4 h-4" />,
   office: <Package className="w-4 h-4" />,
-  hardware: <Zap className="w-4 h-4" />,
   electronics: <Cpu className="w-4 h-4" />,
   industrial: <Globe className="w-4 h-4" />,
   specialty: <Star className="w-4 h-4" />,
+  home: <Package className="w-4 h-4" />,
+  fashion: <Tag className="w-4 h-4" />,
+  health: <Zap className="w-4 h-4" />,
+  beauty: <Star className="w-4 h-4" />,
+  saas: <Monitor className="w-4 h-4" />,
+  construction: <Globe className="w-4 h-4" />,
+  automotive: <Zap className="w-4 h-4" />,
+  food: <ShoppingCart className="w-4 h-4" />,
+  sports: <TrendingUp className="w-4 h-4" />,
+  luxury: <Star className="w-4 h-4" />,
+  travel: <Globe className="w-4 h-4" />,
+  entertainment: <Monitor className="w-4 h-4" />,
+  education: <Package className="w-4 h-4" />,
+  pets: <Star className="w-4 h-4" />,
+  garden: <Globe className="w-4 h-4" />,
 };
 
 const CHECKOUT_ICONS: Record<CheckoutMethod, React.ReactNode> = {
@@ -73,7 +85,7 @@ function VendorCard({ brand }: { brand: BrandIndex }) {
   const vendor = brand.brandData as unknown as VendorSkill | null;
   const friendliness = Math.min(Math.floor((brand.agentReadiness ?? 0) / 20) + 1, 5);
   const maturity = MATURITY_CONFIG[brand.maturity as SkillMaturity] ?? MATURITY_CONFIG.draft;
-  const category = (vendor?.category ?? brand.sector) as VendorCategory;
+  const sectorKey = (brand.sector) as VendorSector;
   const checkoutMethods = (brand.checkoutMethods ?? []) as CheckoutMethod[];
   const capabilities = (brand.capabilities ?? []) as VendorCapability[];
   const subSectors = brand.subSectors ?? [];
@@ -95,8 +107,8 @@ function VendorCard({ brand }: { brand: BrandIndex }) {
               {brand.name}
             </h3>
             <div className="flex items-center gap-1.5 text-xs text-neutral-500">
-              {CATEGORY_ICONS[category]}
-              <span>{CATEGORY_LABELS[category] ?? brand.sector}</span>
+              {SECTOR_ICONS[sectorKey] || <Layers className="w-4 h-4" />}
+              <span>{SECTOR_LABELS[sectorKey] ?? brand.sector}</span>
               {tier && (
                 <>
                   <span className="text-neutral-300 mx-0.5">·</span>
@@ -193,7 +205,6 @@ function VendorCard({ brand }: { brand: BrandIndex }) {
 
 type FilterState = {
   search: string;
-  categories: VendorCategory[];
   checkoutMethods: CheckoutMethod[];
   capabilities: VendorCapability[];
   maturity: SkillMaturity[];
@@ -236,7 +247,6 @@ const PAGE_SIZE = 50;
 export default function SkillsCatalogPage() {
   const [filters, setFilters] = useState<FilterState>({
     search: "",
-    categories: [],
     checkoutMethods: [],
     capabilities: [],
     maturity: [],
@@ -246,7 +256,7 @@ export default function SkillsCatalogPage() {
   const [showMobileFilters, setShowMobileFilters] = useState(false);
 
   const [brands, setBrands] = useState<BrandIndex[]>([]);
-  const [facets, setFacets] = useState<{ sectors: string[]; tiers: string[]; categories: string[] }>({ sectors: [], tiers: [], categories: [] });
+  const [facets, setFacets] = useState<{ sectors: string[]; tiers: string[] }>({ sectors: [], tiers: [] });
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(0);
@@ -266,8 +276,7 @@ export default function SkillsCatalogPage() {
     setLoading(true);
     const params = new URLSearchParams();
     if (debouncedSearch) params.set("q", debouncedSearch);
-    const allSectors = [...new Set([...filters.sectors, ...filters.categories])];
-    if (allSectors.length) params.set("sector", allSectors.join(","));
+    if (filters.sectors.length) params.set("sector", filters.sectors.join(","));
     if (filters.tiers.length) params.set("tier", filters.tiers.join(","));
     if (filters.checkoutMethods.length) params.set("checkout", filters.checkoutMethods.join(","));
     if (filters.capabilities.length) params.set("capability", filters.capabilities.join(","));
@@ -284,12 +293,12 @@ export default function SkillsCatalogPage() {
         } else {
           setBrands(prev => [...prev, ...(data.brands ?? [])]);
         }
-        setFacets(data.facets ?? { sectors: [], tiers: [], categories: [] });
+        setFacets(data.facets ?? { sectors: [], tiers: [] });
         setTotal(data.total ?? 0);
       }
     } catch {}
     setLoading(false);
-  }, [debouncedSearch, filters.sectors, filters.categories, filters.tiers, filters.checkoutMethods, filters.capabilities, filters.maturity, page]);
+  }, [debouncedSearch, filters.sectors, filters.tiers, filters.checkoutMethods, filters.capabilities, filters.maturity, page]);
 
   useEffect(() => {
     fetchBrands();
@@ -297,10 +306,9 @@ export default function SkillsCatalogPage() {
 
   useEffect(() => {
     setPage(0);
-  }, [filters.sectors, filters.categories, filters.tiers, filters.checkoutMethods, filters.capabilities, filters.maturity]);
+  }, [filters.sectors, filters.tiers, filters.checkoutMethods, filters.capabilities, filters.maturity]);
 
   const activeFilterCount =
-    filters.categories.length +
     filters.checkoutMethods.length +
     filters.capabilities.length +
     filters.maturity.length +
@@ -321,7 +329,7 @@ export default function SkillsCatalogPage() {
   };
 
   const clearFilters = () => {
-    setFilters({ search: "", categories: [], checkoutMethods: [], capabilities: [], maturity: [], sectors: [], tiers: [] });
+    setFilters({ search: "", checkoutMethods: [], capabilities: [], maturity: [], sectors: [], tiers: [] });
     setPage(0);
   };
 
@@ -370,21 +378,6 @@ export default function SkillsCatalogPage() {
         </div>
       </div>
 
-      <div>
-        <h4 className="font-bold text-sm uppercase tracking-wider text-neutral-400 mb-3">Category</h4>
-        <div className="space-y-2">
-          {(Object.keys(CATEGORY_LABELS) as VendorCategory[]).map(cat => (
-            <FilterCheckbox
-              key={cat}
-              label={CATEGORY_LABELS[cat]}
-              checked={filters.categories.includes(cat)}
-              onChange={() => toggleFilter("categories", cat)}
-              icon={CATEGORY_ICONS[cat]}
-              testId={`filter-category-${cat}`}
-            />
-          ))}
-        </div>
-      </div>
 
       <div>
         <h4 className="font-bold text-sm uppercase tracking-wider text-neutral-400 mb-3">Checkout Method</h4>
@@ -586,10 +579,10 @@ export default function SkillsCatalogPage() {
                         <div key={groupKey}>
                           <div className="flex items-center gap-2 mb-4">
                             <div className="w-8 h-8 rounded-lg bg-neutral-100 flex items-center justify-center">
-                              {CATEGORY_ICONS[groupKey as VendorCategory] || <Layers className="w-4 h-4 text-purple-500" />}
+                              {SECTOR_ICONS[groupKey as VendorSector] || <Layers className="w-4 h-4 text-purple-500" />}
                             </div>
                             <h2 className="text-lg font-bold text-neutral-900">
-                              {SECTOR_LABELS[groupKey as VendorSector] || CATEGORY_LABELS[groupKey as VendorCategory] || groupKey}
+                              {SECTOR_LABELS[groupKey as VendorSector] || groupKey}
                             </h2>
                             <span className="text-sm text-neutral-400 font-medium">
                               ({groupBrands.length})

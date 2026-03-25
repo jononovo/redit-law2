@@ -42,17 +42,9 @@ const DESCRIPTIONS: Record<string, string> = {
   "mcmaster-carr": "Industrial supply catalog with 700,000+ products. Account required; known for fastest delivery in industrial supply. Fasteners, raw materials, tools, and maintenance supplies.",
 };
 
-const CATEGORY_TO_SECTOR: Record<string, string> = {
-  "retail": "retail",
-  "hardware": "home",
-  "industrial": "industrial",
-  "office": "office",
-  "electronics": "electronics",
-};
-
 function vendorToRow(vendor: VendorSkill): typeof brandIndex.$inferInsert {
   const skillMd = generateVendorSkill(vendor);
-  const sector = vendor.taxonomy?.sector ?? CATEGORY_TO_SECTOR[vendor.category] ?? "retail";
+  const sector = vendor.taxonomy?.sector ?? vendor.sector ?? "retail";
   const domain = new URL(vendor.url).hostname.replace(/^www\./, "");
 
   return {

@@ -4,7 +4,7 @@ export const walmart_business: VendorSkill = {
     slug: "walmart-business",
   name: "Walmart Business",
   logoUrl: "/assets/images/vendors/walmart-business.svg",
-  category: "retail",
+  sector: "retail",
   url: "https://business.walmart.com",
   checkoutMethods: ["self_hosted_card"],
   capabilities: ["price_lookup", "bulk_pricing", "tax_exemption", "po_numbers", "business_invoicing", "account_creation"],

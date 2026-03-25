@@ -4,7 +4,7 @@ export const shopify: VendorSkill = {
     slug: "shopify",
   name: "Shopify Stores",
   logoUrl: "/assets/images/vendors/shopify.svg",
-  category: "retail",
+  sector: "retail",
   url: "https://www.shopify.com",
   checkoutMethods: ["native_api", "self_hosted_card"],
   capabilities: ["price_lookup", "stock_check", "programmatic_checkout"],

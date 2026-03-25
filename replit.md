@@ -249,7 +249,6 @@ Each concern has its own file with type definition + label map. Barrel-exported 
 - `sectors.ts` — `VendorSector` type + `SECTOR_LABELS` (20 sectors: retail, office, fashion, health, home, electronics, industrial, etc.)
 - `tiers.ts` — `BrandTier` type + `BRAND_TIER_LABELS` (7 tiers: ultra_luxury, luxury, premium, mid_range, value, budget, commodity). Deprecated `VendorTier` and `TIER_LABELS` aliases are re-exported for backward compatibility.
 - `brand-types.ts` — `BrandType` type + `BRAND_TYPE_LABELS` (5 types: brand, retailer, marketplace, chain, independent)
-- `categories.ts` — `VendorCategory` type + `CATEGORY_LABELS` (6 legacy categories)
 - `checkout-methods.ts` — `CheckoutMethod` type + `CHECKOUT_METHOD_LABELS` + `CHECKOUT_METHOD_COLORS`
 - `capabilities.ts` — `VendorCapability` type + `CAPABILITY_LABELS`
 - `payment-methods.ts` — `PaymentMethod` type + `PAYMENT_METHOD_LABELS` (11 methods: card, ach, crypto, apple_pay, etc.)
@@ -258,7 +257,7 @@ Each concern has its own file with type definition + label map. Barrel-exported 
 - `maturity.ts` — `SkillMaturity` type
 
 **Core types** (`lib/procurement-skills/types.ts`):
-Re-exports all taxonomy types/labels from `taxonomy/`. Defines domain interfaces: `VendorSkill`, `SearchDiscovery`, `BuyingConfig`, `DealsConfig`, `TaxonomyConfig`, `MethodConfig`. Also exports `computeAgentFriendliness()`.
+Re-exports all taxonomy types/labels from `taxonomy/`. Defines domain interfaces: `VendorSkill` (uses `sector: VendorSector` — the legacy `category: VendorCategory` field was removed), `SearchDiscovery`, `BuyingConfig`, `DealsConfig`, `TaxonomyConfig`, `MethodConfig`. Also exports `computeAgentFriendliness()`.
 
 **Vendors** (`lib/procurement-skills/vendors/`):
 Each vendor is its own file exporting a single `VendorSkill` object. Barrel-exported via `index.ts`.

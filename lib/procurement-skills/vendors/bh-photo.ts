@@ -4,7 +4,7 @@ export const bh_photo: VendorSkill = {
     slug: "bh-photo",
   name: "B&H Photo",
   logoUrl: "/assets/images/vendors/bh-photo.svg",
-  category: "electronics",
+  sector: "electronics",
   url: "https://www.bhphotovideo.com",
   checkoutMethods: ["self_hosted_card"],
   capabilities: ["price_lookup", "stock_check", "order_tracking", "tax_exemption", "returns"],

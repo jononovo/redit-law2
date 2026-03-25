@@ -1,6 +1,6 @@
 export { type VendorSector, SECTOR_LABELS } from "./sectors";
 export { type BrandTier, type VendorTier, BRAND_TIER_LABELS, TIER_LABELS } from "./tiers";
-export { type VendorCategory, CATEGORY_LABELS } from "./categories";
+
 export { type CheckoutMethod, CHECKOUT_METHOD_LABELS, CHECKOUT_METHOD_COLORS } from "./checkout-methods";
 export { type VendorCapability, CAPABILITY_LABELS } from "./capabilities";
 export { type PaymentMethod, PAYMENT_METHOD_LABELS } from "./payment-methods";

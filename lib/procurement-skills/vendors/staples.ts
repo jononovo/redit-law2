@@ -4,7 +4,7 @@ export const staples: VendorSkill = {
     slug: "staples",
   name: "Staples",
   logoUrl: "/assets/images/vendors/staples.svg",
-  category: "office",
+  sector: "office",
   url: "https://www.staples.com",
   checkoutMethods: ["self_hosted_card"],
   capabilities: ["price_lookup", "stock_check", "bulk_pricing", "tax_exemption", "po_numbers", "order_tracking", "business_invoicing"],

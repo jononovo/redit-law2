@@ -1,5 +1,5 @@
 import type { BuilderOutput, AnalysisEvidence } from "./types";
-import type { VendorSkill, VendorCapability, VendorCategory, CheckoutMethod, MethodConfig } from "../types";
+import type { VendorSkill, VendorCapability, VendorSector, CheckoutMethod, MethodConfig } from "../types";
 import { fetchPages } from "./fetch";
 import { probeForAPIs, detectBusinessFeatures, checkProtocolSupport } from "./probes";
 import { analyzeCheckoutFlow } from "./llm";
@@ -54,7 +54,12 @@ export async function analyzeVendor(url: string): Promise<BuilderOutput> {
 
   allEvidence.push(...protocolResult.evidence);
 
-  const validCategories: VendorCategory[] = ["retail", "office", "hardware", "electronics", "industrial", "specialty"];
+  const validSectors: VendorSector[] = [
+    "retail", "office", "electronics", "industrial", "specialty",
+    "fashion", "health", "beauty", "saas", "home", "construction",
+    "automotive", "food", "sports", "luxury", "travel",
+    "entertainment", "education", "pets", "garden",
+  ];
   const validCapabilities: VendorCapability[] = [
     "price_lookup", "stock_check", "programmatic_checkout", "business_invoicing",
     "bulk_pricing", "tax_exemption", "account_creation", "order_tracking", "returns", "po_numbers",
@@ -86,7 +91,7 @@ export async function analyzeVendor(url: string): Promise<BuilderOutput> {
   const draft: Partial<VendorSkill> = {
     slug: (llm.slug as string) || fallbackSlug,
     name: (llm.name as string) || domain,
-    category: (validCategories.includes(llm.category as VendorCategory) ? llm.category : "retail") as VendorCategory,
+    sector: (validSectors.includes((llm.sector ?? llm.category) as VendorSector) ? (llm.sector ?? llm.category) : "retail") as VendorSector,
     url: baseUrl,
     checkoutMethods: apiResult.methods,
     capabilities: mergedCapabilities,

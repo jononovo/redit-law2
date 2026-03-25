@@ -4,7 +4,7 @@ export const mcmaster_carr: VendorSkill = {
     slug: "mcmaster-carr",
   name: "McMaster-Carr",
   logoUrl: "/assets/images/vendors/mcmaster-carr.svg",
-  category: "industrial",
+  sector: "industrial",
   url: "https://www.mcmaster.com",
   checkoutMethods: ["self_hosted_card"],
   capabilities: ["price_lookup", "stock_check", "order_tracking", "bulk_pricing"],

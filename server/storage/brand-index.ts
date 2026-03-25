@@ -230,12 +230,12 @@ export const brandIndexMethods: BrandIndexMethods = {
     return score;
   },
 
-  async getAllBrandFacets(): Promise<{ sectors: string[]; tiers: string[]; categories: string[] }> {
+  async getAllBrandFacets(): Promise<{ sectors: string[]; tiers: string[] }> {
     const rows = await db
       .select({ sector: brandIndex.sector, tier: brandIndex.tier })
       .from(brandIndex);
     const sectors = [...new Set(rows.map(r => r.sector))];
     const tiers = [...new Set(rows.map(r => r.tier).filter((t): t is string => t !== null))];
-    return { sectors, tiers, categories: sectors };
+    return { sectors, tiers };
   },
 };

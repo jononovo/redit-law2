@@ -4,7 +4,7 @@ export const newegg: VendorSkill = {
     slug: "newegg",
   name: "Newegg",
   logoUrl: "/assets/images/vendors/newegg.svg",
-  category: "electronics",
+  sector: "electronics",
   url: "https://www.newegg.com",
   checkoutMethods: ["self_hosted_card"],
   capabilities: ["price_lookup", "stock_check", "order_tracking", "returns"],
