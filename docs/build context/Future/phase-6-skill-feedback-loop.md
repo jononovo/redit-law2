@@ -202,6 +202,7 @@ const PAGE_SIZE = 50;
 interface CatalogSearchParams {
   q?: string;
   sector?: string;
+  category?: string;  // separate from sector — see "Categories vs Sectors" note below
   tier?: string;
   checkout?: string;
   capability?: string;
@@ -214,9 +215,15 @@ function parseCSV(val?: string): string[] {
 }
 
 function buildFilters(params: CatalogSearchParams): BrandSearchFilters {
+  // Merge sector and category params (both map to the DB `sector` column)
+  // This preserves the current behavior: the filter sidebar has two groups
+  // ("Sector" from DB facets, "Category" from CATEGORY_LABELS constant)
+  // that both filter against the same column.
+  const allSectors = [...new Set([...parseCSV(params.sector), ...parseCSV(params.category)])];
+
   return {
     q: params.q || undefined,
-    sectors: parseCSV(params.sector).length ? parseCSV(params.sector) : undefined,
+    sectors: allSectors.length ? allSectors : undefined,
     tiers: parseCSV(params.tier).length ? parseCSV(params.tier) : undefined,
     checkoutMethods: parseCSV(params.checkout).length ? parseCSV(params.checkout) : undefined,
     capabilities: parseCSV(params.capability).length ? parseCSV(params.capability) : undefined,
@@ -227,6 +234,21 @@ function buildFilters(params: CatalogSearchParams): BrandSearchFilters {
     sortDir: "desc",
   };
 }
+
+// ⚠️ Categories vs Sectors — why two URL params for one DB column:
+//
+// The current page has two filter groups that both map to `brand_index.sector`:
+//   - "Sector" checkboxes: populated from DB facets (actual sector values in the data)
+//   - "Category" checkboxes: populated from the hardcoded CATEGORY_LABELS constant
+// They merge before querying: [...new Set([...filters.sectors, ...filters.categories])]
+//
+// With URL-based state, we need TWO params (?sector=office&category=hardware) so the
+// filter sidebar can read each param separately and check the right boxes in the right
+// group. If we used one param (?sector=office,hardware), the sidebar couldn't tell which
+// group "hardware" belongs to — it would appear checked in both groups (false positives).
+//
+// The server merges both params into one `sectors` array for the DB query. Each filter
+// group reads only its own param for checkbox state. Current behavior fully preserved.
 
 interface Props {
   searchParams: Promise<CatalogSearchParams>;
@@ -291,6 +313,7 @@ export default async function SkillsCatalogPage({ searchParams }: Props) {
   const currentFilters = {
     search: params.q ?? "",
     sectors: parseCSV(params.sector),
+    categories: parseCSV(params.category),
     tiers: parseCSV(params.tier),
     checkoutMethods: parseCSV(params.checkout),
     capabilities: parseCSV(params.capability),
@@ -343,6 +366,7 @@ export default async function SkillsCatalogPage({ searchParams }: Props) {
                       </div>
                     ))}
                     <CatalogLoadMore
+                      key={JSON.stringify(currentFilters)}
                       total={total}
                       currentCount={brands.length}
                       filters={currentFilters}
@@ -376,8 +400,8 @@ export default async function SkillsCatalogPage({ searchParams }: Props) {
 |---|---|---|
 | `VendorCard` | `brand: BrandIndex` | Drizzle row object (strings, numbers, arrays, null) |
 | `CatalogSearch` | `initialValue: string` | string |
-| `CatalogFilters` | `facets: { sectors: string[]; tiers: string[]; categories: string[] }`, `currentFilters: { search: string; sectors: string[]; tiers: string[]; ... }` | plain objects |
-| `CatalogLoadMore` | `total: number`, `currentCount: number`, `filters: { ... }` | numbers + plain object |
+| `CatalogFilters` | `facets: { sectors: FacetValue[]; tiers: FacetValue[] }`, `currentFilters: { search: string; sectors: string[]; categories: string[]; tiers: string[]; ... }` | plain objects |
+| `CatalogLoadMore` | `total: number`, `currentCount: number`, `filters: { search: string; sectors: string[]; categories: string[]; ... }` | numbers + plain object. **Must have `key={JSON.stringify(currentFilters)}` to reset state on filter change.** |
 
 #### A2c. UX: filter interactions with useTransition
 
@@ -395,6 +419,11 @@ export function CatalogFilters({ facets, currentFilters }) {
   const [isPending, startTransition] = useTransition();
   const [showMobile, setShowMobile] = useState(false);
 
+  // toggleFilter uses the URL param key directly.
+  // "Sector" checkboxes use paramKey="sector"
+  // "Category" checkboxes use paramKey="category"
+  // Both filter against the same DB column, but separate URL params
+  // preserve correct checkbox state in each filter group.
   const toggleFilter = (paramKey: string, value: string) => {
     const params = new URLSearchParams(searchParams.toString());
     const current = params.get(paramKey)?.split(",").filter(Boolean) ?? [];
@@ -415,11 +444,50 @@ export function CatalogFilters({ facets, currentFilters }) {
     });
   };
 
+  // activeFilterCount counts both sectors and categories (plus all other groups)
+  const activeFilterCount =
+    currentFilters.sectors.length +
+    currentFilters.categories.length +
+    currentFilters.tiers.length +
+    currentFilters.checkoutMethods.length +
+    currentFilters.capabilities.length +
+    currentFilters.maturity.length;
+
   return (
     <>
       {/* Desktop sidebar */}
       <aside className={`hidden lg:block w-64 flex-shrink-0 ${isPending ? "opacity-60 pointer-events-none" : ""}`}>
-        {/* filter groups using facets + currentFilters for checked state */}
+        {/* Sector group — from DB facets, uses paramKey="sector" */}
+        {/* Shows counts: "Office (4)" */}
+        {facets.sectors.map(s => (
+          <FilterCheckbox
+            label={`${SECTOR_LABELS[s.value] ?? s.value} (${s.count})`}
+            checked={currentFilters.sectors.includes(s.value)}
+            onChange={() => toggleFilter("sector", s.value)}
+          />
+        ))}
+
+        {/* Category group — from CATEGORY_LABELS constant, uses paramKey="category" */}
+        {(Object.keys(CATEGORY_LABELS) as VendorCategory[]).map(cat => (
+          <FilterCheckbox
+            label={CATEGORY_LABELS[cat]}
+            checked={currentFilters.categories.includes(cat)}
+            onChange={() => toggleFilter("category", cat)}
+          />
+        ))}
+
+        {/* Tier group — from DB facets, uses paramKey="tier" */}
+        {/* Shows counts */}
+        {facets.tiers.map(t => (
+          <FilterCheckbox
+            label={`${BRAND_TIER_LABELS[t.value] ?? t.value} (${t.count})`}
+            checked={currentFilters.tiers.includes(t.value)}
+            onChange={() => toggleFilter("tier", t.value)}
+          />
+        ))}
+
+        {/* Checkout Method, Capabilities, Maturity groups — from hardcoded constants */}
+        {/* Use paramKey matching the URL param: "checkout", "capability", "maturity" */}
       </aside>
 
       {/* Mobile drawer toggle + drawer */}
@@ -477,7 +545,7 @@ import { VendorCard } from "./vendor-card";
 interface Props {
   total: number;
   currentCount: number;
-  filters: { search: string; sectors: string[]; tiers: string[]; checkoutMethods: string[]; capabilities: string[]; maturity: string[] };
+  filters: { search: string; sectors: string[]; categories: string[]; tiers: string[]; checkoutMethods: string[]; capabilities: string[]; maturity: string[] };
 }
 
 export function CatalogLoadMore({ total, currentCount, filters }: Props) {
@@ -485,9 +553,14 @@ export function CatalogLoadMore({ total, currentCount, filters }: Props) {
   const [loading, setLoading] = useState(false);
   const [extraBrandsGrouped, setExtraBrandsGrouped] = useState<Record<string, BrandIndex[]>>({});
 
-  // Reset extra brands when filters change (server will re-render with new initial set)
-  // This happens automatically: when searchParams change, the page re-renders,
-  // CatalogLoadMore unmounts and remounts with new props (currentCount resets to the new batch size)
+  // ⚠️ IMPORTANT: Client components DO NOT unmount during Next.js soft navigation.
+  // When searchParams change, the server re-renders and passes new props, but the
+  // component instance persists — local state (extraBrands) is NOT reset automatically.
+  //
+  // Fix: The server component must render CatalogLoadMore with a `key` prop that
+  // changes when filters change, forcing React to unmount/remount:
+  //   <CatalogLoadMore key={JSON.stringify(currentFilters)} ... />
+  // This resets extraBrands state cleanly on every filter/search change.
 
   if (total <= currentCount + extraBrands.length) return null;
 
@@ -495,7 +568,9 @@ export function CatalogLoadMore({ total, currentCount, filters }: Props) {
     setLoading(true);
     const params = new URLSearchParams();
     if (filters.search) params.set("q", filters.search);
-    if (filters.sectors.length) params.set("sector", filters.sectors.join(","));
+    // Merge sectors + categories for the API (same as server-side buildFilters)
+    const allSectors = [...new Set([...filters.sectors, ...filters.categories])];
+    if (allSectors.length) params.set("sector", allSectors.join(","));
     if (filters.tiers.length) params.set("tier", filters.tiers.join(","));
     if (filters.checkoutMethods.length) params.set("checkout", filters.checkoutMethods.join(","));
     if (filters.capabilities.length) params.set("capability", filters.capabilities.join(","));
@@ -567,7 +642,7 @@ Each filter combination has proper `<title>`, `<meta description>`, OG tags, and
 
 4. **Filter param keys map directly to API params.** The URL uses `?sector=office&checkout=native_api` — same keys as the internal API. This is intentional for consistency.
 
-5. **`categories` filter is currently a separate concept from `sectors`.** The filter sidebar has both "Sector" (from facets) and "Category" (from the CATEGORY_LABELS constant). In the current client page, categories and sectors are merged: `[...new Set([...filters.sectors, ...filters.categories])]` before sending as `sector` param. The server page should handle this the same way — both map to the `sectors` field in `BrandSearchFilters`.
+5. **`categories` and `sectors` use separate URL params but one DB column.** The filter sidebar has two groups ("Sector" from DB facets, "Category" from `CATEGORY_LABELS` constant) that both filter against `brand_index.sector`. They use separate URL params (`?sector=office&category=hardware`) so each group can maintain correct checkbox state independently. The server merges them: `const allSectors = [...new Set([...parseCSV(params.sector), ...parseCSV(params.category)])]`. This preserves the current behavior exactly.
 
 #### A2j. Scaling analysis — 1K to 5K brands
 
@@ -581,30 +656,115 @@ Each filter combination has proper `<title>`, `<meta description>`, OG tags, and
 
 ##### Problem 1: `getAllBrandFacets()` scans the entire table
 
-**Current implementation:** `SELECT sector, tier FROM brand_index` — fetches ALL rows, deduplicates in JavaScript. At 14 rows this is trivial. At 5,000 rows it reads 5,000 rows to produce ~20 distinct values.
+**Current implementation:** `SELECT sector, tier FROM brand_index` — fetches ALL rows, deduplicates in JavaScript with `new Set()`. At 14 rows this is trivial. At 5,000 rows it reads 5,000 rows to produce ~20 distinct values. The return type is `{ sectors: string[]; tiers: string[]; categories: string[] }` where `categories` is literally just `sectors` returned a second time (line 239: `categories: sectors`).
 
-**Fix (implement during A2):** Replace with two `SELECT DISTINCT` queries:
+**Current consumers:**
+1. `app/api/v1/bot/skills/route.ts` (line 55–62) — returns `facets.sectors`, `facets.tiers`, `facets.categories` as flat string arrays in the bot API response
+2. `app/api/internal/brands/search/route.ts` (line 42) — returns `facets` in the internal search response, consumed by the current client-side catalog page and by `CatalogLoadMore` in the SSR version
+3. The new server catalog page — will call this directly for filter sidebar data
 
-```sql
-SELECT DISTINCT sector FROM brand_index ORDER BY sector;
-SELECT DISTINCT tier FROM brand_index WHERE tier IS NOT NULL ORDER BY tier;
+**Fix (implement during A2): Upgrade the method to return counts, update all consumers.**
+
+Facets without counts aren't real facets. Every faceted search system (Elasticsearch, Algolia, Solr) returns `{ value, count }` pairs. The current bare string arrays were an MVP shortcut. The method should return the richer data, and each consumer maps it to what they need.
+
+**New return type:**
+
+```typescript
+interface FacetValue {
+  value: string;
+  count: number;
+}
+
+interface BrandFacets {
+  sectors: FacetValue[];
+  tiers: FacetValue[];
+}
 ```
 
-**Better fix for faceted search:** Return counts alongside each facet so the UI can show "Office (342)":
+**New implementation (SQL `GROUP BY` instead of full table scan):**
 
-```sql
-SELECT sector, count(*)::int AS cnt FROM brand_index GROUP BY sector ORDER BY cnt DESC;
-SELECT tier, count(*)::int AS cnt FROM brand_index WHERE tier IS NOT NULL GROUP BY tier ORDER BY cnt DESC;
+```typescript
+async getAllBrandFacets(): Promise<BrandFacets> {
+  const [sectorRows, tierRows] = await Promise.all([
+    db.execute(sql`
+      SELECT sector AS value, count(*)::int AS count
+      FROM brand_index
+      GROUP BY sector
+      ORDER BY count DESC
+    `),
+    db.execute(sql`
+      SELECT tier AS value, count(*)::int AS count
+      FROM brand_index
+      WHERE tier IS NOT NULL
+      GROUP BY tier
+      ORDER BY count DESC
+    `),
+  ]);
+
+  return {
+    sectors: sectorRows.rows as FacetValue[],
+    tiers: tierRows.rows as FacetValue[],
+  };
+}
 ```
 
-This changes the facets shape from `{ sectors: string[] }` to `{ sectors: { value: string; count: number }[] }`. The filter sidebar can then display counts. **Do this now** — it's a small change that makes the UI significantly more useful at scale and avoids a migration later.
+**Drop the `categories` field.** It was always a duplicate of `sectors`. The bot API currently returns both — see consumer update below.
 
-Also add a facet query for sub-sectors (these will grow to 200+ by 5K brands):
+**Consumer updates (one line each, no breaking changes):**
+
+1. **Bot API** (`app/api/v1/bot/skills/route.ts`):
+   ```tsx
+   // Before:
+   categories: facets.categories,
+   sectors: facets.sectors,
+   tiers: facets.tiers,
+
+   // After — extract values, bot response shape unchanged:
+   categories: facets.sectors.map(s => s.value),
+   sectors: facets.sectors.map(s => s.value),
+   tiers: facets.tiers.map(t => t.value),
+   ```
+   The bot API response stays `{ sectors: ["office", "retail"], tiers: ["premium", "mid_range"], categories: ["office", "retail"] }`. No breaking change for API consumers. `categories` keeps returning the same data as `sectors` for backward compatibility.
+
+2. **Internal search API** (`app/api/internal/brands/search/route.ts`):
+   ```tsx
+   // Before:
+   return NextResponse.json({ brands, total, facets });
+
+   // After — pass through with counts:
+   return NextResponse.json({ brands, total, facets });
+   ```
+   No change needed — the response now includes counts, which `CatalogLoadMore` and any future consumer benefits from. The current client page (before SSR refactor) reads `data.facets.sectors` as an array — it would break because the shape changed from `string[]` to `FacetValue[]`. But we're replacing the client page with the SSR version in the same change, so there's no window where the old client reads the new shape.
+
+3. **Server catalog page** (new):
+   ```tsx
+   // Uses counts in the filter sidebar:
+   {facets.sectors.map(s => (
+     <FilterCheckbox
+       label={`${SECTOR_LABELS[s.value]} (${s.count})`}
+       checked={currentFilters.sectors.includes(s.value)}
+       ...
+     />
+   ))}
+   ```
+
+**IStorage type update:**
+
+```typescript
+// In server/storage/types.ts:
+// Before:
+getAllBrandFacets(): Promise<{ sectors: string[]; tiers: string[]; categories: string[] }>;
+
+// After:
+getAllBrandFacets(): Promise<{ sectors: { value: string; count: number }[]; tiers: { value: string; count: number }[] }>;
+```
+
+**Also add sub-sector facets** (these will grow to 200+ by 5K brands). Either as part of `getAllBrandFacets()` or as a separate method:
 
 ```sql
-SELECT s AS value, count(*)::int AS cnt
+SELECT s AS value, count(*)::int AS count
 FROM brand_index, unnest(sub_sectors) s
-GROUP BY s ORDER BY cnt DESC LIMIT 50;
+GROUP BY s ORDER BY count DESC LIMIT 50;
 ```
 
 ##### Problem 2: Full rows serialized when VendorCard only needs display fields
