@@ -50,6 +50,7 @@ import {
   type BotPendingMessage,
   type BrandIndex, type InsertBrandIndex,
   type BrandClaim, type InsertBrandClaim,
+  type BrandFeedback, type InsertBrandFeedback,
 } from "@/shared/schema";
 
 import type { OrderFilters } from "./orders";
@@ -361,6 +362,11 @@ export interface IStorage {
   upsertBrandIndex(data: InsertBrandIndex): Promise<BrandIndex>;
   recomputeReadiness(slug: string): Promise<number>;
   getAllBrandFacets(): Promise<{ sectors: string[]; tiers: string[] }>;
+
+  createBrandFeedback(data: InsertBrandFeedback): Promise<BrandFeedback>;
+  getBrandFeedback(brandSlug: string, limit?: number): Promise<BrandFeedback[]>;
+  getBrandFeedbackCount(brandSlug: string): Promise<number>;
+  getRecentFeedbackByBot(brandSlug: string, botId: string, windowHours?: number): Promise<BrandFeedback | null>;
 
   createBrandClaim(data: InsertBrandClaim): Promise<BrandClaim>;
   getBrandClaimById(id: number): Promise<BrandClaim | null>;

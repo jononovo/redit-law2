@@ -25,6 +25,7 @@ import { qrPayMethods } from "./qr-pay";
 import { botMessageMethods } from "./bot-messages";
 import { brandIndexMethods } from "./brand-index";
 import { brandClaimMethods } from "./brand-claims";
+import { brandFeedbackMethods } from "./brand-feedback";
 import type { IStorage } from "./types";
 
 export type { IStorage };
@@ -57,4 +58,5 @@ export const storage: IStorage = {
   ...botMessageMethods,
   ...brandIndexMethods,
   ...brandClaimMethods,
+  ...brandFeedbackMethods,
 };
