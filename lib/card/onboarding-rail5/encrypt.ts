@@ -104,6 +104,44 @@ export function buildEncryptedCardFile(
   return lines.join("\n");
 }
 
+export interface CompanionCardData {
+  cardId: string;
+  bin: string;
+  expMonth: string;
+  expYear: string;
+  cardholderName: string;
+  brand: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  zip?: string;
+  country?: string;
+}
+
+export function buildCardCompanionFile(data: CompanionCardData): string {
+  const lines = [
+    `# Card Details — ${data.cardholderName}`,
+    "",
+    "## Card Info",
+    "",
+    `- **Card ID:** ${data.cardId}`,
+    `- **First 4 Digits:** ${data.bin}`,
+    `- **Expiry:** ${data.expMonth.padStart(2, "0")}/${data.expYear}`,
+    `- **Cardholder Name:** ${data.cardholderName}`,
+    `- **Brand:** ${data.brand}`,
+    "",
+    "## Billing Address",
+    "",
+    `- **Street:** ${data.address || ""}`,
+    `- **City:** ${data.city || ""}`,
+    `- **State:** ${data.state || ""}`,
+    `- **ZIP:** ${data.zip || ""}`,
+    `- **Country:** ${data.country || ""}`,
+    "",
+  ];
+  return lines.join("\n");
+}
+
 export function downloadEncryptedFile(mdContent: string, filename: string): void {
   const blob = new Blob([mdContent], { type: "text/markdown" });
   const url = URL.createObjectURL(blob);

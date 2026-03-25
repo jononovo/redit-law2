@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { authFetch } from "@/lib/auth-fetch";
-import { encryptCardDetails, buildEncryptedCardFile, downloadEncryptedFile } from "@/lib/card/onboarding-rail5/encrypt";
+import { encryptCardDetails, buildEncryptedCardFile, buildCardCompanionFile, downloadEncryptedFile } from "@/lib/card/onboarding-rail5/encrypt";
 import { detectCardBrand, brandToApiValue, getMaxDigits } from "@/lib/card/card-brand";
 import { type CardFieldErrors } from "@/lib/card/hooks";
 import { RAIL5_CARD_DELIVERED } from "@/lib/agent-management/bot-messaging/templates";
@@ -55,6 +55,7 @@ export function useRail5Wizard({ onComplete, onClose, preselectedBotId }: UseRai
   const [deliveryAttempted, setDeliveryAttempted] = useState(false);
   const [deliveryResult, setDeliveryResult] = useState<{ delivered: boolean; method: string; messageId?: number; expiresAt?: string } | null>(null);
   const [storedFileContent, setStoredFileContent] = useState("");
+  const [storedCompanionContent, setStoredCompanionContent] = useState("");
   const [cardEncrypting, setCardEncrypting] = useState(false);
   const [cardEncrypted, setCardEncrypted] = useState(false);
 
@@ -209,6 +210,21 @@ export function useRail5Wizard({ onComplete, onClose, preselectedBotId }: UseRai
       const md = buildEncryptedCardFile(ciphertextBytes, cardName, cardLast4, cardId);
       setStoredFileContent(md);
 
+      const companionMd = buildCardCompanionFile({
+        cardId,
+        bin: cleanNumber.slice(0, 4),
+        expMonth: expMonth,
+        expYear: expYear,
+        cardholderName: holderName,
+        brand: cardBrand,
+        address,
+        city,
+        state,
+        zip,
+        country,
+      });
+      setStoredCompanionContent(companionMd);
+
       if (selectedBotId) {
         setDeliveryAttempted(true);
         try {
@@ -224,6 +240,8 @@ export function useRail5Wizard({ onComplete, onClose, preselectedBotId }: UseRai
                 card_last4: cardLast4,
                 file_content: md,
                 suggested_path: `.creditclaw/cards/${cardId}.md`,
+                companion_file_content: companionMd,
+                companion_suggested_path: `.creditclaw/cards/${cardId}-details.md`,
                 instructions: RAIL5_CARD_DELIVERED,
               },
             }),
@@ -239,7 +257,10 @@ export function useRail5Wizard({ onComplete, onClose, preselectedBotId }: UseRai
         }
       }
 
-      downloadEncryptedFile(md, `Card-${cardName.replace(/[^a-zA-Z0-9-]/g, "")}-${cardLast4}.md`);
+      const baseName = `Card-${cardName.replace(/[^a-zA-Z0-9-]/g, "")}-${cardLast4}`;
+      downloadEncryptedFile(md, `${baseName}.md`);
+      await new Promise(resolve => setTimeout(resolve, 500));
+      downloadEncryptedFile(companionMd, `${baseName}-details.md`);
       setDownloadDone(true);
 
       setSavedCardDetails({
@@ -435,6 +456,7 @@ export function useRail5Wizard({ onComplete, onClose, preselectedBotId }: UseRai
     deliveryAttempted,
     deliveryResult,
     storedFileContent,
+    storedCompanionContent,
     cardEncrypting,
     cardEncrypted,
     savedCardDetails,

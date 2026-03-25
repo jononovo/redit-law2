@@ -145,6 +145,7 @@ export function Rail5SetupWizardContent({ onComplete, onClose, preselectedBotId,
           directDeliverySucceeded={w.directDeliverySucceeded}
           deliveryResult={w.deliveryResult}
           storedFileContent={w.storedFileContent}
+          storedCompanionContent={w.storedCompanionContent}
           onNext={() => w.savedCardDetails ? w.setStep(8) : w.handleDone()}
           onDone={w.handleDone}
         />
