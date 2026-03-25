@@ -405,7 +405,7 @@ export default function CatalogClient({
                 </div>
               </aside>
 
-              <div className="lg:hidden mb-4">
+              <div className="flex items-center justify-between mb-4 lg:hidden">
                 <button
                   onClick={() => setShowMobileFilters(!showMobileFilters)}
                   className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white border border-neutral-200 text-sm font-semibold text-neutral-700 hover:bg-neutral-50 transition-colors"
@@ -419,6 +419,24 @@ export default function CatalogClient({
                     </span>
                   )}
                 </button>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => setViewMode("cards")}
+                    className={`p-2 rounded-lg transition-colors ${viewMode === "cards" ? "bg-primary/10 text-primary" : "text-neutral-400 hover:text-neutral-600 hover:bg-neutral-50"}`}
+                    data-testid="button-view-cards-mobile"
+                    title="Card view"
+                  >
+                    <LayoutGrid className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => setViewMode("table")}
+                    className={`p-2 rounded-lg transition-colors ${viewMode === "table" ? "bg-primary/10 text-primary" : "text-neutral-400 hover:text-neutral-600 hover:bg-neutral-50"}`}
+                    data-testid="button-view-table-mobile"
+                    title="Table view"
+                  >
+                    <Table2 className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
 
               {showMobileFilters && (
@@ -437,7 +455,7 @@ export default function CatalogClient({
               )}
 
               <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-end mb-4 gap-1">
+                <div className="hidden lg:flex items-center justify-end gap-1 -mt-1 mb-2">
                   <button
                     onClick={() => setViewMode("cards")}
                     className={`p-2 rounded-lg transition-colors ${viewMode === "cards" ? "bg-primary/10 text-primary" : "text-neutral-400 hover:text-neutral-600 hover:bg-neutral-50"}`}
