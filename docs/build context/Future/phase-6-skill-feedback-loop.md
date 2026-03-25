@@ -1222,10 +1222,148 @@ Map these to the new filter fields before calling `storage.searchBrands()`.
 
 ---
 
+## Part C: Scale Readiness (Pre-5000 Brands)
+
+### Why this matters
+
+The `brand_index` table is about to grow from ~50 brands to 5,000+. Two existing patterns will degrade at that scale:
+
+1. **`searchBrands()` selects every column** — including `brandData` (full JSONB vendor skill object, several KB each) and `skillMd` (full markdown text, several KB each). The catalog `VendorCard` only uses ~12 lightweight columns. Pulling 50 × (full JSONB + full markdown) per catalog page load is wasteful now and will be slow at 5,000 rows.
+2. **`getAllBrandFacets()` does a full table scan on every request** — every catalog page load and every filter change triggers `SELECT sector, tier FROM brand_index` over the entire table. At 5,000 rows the query itself stays fast, but running it hundreds of times per minute is unnecessary when the data changes infrequently.
+
+Both fixes are surgical changes to `server/storage/brand-index.ts`. No schema changes, no API changes, no frontend changes.
+
+### Step C1: Column-select optimization for catalog queries
+
+**Edit:** `server/storage/brand-index.ts` — `searchBrands()` method
+
+**Problem:** The current query uses `db.select().from(brandIndex)`, which selects all 40+ columns. The catalog `VendorCard` component uses only these fields:
+
+| Field | Used for |
+|---|---|
+| `id` | Key |
+| `slug` | Link href, test IDs |
+| `name` | Display name, avatar initial |
+| `sector` | Sector label + icon |
+| `subSectors` | Sub-sector badges |
+| `tier` | Tier label |
+| `maturity` | Maturity badge |
+| `agentReadiness` | Agent friendliness stars |
+| `checkoutMethods` | Checkout method badges |
+| `capabilities` | Capability badges |
+| `hasDeals` | "Deals" badge |
+| `brandData` | Only `feedbackStats.successRate` — see note below |
+
+**The `brandData` problem:** `VendorCard` casts `brandData` to `VendorSkill` and reads `vendor?.feedbackStats?.successRate`. This is a single numeric value buried inside a multi-KB JSON object. Ideally this would be a top-level column on `brand_index` (like `agentReadiness`), but that's a schema change for later. For now, `brandData` must remain in the select.
+
+**However, `skillMd` is never used by catalog cards** and can be excluded immediately. At ~2-5 KB per brand × 50 per page = 100-250 KB saved per catalog load.
+
+**Implementation — add a `searchBrandsForCatalog()` method:**
+
+```tsx
+const CATALOG_CARD_COLUMNS = {
+  id: brandIndex.id,
+  slug: brandIndex.slug,
+  name: brandIndex.name,
+  sector: brandIndex.sector,
+  subSectors: brandIndex.subSectors,
+  tier: brandIndex.tier,
+  maturity: brandIndex.maturity,
+  agentReadiness: brandIndex.agentReadiness,
+  checkoutMethods: brandIndex.checkoutMethods,
+  capabilities: brandIndex.capabilities,
+  hasDeals: brandIndex.hasDeals,
+  brandData: brandIndex.brandData,
+  // Future rating columns (Phase 6 Part B) — add here when created:
+  // ratingOverall: brandIndex.ratingOverall,
+  // ratingCount: brandIndex.ratingCount,
+};
+
+async searchBrandsForCatalog(filters: BrandSearchFilters): Promise<...> {
+  // Same WHERE/ORDER/LIMIT logic as searchBrands(), but with column select
+  const query = db.select(CATALOG_CARD_COLUMNS).from(brandIndex);
+  // ... identical filter/sort/limit logic ...
+}
+```
+
+**Alternative approach (simpler):** Instead of a new method, modify `searchBrands()` to accept an optional `columns` parameter or `excludeHeavyColumns` boolean. When true, exclude `skillMd` (and later any other large text columns). The catalog page passes `excludeHeavyColumns: true`; the detail page and bot API continue using full select.
+
+**Recommended approach:** The simpler alternative — add `lite?: boolean` to `BrandSearchFilters`. When `lite` is true, use `db.select(CATALOG_CARD_COLUMNS)` instead of `db.select()`. This avoids duplicating the entire filter/sort/limit logic.
+
+```tsx
+// In BrandSearchFilters:
+lite?: boolean;  // Exclude heavy columns (skillMd) — use for catalog card rendering
+
+// In searchBrands():
+const query = filters.lite
+  ? db.select(CATALOG_CARD_COLUMNS).from(brandIndex)
+  : db.select().from(brandIndex);
+```
+
+**Callers to update:**
+- `app/skills/page.tsx` (catalog) — pass `lite: true` (after A2 SSR conversion, this becomes the server component call)
+- `app/api/v1/bot/skills/route.ts` (bot API) — keep full select (bot API returns `skill_md`)
+- `app/skills/[vendor]/page.tsx` (detail) — uses `getBrandBySlug()`, not `searchBrands()`, no change needed
+
+**Type safety note:** When `lite: true`, the return type technically has `skillMd` missing. Pragmatically, since the catalog `VendorCard` never accesses `skillMd`, this won't cause runtime errors. For strict typing, the method could return `Omit<BrandIndex, 'skillMd'>[]` when lite, but this adds complexity for minimal benefit. A simpler approach: keep the return type as `BrandIndex[]` (the omitted column will be `undefined` at runtime, which is fine since no catalog code reads it).
+
+### Step C2: Cache `getAllBrandFacets()` with 10-minute TTL
+
+**Edit:** `server/storage/brand-index.ts` — `getAllBrandFacets()` method
+
+**Problem:** Every catalog page load calls `getAllBrandFacets()`, which runs `SELECT sector, tier FROM brand_index` over the full table. The results change only when brands are added/updated — at most a few times per day. Running this query on every request is wasteful.
+
+**Implementation — simple in-memory cache:**
+
+```tsx
+// At module top level in brand-index.ts:
+let facetCache: { sectors: string[]; tiers: string[] } | null = null;
+let facetCacheExpiry = 0;
+const FACET_CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
+
+// In getAllBrandFacets():
+async getAllBrandFacets(): Promise<{ sectors: string[]; tiers: string[] }> {
+  const now = Date.now();
+  if (facetCache && now < facetCacheExpiry) {
+    return facetCache;
+  }
+
+  const rows = await db
+    .select({ sector: brandIndex.sector, tier: brandIndex.tier })
+    .from(brandIndex);
+  const sectors = [...new Set(rows.map(r => r.sector))];
+  const tiers = [...new Set(rows.map(r => r.tier).filter((t): t is string => t !== null))];
+
+  facetCache = { sectors, tiers };
+  facetCacheExpiry = now + FACET_CACHE_TTL_MS;
+
+  return facetCache;
+},
+```
+
+**Cache invalidation:** Optionally, add a `invalidateFacetCache()` export that sets `facetCache = null`. Call it from `upsertBrandIndex()` so newly added brands appear in the sidebar immediately rather than after up to 10 minutes. This is optional — a 10-minute delay for new sidebar entries is acceptable.
+
+```tsx
+export function invalidateFacetCache() {
+  facetCache = null;
+  facetCacheExpiry = 0;
+}
+```
+
+**Why in-memory and not Redis/external cache:** CreditClaw runs as a single Next.js process. In-memory caching is sufficient — no extra infrastructure. If the app scales to multiple instances, this would need a shared cache, but that's a future concern.
+
+**Edge case — cold start:** After server restart, the first request hits the DB (cache miss). This is fine — it's one query.
+
+**Edge case — Next.js server components and module scope:** Module-level variables in Node.js persist across requests within the same server process. This is the standard caching pattern for Next.js server components (same as how `cache()` from React works, but across requests rather than within a single request).
+
+---
+
 ## Implementation order
 
 | Step | Description | Depends on | Risk |
 |---|---|---|---|
+| C1 | Column-select optimization for catalog queries | — | Low |
+| C2 | Cache `getAllBrandFacets()` with 10-min TTL | — | Low |
 | A1 | Brand detail page → server component + client extraction | — | Medium (large file refactor) |
 | A2 | Catalog page metadata via layout | — | Low |
 | A3 | JSON-LD structured data | A1 | Low |
@@ -1244,16 +1382,17 @@ Map these to the new filter fields before calling `storage.searchBrands()`.
 
 **Recommended build sequence:**
 1. ~~A1 + A2 + A4 (SSR — immediate SEO value, no new tables)~~ **✅ DONE**
-2. B1 + B2 (schema changes — both migrations at once)
-3. B3 + B4 (storage + API — feedback can start being collected)
-4. B5 (generator update — agents start seeing feedback instructions)
-5. A3 (structured data — builds on A1)
-6. B6 (aggregation — ratings become visible)
-7. B7 + B8 + B10 (display ratings everywhere)
-8. B11 (rating filters — agents can use ratings in search)
-9. B9 (human feedback UI — can happen any time after B4)
+2. **C1 + C2 (scale readiness — do before growing brand_index past ~100 rows)**
+3. B1 + B2 (schema changes — both migrations at once)
+4. B3 + B4 (storage + API — feedback can start being collected)
+5. B5 (generator update — agents start seeing feedback instructions)
+6. A3 (structured data — builds on A1)
+7. B6 (aggregation — ratings become visible)
+8. B7 + B8 + B10 (display ratings everywhere)
+9. B11 (rating filters — agents can use ratings in search)
+10. B9 (human feedback UI — can happen any time after B4)
 
-Steps 2-4 can be done as a single task. Steps 5-8 as a second task. Step 9 is independent.
+C1 + C2 can be done as a single task (one file, two changes). Steps 3-5 as a single task. Steps 6-9 as a second task. Step 10 is independent.
 
 ---
 
