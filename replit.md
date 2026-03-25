@@ -249,7 +249,6 @@ Each concern has its own file with type definition + label map. Barrel-exported 
 - `sectors.ts` — `VendorSector` type + `SECTOR_LABELS` (20 sectors: retail, office, fashion, health, home, electronics, industrial, etc.)
 - `tiers.ts` — `BrandTier` type + `BRAND_TIER_LABELS` (7 tiers: ultra_luxury, luxury, premium, mid_range, value, budget, commodity). Deprecated `VendorTier` and `TIER_LABELS` aliases are re-exported for backward compatibility.
 - `brand-types.ts` — `BrandType` type + `BRAND_TYPE_LABELS` (5 types: brand, retailer, marketplace, chain, independent)
-- `categories.ts` — `VendorCategory` type + `CATEGORY_LABELS` (6 legacy categories)
 - `checkout-methods.ts` — `CheckoutMethod` type + `CHECKOUT_METHOD_LABELS` + `CHECKOUT_METHOD_COLORS`
 - `capabilities.ts` — `VendorCapability` type + `CAPABILITY_LABELS`
 - `payment-methods.ts` — `PaymentMethod` type + `PAYMENT_METHOD_LABELS` (11 methods: card, ach, crypto, apple_pay, etc.)
@@ -258,7 +257,7 @@ Each concern has its own file with type definition + label map. Barrel-exported 
 - `maturity.ts` — `SkillMaturity` type
 
 **Core types** (`lib/procurement-skills/types.ts`):
-Re-exports all taxonomy types/labels from `taxonomy/`. Defines domain interfaces: `VendorSkill`, `SearchDiscovery`, `BuyingConfig`, `DealsConfig`, `TaxonomyConfig`, `MethodConfig`. Also exports `computeAgentFriendliness()`.
+Re-exports all taxonomy types/labels from `taxonomy/`. Defines domain interfaces: `VendorSkill` (uses `sector: VendorSector` — the legacy `category: VendorCategory` field was removed), `SearchDiscovery`, `BuyingConfig`, `DealsConfig`, `TaxonomyConfig`, `MethodConfig`. Also exports `computeAgentFriendliness()`.
 
 **Vendors** (`lib/procurement-skills/vendors/`):
 Each vendor is its own file exporting a single `VendorSkill` object. Barrel-exported via `index.ts`.
@@ -293,7 +292,9 @@ Sole source of truth for all brand data across all surfaces (bots, humans, expor
 - `agent_readiness` integer score (MCP=25, API=20, guest=15, programmatic_checkout=10, deals=5, feed=5, verified=5)
 - B2B columns: `tax_exempt_supported`, `po_number_supported`, `business_account`
 - Maturity progression: draft → community → official (brand claimed) → verified (CreditClaw audited)
-- Storage methods: `searchBrands`, `getBrandById`, `getBrandBySlug`, `getRetailersForBrand`, `upsertBrandIndex`, `recomputeReadiness`
+- Storage methods: `searchBrands`, `searchBrandsCount`, `getBrandById`, `getBrandBySlug`, `getRetailersForBrand`, `upsertBrandIndex`, `recomputeReadiness`, `getAllBrandFacets`
+- `searchBrands` supports `lite?: boolean` filter — when true, selects only catalog card fields (excludes `skillMd` and heavy metadata columns). Used by internal search API and sitemap. Export type `BrandCardRow` for type-safe lite consumers.
+- `getAllBrandFacets` uses 10-minute in-memory cache (module-level). `invalidateFacetCache()` exported from `server/storage/brand-index.ts` and called automatically on `upsertBrandIndex`.
 - 22+ indexes (5 btree, 7 GIN on arrays, 1 GIN on tsvector, 7 partial)
 
 **Discovery API** (`app/api/v1/bot/skills/route.ts`):
@@ -313,11 +314,15 @@ Self-service brand ownership verification. Brand owners claim their brand from t
 - API endpoints: `POST /api/v1/brands/[slug]/claim`, `GET /api/v1/brands/claims/mine`, `POST /api/v1/brands/claims/[id]/revoke`, `GET /api/v1/brands/claims/review` (admin), `POST /api/v1/brands/claims/[id]/review` (admin verify/reject)
 - UI: Claim button on vendor detail page (`app/skills/[vendor]/page.tsx` — ghost button, shows for logged-out too, links badges to My Skills), unified "My Skills" page (`app/(dashboard)/skill-builder/submit/page.tsx` — submissions + claims in one list, claim search modal), Admin review queue (`app/admin123/brand-claims/page.tsx` — behind admin auth gate)
 
-**UI** — Catalog page (`app/skills/page.tsx`, client component) with sector/tier/category/capability filters in sidebar, sub-sector tags on cards, deals badges. Static metadata via `app/skills/layout.tsx` (server component). Vendor detail page (`app/skills/[vendor]/page.tsx`, **server component** — SSR for SEO) with `generateMetadata()` for title/OG/Twitter/canonical tags, `cache()` for deduplicating DB queries between metadata and page, and three extracted client components:
+**UI** — Catalog page uses hybrid SSR: `app/skills/page.tsx` is a **server component** that fetches the initial 50 brands + facets + total count via `storage.searchBrands({ lite: true })` and passes them as props to `app/skills/catalog-client.tsx` (`"use client"`). The client component initializes state from these server-provided props (no loading skeleton on first paint), then takes over for filtering/search/pagination via the internal API. Dynamic `generateMetadata()` in `page.tsx` uses live total count. `VendorCard` extracted to `app/skills/vendor-card.tsx` (shared between catalog and sector pages). Vendor detail page (`app/skills/[vendor]/page.tsx`, **server component** — SSR for SEO) with `generateMetadata()` for title/OG/Twitter/canonical tags, `cache()` for deduplicating DB queries between metadata and page, and three extracted client components:
   - `brand-claim-button.tsx` — auth check + claim API call
   - `skill-preview-panel.tsx` — expand/collapse skill markdown + download
   - `copy-skill-url.tsx` — clipboard copy with feedback
-  Custom 404 via `not-found.tsx` preserving branded "Vendor Not Found" UI. Sitemap (`app/sitemap.ts`) is async and includes all brand detail pages.
+  Custom 404 via `not-found.tsx` preserving branded "Vendor Not Found" UI.
+
+**Sector Landing Pages** (`app/c/[sector]/page.tsx`) — Server component with SSR metadata, canonical URLs at `/c/[sector]`, cross-linking to other populated sectors, and 404 for sectors with zero published brands. Uses shared `VendorCard` component. Only sectors with at least one published brand (verified/official/beta/community) are included in `generateStaticParams` and the sitemap.
+
+Sitemap (`app/sitemap.ts`) is async and includes all brand detail pages and populated sector landing pages.
 
 ### Community Submissions Module
 Registered users can submit vendor websites for analysis, contributing to the procurement skills library.

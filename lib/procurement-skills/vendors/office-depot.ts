@@ -4,7 +4,7 @@ export const office_depot: VendorSkill = {
     slug: "office-depot",
   name: "Office Depot",
   logoUrl: "/assets/images/vendors/office-depot.svg",
-  category: "office",
+  sector: "office",
   url: "https://www.officedepot.com",
   checkoutMethods: ["self_hosted_card"],
   capabilities: ["price_lookup", "stock_check", "tax_exemption", "po_numbers", "order_tracking", "business_invoicing"],

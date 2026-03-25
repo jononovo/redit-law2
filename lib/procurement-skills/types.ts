@@ -1,7 +1,6 @@
 export type {
   CheckoutMethod,
   VendorCapability,
-  VendorCategory,
   VendorSector,
   BrandTier,
   VendorTier,
@@ -16,7 +15,6 @@ export {
   CHECKOUT_METHOD_LABELS,
   CHECKOUT_METHOD_COLORS,
   CAPABILITY_LABELS,
-  CATEGORY_LABELS,
   SECTOR_LABELS,
   BRAND_TIER_LABELS,
   TIER_LABELS,
@@ -28,7 +26,6 @@ export {
 
 import type { VendorSector } from "./taxonomy/sectors";
 import type { BrandTier } from "./taxonomy/tiers";
-import type { VendorCategory } from "./taxonomy/categories";
 import type { CheckoutMethod } from "./taxonomy/checkout-methods";
 import type { VendorCapability } from "./taxonomy/capabilities";
 import type { PaymentMethod } from "./taxonomy/payment-methods";
@@ -78,7 +75,7 @@ export interface VendorSkill {
   slug: string;
   name: string;
   logoUrl?: string;
-  category: VendorCategory;
+  sector: VendorSector;
   url: string;
 
   checkoutMethods: CheckoutMethod[];

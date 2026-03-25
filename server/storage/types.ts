@@ -360,7 +360,7 @@ export interface IStorage {
   getRetailersForBrand(brandName: string): Promise<BrandIndex[]>;
   upsertBrandIndex(data: InsertBrandIndex): Promise<BrandIndex>;
   recomputeReadiness(slug: string): Promise<number>;
-  getAllBrandFacets(): Promise<{ sectors: string[]; tiers: string[]; categories: string[] }>;
+  getAllBrandFacets(): Promise<{ sectors: string[]; tiers: string[] }>;
 
   createBrandClaim(data: InsertBrandClaim): Promise<BrandClaim>;
   getBrandClaimById(id: number): Promise<BrandClaim | null>;

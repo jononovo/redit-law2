@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
 
   try {
     const [brands, total, facets] = await Promise.all([
-      storage.searchBrands(filters),
+      storage.searchBrands({ ...filters, lite: true }),
       storage.searchBrandsCount(filters),
       storage.getAllBrandFacets(),
     ]);

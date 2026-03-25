@@ -4,7 +4,7 @@ export const home_depot: VendorSkill = {
     slug: "home-depot",
   name: "Home Depot",
   logoUrl: "/assets/images/vendors/home-depot.svg",
-  category: "hardware",
+  sector: "home",
   url: "https://www.homedepot.com",
   checkoutMethods: ["self_hosted_card"],
   capabilities: ["price_lookup", "stock_check", "order_tracking", "bulk_pricing"],

@@ -4,7 +4,7 @@ export const amazon: VendorSkill = {
     slug: "amazon",
   name: "Amazon",
   logoUrl: "/assets/images/vendors/amazon.svg",
-  category: "retail",
+  sector: "retail",
   url: "https://www.amazon.com",
   checkoutMethods: ["native_api", "self_hosted_card"],
   capabilities: ["price_lookup", "stock_check", "programmatic_checkout", "order_tracking", "returns"],

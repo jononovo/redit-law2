@@ -10,7 +10,6 @@ import {
   CHECKOUT_METHOD_LABELS,
   CHECKOUT_METHOD_COLORS,
   CAPABILITY_LABELS,
-  CATEGORY_LABELS,
   SECTOR_LABELS,
   BRAND_TIER_LABELS,
   ORDERING_PERMISSION_LABELS,
@@ -18,7 +17,7 @@ import {
   CHECKOUT_PROVIDER_LABELS,
   CheckoutMethod,
   VendorCapability,
-  VendorCategory,
+  VendorSector,
   SkillMaturity,
   VendorSkill,
 } from "@/lib/procurement-skills/types";
@@ -64,13 +63,27 @@ const MATURITY_CONFIG: Record<SkillMaturity, { label: string; className: string;
   draft: { label: "Draft", className: "bg-neutral-100 text-neutral-600 border-neutral-200", description: "Initial version, not yet fully tested" },
 };
 
-const CATEGORY_ICONS: Record<VendorCategory, React.ReactNode> = {
+const SECTOR_ICONS: Partial<Record<VendorSector, React.ReactNode>> = {
   retail: <ShoppingCart className="w-5 h-5" />,
   office: <Package className="w-5 h-5" />,
-  hardware: <Zap className="w-5 h-5" />,
   electronics: <Cpu className="w-5 h-5" />,
   industrial: <Globe className="w-5 h-5" />,
   specialty: <Star className="w-5 h-5" />,
+  home: <Package className="w-5 h-5" />,
+  fashion: <Tag className="w-5 h-5" />,
+  health: <Zap className="w-5 h-5" />,
+  beauty: <Star className="w-5 h-5" />,
+  saas: <Monitor className="w-5 h-5" />,
+  construction: <Globe className="w-5 h-5" />,
+  automotive: <Zap className="w-5 h-5" />,
+  food: <ShoppingCart className="w-5 h-5" />,
+  sports: <TrendingUp className="w-5 h-5" />,
+  luxury: <Star className="w-5 h-5" />,
+  travel: <Globe className="w-5 h-5" />,
+  entertainment: <Monitor className="w-5 h-5" />,
+  education: <Package className="w-5 h-5" />,
+  pets: <Star className="w-5 h-5" />,
+  garden: <Globe className="w-5 h-5" />,
 };
 
 const CHECKOUT_ICONS: Record<CheckoutMethod, React.ReactNode> = {
@@ -165,8 +178,8 @@ export default async function VendorDetailPage({ params }: Props) {
                     </div>
                     <div className="flex items-center gap-4 text-sm text-neutral-500">
                       <div className="flex items-center gap-1.5">
-                        {CATEGORY_ICONS[vendor.category]}
-                        <span className="font-medium">{CATEGORY_LABELS[vendor.category]}</span>
+                        {SECTOR_ICONS[vendor.sector] || <Layers className="w-5 h-5" />}
+                        <span className="font-medium">{SECTOR_LABELS[vendor.sector] || vendor.sector}</span>
                       </div>
                       {vendor.taxonomy && (
                         <>

@@ -4,7 +4,7 @@ export const grainger: VendorSkill = {
     slug: "grainger",
   name: "Grainger",
   logoUrl: "/assets/images/vendors/grainger.svg",
-  category: "industrial",
+  sector: "industrial",
   url: "https://www.grainger.com",
   checkoutMethods: ["self_hosted_card"],
   capabilities: ["price_lookup", "stock_check", "bulk_pricing", "tax_exemption", "po_numbers", "order_tracking", "business_invoicing", "account_creation"],

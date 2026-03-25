@@ -57,7 +57,6 @@ export async function GET(request: NextRequest) {
   return NextResponse.json({
     vendors: brands.map(brandToVendorResponse),
     total: brands.length,
-    categories: facets.categories,
     sectors: facets.sectors,
     tiers: facets.tiers,
   });
@@ -70,6 +69,7 @@ function brandToVendorResponse(b: BrandIndex) {
   return {
     slug: b.slug,
     name: b.name,
+    sector: b.sector,
     category: b.sector,
     url: b.url,
     checkout_methods: b.checkoutMethods,

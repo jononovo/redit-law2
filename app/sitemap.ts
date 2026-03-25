@@ -3,6 +3,7 @@ import { sections } from "@/docs/content/sections";
 import { getAllPosts, getAllTags } from "@/content/blog/posts";
 import { categories } from "@/content/blog/taxonomy";
 import { storage } from "@/server/storage";
+import { SECTOR_LABELS, VendorSector } from "@/lib/procurement-skills/types";
 
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || "https://creditclaw.com";
 
@@ -99,6 +100,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     limit: 500,
     sortBy: "name",
     sortDir: "asc",
+    lite: true,
   });
 
   const brandPages: MetadataRoute.Sitemap = brands.map((b) => ({
@@ -108,5 +110,23 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.7,
   }));
 
-  return [...staticPages, ...docPages, ...blogPostPages, ...blogCategoryPages, ...blogTagPages, ...brandPages];
+  const populatedSectors = (Object.keys(SECTOR_LABELS) as VendorSector[]);
+  const sectorCounts = await Promise.all(
+    populatedSectors.map(async (s) => {
+      const count = await storage.searchBrandsCount({
+        sectors: [s],
+        maturities: ["verified", "official", "beta", "community"],
+      });
+      return { sector: s, count };
+    })
+  );
+  const sectorPages: MetadataRoute.Sitemap = sectorCounts
+    .filter((sc) => sc.count > 0)
+    .map((sc) => ({
+      url: `${BASE_URL}/c/${sc.sector}`,
+      changeFrequency: "weekly" as const,
+      priority: 0.6,
+    }));
+
+  return [...staticPages, ...docPages, ...blogPostPages, ...blogCategoryPages, ...blogTagPages, ...brandPages, ...sectorPages];
 }

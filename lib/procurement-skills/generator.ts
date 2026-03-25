@@ -141,7 +141,7 @@ ${vendor.deals ? `current_deals: ${vendor.deals.currentDeals}` : ""}
 # Shopping at ${vendor.name}
 
 **Store URL:** ${vendor.url}
-**Category:** ${vendor.category}
+**Sector:** ${vendor.sector}
 **Agent Friendliness:** ${"★".repeat(friendliness)}${"☆".repeat(5 - friendliness)} (${friendliness}/5)
 **Capabilities:** ${capsList}
 ${vendor.feedbackStats ? `**Success Rate:** ${Math.round(vendor.feedbackStats.successRate * 100)}%` : ""}

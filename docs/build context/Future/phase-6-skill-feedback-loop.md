@@ -144,7 +144,9 @@ This gives verified brands instant-load static pages. Other brands (draft, commu
 
 **Refactor:** `app/skills/page.tsx` (670 lines) — convert from fully client-rendered to server component with URL-based filter state.
 
-**Why full SSR:** The layout-only approach gave crawlers a title and description but an empty brand grid. With full SSR, crawlers see the actual brand cards in the HTML. Each filter combination becomes a unique, indexable URL (e.g., `/skills?sector=office`, `/skills?q=amazon`).
+**Why full SSR:** The layout-only approach gave crawlers a title and description but an empty brand grid. With full SSR, crawlers see the actual brand cards in the HTML. Each filter combination becomes a unique, indexable URL (e.g., `/skills?q=amazon`).
+
+**⚠️ Sector filters use dedicated routes, not query params.** Sector browsing lives at `/c/[sector]` (see Step A5 below). The catalog `/skills` page does NOT generate sector-specific metadata via `?sector=` query params — that would create contradictory canonical signals. The `/skills` page handles search queries (`?q=`) and multi-faceted filters (`?checkout=native_api&tier=enterprise`) with canonical pointing to `/skills`. Sector landing pages have their own canonical URLs at `/c/office`, `/c/retail`, etc.
 
 #### Architecture
 
@@ -228,6 +230,10 @@ function buildFilters(params: CatalogSearchParams): BrandSearchFilters {
   };
 }
 
+// NOTE: VendorCategory / CATEGORY_LABELS removed — it was a legacy duplicate of VendorSector.
+// The filter sidebar now has one "Sector" group, populated from DB facets with counts.
+// No "Category" group. This eliminates the dual-param merge complexity.
+
 interface Props {
   searchParams: Promise<CatalogSearchParams>;
 }
@@ -235,14 +241,9 @@ interface Props {
 export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
   const params = await searchParams;
 
-  if (params.sector) {
-    const sectorLabel = SECTOR_LABELS[params.sector as VendorSector] ?? params.sector;
-    return {
-      title: `${sectorLabel} Procurement Skills | CreditClaw`,
-      description: `Browse AI agent procurement skills for ${sectorLabel} vendors. Filter by checkout method, capability, and agent friendliness.`,
-      alternates: { canonical: `${BASE_URL}/skills` },
-    };
-  }
+  // NOTE: Sector-specific metadata lives at /c/[sector] (Step A5), not here.
+  // The catalog page does not generate distinct titles for ?sector= params
+  // to avoid contradictory canonical signals.
 
   if (params.q) {
     return {
@@ -255,7 +256,7 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
   // Default metadata (same content that was in layout.tsx)
   return {
     title: "Skill Index - AI Agent Procurement Skills | CreditClaw",
-    description: "Browse procurement skills that teach AI agents how to shop at 50+ vendors. Filter by category, checkout method, and agent friendliness score.",
+    description: "Browse procurement skills that teach AI agents how to shop at 50+ vendors. Filter by sector, checkout method, and agent readiness score.",
     openGraph: {
       title: "Skill Index - AI Agent Procurement Skills",
       description: "Browse procurement skills that teach AI agents how to shop at 50+ vendors.",
@@ -343,6 +344,7 @@ export default async function SkillsCatalogPage({ searchParams }: Props) {
                       </div>
                     ))}
                     <CatalogLoadMore
+                      key={JSON.stringify(currentFilters)}
                       total={total}
                       currentCount={brands.length}
                       filters={currentFilters}
@@ -376,8 +378,8 @@ export default async function SkillsCatalogPage({ searchParams }: Props) {
 |---|---|---|
 | `VendorCard` | `brand: BrandIndex` | Drizzle row object (strings, numbers, arrays, null) |
 | `CatalogSearch` | `initialValue: string` | string |
-| `CatalogFilters` | `facets: { sectors: string[]; tiers: string[]; categories: string[] }`, `currentFilters: { search: string; sectors: string[]; tiers: string[]; ... }` | plain objects |
-| `CatalogLoadMore` | `total: number`, `currentCount: number`, `filters: { ... }` | numbers + plain object |
+| `CatalogFilters` | `facets: { sectors: FacetValue[]; tiers: FacetValue[] }`, `currentFilters: { search: string; sectors: string[]; tiers: string[]; ... }` | plain objects |
+| `CatalogLoadMore` | `total: number`, `currentCount: number`, `filters: { search: string; sectors: string[]; ... }` | numbers + plain object. **Must have `key={JSON.stringify(currentFilters)}` to reset state on filter change.** |
 
 #### A2c. UX: filter interactions with useTransition
 
@@ -415,11 +417,37 @@ export function CatalogFilters({ facets, currentFilters }) {
     });
   };
 
+  const activeFilterCount =
+    currentFilters.sectors.length +
+    currentFilters.tiers.length +
+    currentFilters.checkoutMethods.length +
+    currentFilters.capabilities.length +
+    currentFilters.maturity.length;
+
   return (
     <>
       {/* Desktop sidebar */}
       <aside className={`hidden lg:block w-64 flex-shrink-0 ${isPending ? "opacity-60 pointer-events-none" : ""}`}>
-        {/* filter groups using facets + currentFilters for checked state */}
+        {/* Sector group — from DB facets, shows counts */}
+        {facets.sectors.map(s => (
+          <FilterCheckbox
+            label={`${SECTOR_LABELS[s.value] ?? s.value} (${s.count})`}
+            checked={currentFilters.sectors.includes(s.value)}
+            onChange={() => toggleFilter("sector", s.value)}
+          />
+        ))}
+
+        {/* Tier group — from DB facets, shows counts */}
+        {facets.tiers.map(t => (
+          <FilterCheckbox
+            label={`${BRAND_TIER_LABELS[t.value] ?? t.value} (${t.count})`}
+            checked={currentFilters.tiers.includes(t.value)}
+            onChange={() => toggleFilter("tier", t.value)}
+          />
+        ))}
+
+        {/* Checkout Method, Capabilities, Maturity groups — from hardcoded constants */}
+        {/* Use paramKey matching the URL param: "checkout", "capability", "maturity" */}
       </aside>
 
       {/* Mobile drawer toggle + drawer */}
@@ -485,9 +513,14 @@ export function CatalogLoadMore({ total, currentCount, filters }: Props) {
   const [loading, setLoading] = useState(false);
   const [extraBrandsGrouped, setExtraBrandsGrouped] = useState<Record<string, BrandIndex[]>>({});
 
-  // Reset extra brands when filters change (server will re-render with new initial set)
-  // This happens automatically: when searchParams change, the page re-renders,
-  // CatalogLoadMore unmounts and remounts with new props (currentCount resets to the new batch size)
+  // ⚠️ IMPORTANT: Client components DO NOT unmount during Next.js soft navigation.
+  // When searchParams change, the server re-renders and passes new props, but the
+  // component instance persists — local state (extraBrands) is NOT reset automatically.
+  //
+  // Fix: The server component must render CatalogLoadMore with a `key` prop that
+  // changes when filters change, forcing React to unmount/remount:
+  //   <CatalogLoadMore key={JSON.stringify(currentFilters)} ... />
+  // This resets extraBrands state cleanly on every filter/search change.
 
   if (total <= currentCount + extraBrands.length) return null;
 
@@ -567,7 +600,244 @@ Each filter combination has proper `<title>`, `<meta description>`, OG tags, and
 
 4. **Filter param keys map directly to API params.** The URL uses `?sector=office&checkout=native_api` — same keys as the internal API. This is intentional for consistency.
 
-5. **`categories` filter is currently a separate concept from `sectors`.** The filter sidebar has both "Sector" (from facets) and "Category" (from the CATEGORY_LABELS constant). In the current client page, categories and sectors are merged: `[...new Set([...filters.sectors, ...filters.categories])]` before sending as `sector` param. The server page should handle this the same way — both map to the `sectors` field in `BrandSearchFilters`.
+5. **`VendorCategory` / `CATEGORY_LABELS` removed.** It was a legacy duplicate of `VendorSector`. The filter sidebar now has one "Sector" group populated from DB facets (with counts). The `category` URL param is gone. Cleanup task: delete `lib/procurement-skills/taxonomy/categories.ts`, remove imports from `taxonomy/index.ts`, and remove any remaining references in the current client page.
+
+#### A2j. Scaling analysis — 1K to 5K brands
+
+**Measured baseline (14 brands):**
+- Average row: 5,522 bytes (~5.4 KB)
+- `brand_data` (JSONB): ~1.8 KB avg
+- `skill_md` (text): ~2 KB avg
+- Max row: 6,166 bytes
+- 54 columns total; VendorCard uses ~12
+- 5 sectors, 4 tiers, 48 distinct sub-sectors
+
+##### Problem 1: `getAllBrandFacets()` scans the entire table
+
+**Current implementation:** `SELECT sector, tier FROM brand_index` — fetches ALL rows, deduplicates in JavaScript with `new Set()`. At 14 rows this is trivial. At 5,000 rows it reads 5,000 rows to produce ~20 distinct values. The return type is `{ sectors: string[]; tiers: string[] }` (the old `categories` duplicate field has been removed).
+
+**Current consumers:**
+1. `app/api/v1/bot/skills/route.ts` (line 55–62) — returns `facets.sectors`, `facets.tiers` as flat string arrays in the bot API response
+2. `app/api/internal/brands/search/route.ts` (line 42) — returns `facets` in the internal search response, consumed by the current client-side catalog page and by `CatalogLoadMore` in the SSR version
+3. The new server catalog page — will call this directly for filter sidebar data
+
+**Fix (implement during A2): Upgrade the method to return counts, update all consumers.**
+
+Facets without counts aren't real facets. Every faceted search system (Elasticsearch, Algolia, Solr) returns `{ value, count }` pairs. The current bare string arrays were an MVP shortcut. The method should return the richer data, and each consumer maps it to what they need.
+
+**New return type:**
+
+```typescript
+interface FacetValue {
+  value: string;
+  count: number;
+}
+
+interface BrandFacets {
+  sectors: FacetValue[];
+  tiers: FacetValue[];
+}
+```
+
+**New implementation (SQL `GROUP BY` instead of full table scan):**
+
+```typescript
+async getAllBrandFacets(): Promise<BrandFacets> {
+  const [sectorRows, tierRows] = await Promise.all([
+    db.execute(sql`
+      SELECT sector AS value, count(*)::int AS count
+      FROM brand_index
+      GROUP BY sector
+      ORDER BY count DESC
+    `),
+    db.execute(sql`
+      SELECT tier AS value, count(*)::int AS count
+      FROM brand_index
+      WHERE tier IS NOT NULL
+      GROUP BY tier
+      ORDER BY count DESC
+    `),
+  ]);
+
+  return {
+    sectors: sectorRows.rows as FacetValue[],
+    tiers: tierRows.rows as FacetValue[],
+  };
+}
+```
+
+**Drop the `categories` field from the return type.** It was always a duplicate of `sectors`.
+
+**Consumer updates (one line each, no breaking changes):**
+
+1. **Bot API** (`app/api/v1/bot/skills/route.ts`):
+   ```tsx
+   // Before:
+   categories: facets.categories,
+   sectors: facets.sectors,
+   tiers: facets.tiers,
+
+   // After — extract flat string arrays from the new FacetValue[] shape:
+   sectors: facets.sectors.map(s => s.value),
+   tiers: facets.tiers.map(t => t.value),
+   // categories field removed — it was always identical to sectors
+   ```
+
+2. **Internal search API** (`app/api/internal/brands/search/route.ts`):
+   ```tsx
+   // Before:
+   return NextResponse.json({ brands, total, facets });
+
+   // After — pass through with counts:
+   return NextResponse.json({ brands, total, facets });
+   ```
+   No change needed — the response now includes counts, which `CatalogLoadMore` and any future consumer benefits from. The current client page (before SSR refactor) reads `data.facets.sectors` as an array — it would break because the shape changed from `string[]` to `FacetValue[]`. But we're replacing the client page with the SSR version in the same change, so there's no window where the old client reads the new shape.
+
+3. **Server catalog page** (new):
+   ```tsx
+   // Uses counts in the filter sidebar:
+   {facets.sectors.map(s => (
+     <FilterCheckbox
+       label={`${SECTOR_LABELS[s.value]} (${s.count})`}
+       checked={currentFilters.sectors.includes(s.value)}
+       ...
+     />
+   ))}
+   ```
+
+**IStorage type update:**
+
+```typescript
+// In server/storage/types.ts:
+// Before:
+getAllBrandFacets(): Promise<{ sectors: string[]; tiers: string[] }>;
+
+// After:
+getAllBrandFacets(): Promise<{ sectors: { value: string; count: number }[]; tiers: { value: string; count: number }[] }>;
+```
+
+**Also add sub-sector facets** (these will grow to 200+ by 5K brands). Either as part of `getAllBrandFacets()` or as a separate method:
+
+```sql
+SELECT s AS value, count(*)::int AS count
+FROM brand_index, unnest(sub_sectors) s
+GROUP BY s ORDER BY count DESC LIMIT 50;
+```
+
+##### Problem 2: Full rows serialized when VendorCard only needs display fields
+
+**Current:** `searchBrands()` does `SELECT * FROM brand_index` — returns all 54 columns including `skill_md` (2KB), `brand_data` (1.8KB JSONB), `search_vector`, `mcp_url`, `api_endpoint`, etc.
+
+**Impact at scale:**
+- 50 cards × 5.5 KB/row = 275 KB of row data per page load
+- `skill_md` alone: 50 × 2 KB = 100 KB — **never used by VendorCard**
+- `brand_data` mostly unused — VendorCard only reads `brandData.feedbackStats.successRate`
+
+**Fix (deferred — Phase 10):** At 14 brands, payload is ~75 KB total which is trivial. Use existing `searchBrands()` for now. When we hit 1K+ brands, create a `searchBrandsForCatalog()` method that selects only the columns VendorCard needs. This is a contained optimization — new method, swap one call, no architectural change.
+
+```typescript
+// DEFERRED — reference for Phase 10 implementation:
+const CATALOG_CARD_COLUMNS = {
+  id: brandIndex.id,
+  slug: brandIndex.slug,
+  name: brandIndex.name,
+  sector: brandIndex.sector,
+  subSectors: brandIndex.subSectors,
+  tier: brandIndex.tier,
+  maturity: brandIndex.maturity,
+  agentReadiness: brandIndex.agentReadiness,
+  checkoutMethods: brandIndex.checkoutMethods,
+  capabilities: brandIndex.capabilities,
+  hasDeals: brandIndex.hasDeals,
+  brandData: brandIndex.brandData, // needed for feedbackStats — consider extracting to own column later
+};
+
+// Result: ~1.5 KB/row instead of 5.5 KB/row
+// 50 cards: ~75 KB instead of ~275 KB
+```
+
+**Future optimization:** When `brandData` grows (it's the full VendorSkill object), extract `feedbackStats` to its own column so the catalog query doesn't need the JSONB blob at all. At that point each catalog card row drops to ~500 bytes.
+
+##### Problem 3: Sector grouping becomes unwieldy
+
+**At 14 brands:** 5 sectors, 2-4 brands per sector. Grouped grid works.
+**At 1,000 brands:** ~15 sectors, 20-200 brands per sector. Some sectors dominate. A flat grid grouped by sector with 200+ cards in one group is unreadable.
+**At 5,000 brands:** ~20+ sectors, some with 500+ brands. The flat grid breaks entirely.
+
+**Fix — phased:**
+
+1. **Now (A2):** Keep the grouped layout but **collapse sectors beyond 6 cards** with a "Show all N in [Sector]" link pointing to `/c/[sector]`.
+
+2. **Now (A5):** Add **sector landing pages** at `/c/[sector]` (e.g., `/c/office`). These are SSR'd server components with the same filter sidebar but scoped to one sector. Each sector page has its own canonical URL — no conflicting signals with `/skills`. See Step A5 below.
+
+3. **Later (5K+):** Add **sub-sector pages** at `/c/[sector]/[sub-sector]` for the most populated sectors. The sub-sector taxonomy already exists in the data (48 distinct values at 14 brands, will be 200+ at 5K).
+
+##### Problem 4: Filter sidebar scaling
+
+**At 14 brands:** 5 sectors, 4 tiers, 6 checkout methods, ~8 capabilities. Sidebar fits on one screen.
+**At 5,000 brands:** 20+ sectors, 200+ sub-sectors, 10+ checkout methods, 15+ capabilities. Sidebar becomes a scroll marathon.
+
+**Fix (implement during A2):**
+
+1. **Collapsible filter groups** — each filter section (Sector, Tier, Checkout Method, etc.) is collapsible with a chevron. Default: Sector and Tier expanded, others collapsed.
+
+2. **"Show more" within groups** — if a group has >8 items, show 5 and a "Show N more" toggle. This is especially important for sub-sectors.
+
+3. **Facet counts** — Show the count next to each filter value: "Office (342)". This helps users find relevant filters quickly. (This comes from Problem 1 fix.)
+
+4. **Active filter summary** — At the top of the sidebar, show a compact summary of active filters as removable pills. This is already partially implemented (the "Clear all filters (N)" button exists) but individual filter removal is more useful.
+
+##### Problem 5: Sitemap scaling
+
+**At 1,000 brands:** Single sitemap with ~1,050 URLs (1,000 brands + top-level pages). Within the 50,000 URL limit.
+**At 5,000 brands:** ~5,050 URLs. Still within limits but the XML file becomes ~500 KB.
+
+**Fix (implement when reaching 2K+):** Split into a sitemap index with per-sector sitemaps:
+
+```
+/sitemap.xml (sitemap index)
+  -> /sitemap-pages.xml (static pages)
+  -> /sitemap-skills-office.xml (office sector brands)
+  -> /sitemap-skills-retail.xml (retail sector brands)
+  -> ...
+```
+
+**Not needed now.** The current single sitemap is fine up to ~10K URLs.
+
+##### Problem 6: Server component re-render cost
+
+**Concern:** Each filter click triggers a soft navigation -> server re-render -> DB query -> HTML generation. At 5K brands with complex filters, is this fast enough?
+
+**Analysis:** The database is heavily indexed:
+- B-tree indexes on `sector`, `tier`, `maturity`, `agent_readiness`
+- GIN indexes on all array columns (`capabilities`, `checkout_methods`, `payment_methods_accepted`, `sub_sectors`, etc.)
+- Partial indexes on boolean flags (`has_mcp`, `has_api`, `has_deals`, etc.)
+- Full-text search index on `search_vector` with a trigger that auto-updates
+
+A `WHERE sector = 'office' AND capabilities @> '{programmatic_checkout}' ORDER BY agent_readiness DESC LIMIT 50` query on 5,000 rows with these indexes will execute in <5ms. The bottleneck is network round-trip (client -> server -> DB -> server -> client), not query time.
+
+**No fix needed** for the query layer. But add `export const dynamic = "force-dynamic"` and potentially `Cache-Control` headers if response times become noticeable. Next.js caches server component responses by default for static paths but the search params make this inherently dynamic.
+
+##### Problem 7: `brandData` JSONB growth
+
+**Current:** `brandData` is the full `VendorSkill` object from the taxonomy. Average 1.8 KB.
+
+**Risk at scale:** As VendorSkill grows (more fields, more detailed data), this JSONB blob grows. The catalog query currently selects it to read `feedbackStats.successRate` — one tiny field from a multi-KB object.
+
+**Fix (defer to Phase 8):** Add `rating_success_rate numeric` and `rating_count integer` columns directly on `brand_index`. This is already planned in Part B (feedback loop). Once those columns exist, VendorCard reads them directly and the catalog query can skip `brand_data` entirely.
+
+##### Summary: What to implement during A2
+
+| Change | Priority | Impact |
+|---|---|---|
+| Replace `getAllBrandFacets()` with `SELECT DISTINCT` + counts | **Now** | Eliminates full table scan, enables facet counts in UI |
+| Create `searchBrandsForCatalog()` with column subset | **Phase 10** | Reduces payload at scale — trivial at 14 brands |
+| Collapsible filter groups with "Show more" | **Now** | Sidebar stays usable at 20+ filter values |
+| Collapse large sector groups (>6 cards) | **Now** | Prevents 200-card sector groups from dominating |
+| Sector landing pages (`/skills/sector/[sector]`) | **Phase 10 Part A** | Better SEO, browsable hierarchy |
+| Sub-sector pages | **Phase 10 Part B** | Needed at 5K+ brands with 200+ sub-sectors |
+| Sitemap splitting | **Phase 10 Part C** | Needed at 10K+ URLs |
+| Extract `feedbackStats` from `brandData` JSONB | **Phase 10 Part D** | Eliminates JSONB from catalog queries |
 
 ### Step A3: Add JSON-LD structured data to brand detail pages
 
@@ -635,6 +905,148 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 **Breaking change:** The return type changes from implicit `MetadataRoute.Sitemap` to `Promise<MetadataRoute.Sitemap>`. This is fine — Next.js handles both sync and async sitemap functions. No consumers call this function directly; Next.js invokes it at `/sitemap.xml`.
 
 **Dynamic import for storage:** Using `await import("@/server/storage")` instead of a top-level import keeps the existing sync code path from breaking if the storage module has initialization side effects. Alternatively, a top-level import works too since this file only runs server-side.
+
+### Step A5: Dedicated sector landing pages at `/c/[sector]`
+
+**Create:** `app/c/[sector]/page.tsx`
+
+**Why:** Sector pages need their own canonical URLs for proper SEO. Using query params (`/skills?sector=office`) creates contradictory signals — the catalog page sets `canonical: /skills` for all filter variations, but generates distinct titles per sector. Google sees "this page claims to be /skills but has unique content." Dedicated routes eliminate this conflict entirely.
+
+**Route structure:**
+```
+/skills              → full catalog (all brands, search, multi-faceted filters)
+/skills/[vendor]     → brand detail page
+/c/[sector]          → sector landing page (e.g., /c/office, /c/retail)
+```
+
+**Why `/c/` and not `/skills/sector/`:** Short, unambiguous, no collision with brand slugs (which live under `/skills/[vendor]`). No catch-all route resolution needed.
+
+**File structure:**
+```
+app/c/[sector]/page.tsx       → server component
+```
+
+#### A5a. Server component
+
+The sector page is a thin wrapper around the same `searchBrands()` query, pre-filtered to one sector:
+
+```tsx
+import { cache } from "react";
+import { notFound } from "next/navigation";
+import { storage } from "@/server/storage";
+import type { Metadata } from "next";
+import type { BrandIndex } from "@/shared/schema";
+import { SECTOR_LABELS, VendorSector } from "@/lib/procurement-skills/types";
+import { Nav } from "@/components/nav";
+import { Footer } from "@/components/footer";
+import { VendorCard } from "@/app/skills/vendor-card";
+
+const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || "https://creditclaw.com";
+
+const VALID_SECTORS = Object.keys(SECTOR_LABELS) as VendorSector[];
+
+interface Props {
+  params: Promise<{ sector: string }>;
+}
+
+const getSectorData = cache(async (sector: string) => {
+  if (!VALID_SECTORS.includes(sector as VendorSector)) return null;
+
+  const [brands, total] = await Promise.all([
+    storage.searchBrands({ sectors: [sector], limit: 50, sortBy: "readiness", sortDir: "desc", lite: true }),
+    storage.searchBrandsCount({ sectors: [sector] }),
+  ]);
+
+  return { brands, total };
+});
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { sector } = await params;
+  const label = SECTOR_LABELS[sector as VendorSector];
+  if (!label) return {};
+
+  return {
+    title: `${label} Procurement Skills | CreditClaw`,
+    description: `Browse AI agent procurement skills for ${label} vendors. Filter by checkout method, capability, and agent friendliness.`,
+    openGraph: {
+      title: `${label} Procurement Skills for AI Agents`,
+      description: `Agent-ready procurement skills for ${label} vendors.`,
+      type: "website",
+      url: `${BASE_URL}/c/${sector}`,
+    },
+    twitter: {
+      card: "summary",
+      title: `${label} Skills - CreditClaw`,
+      description: `Browse procurement skills for ${label} vendors.`,
+    },
+    alternates: { canonical: `${BASE_URL}/c/${sector}` },
+  };
+}
+
+export async function generateStaticParams() {
+  return VALID_SECTORS.map(s => ({ sector: s }));
+}
+
+export default async function SectorPage({ params }: Props) {
+  const { sector } = await params;
+  const data = await getSectorData(sector);
+  if (!data) notFound();
+
+  const label = SECTOR_LABELS[sector as VendorSector] ?? sector;
+
+  return (
+    <div className="min-h-screen bg-background text-neutral-900 font-sans">
+      <Nav />
+      <main>
+        <section className="relative py-20 overflow-hidden">
+          <div className="container mx-auto px-6 relative z-10">
+            <div className="text-center max-w-3xl mx-auto mb-12">
+              <h1>{label} Procurement Skills</h1>
+              <p>{data.total} vendors in this sector</p>
+            </div>
+          </div>
+        </section>
+        <section className="pb-24">
+          <div className="container mx-auto px-6">
+            <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">
+              {data.brands.map(b => <VendorCard key={b.slug} brand={b} />)}
+            </div>
+            {/* CatalogLoadMore with sector pre-filter */}
+          </div>
+        </section>
+      </main>
+      <Footer />
+    </div>
+  );
+}
+```
+
+#### A5b. Cross-linking
+
+1. **Catalog `/skills` page:** Sector group headings become links to `/c/[sector]`:
+   ```tsx
+   <Link href={`/c/${sector}`}>
+     <h2>{SECTOR_LABELS[sector]} ({sectorBrands.length})</h2>
+   </Link>
+   ```
+
+2. **Sector page `/c/[sector]`:** Breadcrumb back to `/skills`:
+   ```tsx
+   <Link href="/skills">← All Skills</Link> / {sectorLabel}
+   ```
+
+3. **Sitemap (A4):** Add sector pages alongside brand pages:
+   ```tsx
+   const sectorPages = VALID_SECTORS.map(s => ({
+     url: `${BASE_URL}/c/${s}`,
+     changeFrequency: "weekly" as const,
+     priority: 0.8,
+   }));
+   ```
+
+#### A5c. Catalog page — remove sector-specific metadata
+
+The `/skills` page no longer generates distinct `<title>` for `?sector=` params. It still accepts `?sector=` as a filter (the URL works and returns filtered results), but the metadata stays generic and the canonical is always `/skills`. The dedicated sector page at `/c/[sector]` handles sector-specific SEO.
 
 ---
 
@@ -947,14 +1359,153 @@ Map these to the new filter fields before calling `storage.searchBrands()`.
 
 ---
 
+## Part C: Scale Readiness (Pre-5000 Brands)
+
+### Why this matters
+
+The `brand_index` table is about to grow from ~50 brands to 5,000+. Two existing patterns will degrade at that scale:
+
+1. **`searchBrands()` selects every column** — including `brandData` (full JSONB vendor skill object, several KB each) and `skillMd` (full markdown text, several KB each). The catalog `VendorCard` only uses ~12 lightweight columns. Pulling 50 × (full JSONB + full markdown) per catalog page load is wasteful now and will be slow at 5,000 rows.
+2. **`getAllBrandFacets()` does a full table scan on every request** — every catalog page load and every filter change triggers `SELECT sector, tier FROM brand_index` over the entire table. At 5,000 rows the query itself stays fast, but running it hundreds of times per minute is unnecessary when the data changes infrequently.
+
+Both fixes are surgical changes to `server/storage/brand-index.ts`. No schema changes, no API changes, no frontend changes.
+
+### Step C1: Column-select optimization for catalog queries
+
+**Edit:** `server/storage/brand-index.ts` — `searchBrands()` method
+
+**Problem:** The current query uses `db.select().from(brandIndex)`, which selects all 40+ columns. The catalog `VendorCard` component uses only these fields:
+
+| Field | Used for |
+|---|---|
+| `id` | Key |
+| `slug` | Link href, test IDs |
+| `name` | Display name, avatar initial |
+| `sector` | Sector label + icon |
+| `subSectors` | Sub-sector badges |
+| `tier` | Tier label |
+| `maturity` | Maturity badge |
+| `agentReadiness` | Agent friendliness stars |
+| `checkoutMethods` | Checkout method badges |
+| `capabilities` | Capability badges |
+| `hasDeals` | "Deals" badge |
+| `brandData` | Only `feedbackStats.successRate` — see note below |
+
+**The `brandData` problem:** `VendorCard` casts `brandData` to `VendorSkill` and reads `vendor?.feedbackStats?.successRate`. This is a single numeric value buried inside a multi-KB JSON object. Ideally this would be a top-level column on `brand_index` (like `agentReadiness`), but that's a schema change for later. For now, `brandData` must remain in the select.
+
+**However, `skillMd` is never used by catalog cards** and can be excluded immediately. At ~2-5 KB per brand × 50 per page = 100-250 KB saved per catalog load.
+
+**Implementation — add a `searchBrandsForCatalog()` method:**
+
+```tsx
+const CATALOG_CARD_COLUMNS = {
+  id: brandIndex.id,
+  slug: brandIndex.slug,
+  name: brandIndex.name,
+  sector: brandIndex.sector,
+  subSectors: brandIndex.subSectors,
+  tier: brandIndex.tier,
+  maturity: brandIndex.maturity,
+  agentReadiness: brandIndex.agentReadiness,
+  checkoutMethods: brandIndex.checkoutMethods,
+  capabilities: brandIndex.capabilities,
+  hasDeals: brandIndex.hasDeals,
+  brandData: brandIndex.brandData,
+  // Future rating columns (Phase 6 Part B) — add here when created:
+  // ratingOverall: brandIndex.ratingOverall,
+  // ratingCount: brandIndex.ratingCount,
+};
+
+async searchBrandsForCatalog(filters: BrandSearchFilters): Promise<...> {
+  // Same WHERE/ORDER/LIMIT logic as searchBrands(), but with column select
+  const query = db.select(CATALOG_CARD_COLUMNS).from(brandIndex);
+  // ... identical filter/sort/limit logic ...
+}
+```
+
+**Alternative approach (simpler):** Instead of a new method, modify `searchBrands()` to accept an optional `columns` parameter or `excludeHeavyColumns` boolean. When true, exclude `skillMd` (and later any other large text columns). The catalog page passes `excludeHeavyColumns: true`; the detail page and bot API continue using full select.
+
+**Recommended approach:** The simpler alternative — add `lite?: boolean` to `BrandSearchFilters`. When `lite` is true, use `db.select(CATALOG_CARD_COLUMNS)` instead of `db.select()`. This avoids duplicating the entire filter/sort/limit logic.
+
+```tsx
+// In BrandSearchFilters:
+lite?: boolean;  // Exclude heavy columns (skillMd) — use for catalog card rendering
+
+// In searchBrands():
+const query = filters.lite
+  ? db.select(CATALOG_CARD_COLUMNS).from(brandIndex)
+  : db.select().from(brandIndex);
+```
+
+**Callers to update:**
+- `app/skills/page.tsx` (catalog) — pass `lite: true` (after A2 SSR conversion, this becomes the server component call)
+- `app/api/v1/bot/skills/route.ts` (bot API) — keep full select (bot API returns `skill_md`)
+- `app/skills/[vendor]/page.tsx` (detail) — uses `getBrandBySlug()`, not `searchBrands()`, no change needed
+
+**Type safety note:** When `lite: true`, the return type technically has `skillMd` missing. Pragmatically, since the catalog `VendorCard` never accesses `skillMd`, this won't cause runtime errors. For strict typing, the method could return `Omit<BrandIndex, 'skillMd'>[]` when lite, but this adds complexity for minimal benefit. A simpler approach: keep the return type as `BrandIndex[]` (the omitted column will be `undefined` at runtime, which is fine since no catalog code reads it).
+
+### Step C2: Cache `getAllBrandFacets()` with 10-minute TTL
+
+**Edit:** `server/storage/brand-index.ts` — `getAllBrandFacets()` method
+
+**Problem:** Every catalog page load calls `getAllBrandFacets()`, which runs `SELECT sector, tier FROM brand_index` over the full table. The results change only when brands are added/updated — at most a few times per day. Running this query on every request is wasteful.
+
+**Implementation — simple in-memory cache:**
+
+```tsx
+// At module top level in brand-index.ts:
+let facetCache: { sectors: string[]; tiers: string[] } | null = null;
+let facetCacheExpiry = 0;
+const FACET_CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
+
+// In getAllBrandFacets():
+async getAllBrandFacets(): Promise<{ sectors: string[]; tiers: string[] }> {
+  const now = Date.now();
+  if (facetCache && now < facetCacheExpiry) {
+    return facetCache;
+  }
+
+  const rows = await db
+    .select({ sector: brandIndex.sector, tier: brandIndex.tier })
+    .from(brandIndex);
+  const sectors = [...new Set(rows.map(r => r.sector))];
+  const tiers = [...new Set(rows.map(r => r.tier).filter((t): t is string => t !== null))];
+
+  facetCache = { sectors, tiers };
+  facetCacheExpiry = now + FACET_CACHE_TTL_MS;
+
+  return facetCache;
+},
+```
+
+**Cache invalidation:** Optionally, add a `invalidateFacetCache()` export that sets `facetCache = null`. Call it from `upsertBrandIndex()` so newly added brands appear in the sidebar immediately rather than after up to 10 minutes. This is optional — a 10-minute delay for new sidebar entries is acceptable.
+
+```tsx
+export function invalidateFacetCache() {
+  facetCache = null;
+  facetCacheExpiry = 0;
+}
+```
+
+**Why in-memory and not Redis/external cache:** CreditClaw runs as a single Next.js process. In-memory caching is sufficient — no extra infrastructure. If the app scales to multiple instances, this would need a shared cache, but that's a future concern.
+
+**Edge case — cold start:** After server restart, the first request hits the DB (cache miss). This is fine — it's one query.
+
+**Edge case — Next.js server components and module scope:** Module-level variables in Node.js persist across requests within the same server process. This is the standard caching pattern for Next.js server components (same as how `cache()` from React works, but across requests rather than within a single request).
+
+---
+
 ## Implementation order
 
 | Step | Description | Depends on | Risk |
 |---|---|---|---|
+| C1 | Column-select optimization for catalog queries | — | Low |
+| C2 | Cache `getAllBrandFacets()` with 10-min TTL | — | Low |
 | A1 | Brand detail page → server component + client extraction | — | Medium (large file refactor) |
-| A2 | Catalog page metadata via layout | — | Low |
+| A2 | Catalog page full SSR + URL-based filter state | — | Medium |
 | A3 | JSON-LD structured data | A1 | Low |
 | A4 | Sitemap update | — | Low |
+| A5 | Sector landing pages at `/c/[sector]` | A2 | Low |
 | B1 | `brand_feedback` table | — | Low (schema only) |
 | B2 | Rating columns on `brand_index` | — | Low (schema only) |
 | B3 | Feedback storage layer | B1 | Low |
@@ -969,16 +1520,18 @@ Map these to the new filter fields before calling `storage.searchBrands()`.
 
 **Recommended build sequence:**
 1. ~~A1 + A2 + A4 (SSR — immediate SEO value, no new tables)~~ **✅ DONE**
-2. B1 + B2 (schema changes — both migrations at once)
-3. B3 + B4 (storage + API — feedback can start being collected)
-4. B5 (generator update — agents start seeing feedback instructions)
-5. A3 (structured data — builds on A1)
-6. B6 (aggregation — ratings become visible)
-7. B7 + B8 + B10 (display ratings everywhere)
-8. B11 (rating filters — agents can use ratings in search)
-9. B9 (human feedback UI — can happen any time after B4)
+2. **C1 + C2 (scale readiness — do before growing brand_index past ~100 rows)**
+3. A5 (sector landing pages at `/c/[sector]` — proper SEO canonicalization)
+4. B1 + B2 (schema changes — both migrations at once)
+5. B3 + B4 (storage + API — feedback can start being collected)
+6. B5 (generator update — agents start seeing feedback instructions)
+7. A3 (structured data — builds on A1)
+8. B6 (aggregation — ratings become visible)
+9. B7 + B8 + B10 (display ratings everywhere)
+10. B11 (rating filters — agents can use ratings in search)
+11. B9 (human feedback UI — can happen any time after B4)
 
-Steps 2-4 can be done as a single task. Steps 5-8 as a second task. Step 9 is independent.
+C1 + C2 can be done as a single task (one file, two changes). A5 can be done as a single task. Steps 4-6 as a single task. Steps 7-10 as a second task. Step 11 is independent.
 
 ---
 

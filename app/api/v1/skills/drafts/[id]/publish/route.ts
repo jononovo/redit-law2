@@ -89,7 +89,7 @@ export async function POST(
         url: vendor.url,
         logoUrl: vendor.logoUrl ?? null,
         description: `Shop ${vendor.name} using CreditClaw payment rails.`,
-        sector: vendor.taxonomy?.sector ?? vendor.category ?? "retail",
+        sector: vendor.taxonomy?.sector ?? vendor.sector ?? "retail",
         subSectors: vendor.taxonomy?.subSectors ?? [],
         tier: vendor.taxonomy?.tier ?? null,
         tags: vendor.taxonomy?.tags ?? [],

@@ -4,7 +4,7 @@ export const lowes: VendorSkill = {
     slug: "lowes",
   name: "Lowe's",
   logoUrl: "/assets/images/vendors/lowes.svg",
-  category: "hardware",
+  sector: "home",
   url: "https://www.lowes.com",
   checkoutMethods: ["self_hosted_card"],
   capabilities: ["price_lookup", "stock_check", "order_tracking"],

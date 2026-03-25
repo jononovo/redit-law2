@@ -4,7 +4,7 @@ export const uline: VendorSkill = {
     slug: "uline",
   name: "Uline",
   logoUrl: "/assets/images/vendors/uline.svg",
-  category: "industrial",
+  sector: "industrial",
   url: "https://www.uline.com",
   checkoutMethods: ["self_hosted_card"],
   capabilities: ["price_lookup", "stock_check", "bulk_pricing", "order_tracking", "business_invoicing", "po_numbers"],
