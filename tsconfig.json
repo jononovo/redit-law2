@@ -41,6 +41,7 @@
     ".next",
     "client",
     "dist",
-    "docs/tests/**/*"
+    "docs/tests/**/*",
+    "public/Plugins/**/*"
   ]
 }
