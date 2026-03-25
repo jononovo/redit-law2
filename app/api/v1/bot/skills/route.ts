@@ -29,7 +29,18 @@ export async function GET(request: NextRequest) {
   const taxExempt = url.searchParams.get("tax_exempt");
   const poNumber = url.searchParams.get("po_number");
 
+  const minRating = url.searchParams.get("min_rating");
+  const minSearchRating = url.searchParams.get("min_search_rating");
+  const minStockRating = url.searchParams.get("min_stock_rating");
+  const minCheckoutRating = url.searchParams.get("min_checkout_rating");
+  const sortParam = url.searchParams.get("sort");
+
   const sectorValues = parseCSV(sector) ?? parseCSV(category);
+
+  const validSortBy = sortParam === "rating" ? "rating"
+    : sortParam === "name" ? "name"
+    : sortParam === "created_at" ? "created_at"
+    : "readiness";
 
   const brands = await storage.searchBrands({
     q: search ?? undefined,
@@ -48,7 +59,11 @@ export async function GET(request: NextRequest) {
     orderings: parseCSV(orderingParam),
     paymentMethods: parseCSV(paymentMethodParam),
     subSector: subSectorParam ?? undefined,
-    sortBy: "readiness",
+    minRatingOverall: minRating && !isNaN(parseFloat(minRating)) ? parseFloat(minRating) : undefined,
+    minRatingSearch: minSearchRating && !isNaN(parseFloat(minSearchRating)) ? parseFloat(minSearchRating) : undefined,
+    minRatingStock: minStockRating && !isNaN(parseFloat(minStockRating)) ? parseFloat(minStockRating) : undefined,
+    minRatingCheckout: minCheckoutRating && !isNaN(parseFloat(minCheckoutRating)) ? parseFloat(minCheckoutRating) : undefined,
+    sortBy: validSortBy,
     sortDir: "desc",
   });
 
@@ -107,6 +122,13 @@ function brandToVendorResponse(b: BrandIndex) {
       current_deals: b.hasDeals,
       deals_url: b.dealsUrl ?? null,
       loyalty_program: b.loyaltyProgram ?? null,
+    } : null,
+    ratings: b.ratingOverall ? {
+      overall: Number(b.ratingOverall),
+      search_accuracy: Number(b.ratingSearchAccuracy),
+      stock_reliability: Number(b.ratingStockReliability),
+      checkout_completion: Number(b.ratingCheckoutCompletion),
+      count: b.ratingCount,
     } : null,
     agent_readiness: b.agentReadiness,
     carries_brands: b.carriesBrands ?? [],

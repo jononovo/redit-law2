@@ -21,9 +21,13 @@ export interface BrandSearchFilters {
   paymentMethods?: string[];
   subSector?: string;
   minReadiness?: number;
+  minRatingOverall?: number;
+  minRatingSearch?: number;
+  minRatingStock?: number;
+  minRatingCheckout?: number;
   limit?: number;
   offset?: number;
-  sortBy?: "readiness" | "name" | "created_at";
+  sortBy?: "readiness" | "name" | "created_at" | "rating";
   sortDir?: "asc" | "desc";
   /**
    * When true, excludes heavy columns (skillMd, most metadata fields) from the query.
@@ -54,6 +58,8 @@ const LITE_COLUMNS = {
   capabilities: brandIndex.capabilities,
   hasDeals: brandIndex.hasDeals,
   brandData: brandIndex.brandData,
+  ratingOverall: brandIndex.ratingOverall,
+  ratingCount: brandIndex.ratingCount,
   updatedAt: brandIndex.updatedAt,
 };
 
@@ -145,6 +151,18 @@ function buildConditions(filters: BrandSearchFilters) {
   if (filters.minReadiness !== undefined) {
     conditions.push(sql`${brandIndex.agentReadiness} >= ${filters.minReadiness}`);
   }
+  if (filters.minRatingOverall !== undefined) {
+    conditions.push(sql`${brandIndex.ratingOverall}::numeric >= ${filters.minRatingOverall}`);
+  }
+  if (filters.minRatingSearch !== undefined) {
+    conditions.push(sql`${brandIndex.ratingSearchAccuracy}::numeric >= ${filters.minRatingSearch}`);
+  }
+  if (filters.minRatingStock !== undefined) {
+    conditions.push(sql`${brandIndex.ratingStockReliability}::numeric >= ${filters.minRatingStock}`);
+  }
+  if (filters.minRatingCheckout !== undefined) {
+    conditions.push(sql`${brandIndex.ratingCheckoutCompletion}::numeric >= ${filters.minRatingCheckout}`);
+  }
 
   return conditions;
 }
@@ -153,8 +171,10 @@ export const brandIndexMethods: BrandIndexMethods = {
   async searchBrands(filters: BrandSearchFilters): Promise<BrandIndex[]> {
     const conditions = buildConditions(filters);
 
+    const isRatingSort = filters.sortBy === "rating";
     const sortCol = filters.sortBy === "name" ? brandIndex.name
       : filters.sortBy === "created_at" ? brandIndex.createdAt
+      : isRatingSort ? brandIndex.ratingOverall
       : brandIndex.agentReadiness;
     const sortFn = filters.sortDir === "asc" ? asc : desc;
 
@@ -165,8 +185,12 @@ export const brandIndexMethods: BrandIndexMethods = {
       ? query.where(and(...conditions))
       : query;
 
+    const orderClause = isRatingSort
+      ? sql`${sortCol} ${filters.sortDir === "asc" ? sql`ASC NULLS LAST` : sql`DESC NULLS LAST`}`
+      : sortFn(sortCol);
+
     return withWhere
-      .orderBy(sortFn(sortCol))
+      .orderBy(orderClause)
       .limit(filters.limit ?? 50)
       .offset(filters.offset ?? 0) as Promise<BrandIndex[]>;
   },

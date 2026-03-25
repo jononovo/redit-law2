@@ -143,8 +143,57 @@ export default async function VendorDetailPage({ params }: Props) {
   const skillMd = brand.skillMd || generateVendorSkill(vendor);
   const skillUrl = `https://creditclaw.com/api/v1/bot/skills/${brand.slug}`;
 
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    name: `${vendor.name} — AI Procurement Skill`,
+    description: brand.description || `Agent-ready procurement skill for ${vendor.name}.`,
+    url: `${BASE_URL}/skills/${brand.slug}`,
+    applicationCategory: "BusinessApplication",
+    operatingSystem: "Cloud",
+    offers: {
+      "@type": "Offer",
+      price: "0",
+      priceCurrency: "USD",
+      availability: "https://schema.org/InStock",
+    },
+    aggregateRating: brand.ratingOverall ? {
+      "@type": "AggregateRating",
+      ratingValue: Number(brand.ratingOverall).toFixed(1),
+      bestRating: "5",
+      worstRating: "1",
+      ratingCount: brand.ratingCount ?? 0,
+    } : undefined,
+    additionalProperty: [
+      {
+        "@type": "PropertyValue",
+        name: "agentFriendliness",
+        value: friendliness,
+      },
+      {
+        "@type": "PropertyValue",
+        name: "sector",
+        value: brand.sector,
+      },
+      {
+        "@type": "PropertyValue",
+        name: "maturity",
+        value: brand.maturity,
+      },
+      ...(brand.checkoutMethods ?? []).map(method => ({
+        "@type": "PropertyValue",
+        name: "checkoutMethod",
+        value: method,
+      })),
+    ],
+  };
+
   return (
     <div className="min-h-screen bg-background text-neutral-900 font-sans">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <Nav />
       <main>
         <section className="relative py-12 overflow-hidden">
@@ -517,6 +566,38 @@ export default async function VendorDetailPage({ params }: Props) {
                         </li>
                       ))}
                     </ul>
+                  </div>
+                )}
+
+                {brand.ratingOverall && (
+                  <div className="bg-white rounded-2xl border border-neutral-100 p-6 mb-8" data-testid="panel-agent-ratings">
+                    <h3 className="font-bold text-neutral-900 mb-4 flex items-center gap-2">
+                      <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
+                      Agent Ratings
+                    </h3>
+                    <div className="grid grid-cols-3 gap-4">
+                      {[
+                        { label: "Search Accuracy", value: brand.ratingSearchAccuracy },
+                        { label: "Stock Reliability", value: brand.ratingStockReliability },
+                        { label: "Checkout Completion", value: brand.ratingCheckoutCompletion },
+                      ].map(({ label, value }) => (
+                        <div key={label} className="text-center">
+                          <div className="text-2xl font-bold text-neutral-900">
+                            {value ? Number(value).toFixed(1) : "—"}
+                          </div>
+                          <div className="text-xs text-neutral-500 font-medium mt-1">{label}</div>
+                          <div className="w-full bg-neutral-100 rounded-full h-1.5 mt-2">
+                            <div
+                              className="bg-amber-400 h-1.5 rounded-full"
+                              style={{ width: `${value ? (Number(value) / 5) * 100 : 0}%` }}
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <p className="text-xs text-neutral-500 mt-4">
+                      Based on {brand.ratingCount ?? 0} feedback events from agents and humans.
+                    </p>
                   </div>
                 )}
 

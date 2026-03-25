@@ -1555,6 +1555,12 @@ export const brandIndex = pgTable("brand_index", {
 
   agentReadiness: integer("agent_readiness").default(0),
 
+  ratingSearchAccuracy: numeric("rating_search_accuracy"),
+  ratingStockReliability: numeric("rating_stock_reliability"),
+  ratingCheckoutCompletion: numeric("rating_checkout_completion"),
+  ratingOverall: numeric("rating_overall"),
+  ratingCount: integer("rating_count").default(0),
+
   brandData: jsonb("brand_data").notNull(),
   skillMd: text("skill_md"),
 
@@ -1570,6 +1576,41 @@ export const brandIndex = pgTable("brand_index", {
 
 export type BrandIndex = typeof brandIndex.$inferSelect;
 export type InsertBrandIndex = typeof brandIndex.$inferInsert;
+
+// ─── Brand Feedback ──────────────────────────────────────────────────────────
+
+export const brandFeedback = pgTable("brand_feedback", {
+  id: serial("id").primaryKey(),
+  brandSlug: text("brand_slug").notNull(),
+  source: text("source").notNull().default("agent"),
+  authenticated: boolean("authenticated").notNull().default(false),
+  botId: text("bot_id"),
+  reviewerUid: text("reviewer_uid"),
+  searchAccuracy: integer("search_accuracy").notNull(),
+  stockReliability: integer("stock_reliability").notNull(),
+  checkoutCompletion: integer("checkout_completion").notNull(),
+  checkoutMethod: text("checkout_method").notNull(),
+  outcome: text("outcome").notNull(),
+  comment: text("comment"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (table) => [
+  index("brand_feedback_slug_idx").on(table.brandSlug),
+  index("brand_feedback_created_idx").on(table.createdAt),
+  index("brand_feedback_slug_recent_idx").on(table.brandSlug, table.createdAt),
+]);
+
+export type BrandFeedback = typeof brandFeedback.$inferSelect;
+export type InsertBrandFeedback = typeof brandFeedback.$inferInsert;
+
+export const insertBrandFeedbackSchema = z.object({
+  brandSlug: z.string().min(1),
+  searchAccuracy: z.number().int().min(1).max(5),
+  stockReliability: z.number().int().min(1).max(5),
+  checkoutCompletion: z.number().int().min(1).max(5),
+  checkoutMethod: z.enum(["native_api", "browser_automation", "x402", "acp", "self_hosted_card", "crossmint_world"]),
+  outcome: z.enum(["success", "checkout_failed", "search_failed", "out_of_stock", "price_mismatch", "flow_changed"]),
+  comment: z.string().max(500).optional(),
+});
 
 // ─── Brand Claims ────────────────────────────────────────────────────────────
 

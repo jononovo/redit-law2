@@ -159,16 +159,27 @@ export function VendorCard({ brand }: { brand: BrandIndex }) {
       </div>
 
       <div className="flex items-center justify-between pt-3 border-t border-neutral-50">
-        <div className="flex items-center gap-1" data-testid={`score-friendliness-${brand.slug}`}>
-          {Array.from({ length: 5 }).map((_, i) => (
-            <Star
-              key={i}
-              className={`w-3.5 h-3.5 ${
-                i < friendliness ? "text-amber-400 fill-amber-400" : "text-neutral-200"
-              }`}
-            />
-          ))}
-          <span className="text-xs text-neutral-500 ml-1">Agent Score</span>
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1" data-testid={`score-friendliness-${brand.slug}`}>
+            {Array.from({ length: 5 }).map((_, i) => (
+              <Star
+                key={i}
+                className={`w-3.5 h-3.5 ${
+                  i < friendliness ? "text-amber-400 fill-amber-400" : "text-neutral-200"
+                }`}
+              />
+            ))}
+            <span className="text-xs text-neutral-500 ml-1">Agent Score</span>
+          </div>
+          {brand.ratingOverall && (
+            <div className="flex items-center gap-1 text-xs" data-testid={`rating-overall-${brand.slug}`}>
+              <Star className="w-3 h-3 text-amber-400 fill-amber-400" />
+              <span className="font-semibold text-neutral-700">
+                {Number(brand.ratingOverall).toFixed(1)}
+              </span>
+              <span className="text-neutral-400">({brand.ratingCount})</span>
+            </div>
+          )}
         </div>
         <div className="flex items-center gap-2">
           {brand.hasDeals && (
