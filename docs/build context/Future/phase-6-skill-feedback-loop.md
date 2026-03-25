@@ -718,10 +718,10 @@ A `WHERE sector = 'office' AND capabilities @> '{programmatic_checkout}' ORDER B
 | Create `searchBrandsForCatalog()` with column subset | **Now** | Reduces payload from 275 KB to ~75 KB per page load |
 | Collapsible filter groups with "Show more" | **Now** | Sidebar stays usable at 20+ filter values |
 | Collapse large sector groups (>6 cards) | **Now** | Prevents 200-card sector groups from dominating |
-| Sector landing pages (`/skills/sector/[sector]`) | **Phase 7** | Better SEO, browsable hierarchy |
-| Sub-sector pages | **Phase 8+** | Needed at 5K+ brands with 200+ sub-sectors |
-| Sitemap splitting | **Phase 8+** | Needed at 10K+ URLs |
-| Extract `feedbackStats` from `brandData` JSONB | **Phase 8** | Eliminates JSONB from catalog queries |
+| Sector landing pages (`/skills/sector/[sector]`) | **Phase 10 Part A** | Better SEO, browsable hierarchy |
+| Sub-sector pages | **Phase 10 Part B** | Needed at 5K+ brands with 200+ sub-sectors |
+| Sitemap splitting | **Phase 10 Part C** | Needed at 10K+ URLs |
+| Extract `feedbackStats` from `brandData` JSONB | **Phase 10 Part D** | Eliminates JSONB from catalog queries |
 
 ### Step A3: Add JSON-LD structured data to brand detail pages
 
