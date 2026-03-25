@@ -295,11 +295,13 @@ export const insertBrandFeedbackSchema = z.object({
   searchAccuracy: z.number().int().min(1).max(5),
   stockReliability: z.number().int().min(1).max(5),
   checkoutCompletion: z.number().int().min(1).max(5),
-  checkoutMethod: z.enum(["native_api", "browser_automation", "x402_protocol", "acp", "self_hosted_card"]),
+  checkoutMethod: z.enum(["native_api", "browser_automation", "x402", "acp", "self_hosted_card", "crossmint_world"]),
   outcome: z.enum(["success", "checkout_failed", "search_failed", "out_of_stock", "price_mismatch", "flow_changed"]),
   comment: z.string().max(500).optional(),
 });
 ```
+
+**⚠️ Verified against codebase:** The `CheckoutMethod` type in `lib/procurement-skills/taxonomy/checkout-methods.ts` uses `"x402"` (NOT `"x402_protocol"` — that value only appears in planning docs). Also includes `"crossmint_world"` which was missing from the original plan.
 
 Run Drizzle migration: `npx drizzle-kit generate` + `npx drizzle-kit push`
 
@@ -337,31 +339,72 @@ Add to `IStorage` in `server/storage/types.ts` and compose in `server/storage/in
 POST /api/v1/bot/skills/{slug}/feedback
 ```
 
-**Auth:** Optional. Check for `Authorization: Bearer <key>` header. If present, validate against bot API keys. If valid, mark `authenticated: true` and extract `botId`. If absent or invalid, accept as anonymous (`authenticated: false`).
+**⚠️ Auth approach — DO NOT use `withBotApi` middleware.** `withBotApi` (from `lib/agent-management/agent-api/middleware.ts`) returns 401 for unauthenticated requests — it enforces auth. This endpoint needs to accept anonymous feedback too. Instead, manually call `authenticateBot(request)` from `lib/agent-management/auth.ts`:
+
+```tsx
+import { authenticateBot } from "@/lib/agent-management/auth";
+
+const bot = await authenticateBot(request);
+const authenticated = !!bot;
+const botId = bot?.botId ?? null;
+const source = bot ? "agent" : "anonymous_agent";
+```
+
+This gracefully handles both cases: if a valid Bearer token is present, the feedback is attributed to the bot. If absent or invalid, it's accepted anonymously.
+
+**For human feedback (Step B9):** The same endpoint needs to also accept Firebase session auth. Check for session cookie if no Bearer token is present:
+
+```tsx
+if (!bot) {
+  const user = await getCurrentUser();
+  if (user) {
+    source = "human";
+    authenticated = true;
+    reviewerUid = user.uid;
+  }
+}
+```
 
 **Request body:** As defined in the insert schema (Step B1).
 
+**⚠️ API body key format:** The Zod schema uses camelCase (`searchAccuracy`, `stockReliability`, `checkoutCompletion`) because Drizzle maps these to snake_case columns automatically. The SKILL.md in Step B5 must instruct agents to send camelCase keys — OR — the endpoint must accept snake_case keys and transform them. **Recommendation:** Accept snake_case in the API body (agent-facing), transform to camelCase before Zod validation. This keeps the agent-facing API consistent with the bot skills API convention (which uses snake_case throughout — see `app/api/v1/bot/skills/route.ts` response format).
+
+```tsx
+const body = await request.json();
+const normalized = {
+  brandSlug: slug,
+  searchAccuracy: body.search_accuracy ?? body.searchAccuracy,
+  stockReliability: body.stock_reliability ?? body.stockReliability,
+  checkoutCompletion: body.checkout_completion ?? body.checkoutCompletion,
+  checkoutMethod: body.checkout_method ?? body.checkoutMethod,
+  outcome: body.outcome,
+  comment: body.comment,
+};
+const parsed = insertBrandFeedbackSchema.safeParse(normalized);
+```
+
 **Logic:**
 1. Validate `slug` exists in `brand_index`
-2. Validate request body with `insertBrandFeedbackSchema`
-3. Rate limit: if authenticated, check `getRecentFeedbackByBot(slug, botId, 1)` — max 1 per brand per bot per hour
-4. Insert into `brand_feedback`
+2. Normalize and validate request body with `insertBrandFeedbackSchema`
+3. Rate limit: if authenticated bot, check `getRecentFeedbackByBot(slug, botId, 1)` — max 1 per brand per bot per hour. If anonymous, apply IP-based rate limiting (max 5 per hour per IP per brand)
+4. Insert into `brand_feedback` with `source`, `authenticated`, `botId`, `reviewerUid`
 5. Return `{ received: true, brand_slug: slug, message: "Thanks — this feedback improves the skill for all agents." }`
 
 ### Step B5: Feedback section in `generateVendorSkill()`
 
 **Edit:** `lib/procurement-skills/generator.ts`
 
-Append a feedback section at the end of every generated SKILL.md:
+Append a feedback section at the end of every generated SKILL.md, **after** the Metadata section (currently the last section, ending at line ~200). The generator constructs a template literal — add the new section before the closing backtick:
 
-```markdown
+```typescript
+// In generator.ts, at line ~200, before the closing backtick:
 ---
 
 ## Feedback
 
 After your purchase attempt (successful or not), help improve this skill:
 
-POST https://creditclaw.com/api/v1/bot/skills/{slug}/feedback
+POST https://creditclaw.com/api/v1/bot/skills/${vendor.slug}/feedback
 Authorization: Bearer <your-creditclaw-api-key>
 Content-Type: application/json
 
@@ -374,14 +417,21 @@ Content-Type: application/json
   "comment": "optional — what happened?"
 }
 
-Ratings are 1-5. Outcome is one of: success, checkout_failed, search_failed, out_of_stock, price_mismatch.
+Ratings are 1-5. Outcome is one of: success, checkout_failed, search_failed, out_of_stock, price_mismatch, flow_changed.
+Checkout method is one of: native_api, browser_automation, x402, acp, self_hosted_card, crossmint_world.
+Authorization header is optional but improves rating weight.
 This is optional but helps other agents find reliable vendors.
 ```
 
-After updating the generator, re-run the seed script to regenerate `skill_md` in `brand_index` for all brands:
+**⚠️ Key format:** Uses snake_case (`search_accuracy`, not `searchAccuracy`) to match the existing bot API convention. The endpoint normalizes to camelCase before validation (see Step B4).
+
+**⚠️ Side effect:** This changes every generated SKILL.md. After updating the generator, re-run the seed script to regenerate `skill_md` in `brand_index`:
 ```bash
 npx tsx scripts/seed-brand-index.ts
 ```
+This script already exists and handles regeneration. The bot skill endpoint (`/api/v1/bot/skills/[vendor]`) returns `brand.skillMd` directly, so the updated markdown is immediately served to agents.
+
+**⚠️ Existing skills in the wild:** Agents that have already fetched and cached the old SKILL.md won't see the feedback section until they re-fetch. The `Cache-Control: public, max-age=3600, s-maxage=86400` header on the skill endpoint means CDN caches will refresh within 24 hours.
 
 ### Step B6: Aggregation job
 
@@ -464,30 +514,28 @@ Implementation detail: Store a `feedbackSubmitted` boolean on the transaction/or
 
 ### Step B10: Bot API — include ratings in skill response
 
-**Edit:** `app/api/v1/bot/skills/route.ts`
+**Edit:** `app/api/v1/bot/skills/route.ts` — `brandToVendorResponse()` function (line ~66)
 
-When the bot API returns brand data, include the ratings if they exist:
+Add a `ratings` field to the response object. The rating columns are `numeric` type in Postgres, which Drizzle returns as **strings** (not numbers). Must convert with `Number()`:
 
 ```tsx
-{
-  // ... existing fields
-  ratings: brand.ratingOverall ? {
-    overall: Number(brand.ratingOverall),
-    search_accuracy: Number(brand.ratingSearchAccuracy),
-    stock_reliability: Number(brand.ratingStockReliability),
-    checkout_completion: Number(brand.ratingCheckoutCompletion),
-    count: brand.ratingCount,
-  } : null,
-}
+ratings: b.ratingOverall ? {
+  overall: Number(b.ratingOverall),
+  search_accuracy: Number(b.ratingSearchAccuracy),
+  stock_reliability: Number(b.ratingStockReliability),
+  checkout_completion: Number(b.ratingCheckoutCompletion),
+  count: b.ratingCount,
+} : null,
 ```
 
-This lets agents sort and filter by real-world performance, not just static capabilities.
+**⚠️ `numeric` → string gotcha:** Drizzle's `numeric()` column type maps to PostgreSQL `NUMERIC` which is returned as a JS string (e.g., `"4.2"` not `4.2`). Every consumer must call `Number()` or `parseFloat()`. This affects Steps B7, B8, B10. The `integer()` column (`ratingCount`) does NOT have this issue.
 
 ### Step B11: Add rating-based search filters
 
 **Edit:** `server/storage/brand-index.ts` — `BrandSearchFilters`
 
-Add:
+The current `sortBy` type is `"readiness" | "name" | "created_at"`. **Extend** it (don't replace):
+
 ```tsx
 minRatingOverall?: number;
 minRatingSearch?: number;
@@ -496,9 +544,18 @@ minRatingCheckout?: number;
 sortBy?: "readiness" | "name" | "created_at" | "rating";
 ```
 
-Update `searchBrands` to support filtering and sorting by ratings.
+Update `searchBrands` query builder to add `WHERE` conditions for `minRating*` filters (compare as `numeric >= value`) and add `ORDER BY rating_overall` when `sortBy === "rating"`.
 
-**Edit:** `app/api/v1/bot/skills/route.ts` — accept the new filter params.
+**Edit:** `app/api/v1/bot/skills/route.ts` — accept new query params:
+```
+?min_rating=3.5
+?min_search_rating=4.0
+?min_stock_rating=3.0
+?min_checkout_rating=4.0
+?sort=rating
+```
+
+Map these to the new filter fields before calling `storage.searchBrands()`.
 
 ---
 
@@ -523,7 +580,7 @@ Update `searchBrands` to support filtering and sorting by ratings.
 | B11 | Rating-based search filters | B2, B10 | Low |
 
 **Recommended build sequence:**
-1. A1 + A2 + A4 (SSR — immediate SEO value, no new tables)
+1. ~~A1 + A2 + A4 (SSR — immediate SEO value, no new tables)~~ **✅ DONE**
 2. B1 + B2 (schema changes — both migrations at once)
 3. B3 + B4 (storage + API — feedback can start being collected)
 4. B5 (generator update — agents start seeing feedback instructions)
@@ -533,7 +590,7 @@ Update `searchBrands` to support filtering and sorting by ratings.
 8. B11 (rating filters — agents can use ratings in search)
 9. B9 (human feedback UI — can happen any time after B4)
 
-Steps 1-4 can be done as a single task. Steps 5-8 as a second task. Step 9 is independent.
+Steps 2-4 can be done as a single task. Steps 5-8 as a second task. Step 9 is independent.
 
 ---
 
@@ -653,3 +710,77 @@ All `data-testid` attributes from the current page must be preserved:
 | Edit | `app/api/v1/bot/skills/route.ts` | Include ratings in bot API response |
 | Edit | `server/storage/brand-index.ts` | Add rating-based filters/sorting |
 | Create | `components/dashboard/purchase-feedback-prompt.tsx` | Human feedback UI |
+| Create | `app/skills/[vendor]/not-found.tsx` | Custom 404 for missing brands |
+
+---
+
+## Part B verification checklist (Feedback Loop)
+
+Issues identified during plan review, verified against the codebase:
+
+### Issue 1: Checkout method enum mismatch (FIXED in plan)
+
+**Problem:** The original plan used `"x402_protocol"` in the Zod validation schema. The actual `CheckoutMethod` type in `lib/procurement-skills/taxonomy/checkout-methods.ts` uses `"x402"`. The value `"x402_protocol"` only exists in planning documents, never in code.
+
+**Also missing:** `"crossmint_world"` was not in the original enum list.
+
+**Fix:** Updated the `insertBrandFeedbackSchema` enum to: `["native_api", "browser_automation", "x402", "acp", "self_hosted_card", "crossmint_world"]`
+
+### Issue 2: Auth approach — `withBotApi` would reject anonymous feedback (FIXED in plan)
+
+**Problem:** The plan said "Optional auth" but didn't specify the implementation. Every existing bot API endpoint uses `withBotApi()` middleware, which returns 401 for unauthenticated requests. If the feedback endpoint used this pattern, anonymous feedback would be rejected.
+
+**Fix:** Use `authenticateBot(request)` directly (from `lib/agent-management/auth.ts`) which returns `null` for missing/invalid tokens instead of throwing. The endpoint gracefully handles both authenticated and anonymous submissions.
+
+**Additional concern for B9:** Human feedback needs Firebase session auth (not bot API keys). The endpoint must check for both auth types: Bearer token for bots, session cookie for humans via `getCurrentUser()`.
+
+### Issue 3: API body key format mismatch (FIXED in plan)
+
+**Problem:** The Zod schema uses camelCase (`searchAccuracy`) because Drizzle maps to snake_case columns. But the SKILL.md example showed snake_case keys (`search_accuracy`), and the entire bot API convention uses snake_case (see `app/api/v1/bot/skills/route.ts` response).
+
+**Fix:** The endpoint accepts snake_case keys in the request body and normalizes to camelCase before Zod validation. Both formats are accepted for compatibility.
+
+### Issue 4: `numeric` column type returns strings (noted in plan)
+
+**Problem:** The rating columns (`ratingSearchAccuracy`, etc.) use `numeric()` type. Drizzle returns PostgreSQL `NUMERIC` values as JavaScript strings, not numbers. Without explicit conversion, consumers would display `"4.2"` instead of `4.2`, or worse, string comparisons would break sorting.
+
+**Affected steps:** B7 (detail page display), B8 (catalog card display), B10 (bot API response). All must use `Number()` or `parseFloat()`.
+
+**Not affected:** `ratingCount` uses `integer()` which returns a proper JS number.
+
+### Issue 5: `sortBy` type extension (noted in plan)
+
+**Problem:** Current `BrandSearchFilters.sortBy` is typed as `"readiness" | "name" | "created_at"`. Adding `"rating"` requires extending the union, not replacing it.
+
+**Impact:** Any code that exhaustively switches on `sortBy` values would need updating. Currently `searchBrands()` uses an if/else chain, so adding a new case is straightforward.
+
+### Issue 6: Generator insertion point
+
+**Verified:** The feedback section goes after the Metadata section in `generator.ts` (line ~200), inside the template literal, before the closing backtick. The Metadata section is currently the last section generated.
+
+### Issue 7: Seed script exists
+
+**Verified:** `scripts/seed-brand-index.ts` exists and handles regeneration of `skill_md` in `brand_index`. No new seed script needed.
+
+### Issue 8: No existing feedback infrastructure
+
+**Verified:** No `feedbackSubmitted` field exists on any transaction/order table. No feedback UI exists in the dashboard. Step B9 will need to either:
+- Add a `feedbackSubmitted` boolean column to the relevant order table(s), OR
+- Query `brand_feedback` for `reviewerUid` + `brandSlug` within the time window
+
+The second approach is simpler (no schema changes to order tables) but slightly slower for frequent queries. Recommendation: use the query approach initially, add a column only if performance becomes an issue.
+
+### Issue 9: Rate limiting for anonymous submissions
+
+**Verified:** The existing `checkBotRateLimit` (from `lib/agent-management/rate-limit.ts`) is tied to `botId` and endpoint. For anonymous feedback, a separate IP-based rate limiter is needed. A simple in-memory Map with `{ip}:{brandSlug}` keys and timestamp arrays would suffice (similar to the existing rate limit implementation).
+
+### Things verified as safe
+
+| Concern | Status | Notes |
+|---|---|---|
+| `brand_feedback` table — no conflicts | ✅ | No existing table with this name |
+| Rating columns — nullable, no existing data affected | ✅ | New columns with defaults, existing rows get `null` |
+| Bot API response — additive field | ✅ | Adding `ratings` to response doesn't break existing consumers |
+| Generator change — template literal, not string concat | ✅ | Safe to append section before closing backtick |
+| Aggregation endpoint — internal, no auth needed | ✅ | Follows same pattern as other internal endpoints (e.g., `/api/internal/brands/[slug]`) |
+| `brand_index.updatedAt` — `notNull`, type `timestamp` | ✅ | Safe for `lastModified` in sitemap and aggregation timestamps |
