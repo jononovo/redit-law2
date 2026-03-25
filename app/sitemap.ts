@@ -95,38 +95,44 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.4,
   }));
 
-  const brands = await storage.searchBrands({
-    maturities: ["verified", "official", "beta", "community"],
-    limit: 500,
-    sortBy: "name",
-    sortDir: "asc",
-    lite: true,
-  });
+  let brandPages: MetadataRoute.Sitemap = [];
+  let sectorPages: MetadataRoute.Sitemap = [];
 
-  const brandPages: MetadataRoute.Sitemap = brands.map((b) => ({
-    url: `${BASE_URL}/skills/${b.slug}`,
-    lastModified: b.updatedAt ?? undefined,
-    changeFrequency: "weekly" as const,
-    priority: 0.7,
-  }));
+  try {
+    const brands = await storage.searchBrands({
+      maturities: ["verified", "official", "beta", "community"],
+      limit: 500,
+      sortBy: "name",
+      sortDir: "asc",
+      lite: true,
+    });
 
-  const populatedSectors = (Object.keys(SECTOR_LABELS) as VendorSector[]);
-  const sectorCounts = await Promise.all(
-    populatedSectors.map(async (s) => {
-      const count = await storage.searchBrandsCount({
-        sectors: [s],
-        maturities: ["verified", "official", "beta", "community"],
-      });
-      return { sector: s, count };
-    })
-  );
-  const sectorPages: MetadataRoute.Sitemap = sectorCounts
-    .filter((sc) => sc.count > 0)
-    .map((sc) => ({
-      url: `${BASE_URL}/c/${sc.sector}`,
+    brandPages = brands.map((b) => ({
+      url: `${BASE_URL}/skills/${b.slug}`,
+      lastModified: b.updatedAt ?? undefined,
       changeFrequency: "weekly" as const,
-      priority: 0.6,
+      priority: 0.7,
     }));
+
+    const populatedSectors = (Object.keys(SECTOR_LABELS) as VendorSector[]);
+    const sectorCounts = await Promise.all(
+      populatedSectors.map(async (s) => {
+        const count = await storage.searchBrandsCount({
+          sectors: [s],
+          maturities: ["verified", "official", "beta", "community"],
+        });
+        return { sector: s, count };
+      })
+    );
+    sectorPages = sectorCounts
+      .filter((sc) => sc.count > 0)
+      .map((sc) => ({
+        url: `${BASE_URL}/c/${sc.sector}`,
+        changeFrequency: "weekly" as const,
+        priority: 0.6,
+      }));
+  } catch {
+  }
 
   return [...staticPages, ...docPages, ...blogPostPages, ...blogCategoryPages, ...blogTagPages, ...brandPages, ...sectorPages];
 }
