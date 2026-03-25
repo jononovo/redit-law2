@@ -651,12 +651,14 @@ export default function CatalogClient({
                             <div className="w-8 h-8 rounded-lg bg-neutral-100 flex items-center justify-center">
                               {SECTOR_ICONS[groupKey as VendorSector] || <Layers className="w-4 h-4 text-purple-500" />}
                             </div>
-                            <h2 className="text-lg font-bold text-neutral-900">
-                              {SECTOR_LABELS[groupKey as VendorSector] || groupKey}
-                            </h2>
-                            <span className="text-sm text-neutral-400 font-medium">
-                              ({groupBrands.length})
-                            </span>
+                            <Link href={`/c/${groupKey}`} className="group flex items-center gap-2">
+                              <h2 className="text-lg font-bold text-neutral-900 group-hover:text-primary transition-colors">
+                                {SECTOR_LABELS[groupKey as VendorSector] || groupKey}
+                              </h2>
+                              <span className="text-sm text-neutral-400 font-medium">
+                                ({groupBrands.length})
+                              </span>
+                            </Link>
                             {groupIdx === 0 && (
                               <div className="ml-auto flex items-center gap-1">
                                 <button
