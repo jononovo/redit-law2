@@ -736,9 +736,10 @@ GROUP BY s ORDER BY count DESC LIMIT 50;
 - `skill_md` alone: 50 × 2 KB = 100 KB — **never used by VendorCard**
 - `brand_data` mostly unused — VendorCard only reads `brandData.feedbackStats.successRate`
 
-**Fix (implement during A2):** Create a `searchBrandsForCatalog()` method that selects only the columns VendorCard needs:
+**Fix (deferred — Phase 10):** At 14 brands, payload is ~75 KB total which is trivial. Use existing `searchBrands()` for now. When we hit 1K+ brands, create a `searchBrandsForCatalog()` method that selects only the columns VendorCard needs. This is a contained optimization — new method, swap one call, no architectural change.
 
 ```typescript
+// DEFERRED — reference for Phase 10 implementation:
 const CATALOG_CARD_COLUMNS = {
   id: brandIndex.id,
   slug: brandIndex.slug,
@@ -835,7 +836,7 @@ A `WHERE sector = 'office' AND capabilities @> '{programmatic_checkout}' ORDER B
 | Change | Priority | Impact |
 |---|---|---|
 | Replace `getAllBrandFacets()` with `SELECT DISTINCT` + counts | **Now** | Eliminates full table scan, enables facet counts in UI |
-| Create `searchBrandsForCatalog()` with column subset | **Now** | Reduces payload from 275 KB to ~75 KB per page load |
+| Create `searchBrandsForCatalog()` with column subset | **Phase 10** | Reduces payload at scale — trivial at 14 brands |
 | Collapsible filter groups with "Show more" | **Now** | Sidebar stays usable at 20+ filter values |
 | Collapse large sector groups (>6 cards) | **Now** | Prevents 200-card sector groups from dominating |
 | Sector landing pages (`/skills/sector/[sector]`) | **Phase 10 Part A** | Better SEO, browsable hierarchy |
