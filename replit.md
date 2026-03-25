@@ -314,11 +314,15 @@ Self-service brand ownership verification. Brand owners claim their brand from t
 - API endpoints: `POST /api/v1/brands/[slug]/claim`, `GET /api/v1/brands/claims/mine`, `POST /api/v1/brands/claims/[id]/revoke`, `GET /api/v1/brands/claims/review` (admin), `POST /api/v1/brands/claims/[id]/review` (admin verify/reject)
 - UI: Claim button on vendor detail page (`app/skills/[vendor]/page.tsx` — ghost button, shows for logged-out too, links badges to My Skills), unified "My Skills" page (`app/(dashboard)/skill-builder/submit/page.tsx` — submissions + claims in one list, claim search modal), Admin review queue (`app/admin123/brand-claims/page.tsx` — behind admin auth gate)
 
-**UI** — Catalog page (`app/skills/page.tsx`, client component) with sector/tier/category/capability filters in sidebar, sub-sector tags on cards, deals badges. Static metadata via `app/skills/layout.tsx` (server component). Vendor detail page (`app/skills/[vendor]/page.tsx`, **server component** — SSR for SEO) with `generateMetadata()` for title/OG/Twitter/canonical tags, `cache()` for deduplicating DB queries between metadata and page, and three extracted client components:
+**UI** — Catalog page (`app/skills/page.tsx`, client component) with sector/tier/category/capability filters in sidebar, sub-sector tags on cards, deals badges. `VendorCard` component extracted to `app/skills/vendor-card.tsx` (shared between catalog and sector pages). Static metadata via `app/skills/layout.tsx` (server component). Vendor detail page (`app/skills/[vendor]/page.tsx`, **server component** — SSR for SEO) with `generateMetadata()` for title/OG/Twitter/canonical tags, `cache()` for deduplicating DB queries between metadata and page, and three extracted client components:
   - `brand-claim-button.tsx` — auth check + claim API call
   - `skill-preview-panel.tsx` — expand/collapse skill markdown + download
   - `copy-skill-url.tsx` — clipboard copy with feedback
-  Custom 404 via `not-found.tsx` preserving branded "Vendor Not Found" UI. Sitemap (`app/sitemap.ts`) is async and includes all brand detail pages.
+  Custom 404 via `not-found.tsx` preserving branded "Vendor Not Found" UI.
+
+**Sector Landing Pages** (`app/c/[sector]/page.tsx`) — Server component with SSR metadata, canonical URLs at `/c/[sector]`, cross-linking to other populated sectors, and 404 for sectors with zero published brands. Uses shared `VendorCard` component. Only sectors with at least one published brand (verified/official/beta/community) are included in `generateStaticParams` and the sitemap.
+
+Sitemap (`app/sitemap.ts`) is async and includes all brand detail pages and populated sector landing pages.
 
 ### Community Submissions Module
 Registered users can submit vendor websites for analysis, contributing to the procurement skills library.
