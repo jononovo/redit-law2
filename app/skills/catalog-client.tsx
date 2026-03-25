@@ -14,9 +14,18 @@ import {
   X,
   Layers,
   Loader2,
+  LayoutGrid,
+  Table2,
+  Star,
+  Tag,
+  TrendingUp,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
 } from "lucide-react";
 import {
   CHECKOUT_METHOD_LABELS,
+  CHECKOUT_METHOD_COLORS,
   CAPABILITY_LABELS,
   SECTOR_LABELS,
   BRAND_TIER_LABELS,
@@ -25,6 +34,7 @@ import {
   VendorSector,
   BrandTier,
   SkillMaturity,
+  VendorSkill,
 } from "@/lib/procurement-skills/types";
 import type { BrandIndex } from "@/shared/schema";
 import { VendorCard, MATURITY_CONFIG, SECTOR_ICONS, CHECKOUT_ICONS } from "@/app/skills/vendor-card";
@@ -90,6 +100,8 @@ export default function CatalogClient({
     tiers: [],
   });
   const [showMobileFilters, setShowMobileFilters] = useState(false);
+  const [viewMode, setViewMode] = useState<"cards" | "table">("cards");
+  const [tableSort, setTableSort] = useState<{ col: string; dir: "asc" | "desc" }>({ col: "name", dir: "asc" });
 
   const [brands, setBrands] = useState<BrandIndex[]>(initialBrands);
   const [facets, setFacets] = useState<{ sectors: string[]; tiers: string[] }>(initialFacets);
@@ -185,6 +197,60 @@ export default function CatalogClient({
   }, [brands]);
 
   const verifiedCount = useMemo(() => brands.filter(b => b.maturity === "verified").length, [brands]);
+
+  const sortedBrands = useMemo(() => {
+    const sorted = [...brands];
+    sorted.sort((a, b) => {
+      let cmp = 0;
+      switch (tableSort.col) {
+        case "name":
+          cmp = a.name.localeCompare(b.name);
+          break;
+        case "sector":
+          cmp = (a.sector ?? "").localeCompare(b.sector ?? "");
+          break;
+        case "tier":
+          cmp = (a.tier ?? "").localeCompare(b.tier ?? "");
+          break;
+        case "maturity":
+          cmp = (a.maturity ?? "").localeCompare(b.maturity ?? "");
+          break;
+        case "readiness":
+          cmp = (a.agentReadiness ?? 0) - (b.agentReadiness ?? 0);
+          break;
+        case "deals":
+          cmp = (a.hasDeals ? 1 : 0) - (b.hasDeals ? 1 : 0);
+          break;
+        default:
+          cmp = 0;
+      }
+      return tableSort.dir === "asc" ? cmp : -cmp;
+    });
+    return sorted;
+  }, [brands, tableSort]);
+
+  const toggleTableSort = (col: string) => {
+    setTableSort(prev =>
+      prev.col === col
+        ? { col, dir: prev.dir === "asc" ? "desc" : "asc" }
+        : { col, dir: "asc" }
+    );
+  };
+
+  const SortHeader = ({ col, children }: { col: string; children: React.ReactNode }) => (
+    <button
+      onClick={() => toggleTableSort(col)}
+      className="inline-flex items-center gap-1 font-bold text-xs uppercase tracking-wider text-neutral-500 hover:text-neutral-900 transition-colors"
+      data-testid={`sort-${col}`}
+    >
+      {children}
+      {tableSort.col === col ? (
+        tableSort.dir === "asc" ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />
+      ) : (
+        <ArrowUpDown className="w-3 h-3 opacity-40" />
+      )}
+    </button>
+  );
 
   const filterSidebar = (
     <div className="space-y-6">
@@ -371,6 +437,25 @@ export default function CatalogClient({
               )}
 
               <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-end mb-4 gap-1">
+                  <button
+                    onClick={() => setViewMode("cards")}
+                    className={`p-2 rounded-lg transition-colors ${viewMode === "cards" ? "bg-primary/10 text-primary" : "text-neutral-400 hover:text-neutral-600 hover:bg-neutral-50"}`}
+                    data-testid="button-view-cards"
+                    title="Card view"
+                  >
+                    <LayoutGrid className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => setViewMode("table")}
+                    className={`p-2 rounded-lg transition-colors ${viewMode === "table" ? "bg-primary/10 text-primary" : "text-neutral-400 hover:text-neutral-600 hover:bg-neutral-50"}`}
+                    data-testid="button-view-table"
+                    title="Table view"
+                  >
+                    <Table2 className="w-4 h-4" />
+                  </button>
+                </div>
+
                 {loading && page === 0 ? (
                   <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">
                     {Array.from({ length: 6 }).map((_, i) => (
@@ -395,7 +480,7 @@ export default function CatalogClient({
                       </div>
                     ))}
                   </div>
-                ) : Object.keys(groupedBrands).length === 0 ? (
+                ) : brands.length === 0 ? (
                   <div className="text-center py-20">
                     <div className="w-20 h-20 rounded-full bg-neutral-100 flex items-center justify-center mx-auto mb-6">
                       <Search className="w-8 h-8 text-neutral-400" />
@@ -411,6 +496,134 @@ export default function CatalogClient({
                     >
                       Clear all filters
                     </button>
+                  </div>
+                ) : viewMode === "table" ? (
+                  <div className="space-y-4">
+                    <div className="bg-white rounded-2xl border border-neutral-100 shadow-sm overflow-hidden">
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-sm" data-testid="table-vendors">
+                          <thead>
+                            <tr className="border-b border-neutral-100 bg-neutral-50/50">
+                              <th className="text-left px-4 py-3"><SortHeader col="name">Vendor</SortHeader></th>
+                              <th className="text-left px-4 py-3"><SortHeader col="sector">Sector</SortHeader></th>
+                              <th className="text-left px-4 py-3"><SortHeader col="tier">Tier</SortHeader></th>
+                              <th className="text-left px-4 py-3"><SortHeader col="maturity">Maturity</SortHeader></th>
+                              <th className="text-left px-4 py-3"><SortHeader col="readiness">Agent Score</SortHeader></th>
+                              <th className="text-left px-4 py-3 hidden md:table-cell">Checkout</th>
+                              <th className="text-center px-4 py-3"><SortHeader col="deals">Deals</SortHeader></th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {sortedBrands.map((brand) => {
+                              const maturity = MATURITY_CONFIG[brand.maturity as SkillMaturity] ?? MATURITY_CONFIG.draft;
+                              const friendliness = Math.min(Math.floor((brand.agentReadiness ?? 0) / 20) + 1, 5);
+                              const checkoutMethods = (brand.checkoutMethods ?? []) as CheckoutMethod[];
+                              const vendor = brand.brandData as unknown as VendorSkill | null;
+                              return (
+                                <tr
+                                  key={brand.id}
+                                  className="border-b border-neutral-50 hover:bg-neutral-50/50 transition-colors"
+                                  data-testid={`row-vendor-${brand.slug}`}
+                                >
+                                  <td className="px-4 py-3">
+                                    <Link
+                                      href={`/skills/${brand.slug}`}
+                                      className="flex items-center gap-2.5 group"
+                                    >
+                                      <div className="w-8 h-8 rounded-lg bg-neutral-50 border border-neutral-100 flex items-center justify-center text-sm font-bold text-neutral-400 flex-shrink-0">
+                                        {brand.name[0]}
+                                      </div>
+                                      <span className="font-semibold text-neutral-900 group-hover:text-primary transition-colors truncate">
+                                        {brand.name}
+                                      </span>
+                                    </Link>
+                                  </td>
+                                  <td className="px-4 py-3">
+                                    <span className="inline-flex items-center gap-1 text-xs text-neutral-600">
+                                      {SECTOR_ICONS[brand.sector as VendorSector] || <Layers className="w-3.5 h-3.5" />}
+                                      {SECTOR_LABELS[brand.sector as VendorSector] ?? brand.sector}
+                                    </span>
+                                  </td>
+                                  <td className="px-4 py-3">
+                                    <span className="text-xs text-neutral-600">
+                                      {BRAND_TIER_LABELS[brand.tier as BrandTier] ?? brand.tier ?? "—"}
+                                    </span>
+                                  </td>
+                                  <td className="px-4 py-3">
+                                    <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold border ${maturity.className}`}>
+                                      {maturity.label}
+                                    </span>
+                                  </td>
+                                  <td className="px-4 py-3">
+                                    <div className="flex items-center gap-0.5">
+                                      {Array.from({ length: 5 }).map((_, i) => (
+                                        <Star
+                                          key={i}
+                                          className={`w-3 h-3 ${i < friendliness ? "text-amber-400 fill-amber-400" : "text-neutral-200"}`}
+                                        />
+                                      ))}
+                                      {vendor?.feedbackStats?.successRate != null && (
+                                        <span className="ml-1.5 text-[10px] font-semibold text-green-700 flex items-center gap-0.5">
+                                          <TrendingUp className="w-2.5 h-2.5 text-green-500" />
+                                          {Math.round(vendor.feedbackStats.successRate * 100)}%
+                                        </span>
+                                      )}
+                                    </div>
+                                  </td>
+                                  <td className="px-4 py-3 hidden md:table-cell">
+                                    <div className="flex flex-wrap gap-1">
+                                      {checkoutMethods.slice(0, 2).map(method => (
+                                        <span
+                                          key={method}
+                                          className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-semibold border ${CHECKOUT_METHOD_COLORS[method] ?? ""}`}
+                                        >
+                                          {CHECKOUT_ICONS[method]}
+                                          {CHECKOUT_METHOD_LABELS[method] ?? method}
+                                        </span>
+                                      ))}
+                                      {checkoutMethods.length > 2 && (
+                                        <span className="text-[10px] text-neutral-400">+{checkoutMethods.length - 2}</span>
+                                      )}
+                                    </div>
+                                  </td>
+                                  <td className="px-4 py-3 text-center">
+                                    {brand.hasDeals ? (
+                                      <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-100">
+                                        <Tag className="w-2.5 h-2.5" />
+                                        Yes
+                                      </span>
+                                    ) : (
+                                      <span className="text-neutral-300 text-xs">—</span>
+                                    )}
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+
+                    {total > brands.length && (
+                      <div className="flex justify-center mt-8">
+                        <Button
+                          variant="outline"
+                          onClick={() => setPage(p => p + 1)}
+                          disabled={loading}
+                          className="rounded-2xl px-8 font-semibold"
+                          data-testid="button-load-more"
+                        >
+                          {loading ? (
+                            <>
+                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                              Loading...
+                            </>
+                          ) : (
+                            `Load more vendors (${brands.length} of ${total})`
+                          )}
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div className="space-y-10">
