@@ -35,13 +35,16 @@ Every brand detail page should be indexable with:
 
 Remove `"use client"` from the top. The page becomes a Next.js server component that:
 
-1. Calls `storage.getBrandBySlug(slug)` directly (no API fetch needed — server components can access the DB)
+1. Calls `getBrand(slug)` directly (no API fetch needed — server components can access the DB)
 2. Casts `brand.brandData` to `VendorSkill` for display
 3. Returns `notFound()` if the brand doesn't exist
 4. Renders all static content server-side (name, description, capabilities, checkout methods, taxonomy, search/shipping/deals panels, metadata sidebar)
 5. Renders interactive pieces as imported client components
 
+**Critical: deduplicate the DB query.** Both `generateMetadata()` and the page function need the same brand data. Next.js deduplicates `fetch()` calls automatically, but NOT direct database queries. Use React's `cache()` to avoid hitting the DB twice per request:
+
 ```tsx
+import { cache } from "react";
 import { notFound } from "next/navigation";
 import { storage } from "@/server/storage";
 import type { Metadata } from "next";
@@ -53,16 +56,19 @@ import { CopySkillUrl } from "./copy-skill-url";
 
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || "https://creditclaw.com";
 
+const getBrand = cache(async (slug: string) => {
+  return storage.getBrandBySlug(slug);
+});
+
 interface Props {
   params: Promise<{ vendor: string }>;
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { vendor: slug } = await params;
-  const brand = await storage.getBrandBySlug(slug);
+  const brand = await getBrand(slug);
   if (!brand) return {};
 
-  const vendor = brand.brandData as unknown as VendorSkill;
   const friendliness = Math.min(Math.floor((brand.agentReadiness ?? 0) / 20) + 1, 5);
   const capabilities = (brand.capabilities ?? []).slice(0, 5).join(", ");
 
@@ -88,7 +94,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function VendorDetailPage({ params }: Props) {
   const { vendor: slug } = await params;
-  const brand = await storage.getBrandBySlug(slug);
+  const brand = await getBrand(slug);
   if (!brand) notFound();
 
   const vendor = brand.brandData as unknown as VendorSkill;
@@ -99,6 +105,10 @@ export default async function VendorDetailPage({ params }: Props) {
   // ... render <CopySkillUrl url={skillUrl} /> (client component)
 }
 ```
+
+**Why `cache()` is needed:** Without it, `generateMetadata` and the page function each call `storage.getBrandBySlug(slug)` independently — two identical DB queries per page load. React's `cache()` deduplicates within a single server request, so the second call returns the cached result. This matches the recommended Next.js pattern for sharing data between `generateMetadata` and page components.
+
+**`use(params)` → `await params`:** The current client component uses React 19's `use()` hook to unwrap the params promise. In server components, this becomes a standard `await`. The newsroom pages already use this exact pattern.
 
 #### A1b. Extract client components
 
@@ -208,23 +218,35 @@ const jsonLd = {
 
 **Edit:** `app/sitemap.ts`
 
-Add brand detail pages to the sitemap so search engines discover them:
+The current sitemap function is **synchronous** — it reads blog posts and doc sections from in-memory arrays. Adding brand pages requires a DB call, which means the function must become `async`. Next.js supports `async function sitemap()`.
 
 ```tsx
-const brands = await storage.searchBrands({
-  maturities: ["verified", "official"],
-  limit: 500,
-  sortBy: "name",
-  sortDir: "asc",
-});
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  // ... existing static pages, doc pages, blog pages (unchanged)
 
-const brandUrls = brands.map(b => ({
-  url: `${BASE_URL}/skills/${b.slug}`,
-  lastModified: b.updatedAt,
-  changeFrequency: "weekly" as const,
-  priority: 0.7,
-}));
+  // NEW: brand detail pages from DB
+  const { storage } = await import("@/server/storage");
+  const brands = await storage.searchBrands({
+    maturities: ["verified", "official"],
+    limit: 500,
+    sortBy: "name",
+    sortDir: "asc",
+  });
+
+  const brandPages: MetadataRoute.Sitemap = brands.map(b => ({
+    url: `${BASE_URL}/skills/${b.slug}`,
+    lastModified: b.updatedAt,
+    changeFrequency: "weekly" as const,
+    priority: 0.7,
+  }));
+
+  return [...staticPages, ...docPages, ...blogPostPages, ...blogCategoryPages, ...blogTagPages, ...brandPages];
+}
 ```
+
+**Breaking change:** The return type changes from implicit `MetadataRoute.Sitemap` to `Promise<MetadataRoute.Sitemap>`. This is fine — Next.js handles both sync and async sitemap functions. No consumers call this function directly; Next.js invokes it at `/sitemap.xml`.
+
+**Dynamic import for storage:** Using `await import("@/server/storage")` instead of a top-level import keeps the existing sync code path from breaking if the storage module has initialization side effects. Alternatively, a top-level import works too since this file only runs server-side.
 
 ---
 
@@ -538,6 +560,75 @@ Steps 1-4 can be done as a single task. Steps 5-8 as a second task. Step 9 is in
 ### Not a risk
 - **Catalog page** — minimal change (just adding a layout file for metadata). The interactive client component is untouched.
 - **Existing bot API** — ratings fields are additive (nullable), existing consumers won't break.
+
+---
+
+## Part A verification checklist (SSR)
+
+These items were verified against the codebase during planning. Confirm they still hold before implementation:
+
+### Server-component compatibility of imports
+
+| Import | Status | Notes |
+|---|---|---|
+| `Nav` (`components/nav.tsx`) | ✅ Safe | Is `"use client"` — server components can render client components. Newsroom pages (server components) already render `<Nav />`. |
+| `Footer` (`components/footer.tsx`) | ✅ Safe | No `"use client"`, no hooks. Pure server-compatible. |
+| `Badge` (`components/ui/badge.tsx`) | ✅ Safe | No `"use client"`, no hooks. Just a styled div with `cva`. |
+| `Button` (`components/ui/button.tsx`) | ✅ Safe | No `"use client"`, uses `forwardRef` + `Slot` but no hooks. **Caveat:** Buttons with `onClick` handlers must be in client components — the plan accounts for this by extracting interactive buttons. |
+| `generateVendorSkill` (`lib/procurement-skills/generator.ts`) | ✅ Safe | Pure function importing from `./types` (also pure). No browser APIs, no hooks. |
+| `storage` (`server/storage`) | ✅ Safe | Server-only module. Imported directly in server components. |
+| Lucide icons | ✅ Safe | SVG components, no hooks. Render in server components. |
+| `MATURITY_CONFIG`, `CATEGORY_ICONS`, `CHECKOUT_ICONS` constants | ✅ Safe | Static objects containing JSX (Lucide SVGs). No hooks. |
+
+### Pattern changes
+
+| Current (client) | After (server) | Notes |
+|---|---|---|
+| `use(params)` to unwrap Promise | `await params` | Standard server component pattern. Newsroom uses this. |
+| `useState` + `useEffect` for data fetching | Direct `await storage.getBrandBySlug()` | Eliminates loading state — page renders with data or 404. |
+| `useState` for `copied`, `showSkillPreview` | Extracted to client components | Only interactive state moves to client components. |
+| `useAuth()` in `BrandClaimButton` | Stays in extracted client component | `BrandClaimButton` becomes its own `"use client"` file. |
+| `fetch("/api/internal/brands/${slug}")` | `storage.getBrandBySlug(slug)` | Eliminates the API hop — server component calls DB directly. |
+
+### What gets removed from the page
+
+- `"use client"` directive
+- `use`, `useState`, `useEffect`, `useCallback` imports from React
+- `useAuth` import (moves to `brand-claim-button.tsx`)
+- `Loader2` import (no loading state needed — server renders complete or 404)
+- `fetch()` call to internal brands API
+- Loading spinner JSX
+- `notFound` state variable (replaced by `notFound()` from `next/navigation`)
+
+### What stays in the page (server-rendered)
+
+- All static content panels (capabilities, checkout methods, taxonomy, search/shipping/deals, security report, metadata sidebar)
+- `MATURITY_CONFIG`, `CATEGORY_ICONS`, `CHECKOUT_ICONS` constants
+- `ALL_CAPABILITIES` list
+- Brand name, description, sector, tier, sub-sectors, tags
+- Agent friendliness stars display
+- Success rate display
+- Active deals badge
+
+### What moves to client components
+
+| Component file | Props it receives | Interactive state |
+|---|---|---|
+| `brand-claim-button.tsx` | `slug: string` | `useAuth()`, `useState` for claim status, `useEffect` to check existing claims, `useCallback` for claim action |
+| `skill-preview-panel.tsx` | `skillMd: string`, `slug: string` | `useState` for `showSkillPreview` toggle, `handleDownload` function (blob + anchor click) |
+| `copy-skill-url.tsx` | `url: string` | `useState` for `copied` feedback, `navigator.clipboard.writeText` |
+
+All props are serializable strings — no functions, no objects with methods, no React nodes passed from server to client.
+
+### Layout metadata precedence
+
+`app/skills/layout.tsx` provides static metadata for the `/skills` route. `app/skills/[vendor]/page.tsx` provides dynamic `generateMetadata` for brand detail routes. Next.js page-level metadata overrides layout metadata — so brand pages get their own title/description, and the catalog page gets the layout's defaults. This is standard Next.js behavior, no conflict.
+
+### `data-testid` preservation
+
+All `data-testid` attributes from the current page must be preserved:
+- Static-content testids (e.g., `badge-maturity`, `score-agent-friendliness`, `link-vendor-url`, `link-back-catalog`) stay in the server component
+- Interactive testids (e.g., `button-claim-brand`, `button-toggle-preview`, `button-download-skill`, `button-copy-skill-url`) move to their respective client components
 
 ---
 
