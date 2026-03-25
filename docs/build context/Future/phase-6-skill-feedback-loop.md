@@ -138,48 +138,436 @@ export async function generateStaticParams() {
 
 This gives verified brands instant-load static pages. Other brands (draft, community, beta) are rendered on-demand with ISR.
 
-### Step A2: Convert catalog page for SEO metadata
+### Step A2: Full SSR for catalog page with URL-based filter state
 
-**Edit:** `app/skills/page.tsx` (600+ lines)
+**Status:** Part A originally shipped with the layout-only approach. This step replaces that with full SSR.
 
-The catalog page is trickier because it's highly interactive (filters, search, pagination). Two approaches:
+**Refactor:** `app/skills/page.tsx` (670 lines) — convert from fully client-rendered to server component with URL-based filter state.
 
-**Recommended approach — hybrid:** Keep the page as a client component for interactivity, but wrap it in a server layout that provides metadata.
+**Why full SSR:** The layout-only approach gave crawlers a title and description but an empty brand grid. With full SSR, crawlers see the actual brand cards in the HTML. Each filter combination becomes a unique, indexable URL (e.g., `/skills?sector=office`, `/skills?q=amazon`).
 
-Create `app/skills/layout.tsx` (server component):
+#### Architecture
+
+```
+page.tsx (server component)
+|- reads searchParams -> builds filter object
+|- calls storage.searchBrands() directly (no API hop)
+|- calls storage.getAllBrandFacets() for filter options
+|- renders brand card grid server-side (VendorCard is a plain function, not a client component)
+|- has generateMetadata() that reflects current filters
+|
+|- vendor-card.tsx (shared, no "use client" — plain JSX)
+|   - extracted so both page.tsx and catalog-load-more.tsx can import it
+|
+|- catalog-search.tsx (client component)
+|   - search input with 300ms debounce
+|   - on change: router.replace('/skills?q=...' + existing params)
+|
+|- catalog-filters.tsx (client component)
+|   - receives facets + currentFilters as props
+|   - checkbox toggles -> router.replace() with updated params
+|   - mobile filter drawer state (useState, not URL-based)
+|   - "Clear all filters" button
+|   - useTransition() for non-blocking loading indicator
+|
+|- catalog-load-more.tsx (client component)
+    - receives total, currentCount, currentFilters as props
+    - "Load more" button fetches next page from /api/internal/brands/search
+    - appends results to local state
+    - renders additional VendorCard instances client-side
+```
+
+**Key insight:** `"use client"` components are still SSR'd by Next.js — the directive means "this component hydrates on the client," not "skip server rendering." So even the initial render of client components produces HTML on the server.
+
+**"Load more" stays client-side:** Every filter/search change triggers a server re-render via URL params. But "load more" is progressive enhancement — it fetches additional pages from the internal API and appends client-side. Crawlers don't click "load more," so this doesn't hurt SEO. The first 50 brands are in the HTML; that's what matters.
+
+#### A2a. Server page structure
+
+Remove `"use client"` from `app/skills/page.tsx`. The page becomes an async server component:
 
 ```tsx
+import { storage } from "@/server/storage";
 import type { Metadata } from "next";
+import type { BrandSearchFilters } from "@/server/storage/brand-index";
+import type { BrandIndex } from "@/shared/schema";
+import { CatalogSearch } from "./catalog-search";
+import { CatalogFilters } from "./catalog-filters";
+import { CatalogLoadMore } from "./catalog-load-more";
+import { VendorCard } from "./vendor-card";
+// ... other imports
 
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || "https://creditclaw.com";
+const PAGE_SIZE = 50;
 
-export const metadata: Metadata = {
-  title: "Vendor Skills Library — AI Agent Procurement Intelligence | CreditClaw",
-  description: "Curated procurement skills that teach AI agents how to shop at 50+ vendors. Search by sector, tier, payment method, or capability. Download SKILL.md files for your agent.",
-  openGraph: {
-    title: "Vendor Skills Library — CreditClaw",
-    description: "AI agent procurement skills for 50+ vendors. Search, filter, and download SKILL.md files.",
-    type: "website",
-    url: `${BASE_URL}/skills`,
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "Vendor Skills Library — CreditClaw",
-    description: "AI agent procurement skills for 50+ vendors.",
-  },
-  alternates: {
-    canonical: `${BASE_URL}/skills`,
-  },
-};
+interface CatalogSearchParams {
+  q?: string;
+  sector?: string;
+  tier?: string;
+  checkout?: string;
+  capability?: string;
+  maturity?: string;
+}
 
-export default function SkillsLayout({ children }: { children: React.ReactNode }) {
-  return children;
+function parseCSV(val?: string): string[] {
+  if (!val) return [];
+  return val.split(",").map(s => s.trim()).filter(Boolean);
+}
+
+function buildFilters(params: CatalogSearchParams): BrandSearchFilters {
+  return {
+    q: params.q || undefined,
+    sectors: parseCSV(params.sector).length ? parseCSV(params.sector) : undefined,
+    tiers: parseCSV(params.tier).length ? parseCSV(params.tier) : undefined,
+    checkoutMethods: parseCSV(params.checkout).length ? parseCSV(params.checkout) : undefined,
+    capabilities: parseCSV(params.capability).length ? parseCSV(params.capability) : undefined,
+    maturities: parseCSV(params.maturity).length ? parseCSV(params.maturity) : undefined,
+    limit: PAGE_SIZE,
+    offset: 0,
+    sortBy: "readiness",
+    sortDir: "desc",
+  };
+}
+
+interface Props {
+  searchParams: Promise<CatalogSearchParams>;
+}
+
+export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
+  const params = await searchParams;
+
+  if (params.sector) {
+    const sectorLabel = SECTOR_LABELS[params.sector as VendorSector] ?? params.sector;
+    return {
+      title: `${sectorLabel} Procurement Skills | CreditClaw`,
+      description: `Browse AI agent procurement skills for ${sectorLabel} vendors. Filter by checkout method, capability, and agent friendliness.`,
+      alternates: { canonical: `${BASE_URL}/skills` },
+    };
+  }
+
+  if (params.q) {
+    return {
+      title: `Search: "${params.q}" - Vendor Skills | CreditClaw`,
+      description: `Search results for "${params.q}" in the CreditClaw procurement skills catalog.`,
+      alternates: { canonical: `${BASE_URL}/skills` },
+    };
+  }
+
+  // Default metadata (same content that was in layout.tsx)
+  return {
+    title: "Skill Index - AI Agent Procurement Skills | CreditClaw",
+    description: "Browse procurement skills that teach AI agents how to shop at 50+ vendors. Filter by category, checkout method, and agent friendliness score.",
+    openGraph: {
+      title: "Skill Index - AI Agent Procurement Skills",
+      description: "Browse procurement skills that teach AI agents how to shop at 50+ vendors.",
+      type: "website",
+      url: `${BASE_URL}/skills`,
+    },
+    twitter: {
+      card: "summary",
+      title: "Skill Index - CreditClaw",
+      description: "Browse procurement skills that teach AI agents how to shop at 50+ vendors.",
+    },
+    alternates: { canonical: `${BASE_URL}/skills` },
+  };
+}
+
+export default async function SkillsCatalogPage({ searchParams }: Props) {
+  const params = await searchParams;
+  const filters = buildFilters(params);
+
+  const [brands, total, facets] = await Promise.all([
+    storage.searchBrands(filters),
+    storage.searchBrandsCount(filters),
+    storage.getAllBrandFacets(),
+  ]);
+
+  // Group brands by sector (same logic as current page)
+  const grouped: Record<string, BrandIndex[]> = {};
+  for (const b of brands) {
+    if (!grouped[b.sector]) grouped[b.sector] = [];
+    grouped[b.sector].push(b);
+  }
+
+  const currentFilters = {
+    search: params.q ?? "",
+    sectors: parseCSV(params.sector),
+    tiers: parseCSV(params.tier),
+    checkoutMethods: parseCSV(params.checkout),
+    capabilities: parseCSV(params.capability),
+    maturity: parseCSV(params.maturity),
+  };
+
+  const verifiedCount = brands.filter(b => b.maturity === "verified").length;
+
+  return (
+    <div className="min-h-screen bg-background text-neutral-900 font-sans">
+      <Nav />
+      <main>
+        {/* Hero section with stats - SERVER RENDERED with real data */}
+        <section className="relative py-20 overflow-hidden">
+          {/* background blurs */}
+          <div className="container mx-auto px-6 relative z-10">
+            <div className="text-center max-w-3xl mx-auto mb-12">
+              {/* heading, pill badge */}
+              <p>Curated procurement skills... {total}+ vendors.</p>
+            </div>
+            <CatalogSearch initialValue={params.q ?? ""} />
+            <div className="flex items-center justify-center gap-4 text-sm">
+              <span>{total} vendors</span>
+              <span>{verifiedCount} verified</span>
+              <span>{facets.sectors.length} sectors</span>
+              <span>{facets.tiers.length} tiers</span>
+            </div>
+          </div>
+        </section>
+
+        <section className="pb-24">
+          <div className="container mx-auto px-6">
+            <div className="flex gap-8">
+              <CatalogFilters facets={facets} currentFilters={currentFilters} />
+
+              <div className="flex-1 min-w-0">
+                {Object.keys(grouped).length === 0 ? (
+                  <div className="text-center py-20">
+                    <h3>No vendors found</h3>
+                    {/* CatalogFilters includes clear-all, or inline link */}
+                  </div>
+                ) : (
+                  <div className="space-y-10">
+                    {Object.entries(grouped).map(([sector, sectorBrands]) => (
+                      <div key={sector}>
+                        <h2>{SECTOR_LABELS[sector] ?? sector} ({sectorBrands.length})</h2>
+                        <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">
+                          {sectorBrands.map(b => <VendorCard key={b.slug} brand={b} />)}
+                        </div>
+                      </div>
+                    ))}
+                    <CatalogLoadMore
+                      total={total}
+                      currentCount={brands.length}
+                      filters={currentFilters}
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+            {/* Bot Discovery API promo - server rendered */}
+          </div>
+        </section>
+      </main>
+      <Footer />
+    </div>
+  );
 }
 ```
 
-This gives the catalog page proper metadata without refactoring the entire interactive page. The `metadata` export from a layout is picked up by Next.js automatically.
+#### A2b. Client components to extract
 
-**Alternative approach (future):** Full SSR with URL-based filter state (query params) and server-side initial data load. This is more work but gives crawlers a rendered grid of brands. Can be done in a later iteration.
+| File | Purpose | Interactive state |
+|---|---|---|
+| `app/skills/vendor-card.tsx` | Brand card (Link + badges + stars) | None — plain JSX, no `"use client"` |
+| `app/skills/catalog-search.tsx` | Search input with 300ms debounce | `useState` for input value, `useRouter().replace()` to update `?q=` |
+| `app/skills/catalog-filters.tsx` | Filter sidebar + mobile drawer + clear button | `useSearchParams()` to read current filters, `useRouter().replace()` to toggle, `useTransition()` for loading state, `useState` for mobile drawer |
+| `app/skills/catalog-load-more.tsx` | "Load more" pagination | `useState` for extra brands, `fetch()` to internal API with offset |
+
+**Props crossing the server/client boundary — all serializable:**
+
+| Component | Props | Types |
+|---|---|---|
+| `VendorCard` | `brand: BrandIndex` | Drizzle row object (strings, numbers, arrays, null) |
+| `CatalogSearch` | `initialValue: string` | string |
+| `CatalogFilters` | `facets: { sectors: string[]; tiers: string[]; categories: string[] }`, `currentFilters: { search: string; sectors: string[]; tiers: string[]; ... }` | plain objects |
+| `CatalogLoadMore` | `total: number`, `currentCount: number`, `filters: { ... }` | numbers + plain object |
+
+#### A2c. UX: filter interactions with useTransition
+
+Each checkbox click triggers `router.replace()` -> soft navigation -> server re-render. Use `useTransition()` for non-blocking loading indicator:
+
+```tsx
+// In catalog-filters.tsx:
+"use client";
+import { useState, useTransition } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+
+export function CatalogFilters({ facets, currentFilters }) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [isPending, startTransition] = useTransition();
+  const [showMobile, setShowMobile] = useState(false);
+
+  const toggleFilter = (paramKey: string, value: string) => {
+    const params = new URLSearchParams(searchParams.toString());
+    const current = params.get(paramKey)?.split(",").filter(Boolean) ?? [];
+    const next = current.includes(value)
+      ? current.filter(v => v !== value)
+      : [...current, value];
+    if (next.length) params.set(paramKey, next.join(","));
+    else params.delete(paramKey);
+
+    startTransition(() => {
+      router.replace(`/skills?${params.toString()}`, { scroll: false });
+    });
+  };
+
+  const clearAll = () => {
+    startTransition(() => {
+      router.replace("/skills", { scroll: false });
+    });
+  };
+
+  return (
+    <>
+      {/* Desktop sidebar */}
+      <aside className={`hidden lg:block w-64 flex-shrink-0 ${isPending ? "opacity-60 pointer-events-none" : ""}`}>
+        {/* filter groups using facets + currentFilters for checked state */}
+      </aside>
+
+      {/* Mobile drawer toggle + drawer */}
+      {/* ... uses showMobile state ... */}
+    </>
+  );
+}
+```
+
+**Note on `useSearchParams()` and Suspense:** Next.js requires components using `useSearchParams()` to be wrapped in a `<Suspense>` boundary during static rendering. Since our page is dynamic (it reads `searchParams` prop), this isn't an issue. But if we ever add `export const dynamic = "force-static"`, we'd need Suspense boundaries around `CatalogSearch` and `CatalogFilters`.
+
+#### A2d. Search input debounce
+
+```tsx
+// In catalog-search.tsx:
+"use client";
+import { useState, useEffect, useRef } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+
+export function CatalogSearch({ initialValue }: { initialValue: string }) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [value, setValue] = useState(initialValue);
+  const timer = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    // Sync with server-provided value when URL changes externally
+    setValue(initialValue);
+  }, [initialValue]);
+
+  useEffect(() => {
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = setTimeout(() => {
+      const params = new URLSearchParams(searchParams.toString());
+      if (value) params.set("q", value);
+      else params.delete("q");
+      router.replace(`/skills?${params.toString()}`, { scroll: false });
+    }, 300);
+    return () => { if (timer.current) clearTimeout(timer.current); };
+  }, [value]);
+
+  return <Input value={value} onChange={e => setValue(e.target.value)} ... />;
+}
+```
+
+#### A2e. "Load more" — stays client-side
+
+```tsx
+// catalog-load-more.tsx
+"use client";
+import { useState } from "react";
+import type { BrandIndex } from "@/shared/schema";
+import { VendorCard } from "./vendor-card";
+
+interface Props {
+  total: number;
+  currentCount: number;
+  filters: { search: string; sectors: string[]; tiers: string[]; checkoutMethods: string[]; capabilities: string[]; maturity: string[] };
+}
+
+export function CatalogLoadMore({ total, currentCount, filters }: Props) {
+  const [extraBrands, setExtraBrands] = useState<BrandIndex[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [extraBrandsGrouped, setExtraBrandsGrouped] = useState<Record<string, BrandIndex[]>>({});
+
+  // Reset extra brands when filters change (server will re-render with new initial set)
+  // This happens automatically: when searchParams change, the page re-renders,
+  // CatalogLoadMore unmounts and remounts with new props (currentCount resets to the new batch size)
+
+  if (total <= currentCount + extraBrands.length) return null;
+
+  const loadMore = async () => {
+    setLoading(true);
+    const params = new URLSearchParams();
+    if (filters.search) params.set("q", filters.search);
+    if (filters.sectors.length) params.set("sector", filters.sectors.join(","));
+    if (filters.tiers.length) params.set("tier", filters.tiers.join(","));
+    if (filters.checkoutMethods.length) params.set("checkout", filters.checkoutMethods.join(","));
+    if (filters.capabilities.length) params.set("capability", filters.capabilities.join(","));
+    if (filters.maturity.length) params.set("maturity", filters.maturity.join(","));
+    params.set("offset", String(currentCount + extraBrands.length));
+    params.set("limit", "50");
+
+    const res = await fetch(`/api/internal/brands/search?${params}`);
+    const data = await res.json();
+    const newBrands = data.brands ?? [];
+    setExtraBrands(prev => [...prev, ...newBrands]);
+    setLoading(false);
+  };
+
+  return (
+    <div>
+      {/* Render extra brands grouped by sector, same layout as server grid */}
+      {extraBrands.length > 0 && (
+        <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4 mt-4">
+          {extraBrands.map(b => <VendorCard key={b.slug} brand={b} />)}
+        </div>
+      )}
+      <div className="flex justify-center mt-8">
+        <Button onClick={loadMore} disabled={loading} data-testid="button-load-more">
+          {loading ? "Loading..." : `Load more (${currentCount + extraBrands.length} of ${total})`}
+        </Button>
+      </div>
+    </div>
+  );
+}
+```
+
+#### A2f. VendorCard extraction
+
+Extract `VendorCard` to `app/skills/vendor-card.tsx` — no `"use client"` directive. It's a pure render function (just JSX + a `<Link>`). Both the server page and `CatalogLoadMore` import it.
+
+The existing constants (`MATURITY_CONFIG`, `CATEGORY_ICONS`, `CHECKOUT_ICONS`) should also move to this file or a shared constants file, since they're needed by `VendorCard`.
+
+**Note:** `CATEGORY_ICONS` and `CHECKOUT_ICONS` use lucide-react JSX elements. These are fine in server components — lucide-react components are server-safe. When imported by the client component `CatalogLoadMore`, they'll be included in the client bundle.
+
+#### A2g. Layout cleanup
+
+The existing `app/skills/layout.tsx` has static metadata that's now superseded by the page's `generateMetadata()`. Two options:
+
+1. **Remove metadata from layout** — keep layout only as a structural wrapper (currently just `return children`)
+2. **Delete layout entirely** — since it does nothing useful
+
+**Recommendation:** Keep the layout file (it's a good place to add shared structure later, e.g., a breadcrumb or subnav). Remove the `metadata` export since the page provides it dynamically.
+
+#### A2h. What crawlers see after this change
+
+| URL | Crawler sees |
+|---|---|
+| `/skills` | Full grid of first 50 brands grouped by sector, stats line (N vendors, N verified, N sectors), hero text, Bot API section |
+| `/skills?sector=office` | Office sector brands only, `<title>` = "Office Supplies Procurement Skills \| CreditClaw" |
+| `/skills?q=amazon` | Search results for "amazon", `<title>` = "Search: amazon - Vendor Skills \| CreditClaw" |
+| `/skills?checkout=native_api` | Brands with native API checkout, filtered grid with proper metadata |
+| `/skills?tier=enterprise` | Enterprise tier brands only |
+
+Each filter combination has proper `<title>`, `<meta description>`, OG tags, and a **visible, rendered brand grid** in the HTML.
+
+#### A2i. Implementation notes
+
+1. **`numeric` columns return strings.** `brand.agentReadiness` comes from a `numeric()` column. The `VendorCard` already does `Math.floor((brand.agentReadiness ?? 0) / 20)` which coerces to number via math ops. But explicit `Number()` is safer: `Number(brand.agentReadiness ?? 0)`.
+
+2. **No skeleton loader needed for initial render.** The server component fetches data before rendering. The first paint includes the full grid — no loading spinner. Skeleton is only relevant during soft navigation (filter/search changes), and that's handled by `useTransition()` opacity dimming.
+
+3. **The internal search API route stays unchanged.** It's still used by `CatalogLoadMore` for pagination. The server page bypasses it by calling `storage.searchBrands()` directly.
+
+4. **Filter param keys map directly to API params.** The URL uses `?sector=office&checkout=native_api` — same keys as the internal API. This is intentional for consistency.
+
+5. **`categories` filter is currently a separate concept from `sectors`.** The filter sidebar has both "Sector" (from facets) and "Category" (from the CATEGORY_LABELS constant). In the current client page, categories and sectors are merged: `[...new Set([...filters.sectors, ...filters.categories])]` before sending as `sector` param. The server page should handle this the same way — both map to the `sectors` field in `BrandSearchFilters`.
 
 ### Step A3: Add JSON-LD structured data to brand detail pages
 
@@ -679,7 +1067,7 @@ All props are serializable strings — no functions, no objects with methods, no
 
 ### Layout metadata precedence
 
-`app/skills/layout.tsx` provides static metadata for the `/skills` route. `app/skills/[vendor]/page.tsx` provides dynamic `generateMetadata` for brand detail routes. Next.js page-level metadata overrides layout metadata — so brand pages get their own title/description, and the catalog page gets the layout's defaults. This is standard Next.js behavior, no conflict.
+Both `app/skills/page.tsx` (catalog) and `app/skills/[vendor]/page.tsx` (brand detail) now have their own `generateMetadata()`. The catalog page generates filter-aware titles (e.g., "Office Supplies Procurement Skills" for `?sector=office`). The layout's static metadata is no longer needed and should be removed to avoid confusion. Page-level metadata always overrides layout metadata in Next.js.
 
 ### `data-testid` preservation
 
@@ -697,7 +1085,12 @@ All `data-testid` attributes from the current page must be preserved:
 | Create | `app/skills/[vendor]/brand-claim-button.tsx` | Client component: claim button |
 | Create | `app/skills/[vendor]/skill-preview-panel.tsx` | Client component: skill preview + download |
 | Create | `app/skills/[vendor]/copy-skill-url.tsx` | Client component: copy URL |
-| Create | `app/skills/layout.tsx` | Server component: catalog metadata |
+| Refactor | `app/skills/page.tsx` | Remove `"use client"`, server-render brand grid, `generateMetadata()` with filter-aware titles |
+| Edit | `app/skills/layout.tsx` | Remove static metadata (now superseded by page's `generateMetadata`) |
+| Create | `app/skills/vendor-card.tsx` | Shared VendorCard component (no `"use client"`, plain JSX) |
+| Create | `app/skills/catalog-search.tsx` | Client component: debounced search input, updates `?q=` URL param |
+| Create | `app/skills/catalog-filters.tsx` | Client component: filter sidebar + mobile drawer, updates URL params via `useTransition` |
+| Create | `app/skills/catalog-load-more.tsx` | Client component: "Load more" pagination, fetches from internal API |
 | Edit | `app/sitemap.ts` | Add brand detail pages |
 | Edit | `shared/schema.ts` | Add `brand_feedback` table + rating columns on `brand_index` |
 | Create | `server/storage/brand-feedback.ts` | Feedback CRUD methods |
