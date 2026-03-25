@@ -255,22 +255,6 @@ export default function CatalogClient({
   const filterSidebar = (
     <div className="space-y-6">
       <div>
-        <h4 className="font-bold text-sm uppercase tracking-wider text-neutral-400 mb-3">Sector</h4>
-        <div className="space-y-2">
-          {facets.sectors.map(sector => (
-            <FilterCheckbox
-              key={sector}
-              label={SECTOR_LABELS[sector as VendorSector] ?? sector}
-              checked={filters.sectors.includes(sector as VendorSector)}
-              onChange={() => toggleFilter("sectors", sector as VendorSector)}
-              icon={<Layers className="w-4 h-4 text-purple-500" />}
-              testId={`filter-sector-${sector}`}
-            />
-          ))}
-        </div>
-      </div>
-
-      <div>
         <h4 className="font-bold text-sm uppercase tracking-wider text-neutral-400 mb-3">Tier</h4>
         <div className="space-y-2">
           {facets.tiers.map(tier => (
@@ -380,14 +364,24 @@ export default function CatalogClient({
               </div>
             </div>
 
-            <div className="flex items-center justify-center gap-4 text-sm text-neutral-500 font-medium">
-              <span>{total} vendor{total !== 1 ? "s" : ""}</span>
-              <span className="text-neutral-300">|</span>
-              <span>{verifiedCount} verified</span>
-              <span className="text-neutral-300">|</span>
-              <span>{facets.sectors.length} sectors</span>
-              <span className="text-neutral-300">|</span>
-              <span>{facets.tiers.length} tiers</span>
+            <div className="flex flex-wrap items-center justify-center gap-2 mt-2">
+              {facets.sectors.map(sector => (
+                <Link
+                  key={sector}
+                  href={`/c/${sector}`}
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium border transition-colors ${
+                    filters.sectors.includes(sector as VendorSector)
+                      ? "bg-primary/10 border-primary/30 text-primary"
+                      : "bg-white/80 border-neutral-200 text-neutral-600 hover:bg-white hover:border-neutral-300"
+                  }`}
+                  data-testid={`sector-link-${sector}`}
+                >
+                  <span className="w-4 h-4 flex items-center justify-center">
+                    {SECTOR_ICONS[sector as VendorSector] || <Layers className="w-3.5 h-3.5" />}
+                  </span>
+                  {SECTOR_LABELS[sector as VendorSector] ?? sector}
+                </Link>
+              ))}
             </div>
           </div>
         </section>
