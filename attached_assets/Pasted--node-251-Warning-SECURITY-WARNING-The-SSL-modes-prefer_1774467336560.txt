@@ -1,0 +1,61 @@
+(node:251) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+Error: Failed query: select count(*) from "brand_index" where ("brand_index"."sector" in ($1) and "brand_index"."maturity" in ($2, $3, $4, $5))
+params: retail,verified,official,beta,community
+    at o.queryWithCache (.next/server/chunks/ssr/_3bba9992._.js:8:40349)
+    at async (.next/server/chunks/ssr/_3bba9992._.js:8:43913)
+    at async Object.searchBrandsCount (.next/server/chunks/ssr/_3bba9992._.js:16:58572)
+    at async (.next/server/chunks/ssr/[root-of-the-server]__6fc9978b._.js:1:18562)
+    at async (.next/server/chunks/ssr/[root-of-the-server]__6fc9978b._.js:1:18529)
+    at async Object.q [as generateStaticParams] (.next/server/chunks/ssr/[root-of-the-server]__6fc9978b._.js:1:18688) {
+  query: 'select count(*) from "brand_index" where ("brand_index"."sector" in ($1) and "brand_index"."maturity" in ($2, $3, $4, $5))',
+  params: [Array],
+  [cause]: error: relation "brand_index" does not exist
+      at async (.next/server/chunks/ssr/_3bba9992._.js:8:44128)
+      at async o.queryWithCache (.next/server/chunks/ssr/_3bba9992._.js:8:40324)
+      at async (.next/server/chunks/ssr/_3bba9992._.js:8:43913)
+      at async Object.searchBrandsCount (.next/server/chunks/ssr/_3bba9992._.js:16:58572)
+      at async (.next/server/chunks/ssr/[root-of-the-server]__6fc9978b._.js:1:18562)
+      at async (.next/server/chunks/ssr/[root-of-the-server]__6fc9978b._.js:1:18529)
+      at async Object.q [as generateStaticParams] (.next/server/chunks/ssr/[root-of-the-server]__6fc9978b._.js:1:18688) {
+    length: 110,
+    severity: 'ERROR',
+    code: '42P01',
+    detail: undefined,
+    hint: undefined,
+    position: '22',
+    internalPosition: undefined,
+    internalQuery: undefined,
+    where: undefined,
+    schema: undefined,
+    table: undefined,
+    column: undefined,
+    dataType: undefined,
+    constraint: undefined,
+    file: 'parse_relation.c',
+    line: '1449',
+    routine: 'parserOpenTable'
+  }
+}
+
+> Build error occurred
+
+Error: Failed to collect page data for /c/[sector]
+    at ignore-listed frames {
+  type: 'Error'
+}
+
+npm notice
+npm notice New major version of npm available! 10.8.2 -> 11.12.0
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.12.0
+npm notice To update run: npm install -g npm@11.12.0
+npm notice
+

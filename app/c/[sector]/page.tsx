@@ -27,21 +27,29 @@ const getSectorBrands = cache(async (sector: VendorSector) => {
 const PUBLISHED_MATURITIES = ["verified", "official", "beta", "community"] as const;
 
 const getPopulatedSectors = cache(async () => {
-  const results = await Promise.all(
-    ALL_SECTORS.map(async (s) => {
-      const count = await storage.searchBrandsCount({
-        sectors: [s],
-        maturities: [...PUBLISHED_MATURITIES],
-      });
-      return count > 0 ? s : null;
-    })
-  );
-  return results.filter((s): s is VendorSector => s !== null);
+  try {
+    const results = await Promise.all(
+      ALL_SECTORS.map(async (s) => {
+        const count = await storage.searchBrandsCount({
+          sectors: [s],
+          maturities: [...PUBLISHED_MATURITIES],
+        });
+        return count > 0 ? s : null;
+      })
+    );
+    return results.filter((s): s is VendorSector => s !== null);
+  } catch {
+    return [];
+  }
 });
 
 export async function generateStaticParams() {
-  const populated = await getPopulatedSectors();
-  return populated.map((sector) => ({ sector }));
+  try {
+    const populated = await getPopulatedSectors();
+    return populated.map((sector) => ({ sector }));
+  } catch {
+    return [];
+  }
 }
 
 type Props = { params: Promise<{ sector: string }> };
