@@ -12,7 +12,7 @@ import { type Step7Props } from "../types";
 
 export function DeliveryResult({
   cardId, cardName, cardLast4, spendingLimit, dailyLimit, monthlyLimit,
-  selectedBotId, bots, directDeliverySucceeded, deliveryResult, storedFileContent, storedCompanionContent, onNext, onDone,
+  selectedBotId, bots, directDeliverySucceeded, deliveryResult, storedFileContent, onNext, onDone,
 }: Step7Props) {
   const { toast } = useToast();
   const [botConfirmed, setBotConfirmed] = useState(false);
@@ -79,14 +79,10 @@ export function DeliveryResult({
     });
   }
 
-  async function handleRedownload() {
+  function handleRedownload() {
     if (!storedFileContent) return;
     const baseName = `Card-${cardName.replace(/[^a-zA-Z0-9-]/g, "")}-${cardLast4}`;
     downloadEncryptedFile(storedFileContent, `${baseName}.md`);
-    if (storedCompanionContent) {
-      await new Promise(resolve => setTimeout(resolve, 500));
-      downloadEncryptedFile(storedCompanionContent, `${baseName}-details.md`);
-    }
   }
 
   const botDisplayName = bots.find(b => b.bot_id === selectedBotId)?.bot_name || selectedBotId;

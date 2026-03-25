@@ -78,7 +78,6 @@ export interface Step7Props {
   directDeliverySucceeded: boolean;
   deliveryResult: { delivered: boolean; method: string; messageId?: number; expiresAt?: string } | null;
   storedFileContent: string;
-  storedCompanionContent: string;
   onNext: () => void;
   onDone: () => void;
 }

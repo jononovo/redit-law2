@@ -53,9 +53,8 @@ export function buildCheckoutSteps(params: {
   encryptedFilename: string;
 }): string[] {
   const amountUsd = (params.amountCents / 100).toFixed(2);
-  const companionFilename = params.encryptedFilename.replace(/\.md$/, "-details.md");
   return [
-    `Read the companion details file at ${companionFilename} for expiry, cardholder name, card brand, and billing address. Use these to fill checkout form fields without decrypting.`,
+    `Read the card file at ${params.encryptedFilename} — the "Card Details" and "Billing Address" sections at the top contain expiry, cardholder name, card brand, and billing address in plaintext. Use these to fill checkout form fields without decrypting.`,
     `If the checkout requires a shipping address, read .creditclaw/shipping.md for saved shipping addresses. Use the one marked (DEFAULT) unless instructed otherwise. If no shipping file exists, call GET /api/v1/bot/shipping-addresses to fetch it, or ask the card owner to add one.`,
     `Call POST /api/v1/bot/rail5/key with { "checkout_id": "${params.checkoutId}" } to get the decryption key.`,
     `Run: node decrypt.js <key_hex> <iv_hex> <tag_hex> ${params.encryptedFilename}`,
@@ -91,7 +90,7 @@ export function buildSpawnPayload(params: {
       `Amount: $${amountUsd}`,
       "",
       "Steps:",
-      `1. Read the companion details file at ${params.encryptedFilename.replace(/\.md$/, "-details.md")} for expiry, cardholder name, card brand, and billing address. Use these to fill checkout form fields without decrypting.`,
+      `1. Read the card file at ${params.encryptedFilename} — the "Card Details" and "Billing Address" sections at the top contain expiry, cardholder name, card brand, and billing address in plaintext. Use these to fill checkout form fields without decrypting.`,
       `2. If the checkout requires a shipping address, read .creditclaw/shipping.md for saved shipping addresses. Use the one marked (DEFAULT) unless instructed otherwise. If no shipping file exists, call GET /api/v1/bot/shipping-addresses to fetch it, or ask the card owner to add one.`,
       `3. Call POST /api/v1/bot/rail5/key with { "checkout_id": "${params.checkoutId}" } to get the decryption key.`,
       `4. Run: node decrypt.js <key_hex> <iv_hex> <tag_hex> ${params.encryptedFilename}`,

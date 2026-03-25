@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { authFetch } from "@/lib/auth-fetch";
-import { encryptCardDetails, buildEncryptedCardFile, buildCardCompanionFile, downloadEncryptedFile } from "@/lib/card/onboarding-rail5/encrypt";
+import { encryptCardDetails, buildEncryptedCardFile, downloadEncryptedFile } from "@/lib/card/onboarding-rail5/encrypt";
 import { detectCardBrand, brandToApiValue, getMaxDigits } from "@/lib/card/card-brand";
 import { type CardFieldErrors } from "@/lib/card/hooks";
 import { RAIL5_CARD_DELIVERED } from "@/lib/agent-management/bot-messaging/templates";
@@ -55,7 +55,6 @@ export function useRail5Wizard({ onComplete, onClose, preselectedBotId }: UseRai
   const [deliveryAttempted, setDeliveryAttempted] = useState(false);
   const [deliveryResult, setDeliveryResult] = useState<{ delivered: boolean; method: string; messageId?: number; expiresAt?: string } | null>(null);
   const [storedFileContent, setStoredFileContent] = useState("");
-  const [storedCompanionContent, setStoredCompanionContent] = useState("");
   const [cardEncrypting, setCardEncrypting] = useState(false);
   const [cardEncrypted, setCardEncrypted] = useState(false);
 
@@ -87,6 +86,25 @@ export function useRail5Wizard({ onComplete, onClose, preselectedBotId }: UseRai
       });
     }
   }, [cardNumber, expMonth, expYear, cardCvv, holderName]);
+
+  useEffect(() => {
+    authFetch("/api/v1/rail5/cards").then(res => {
+      if (!res.ok) return;
+      return res.json();
+    }).then(data => {
+      if (!data?.cards?.length) return;
+      const recent = data.cards[0];
+      if (recent.cardholder_name) setHolderName(recent.cardholder_name);
+      if (recent.billing_address) setAddress(recent.billing_address);
+      if (recent.billing_city) setCity(recent.billing_city);
+      if (recent.billing_state) setState(recent.billing_state);
+      if (recent.billing_zip) setZip(recent.billing_zip);
+      if (recent.billing_country && recent.billing_country !== "US") {
+        setCountry(recent.billing_country);
+        setShowCountryPicker(true);
+      }
+    }).catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (step === 5 && !botsFetched && !botsLoading) {
@@ -199,6 +217,15 @@ export function useRail5Wizard({ onComplete, onClose, preselectedBotId }: UseRai
           tag_hex: tagHex,
           card_last4: cardNumber.replace(/\s/g, "").slice(-4),
           card_brand: cardBrand,
+          card_first4: cleanNumber.slice(0, 4),
+          exp_month: expMonth,
+          exp_year: expYear,
+          cardholder_name: holderName,
+          billing_address: address || undefined,
+          billing_city: city || undefined,
+          billing_state: state || undefined,
+          billing_zip: zip || undefined,
+          billing_country: country || undefined,
         }),
       });
       if (!res.ok) {
@@ -207,14 +234,10 @@ export function useRail5Wizard({ onComplete, onClose, preselectedBotId }: UseRai
       }
       setKeySent(true);
 
-      const md = buildEncryptedCardFile(ciphertextBytes, cardName, cardLast4, cardId);
-      setStoredFileContent(md);
-
-      const companionMd = buildCardCompanionFile({
-        cardId,
+      const md = buildEncryptedCardFile(ciphertextBytes, cardName, cardLast4, cardId, {
         bin: cleanNumber.slice(0, 4),
-        expMonth: expMonth,
-        expYear: expYear,
+        expMonth,
+        expYear,
         cardholderName: holderName,
         brand: cardBrand,
         address,
@@ -223,7 +246,9 @@ export function useRail5Wizard({ onComplete, onClose, preselectedBotId }: UseRai
         zip,
         country,
       });
-      setStoredCompanionContent(companionMd);
+      setStoredFileContent(md);
+
+      const baseName = `Card-${cardName.replace(/[^a-zA-Z0-9-]/g, "")}-${cardLast4}`;
 
       if (selectedBotId) {
         setDeliveryAttempted(true);
@@ -239,9 +264,7 @@ export function useRail5Wizard({ onComplete, onClose, preselectedBotId }: UseRai
                 card_name: cardName,
                 card_last4: cardLast4,
                 file_content: md,
-                suggested_path: `.creditclaw/cards/${cardId}.md`,
-                companion_file_content: companionMd,
-                companion_suggested_path: `.creditclaw/cards/${cardId}-details.md`,
+                suggested_path: `.creditclaw/cards/${baseName}.md`,
                 instructions: RAIL5_CARD_DELIVERED,
               },
             }),
@@ -257,10 +280,7 @@ export function useRail5Wizard({ onComplete, onClose, preselectedBotId }: UseRai
         }
       }
 
-      const baseName = `Card-${cardName.replace(/[^a-zA-Z0-9-]/g, "")}-${cardLast4}`;
       downloadEncryptedFile(md, `${baseName}.md`);
-      await new Promise(resolve => setTimeout(resolve, 500));
-      downloadEncryptedFile(companionMd, `${baseName}-details.md`);
       setDownloadDone(true);
 
       setSavedCardDetails({
@@ -456,7 +476,6 @@ export function useRail5Wizard({ onComplete, onClose, preselectedBotId }: UseRai
     deliveryAttempted,
     deliveryResult,
     storedFileContent,
-    storedCompanionContent,
     cardEncrypting,
     cardEncrypted,
     savedCardDetails,

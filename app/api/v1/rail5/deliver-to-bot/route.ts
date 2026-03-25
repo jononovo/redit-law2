@@ -10,8 +10,6 @@ const deliverSchema = z.object({
   bot_id: z.string().min(1),
   file_content: z.string().min(1).optional(),
   encrypted_file_content: z.string().min(1).optional(),
-  companion_file_content: z.string().min(1).optional(),
-  companion_suggested_path: z.string().min(1).optional(),
 }).refine(data => data.file_content || data.encrypted_file_content, {
   message: "Either file_content or encrypted_file_content is required",
 });
@@ -37,7 +35,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const { card_id, bot_id, companion_file_content, companion_suggested_path } = parsed.data;
+  const { card_id, bot_id } = parsed.data;
   const file_content = parsed.data.file_content || parsed.data.encrypted_file_content!;
 
   const card = await storage.getRail5CardByCardId(card_id);
@@ -81,12 +79,6 @@ export async function POST(request: NextRequest) {
         card_last4: card.cardLast4,
         file_content,
         suggested_path: `.creditclaw/cards/Card-${card.cardName.replace(/[^a-zA-Z0-9-]/g, "")}-${card.cardLast4}.md`,
-        ...(companion_file_content && { companion_file_content }),
-        ...(companion_suggested_path
-          ? { companion_suggested_path }
-          : companion_file_content
-            ? { companion_suggested_path: `.creditclaw/cards/${card_id}-details.md` }
-            : {}),
         instructions: RAIL5_CARD_DELIVERED,
       },
     };
