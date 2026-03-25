@@ -144,7 +144,9 @@ This gives verified brands instant-load static pages. Other brands (draft, commu
 
 **Refactor:** `app/skills/page.tsx` (670 lines) — convert from fully client-rendered to server component with URL-based filter state.
 
-**Why full SSR:** The layout-only approach gave crawlers a title and description but an empty brand grid. With full SSR, crawlers see the actual brand cards in the HTML. Each filter combination becomes a unique, indexable URL (e.g., `/skills?sector=office`, `/skills?q=amazon`).
+**Why full SSR:** The layout-only approach gave crawlers a title and description but an empty brand grid. With full SSR, crawlers see the actual brand cards in the HTML. Each filter combination becomes a unique, indexable URL (e.g., `/skills?q=amazon`).
+
+**⚠️ Sector filters use dedicated routes, not query params.** Sector browsing lives at `/c/[sector]` (see Step A5 below). The catalog `/skills` page does NOT generate sector-specific metadata via `?sector=` query params — that would create contradictory canonical signals. The `/skills` page handles search queries (`?q=`) and multi-faceted filters (`?checkout=native_api&tier=enterprise`) with canonical pointing to `/skills`. Sector landing pages have their own canonical URLs at `/c/office`, `/c/retail`, etc.
 
 #### Architecture
 
@@ -239,14 +241,9 @@ interface Props {
 export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
   const params = await searchParams;
 
-  if (params.sector) {
-    const sectorLabel = SECTOR_LABELS[params.sector as VendorSector] ?? params.sector;
-    return {
-      title: `${sectorLabel} Procurement Skills | CreditClaw`,
-      description: `Browse AI agent procurement skills for ${sectorLabel} vendors. Filter by checkout method, capability, and agent friendliness.`,
-      alternates: { canonical: `${BASE_URL}/skills` },
-    };
-  }
+  // NOTE: Sector-specific metadata lives at /c/[sector] (Step A5), not here.
+  // The catalog page does not generate distinct titles for ?sector= params
+  // to avoid contradictory canonical signals.
 
   if (params.q) {
     return {
@@ -769,13 +766,11 @@ const CATALOG_CARD_COLUMNS = {
 
 **Fix — phased:**
 
-1. **Now (A2):** Keep the grouped layout but **collapse sectors beyond 6 cards** with a "Show all N in [Sector]" link. This keeps the page scannable.
+1. **Now (A2):** Keep the grouped layout but **collapse sectors beyond 6 cards** with a "Show all N in [Sector]" link pointing to `/c/[sector]`.
 
-2. **Soon (Phase 7 or 8):** Add **sector landing pages** at `/skills/sector/[sector]` (e.g., `/skills/sector/office`). These pages are also SSR'd server components with the same filter sidebar but scoped to one sector. The main catalog page links to them. Each sector page is an indexable URL.
+2. **Now (A5):** Add **sector landing pages** at `/c/[sector]` (e.g., `/c/office`). These are SSR'd server components with the same filter sidebar but scoped to one sector. Each sector page has its own canonical URL — no conflicting signals with `/skills`. See Step A5 below.
 
-3. **Later (5K+):** Add **sub-sector pages** at `/skills/sector/[sector]/[sub-sector]` for the most populated sectors. The sub-sector taxonomy already exists in the data (48 distinct values at 14 brands, will be 200+ at 5K).
-
-**For the current implementation:** Collapse large sectors and make the sector heading a link to a future sector page. No new routes needed yet.
+3. **Later (5K+):** Add **sub-sector pages** at `/c/[sector]/[sub-sector]` for the most populated sectors. The sub-sector taxonomy already exists in the data (48 distinct values at 14 brands, will be 200+ at 5K).
 
 ##### Problem 4: Filter sidebar scaling
 
@@ -910,6 +905,148 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 **Breaking change:** The return type changes from implicit `MetadataRoute.Sitemap` to `Promise<MetadataRoute.Sitemap>`. This is fine — Next.js handles both sync and async sitemap functions. No consumers call this function directly; Next.js invokes it at `/sitemap.xml`.
 
 **Dynamic import for storage:** Using `await import("@/server/storage")` instead of a top-level import keeps the existing sync code path from breaking if the storage module has initialization side effects. Alternatively, a top-level import works too since this file only runs server-side.
+
+### Step A5: Dedicated sector landing pages at `/c/[sector]`
+
+**Create:** `app/c/[sector]/page.tsx`
+
+**Why:** Sector pages need their own canonical URLs for proper SEO. Using query params (`/skills?sector=office`) creates contradictory signals — the catalog page sets `canonical: /skills` for all filter variations, but generates distinct titles per sector. Google sees "this page claims to be /skills but has unique content." Dedicated routes eliminate this conflict entirely.
+
+**Route structure:**
+```
+/skills              → full catalog (all brands, search, multi-faceted filters)
+/skills/[vendor]     → brand detail page
+/c/[sector]          → sector landing page (e.g., /c/office, /c/retail)
+```
+
+**Why `/c/` and not `/skills/sector/`:** Short, unambiguous, no collision with brand slugs (which live under `/skills/[vendor]`). No catch-all route resolution needed.
+
+**File structure:**
+```
+app/c/[sector]/page.tsx       → server component
+```
+
+#### A5a. Server component
+
+The sector page is a thin wrapper around the same `searchBrands()` query, pre-filtered to one sector:
+
+```tsx
+import { cache } from "react";
+import { notFound } from "next/navigation";
+import { storage } from "@/server/storage";
+import type { Metadata } from "next";
+import type { BrandIndex } from "@/shared/schema";
+import { SECTOR_LABELS, VendorSector } from "@/lib/procurement-skills/types";
+import { Nav } from "@/components/nav";
+import { Footer } from "@/components/footer";
+import { VendorCard } from "@/app/skills/vendor-card";
+
+const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || "https://creditclaw.com";
+
+const VALID_SECTORS = Object.keys(SECTOR_LABELS) as VendorSector[];
+
+interface Props {
+  params: Promise<{ sector: string }>;
+}
+
+const getSectorData = cache(async (sector: string) => {
+  if (!VALID_SECTORS.includes(sector as VendorSector)) return null;
+
+  const [brands, total] = await Promise.all([
+    storage.searchBrands({ sectors: [sector], limit: 50, sortBy: "readiness", sortDir: "desc", lite: true }),
+    storage.searchBrandsCount({ sectors: [sector] }),
+  ]);
+
+  return { brands, total };
+});
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { sector } = await params;
+  const label = SECTOR_LABELS[sector as VendorSector];
+  if (!label) return {};
+
+  return {
+    title: `${label} Procurement Skills | CreditClaw`,
+    description: `Browse AI agent procurement skills for ${label} vendors. Filter by checkout method, capability, and agent friendliness.`,
+    openGraph: {
+      title: `${label} Procurement Skills for AI Agents`,
+      description: `Agent-ready procurement skills for ${label} vendors.`,
+      type: "website",
+      url: `${BASE_URL}/c/${sector}`,
+    },
+    twitter: {
+      card: "summary",
+      title: `${label} Skills - CreditClaw`,
+      description: `Browse procurement skills for ${label} vendors.`,
+    },
+    alternates: { canonical: `${BASE_URL}/c/${sector}` },
+  };
+}
+
+export async function generateStaticParams() {
+  return VALID_SECTORS.map(s => ({ sector: s }));
+}
+
+export default async function SectorPage({ params }: Props) {
+  const { sector } = await params;
+  const data = await getSectorData(sector);
+  if (!data) notFound();
+
+  const label = SECTOR_LABELS[sector as VendorSector] ?? sector;
+
+  return (
+    <div className="min-h-screen bg-background text-neutral-900 font-sans">
+      <Nav />
+      <main>
+        <section className="relative py-20 overflow-hidden">
+          <div className="container mx-auto px-6 relative z-10">
+            <div className="text-center max-w-3xl mx-auto mb-12">
+              <h1>{label} Procurement Skills</h1>
+              <p>{data.total} vendors in this sector</p>
+            </div>
+          </div>
+        </section>
+        <section className="pb-24">
+          <div className="container mx-auto px-6">
+            <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">
+              {data.brands.map(b => <VendorCard key={b.slug} brand={b} />)}
+            </div>
+            {/* CatalogLoadMore with sector pre-filter */}
+          </div>
+        </section>
+      </main>
+      <Footer />
+    </div>
+  );
+}
+```
+
+#### A5b. Cross-linking
+
+1. **Catalog `/skills` page:** Sector group headings become links to `/c/[sector]`:
+   ```tsx
+   <Link href={`/c/${sector}`}>
+     <h2>{SECTOR_LABELS[sector]} ({sectorBrands.length})</h2>
+   </Link>
+   ```
+
+2. **Sector page `/c/[sector]`:** Breadcrumb back to `/skills`:
+   ```tsx
+   <Link href="/skills">← All Skills</Link> / {sectorLabel}
+   ```
+
+3. **Sitemap (A4):** Add sector pages alongside brand pages:
+   ```tsx
+   const sectorPages = VALID_SECTORS.map(s => ({
+     url: `${BASE_URL}/c/${s}`,
+     changeFrequency: "weekly" as const,
+     priority: 0.8,
+   }));
+   ```
+
+#### A5c. Catalog page — remove sector-specific metadata
+
+The `/skills` page no longer generates distinct `<title>` for `?sector=` params. It still accepts `?sector=` as a filter (the URL works and returns filtered results), but the metadata stays generic and the canonical is always `/skills`. The dedicated sector page at `/c/[sector]` handles sector-specific SEO.
 
 ---
 
@@ -1365,9 +1502,10 @@ export function invalidateFacetCache() {
 | C1 | Column-select optimization for catalog queries | — | Low |
 | C2 | Cache `getAllBrandFacets()` with 10-min TTL | — | Low |
 | A1 | Brand detail page → server component + client extraction | — | Medium (large file refactor) |
-| A2 | Catalog page metadata via layout | — | Low |
+| A2 | Catalog page full SSR + URL-based filter state | — | Medium |
 | A3 | JSON-LD structured data | A1 | Low |
 | A4 | Sitemap update | — | Low |
+| A5 | Sector landing pages at `/c/[sector]` | A2 | Low |
 | B1 | `brand_feedback` table | — | Low (schema only) |
 | B2 | Rating columns on `brand_index` | — | Low (schema only) |
 | B3 | Feedback storage layer | B1 | Low |
@@ -1383,16 +1521,17 @@ export function invalidateFacetCache() {
 **Recommended build sequence:**
 1. ~~A1 + A2 + A4 (SSR — immediate SEO value, no new tables)~~ **✅ DONE**
 2. **C1 + C2 (scale readiness — do before growing brand_index past ~100 rows)**
-3. B1 + B2 (schema changes — both migrations at once)
-4. B3 + B4 (storage + API — feedback can start being collected)
-5. B5 (generator update — agents start seeing feedback instructions)
-6. A3 (structured data — builds on A1)
-7. B6 (aggregation — ratings become visible)
-8. B7 + B8 + B10 (display ratings everywhere)
-9. B11 (rating filters — agents can use ratings in search)
-10. B9 (human feedback UI — can happen any time after B4)
+3. A5 (sector landing pages at `/c/[sector]` — proper SEO canonicalization)
+4. B1 + B2 (schema changes — both migrations at once)
+5. B3 + B4 (storage + API — feedback can start being collected)
+6. B5 (generator update — agents start seeing feedback instructions)
+7. A3 (structured data — builds on A1)
+8. B6 (aggregation — ratings become visible)
+9. B7 + B8 + B10 (display ratings everywhere)
+10. B11 (rating filters — agents can use ratings in search)
+11. B9 (human feedback UI — can happen any time after B4)
 
-C1 + C2 can be done as a single task (one file, two changes). Steps 3-5 as a single task. Steps 6-9 as a second task. Step 10 is independent.
+C1 + C2 can be done as a single task (one file, two changes). A5 can be done as a single task. Steps 4-6 as a single task. Steps 7-10 as a second task. Step 11 is independent.
 
 ---
 

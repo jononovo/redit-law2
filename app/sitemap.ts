@@ -99,6 +99,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     limit: 500,
     sortBy: "name",
     sortDir: "asc",
+    lite: true,
   });
 
   const brandPages: MetadataRoute.Sitemap = brands.map((b) => ({

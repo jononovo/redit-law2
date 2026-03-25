@@ -292,7 +292,9 @@ Sole source of truth for all brand data across all surfaces (bots, humans, expor
 - `agent_readiness` integer score (MCP=25, API=20, guest=15, programmatic_checkout=10, deals=5, feed=5, verified=5)
 - B2B columns: `tax_exempt_supported`, `po_number_supported`, `business_account`
 - Maturity progression: draft → community → official (brand claimed) → verified (CreditClaw audited)
-- Storage methods: `searchBrands`, `getBrandById`, `getBrandBySlug`, `getRetailersForBrand`, `upsertBrandIndex`, `recomputeReadiness`
+- Storage methods: `searchBrands`, `searchBrandsCount`, `getBrandById`, `getBrandBySlug`, `getRetailersForBrand`, `upsertBrandIndex`, `recomputeReadiness`, `getAllBrandFacets`
+- `searchBrands` supports `lite?: boolean` filter — when true, selects only catalog card fields (excludes `skillMd` and heavy metadata columns). Used by internal search API and sitemap. Export type `BrandCardRow` for type-safe lite consumers.
+- `getAllBrandFacets` uses 10-minute in-memory cache (module-level). `invalidateFacetCache()` exported from `server/storage/brand-index.ts` and called automatically on `upsertBrandIndex`.
 - 22+ indexes (5 btree, 7 GIN on arrays, 1 GIN on tsvector, 7 partial)
 
 **Discovery API** (`app/api/v1/bot/skills/route.ts`):
