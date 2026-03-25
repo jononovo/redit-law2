@@ -121,7 +121,7 @@ function SectorNav({ sectors, activeFilters }: { sectors: string[]; activeFilter
       )}
       <div
         ref={scrollRef}
-        className="flex items-center gap-2 overflow-x-auto scrollbar-hide px-1 py-1"
+        className="flex items-center justify-center gap-2 overflow-x-auto scrollbar-hide px-1 py-1"
         style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
       >
         {sectors.map(sector => (
