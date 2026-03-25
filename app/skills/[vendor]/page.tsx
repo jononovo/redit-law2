@@ -1,39 +1,10 @@
-"use client";
-
-import { use, useState, useEffect, useCallback } from "react";
+import { cache } from "react";
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import { Nav } from "@/components/nav";
 import { Footer } from "@/components/footer";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { useAuth } from "@/lib/auth/auth-context";
-import {
-  ArrowLeft,
-  Star,
-  ExternalLink,
-  Download,
-  CheckCircle2,
-  XCircle,
-  Copy,
-  Check,
-  Shield,
-  TrendingUp,
-  Clock,
-  Globe,
-  Zap,
-  CreditCard,
-  Monitor,
-  Package,
-  ShoppingCart,
-  Cpu,
-  Info,
-  Layers,
-  Tag,
-  Search as SearchIcon,
-  Truck,
-  Wallet,
-  Loader2,
-} from "lucide-react";
+import { storage } from "@/server/storage";
 import { generateVendorSkill } from "@/lib/procurement-skills/generator";
 import {
   CHECKOUT_METHOD_LABELS,
@@ -51,7 +22,39 @@ import {
   SkillMaturity,
   VendorSkill,
 } from "@/lib/procurement-skills/types";
-import type { BrandIndex } from "@/shared/schema";
+import {
+  ArrowLeft,
+  Star,
+  ExternalLink,
+  CheckCircle2,
+  XCircle,
+  Shield,
+  TrendingUp,
+  Clock,
+  Globe,
+  Zap,
+  CreditCard,
+  Monitor,
+  Package,
+  ShoppingCart,
+  Cpu,
+  Info,
+  Layers,
+  Tag,
+  Search as SearchIcon,
+  Truck,
+  Wallet,
+} from "lucide-react";
+import { BrandClaimButton } from "./brand-claim-button";
+import { SkillPreviewPanel } from "./skill-preview-panel";
+import { CopySkillUrl } from "./copy-skill-url";
+import type { Metadata } from "next";
+
+const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || "https://creditclaw.com";
+
+const getBrand = cache(async (slug: string) => {
+  return storage.getBrandBySlug(slug);
+});
 
 const MATURITY_CONFIG: Record<SkillMaturity, { label: string; className: string; description: string }> = {
   verified: { label: "Verified", className: "bg-green-100 text-green-700 border-green-200", description: "Tested and confirmed working by the CreditClaw team" },
@@ -84,185 +87,48 @@ const ALL_CAPABILITIES: VendorCapability[] = [
   "bulk_pricing", "tax_exemption", "account_creation", "order_tracking", "returns", "po_numbers",
 ];
 
-function BrandClaimButton({ slug }: { slug: string }) {
-  const { user } = useAuth();
-  const [claimState, setClaimState] = useState<"idle" | "loading" | "verified" | "pending" | "error" | "already_claimed">("idle");
-  const [errorMsg, setErrorMsg] = useState("");
-
-  useEffect(() => {
-    if (!user) return;
-    fetch("/api/v1/brands/claims/mine")
-      .then(r => r.json())
-      .then(data => {
-        const match = data.claims?.find((c: { brand_slug: string; status: string }) => c.brand_slug === slug);
-        if (match) {
-          if (match.status === "verified") setClaimState("verified");
-          else if (match.status === "pending") setClaimState("pending");
-        }
-      })
-      .catch(() => {});
-  }, [user, slug]);
-
-  const handleClaim = useCallback(async () => {
-    setClaimState("loading");
-    setErrorMsg("");
-    try {
-      const res = await fetch(`/api/v1/brands/${slug}/claim`, { method: "POST" });
-      const data = await res.json();
-      if (!res.ok) {
-        if (data.error === "already_claimed") { setClaimState("already_claimed"); return; }
-        setClaimState("error");
-        setErrorMsg(data.message || "Claim failed");
-        return;
-      }
-      setClaimState(data.claim?.status === "verified" ? "verified" : "pending");
-    } catch {
-      setClaimState("error");
-      setErrorMsg("Network error");
-    }
-  }, [slug]);
-
-  if (!user) {
-    return (
-      <Link href="/login">
-        <Button
-          variant="ghost"
-          size="sm"
-          className="text-[11px] text-neutral-400 hover:text-primary rounded-full px-3 h-7"
-          data-testid="button-claim-brand-login"
-        >
-          <Shield className="w-3 h-3 mr-1" />
-          Claim this brand
-        </Button>
-      </Link>
-    );
-  }
-
-  if (claimState === "verified") {
-    return (
-      <Link href="/skill-builder/submit">
-        <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 text-xs border cursor-pointer hover:bg-emerald-200/60 transition-colors" data-testid="badge-claim-verified">
-          <CheckCircle2 className="w-3 h-3 mr-1" /> Claimed
-        </Badge>
-      </Link>
-    );
-  }
-
-  if (claimState === "pending") {
-    return (
-      <Link href="/skill-builder/submit">
-        <Badge className="bg-amber-100 text-amber-700 border-amber-200 text-xs border cursor-pointer hover:bg-amber-200/60 transition-colors" data-testid="badge-claim-pending">
-          <Clock className="w-3 h-3 mr-1" /> Claim Pending
-        </Badge>
-      </Link>
-    );
-  }
-
-  if (claimState === "already_claimed") {
-    return (
-      <Badge className="bg-neutral-100 text-neutral-500 border-neutral-200 text-xs border" data-testid="badge-claim-taken">
-        Already Claimed
-      </Badge>
-    );
-  }
-
-  return (
-    <div className="flex items-center gap-2">
-      <Button
-        variant="ghost"
-        size="sm"
-        className="text-[11px] text-neutral-400 hover:text-primary rounded-full px-3 h-7"
-        onClick={handleClaim}
-        disabled={claimState === "loading"}
-        data-testid="button-claim-brand"
-      >
-        <Shield className="w-3 h-3 mr-1" />
-        {claimState === "loading" ? "Claiming..." : "Claim this brand"}
-      </Button>
-      {claimState === "error" && <span className="text-xs text-red-500" data-testid="text-claim-error">{errorMsg}</span>}
-    </div>
-  );
+interface Props {
+  params: Promise<{ vendor: string }>;
 }
 
-export default function VendorDetailPage({ params }: { params: Promise<{ vendor: string }> }) {
-  const { vendor: slug } = use(params);
-  const [brand, setBrand] = useState<BrandIndex | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [notFound, setNotFound] = useState(false);
-  const [copied, setCopied] = useState(false);
-  const [showSkillPreview, setShowSkillPreview] = useState(false);
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { vendor: slug } = await params;
+  const brand = await getBrand(slug);
+  if (!brand) return {};
 
-  useEffect(() => {
-    fetch(`/api/internal/brands/${slug}`)
-      .then(r => {
-        if (!r.ok) { setNotFound(true); return null; }
-        return r.json();
-      })
-      .then(data => {
-        if (data?.brand) setBrand(data.brand);
-      })
-      .catch(() => setNotFound(true))
-      .finally(() => setLoading(false));
-  }, [slug]);
+  const friendliness = Math.min(Math.floor((brand.agentReadiness ?? 0) / 20) + 1, 5);
+  const capabilities = (brand.capabilities ?? []).slice(0, 5).join(", ");
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-background text-neutral-900 font-sans">
-        <Nav />
-        <main className="py-32 text-center">
-          <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto" />
-          <p className="text-neutral-500 font-medium mt-4">Loading vendor details...</p>
-        </main>
-        <Footer />
-      </div>
-    );
-  }
+  return {
+    title: `${brand.name} — Agent Procurement Skill | CreditClaw`,
+    description: `${brand.name} agent friendliness: ${friendliness}/5. Checkout methods: ${(brand.checkoutMethods ?? []).join(", ")}. Capabilities: ${capabilities}. ${brand.description || ""}`.slice(0, 160),
+    openGraph: {
+      title: `${brand.name} — Procurement Skill for AI Agents`,
+      description: `Agent-ready procurement skill for ${brand.name}. Sector: ${brand.sector}. Maturity: ${brand.maturity}.`,
+      type: "website",
+      url: `${BASE_URL}/skills/${brand.slug}`,
+    },
+    twitter: {
+      card: "summary",
+      title: `${brand.name} — CreditClaw Procurement Skill`,
+      description: `Agent friendliness: ${friendliness}/5. ${(brand.checkoutMethods ?? []).length} checkout methods available.`,
+    },
+    alternates: {
+      canonical: `${BASE_URL}/skills/${brand.slug}`,
+    },
+  };
+}
 
-  if (notFound || !brand) {
-    return (
-      <div className="min-h-screen bg-background text-neutral-900 font-sans">
-        <Nav />
-        <main className="py-32 text-center">
-          <div className="w-20 h-20 rounded-full bg-neutral-100 flex items-center justify-center mx-auto mb-6">
-            <XCircle className="w-8 h-8 text-neutral-400" />
-          </div>
-          <h1 className="text-3xl font-extrabold text-neutral-900 mb-3">Vendor Not Found</h1>
-          <p className="text-neutral-500 font-medium mb-6">
-            No procurement skill exists for &quot;{slug}&quot;.
-          </p>
-          <Link href="/skills">
-            <Button className="rounded-full" data-testid="button-back-to-catalog">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Catalog
-            </Button>
-          </Link>
-        </main>
-        <Footer />
-      </div>
-    );
-  }
+export default async function VendorDetailPage({ params }: Props) {
+  const { vendor: slug } = await params;
+  const brand = await getBrand(slug);
+  if (!brand) notFound();
 
   const vendor = brand.brandData as unknown as VendorSkill;
   const friendliness = Math.min(Math.floor((brand.agentReadiness ?? 0) / 20) + 1, 5);
   const maturity = MATURITY_CONFIG[brand.maturity as SkillMaturity] ?? MATURITY_CONFIG.draft;
   const skillMd = brand.skillMd || generateVendorSkill(vendor);
   const skillUrl = `https://creditclaw.com/api/v1/bot/skills/${brand.slug}`;
-
-  const handleCopyUrl = () => {
-    navigator.clipboard.writeText(skillUrl);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  const handleDownload = () => {
-    const blob = new Blob([skillMd], { type: "text/markdown" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${brand.slug}-skill.md`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
 
   return (
     <div className="min-h-screen bg-background text-neutral-900 font-sans">
@@ -641,68 +507,12 @@ export default function VendorDetailPage({ params }: { params: Promise<{ vendor:
                   </div>
                 )}
 
-                <div className="bg-white rounded-2xl border border-neutral-100 p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-bold text-neutral-900 flex items-center gap-2">
-                      SKILL.md Preview
-                    </h3>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setShowSkillPreview(!showSkillPreview)}
-                        className="text-xs font-semibold"
-                        data-testid="button-toggle-preview"
-                      >
-                        {showSkillPreview ? "Hide" : "Show"} Preview
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={handleDownload}
-                        className="text-xs font-semibold"
-                        data-testid="button-download-skill"
-                      >
-                        <Download className="w-3.5 h-3.5 mr-1" />
-                        Download
-                      </Button>
-                    </div>
-                  </div>
-                  {showSkillPreview && (
-                    <pre className="bg-neutral-50 rounded-xl p-4 text-xs font-mono text-neutral-700 overflow-x-auto max-h-[600px] overflow-y-auto border border-neutral-100" data-testid="preview-skill-md">
-                      {skillMd}
-                    </pre>
-                  )}
-                </div>
+                <SkillPreviewPanel skillMd={skillMd} slug={brand.slug} />
               </div>
 
               <aside className="lg:w-72 flex-shrink-0">
                 <div className="sticky top-24 space-y-4">
-                  <div className="bg-white rounded-2xl border border-neutral-100 p-6 shadow-sm">
-                    <h3 className="font-bold text-sm text-neutral-900 mb-4">Skill URL</h3>
-                    <div className="bg-neutral-50 rounded-xl p-3 mb-3">
-                      <code className="text-xs font-mono text-neutral-700 break-all">{skillUrl}</code>
-                    </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="w-full rounded-xl text-xs font-semibold"
-                      onClick={handleCopyUrl}
-                      data-testid="button-copy-skill-url"
-                    >
-                      {copied ? (
-                        <>
-                          <Check className="w-3.5 h-3.5 mr-1" />
-                          Copied!
-                        </>
-                      ) : (
-                        <>
-                          <Copy className="w-3.5 h-3.5 mr-1" />
-                          Copy URL
-                        </>
-                      )}
-                    </Button>
-                  </div>
+                  <CopySkillUrl url={skillUrl} />
 
                   {vendor.taxonomy && (
                     <div className="bg-white rounded-2xl border border-neutral-100 p-6 shadow-sm">

@@ -313,7 +313,11 @@ Self-service brand ownership verification. Brand owners claim their brand from t
 - API endpoints: `POST /api/v1/brands/[slug]/claim`, `GET /api/v1/brands/claims/mine`, `POST /api/v1/brands/claims/[id]/revoke`, `GET /api/v1/brands/claims/review` (admin), `POST /api/v1/brands/claims/[id]/review` (admin verify/reject)
 - UI: Claim button on vendor detail page (`app/skills/[vendor]/page.tsx` — ghost button, shows for logged-out too, links badges to My Skills), unified "My Skills" page (`app/(dashboard)/skill-builder/submit/page.tsx` — submissions + claims in one list, claim search modal), Admin review queue (`app/admin123/brand-claims/page.tsx` — behind admin auth gate)
 
-**UI** — Catalog page (`app/skills/page.tsx`) with sector/tier/category/capability filters in sidebar, sub-sector tags on cards, deals badges. Vendor detail page (`app/skills/[vendor]/page.tsx`) with search discovery, buying config, deals & promotions, taxonomy panels, and brand claim button.
+**UI** — Catalog page (`app/skills/page.tsx`, client component) with sector/tier/category/capability filters in sidebar, sub-sector tags on cards, deals badges. Static metadata via `app/skills/layout.tsx` (server component). Vendor detail page (`app/skills/[vendor]/page.tsx`, **server component** — SSR for SEO) with `generateMetadata()` for title/OG/Twitter/canonical tags, `cache()` for deduplicating DB queries between metadata and page, and three extracted client components:
+  - `brand-claim-button.tsx` — auth check + claim API call
+  - `skill-preview-panel.tsx` — expand/collapse skill markdown + download
+  - `copy-skill-url.tsx` — clipboard copy with feedback
+  Custom 404 via `not-found.tsx` preserving branded "Vendor Not Found" UI. Sitemap (`app/sitemap.ts`) is async and includes all brand detail pages.
 
 ### Community Submissions Module
 Registered users can submit vendor websites for analysis, contributing to the procurement skills library.

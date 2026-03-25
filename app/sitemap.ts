@@ -2,10 +2,11 @@ import type { MetadataRoute } from "next";
 import { sections } from "@/docs/content/sections";
 import { getAllPosts, getAllTags } from "@/content/blog/posts";
 import { categories } from "@/content/blog/taxonomy";
+import { storage } from "@/server/storage";
 
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || "https://creditclaw.com";
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticPages: MetadataRoute.Sitemap = [
     {
       url: `${BASE_URL}/`,
@@ -93,5 +94,19 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: 0.4,
   }));
 
-  return [...staticPages, ...docPages, ...blogPostPages, ...blogCategoryPages, ...blogTagPages];
+  const brands = await storage.searchBrands({
+    maturities: ["verified", "official", "beta", "community"],
+    limit: 500,
+    sortBy: "name",
+    sortDir: "asc",
+  });
+
+  const brandPages: MetadataRoute.Sitemap = brands.map((b) => ({
+    url: `${BASE_URL}/skills/${b.slug}`,
+    lastModified: b.updatedAt ?? undefined,
+    changeFrequency: "weekly" as const,
+    priority: 0.7,
+  }));
+
+  return [...staticPages, ...docPages, ...blogPostPages, ...blogCategoryPages, ...blogTagPages, ...brandPages];
 }
