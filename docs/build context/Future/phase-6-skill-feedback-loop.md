@@ -569,6 +569,160 @@ Each filter combination has proper `<title>`, `<meta description>`, OG tags, and
 
 5. **`categories` filter is currently a separate concept from `sectors`.** The filter sidebar has both "Sector" (from facets) and "Category" (from the CATEGORY_LABELS constant). In the current client page, categories and sectors are merged: `[...new Set([...filters.sectors, ...filters.categories])]` before sending as `sector` param. The server page should handle this the same way — both map to the `sectors` field in `BrandSearchFilters`.
 
+#### A2j. Scaling analysis — 1K to 5K brands
+
+**Measured baseline (14 brands):**
+- Average row: 5,522 bytes (~5.4 KB)
+- `brand_data` (JSONB): ~1.8 KB avg
+- `skill_md` (text): ~2 KB avg
+- Max row: 6,166 bytes
+- 54 columns total; VendorCard uses ~12
+- 5 sectors, 4 tiers, 48 distinct sub-sectors
+
+##### Problem 1: `getAllBrandFacets()` scans the entire table
+
+**Current implementation:** `SELECT sector, tier FROM brand_index` — fetches ALL rows, deduplicates in JavaScript. At 14 rows this is trivial. At 5,000 rows it reads 5,000 rows to produce ~20 distinct values.
+
+**Fix (implement during A2):** Replace with two `SELECT DISTINCT` queries:
+
+```sql
+SELECT DISTINCT sector FROM brand_index ORDER BY sector;
+SELECT DISTINCT tier FROM brand_index WHERE tier IS NOT NULL ORDER BY tier;
+```
+
+**Better fix for faceted search:** Return counts alongside each facet so the UI can show "Office (342)":
+
+```sql
+SELECT sector, count(*)::int AS cnt FROM brand_index GROUP BY sector ORDER BY cnt DESC;
+SELECT tier, count(*)::int AS cnt FROM brand_index WHERE tier IS NOT NULL GROUP BY tier ORDER BY cnt DESC;
+```
+
+This changes the facets shape from `{ sectors: string[] }` to `{ sectors: { value: string; count: number }[] }`. The filter sidebar can then display counts. **Do this now** — it's a small change that makes the UI significantly more useful at scale and avoids a migration later.
+
+Also add a facet query for sub-sectors (these will grow to 200+ by 5K brands):
+
+```sql
+SELECT s AS value, count(*)::int AS cnt
+FROM brand_index, unnest(sub_sectors) s
+GROUP BY s ORDER BY cnt DESC LIMIT 50;
+```
+
+##### Problem 2: Full rows serialized when VendorCard only needs display fields
+
+**Current:** `searchBrands()` does `SELECT * FROM brand_index` — returns all 54 columns including `skill_md` (2KB), `brand_data` (1.8KB JSONB), `search_vector`, `mcp_url`, `api_endpoint`, etc.
+
+**Impact at scale:**
+- 50 cards × 5.5 KB/row = 275 KB of row data per page load
+- `skill_md` alone: 50 × 2 KB = 100 KB — **never used by VendorCard**
+- `brand_data` mostly unused — VendorCard only reads `brandData.feedbackStats.successRate`
+
+**Fix (implement during A2):** Create a `searchBrandsForCatalog()` method that selects only the columns VendorCard needs:
+
+```typescript
+const CATALOG_CARD_COLUMNS = {
+  id: brandIndex.id,
+  slug: brandIndex.slug,
+  name: brandIndex.name,
+  sector: brandIndex.sector,
+  subSectors: brandIndex.subSectors,
+  tier: brandIndex.tier,
+  maturity: brandIndex.maturity,
+  agentReadiness: brandIndex.agentReadiness,
+  checkoutMethods: brandIndex.checkoutMethods,
+  capabilities: brandIndex.capabilities,
+  hasDeals: brandIndex.hasDeals,
+  brandData: brandIndex.brandData, // needed for feedbackStats — consider extracting to own column later
+};
+
+// Result: ~1.5 KB/row instead of 5.5 KB/row
+// 50 cards: ~75 KB instead of ~275 KB
+```
+
+**Future optimization:** When `brandData` grows (it's the full VendorSkill object), extract `feedbackStats` to its own column so the catalog query doesn't need the JSONB blob at all. At that point each catalog card row drops to ~500 bytes.
+
+##### Problem 3: Sector grouping becomes unwieldy
+
+**At 14 brands:** 5 sectors, 2-4 brands per sector. Grouped grid works.
+**At 1,000 brands:** ~15 sectors, 20-200 brands per sector. Some sectors dominate. A flat grid grouped by sector with 200+ cards in one group is unreadable.
+**At 5,000 brands:** ~20+ sectors, some with 500+ brands. The flat grid breaks entirely.
+
+**Fix — phased:**
+
+1. **Now (A2):** Keep the grouped layout but **collapse sectors beyond 6 cards** with a "Show all N in [Sector]" link. This keeps the page scannable.
+
+2. **Soon (Phase 7 or 8):** Add **sector landing pages** at `/skills/sector/[sector]` (e.g., `/skills/sector/office`). These pages are also SSR'd server components with the same filter sidebar but scoped to one sector. The main catalog page links to them. Each sector page is an indexable URL.
+
+3. **Later (5K+):** Add **sub-sector pages** at `/skills/sector/[sector]/[sub-sector]` for the most populated sectors. The sub-sector taxonomy already exists in the data (48 distinct values at 14 brands, will be 200+ at 5K).
+
+**For the current implementation:** Collapse large sectors and make the sector heading a link to a future sector page. No new routes needed yet.
+
+##### Problem 4: Filter sidebar scaling
+
+**At 14 brands:** 5 sectors, 4 tiers, 6 checkout methods, ~8 capabilities. Sidebar fits on one screen.
+**At 5,000 brands:** 20+ sectors, 200+ sub-sectors, 10+ checkout methods, 15+ capabilities. Sidebar becomes a scroll marathon.
+
+**Fix (implement during A2):**
+
+1. **Collapsible filter groups** — each filter section (Sector, Tier, Checkout Method, etc.) is collapsible with a chevron. Default: Sector and Tier expanded, others collapsed.
+
+2. **"Show more" within groups** — if a group has >8 items, show 5 and a "Show N more" toggle. This is especially important for sub-sectors.
+
+3. **Facet counts** — Show the count next to each filter value: "Office (342)". This helps users find relevant filters quickly. (This comes from Problem 1 fix.)
+
+4. **Active filter summary** — At the top of the sidebar, show a compact summary of active filters as removable pills. This is already partially implemented (the "Clear all filters (N)" button exists) but individual filter removal is more useful.
+
+##### Problem 5: Sitemap scaling
+
+**At 1,000 brands:** Single sitemap with ~1,050 URLs (1,000 brands + top-level pages). Within the 50,000 URL limit.
+**At 5,000 brands:** ~5,050 URLs. Still within limits but the XML file becomes ~500 KB.
+
+**Fix (implement when reaching 2K+):** Split into a sitemap index with per-sector sitemaps:
+
+```
+/sitemap.xml (sitemap index)
+  -> /sitemap-pages.xml (static pages)
+  -> /sitemap-skills-office.xml (office sector brands)
+  -> /sitemap-skills-retail.xml (retail sector brands)
+  -> ...
+```
+
+**Not needed now.** The current single sitemap is fine up to ~10K URLs.
+
+##### Problem 6: Server component re-render cost
+
+**Concern:** Each filter click triggers a soft navigation -> server re-render -> DB query -> HTML generation. At 5K brands with complex filters, is this fast enough?
+
+**Analysis:** The database is heavily indexed:
+- B-tree indexes on `sector`, `tier`, `maturity`, `agent_readiness`
+- GIN indexes on all array columns (`capabilities`, `checkout_methods`, `payment_methods_accepted`, `sub_sectors`, etc.)
+- Partial indexes on boolean flags (`has_mcp`, `has_api`, `has_deals`, etc.)
+- Full-text search index on `search_vector` with a trigger that auto-updates
+
+A `WHERE sector = 'office' AND capabilities @> '{programmatic_checkout}' ORDER BY agent_readiness DESC LIMIT 50` query on 5,000 rows with these indexes will execute in <5ms. The bottleneck is network round-trip (client -> server -> DB -> server -> client), not query time.
+
+**No fix needed** for the query layer. But add `export const dynamic = "force-dynamic"` and potentially `Cache-Control` headers if response times become noticeable. Next.js caches server component responses by default for static paths but the search params make this inherently dynamic.
+
+##### Problem 7: `brandData` JSONB growth
+
+**Current:** `brandData` is the full `VendorSkill` object from the taxonomy. Average 1.8 KB.
+
+**Risk at scale:** As VendorSkill grows (more fields, more detailed data), this JSONB blob grows. The catalog query currently selects it to read `feedbackStats.successRate` — one tiny field from a multi-KB object.
+
+**Fix (defer to Phase 8):** Add `rating_success_rate numeric` and `rating_count integer` columns directly on `brand_index`. This is already planned in Part B (feedback loop). Once those columns exist, VendorCard reads them directly and the catalog query can skip `brand_data` entirely.
+
+##### Summary: What to implement during A2
+
+| Change | Priority | Impact |
+|---|---|---|
+| Replace `getAllBrandFacets()` with `SELECT DISTINCT` + counts | **Now** | Eliminates full table scan, enables facet counts in UI |
+| Create `searchBrandsForCatalog()` with column subset | **Now** | Reduces payload from 275 KB to ~75 KB per page load |
+| Collapsible filter groups with "Show more" | **Now** | Sidebar stays usable at 20+ filter values |
+| Collapse large sector groups (>6 cards) | **Now** | Prevents 200-card sector groups from dominating |
+| Sector landing pages (`/skills/sector/[sector]`) | **Phase 7** | Better SEO, browsable hierarchy |
+| Sub-sector pages | **Phase 8+** | Needed at 5K+ brands with 200+ sub-sectors |
+| Sitemap splitting | **Phase 8+** | Needed at 10K+ URLs |
+| Extract `feedbackStats` from `brandData` JSONB | **Phase 8** | Eliminates JSONB from catalog queries |
+
 ### Step A3: Add JSON-LD structured data to brand detail pages
 
 Add structured data for search engine rich results. Append to the brand detail server component:
