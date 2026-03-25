@@ -552,7 +552,7 @@ export default function CatalogClient({
                     <div className="flex items-center justify-end gap-1 mb-2">
                       <button
                         onClick={() => setViewMode("cards")}
-                        className={`p-2 rounded-lg transition-colors ${viewMode === "cards" ? "bg-primary/10 text-primary" : "text-neutral-400 hover:text-neutral-600 hover:bg-neutral-50"}`}
+                        className="p-2 rounded-lg transition-colors text-neutral-400 hover:text-neutral-600 hover:bg-neutral-50"
                         data-testid="button-view-cards"
                         title="Card view"
                       >
@@ -560,7 +560,7 @@ export default function CatalogClient({
                       </button>
                       <button
                         onClick={() => setViewMode("table")}
-                        className={`p-2 rounded-lg transition-colors ${viewMode === "table" ? "bg-primary/10 text-primary" : "text-neutral-400 hover:text-neutral-600 hover:bg-neutral-50"}`}
+                        className="p-2 rounded-lg transition-colors bg-primary/10 text-primary"
                         data-testid="button-view-table"
                         title="Table view"
                       >
