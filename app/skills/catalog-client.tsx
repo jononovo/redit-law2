@@ -22,6 +22,8 @@ import {
   ArrowUpDown,
   ArrowUp,
   ArrowDown,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import {
   CHECKOUT_METHOD_LABELS,
@@ -79,6 +81,79 @@ function FilterCheckbox({
 }
 
 const PAGE_SIZE = 50;
+
+function SectorNav({ sectors, activeFilters }: { sectors: string[]; activeFilters: VendorSector[] }) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+
+  const checkScroll = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    setCanScrollLeft(el.scrollLeft > 0);
+    setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 1);
+  }, []);
+
+  useEffect(() => {
+    checkScroll();
+    const el = scrollRef.current;
+    if (!el) return;
+    el.addEventListener("scroll", checkScroll, { passive: true });
+    const ro = new ResizeObserver(checkScroll);
+    ro.observe(el);
+    return () => { el.removeEventListener("scroll", checkScroll); ro.disconnect(); };
+  }, [checkScroll, sectors]);
+
+  const scroll = (dir: "left" | "right") => {
+    scrollRef.current?.scrollBy({ left: dir === "left" ? -150 : 150, behavior: "smooth" });
+  };
+
+  return (
+    <div className="relative mt-2 group">
+      {canScrollLeft && (
+        <button
+          onClick={() => scroll("left")}
+          className="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-7 h-7 rounded-full bg-white/90 shadow-md border border-neutral-200 flex items-center justify-center text-neutral-500 hover:text-neutral-800 transition-colors"
+          data-testid="button-sector-scroll-left"
+        >
+          <ChevronLeft className="w-4 h-4" />
+        </button>
+      )}
+      <div
+        ref={scrollRef}
+        className="flex items-center gap-2 overflow-x-auto scrollbar-hide px-1 py-1"
+        style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+      >
+        {sectors.map(sector => (
+          <Link
+            key={sector}
+            href={`/c/${sector}`}
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
+              activeFilters.includes(sector as VendorSector)
+                ? "text-primary"
+                : "text-neutral-600 hover:text-neutral-900"
+            }`}
+            data-testid={`sector-link-${sector}`}
+          >
+            <span className="w-4 h-4 flex items-center justify-center">
+              {SECTOR_ICONS[sector as VendorSector] || <Layers className="w-3.5 h-3.5" />}
+            </span>
+            {SECTOR_LABELS[sector as VendorSector] ?? sector}
+          </Link>
+        ))}
+      </div>
+      {canScrollRight && (
+        <button
+          onClick={() => scroll("right")}
+          className="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-7 h-7 rounded-full bg-white/90 shadow-md border border-neutral-200 flex items-center justify-center text-neutral-500 hover:text-neutral-800 transition-colors"
+          data-testid="button-sector-scroll-right"
+        >
+          <ChevronRight className="w-4 h-4" />
+        </button>
+      )}
+    </div>
+  );
+}
 
 export interface CatalogClientProps {
   initialBrands: BrandIndex[];
@@ -364,25 +439,7 @@ export default function CatalogClient({
               </div>
             </div>
 
-            <div className="flex flex-wrap items-center justify-center gap-2 mt-2">
-              {facets.sectors.map(sector => (
-                <Link
-                  key={sector}
-                  href={`/c/${sector}`}
-                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium border transition-colors ${
-                    filters.sectors.includes(sector as VendorSector)
-                      ? "bg-primary/10 border-primary/30 text-primary"
-                      : "bg-white/80 border-neutral-200 text-neutral-600 hover:bg-white hover:border-neutral-300"
-                  }`}
-                  data-testid={`sector-link-${sector}`}
-                >
-                  <span className="w-4 h-4 flex items-center justify-center">
-                    {SECTOR_ICONS[sector as VendorSector] || <Layers className="w-3.5 h-3.5" />}
-                  </span>
-                  {SECTOR_LABELS[sector as VendorSector] ?? sector}
-                </Link>
-              ))}
-            </div>
+            <SectorNav sectors={facets.sectors} activeFilters={filters.sectors} />
           </div>
         </section>
 
