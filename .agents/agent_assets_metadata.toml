@@ -1,0 +1,8 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "cnAOWU3Q_duY2HbMEVzf9"
+uri = "file://docs/axs-technical-plan.md"
+type = "text"
+title = "AXS Technical Plan"
