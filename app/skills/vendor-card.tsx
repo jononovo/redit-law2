@@ -171,11 +171,11 @@ export function VendorCard({ brand }: { brand: BrandIndex }) {
             ))}
             <span className="text-xs text-neutral-500 ml-1">Agent Score</span>
           </div>
-          {brand.ratingOverall && (
-            <div className="flex items-center gap-1 text-xs" data-testid={`rating-overall-${brand.slug}`}>
+          {brand.axsRating && (
+            <div className="flex items-center gap-1 text-xs" data-testid={`rating-axs-${brand.slug}`}>
               <Star className="w-3 h-3 text-amber-400 fill-amber-400" />
               <span className="font-semibold text-neutral-700">
-                {Number(brand.ratingOverall).toFixed(1)}
+                {Number(brand.axsRating).toFixed(1)}
               </span>
               <span className="text-neutral-400">({brand.ratingCount})</span>
             </div>

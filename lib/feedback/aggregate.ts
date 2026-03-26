@@ -6,7 +6,7 @@ interface AggregatedRating {
   searchAccuracy: number;
   stockReliability: number;
   checkoutCompletion: number;
-  overall: number;
+  axsRating: number;
   count: number;
 }
 
@@ -36,7 +36,7 @@ export async function aggregateBrandRatings(targetSlug?: string): Promise<{ upda
       .from(brandFeedback);
     const ratedSlugs = await db.select({ slug: brandIndex.slug })
       .from(brandIndex)
-      .where(sql`${brandIndex.ratingOverall} IS NOT NULL`);
+      .where(sql`${brandIndex.axsRating} IS NOT NULL`);
     const allSlugs = new Set([
       ...feedbackSlugs.map(r => r.slug),
       ...ratedSlugs.map(r => r.slug),
@@ -76,7 +76,7 @@ export async function aggregateBrandRatings(targetSlug?: string): Promise<{ upda
           ratingSearchAccuracy: null,
           ratingStockReliability: null,
           ratingCheckoutCompletion: null,
-          ratingOverall: null,
+          axsRating: null,
           ratingCount: recentRows.length,
           updatedAt: new Date(),
         })
@@ -88,14 +88,14 @@ export async function aggregateBrandRatings(targetSlug?: string): Promise<{ upda
     const avgSearch = weightedSearch / totalWeight;
     const avgStock = weightedStock / totalWeight;
     const avgCheckout = weightedCheckout / totalWeight;
-    const avgOverall = (avgSearch + avgStock + avgCheckout) / 3;
+    const axsRating = (avgSearch + avgStock + avgCheckout) / 3;
 
     await db.update(brandIndex)
       .set({
         ratingSearchAccuracy: avgSearch.toFixed(2),
         ratingStockReliability: avgStock.toFixed(2),
         ratingCheckoutCompletion: avgCheckout.toFixed(2),
-        ratingOverall: avgOverall.toFixed(2),
+        axsRating: axsRating.toFixed(2),
         ratingCount: recentRows.length,
         updatedAt: new Date(),
       })

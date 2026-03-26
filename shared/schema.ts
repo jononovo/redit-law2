@@ -1576,7 +1576,7 @@ export const brandIndex = pgTable("brand_index", {
   ratingSearchAccuracy: numeric("rating_search_accuracy"),
   ratingStockReliability: numeric("rating_stock_reliability"),
   ratingCheckoutCompletion: numeric("rating_checkout_completion"),
-  ratingOverall: numeric("rating_overall"),
+  axsRating: numeric("axs_rating"),
   ratingCount: integer("rating_count").default(0),
 
   brandData: jsonb("brand_data").notNull(),
