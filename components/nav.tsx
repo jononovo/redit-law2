@@ -21,10 +21,7 @@ export function Nav() {
         </Link>
 
         <div className="hidden md:flex items-center gap-8 text-sm font-semibold text-neutral-500">
-          <Link href="/how-it-works" className="hover:text-primary transition-colors" data-testid="nav-link-how-it-works">How it Works</Link>
-          <Link href="/allowance" className="hover:text-primary transition-colors" data-testid="nav-link-allowance">Allowance</Link>
-          <Link href="/skills" className="hover:text-primary transition-colors" data-testid="nav-link-skills">Skills</Link>
-          <Link href="/safety" className="hover:text-primary transition-colors" data-testid="nav-link-safety">Safety</Link>
+          <Link href="/skills" className="hover:text-primary transition-colors" data-testid="nav-link-skills">Shopping Skills</Link>
         </div>
 
         <div className="flex items-center gap-4">
