@@ -1,11 +1,4 @@
-import { pgTable, serial, text, timestamp, integer, boolean, index, bigint, jsonb, numeric, uniqueIndex, customType } from "drizzle-orm/pg-core";
-import { sql } from "drizzle-orm";
-
-const tsvector = customType<{ data: string }>({
-  dataType() {
-    return "tsvector";
-  },
-});
+import { pgTable, serial, text, timestamp, integer, boolean, index, bigint, jsonb, numeric, uniqueIndex } from "drizzle-orm/pg-core";
 import { z } from "zod";
 import { GUARDRAIL_DEFAULTS } from "@/lib/guardrails/defaults";
 
@@ -1588,7 +1581,6 @@ export const brandIndex = pgTable("brand_index", {
 
   brandData: jsonb("brand_data").notNull(),
   skillMd: text("skill_md"),
-  searchVector: tsvector("search_vector"),
 
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
@@ -1598,21 +1590,6 @@ export const brandIndex = pgTable("brand_index", {
   index("brand_index_tier_idx").on(table.tier),
   index("brand_index_maturity_idx").on(table.maturity),
   index("brand_index_readiness_idx").on(table.agentReadiness),
-  index("brand_index_sub_sectors_gin").using("gin", table.subSectors),
-  index("brand_index_tags_gin").using("gin", table.tags),
-  index("brand_index_carries_brands_gin").using("gin", table.carriesBrands),
-  index("brand_index_capabilities_gin").using("gin", table.capabilities),
-  index("brand_index_checkout_methods_gin").using("gin", table.checkoutMethods),
-  index("brand_index_payment_methods_gin").using("gin", table.paymentMethodsAccepted),
-  index("brand_index_supported_countries_gin").using("gin", table.supportedCountries),
-  index("brand_index_search_idx").using("gin", table.searchVector),
-  index("brand_index_has_mcp_idx").on(table.hasMcp).where(sql`"has_mcp" = true`),
-  index("brand_index_has_api_idx").on(table.hasApi).where(sql`"has_api" = true`),
-  index("brand_index_has_deals_idx").on(table.hasDeals).where(sql`"has_deals" = true`),
-  index("brand_index_guest_idx").on(table.ordering).where(sql`"ordering" = 'guest'`),
-  index("brand_index_tax_exempt_idx").on(table.taxExemptSupported).where(sql`"tax_exempt_supported" = true`),
-  index("brand_index_po_number_idx").on(table.poNumberSupported).where(sql`"po_number_supported" = true`),
-  index("brand_index_claimed_idx").on(table.claimedBy).where(sql`"claimed_by" IS NOT NULL`),
 ]);
 
 export type BrandIndex = typeof brandIndex.$inferSelect;
@@ -1671,7 +1648,6 @@ export const brandClaims = pgTable("brand_claims", {
   index("brand_claims_brand_slug_idx").on(table.brandSlug),
   index("brand_claims_claimer_uid_idx").on(table.claimerUid),
   index("brand_claims_status_idx").on(table.status),
-  index("brand_claims_active_claim_idx").on(table.brandSlug, table.claimerUid).where(sql`"status" IN ('pending', 'approved')`),
 ]);
 
 export type BrandClaim = typeof brandClaims.$inferSelect;
