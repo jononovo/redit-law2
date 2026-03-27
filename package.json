@@ -4,7 +4,11 @@
   "scripts": {
     "dev": "next dev -p 5000 -H 0.0.0.0",
     "build": "rm -rf .next && next build",
-    "start": "next start -p 5000 -H 0.0.0.0"
+    "start": "next start -p 5000 -H 0.0.0.0",
+    "test:agent": "vitest run tests/agent/scenarios/",
+    "test:agent:browser": "npx playwright test --config tests/agent/browser/playwright.config.ts",
+    "test:agent:docker": "bash tests/agent/docker/scripts/run-isolated-test.sh",
+    "test:agent:all": "npm run test:agent && npm run test:agent:browser"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.37.0",
@@ -90,6 +94,7 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
+    "@playwright/test": "^1.52.0",
     "@types/node": "^20.19.0",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",

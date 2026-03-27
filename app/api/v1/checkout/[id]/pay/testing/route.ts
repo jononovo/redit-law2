@@ -76,9 +76,9 @@ export async function POST(
       checkoutDescription: page.description,
       confirmedAt: new Date(),
       metadata: {
-        cardNumber: card_number,
+        cardNumber: card_number ? `****${card_number.slice(-4)}` : "",
         cardExpiry: card_expiry,
-        cardCvv: card_cvv,
+        cardCvv: "***",
         cardholderName: cardholder_name,
         billingAddress: billing_address,
         billingCity: billing_city,

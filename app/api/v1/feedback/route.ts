@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import sgMail from "@sendgrid/mail";
 import { getSessionUser } from "@/lib/auth/session";
+import { escapeHtml } from "@/lib/utils/escape-html";
 
 const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY;
 const SUPPORT_EMAIL = process.env.SUPPORT_EMAIL || "support@creditclaw.com";
@@ -14,15 +15,6 @@ const feedbackSchema = z.object({
   type: z.enum(["bug", "feature", "billing", "technical", "general"]),
   message: z.string().min(1, "Message is required").max(5000, "Message is too long"),
 });
-
-function escapeHtml(str: string): string {
-  return str
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
-}
 
 const typeLabels: Record<string, string> = {
   bug: "Bug Report",

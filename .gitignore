@@ -19,6 +19,9 @@ MANIFEST-*
 .env.local
 .env.*.local
 
+# Agent test artifacts
+tests/agent/docker/results/
+
 # OS files
 Thumbs.db
 
