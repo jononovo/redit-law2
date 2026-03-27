@@ -1079,36 +1079,6 @@ export const insertShippingAddressSchema = z.object({
   email: z.string().email().optional().nullable(),
 });
 
-export const vendors = pgTable("vendors", {
-  id: serial("id").primaryKey(),
-  slug: text("slug").notNull().unique(),
-  name: text("name").notNull(),
-  websiteUrl: text("website_url"),
-  logoUrl: text("logo_url"),
-  vendorType: text("vendor_type"),
-  orderingSystem: text("ordering_system"),
-  config: jsonb("config").$type<Record<string, any>>(),
-  supportedCountries: text("supported_countries").array().default(["US"]),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  updatedAt: timestamp("updated_at").notNull().defaultNow(),
-}, (table) => [
-  index("vendors_slug_idx").on(table.slug),
-]);
-
-export type Vendor = typeof vendors.$inferSelect;
-export type InsertVendor = typeof vendors.$inferInsert;
-
-export const insertVendorSchema = z.object({
-  slug: z.string().min(1).max(100),
-  name: z.string().min(1).max(200),
-  websiteUrl: z.string().url().optional().nullable(),
-  logoUrl: z.string().url().optional().nullable(),
-  vendorType: z.string().max(50).optional().nullable(),
-  orderingSystem: z.string().max(100).optional().nullable(),
-  config: z.record(z.any()).optional().nullable(),
-  supportedCountries: z.array(z.string()).default(["US"]),
-});
-
 export const brandLoginAccounts = pgTable("brand_login_accounts", {
   id: serial("id").primaryKey(),
   ownerUid: text("owner_uid").notNull(),
@@ -1129,13 +1099,6 @@ export const brandLoginAccounts = pgTable("brand_login_accounts", {
 export type BrandLoginAccount = typeof brandLoginAccounts.$inferSelect;
 export type InsertBrandLoginAccount = typeof brandLoginAccounts.$inferInsert;
 
-/** @deprecated Use BrandLoginAccount */
-export type MerchantAccount = BrandLoginAccount;
-/** @deprecated Use InsertBrandLoginAccount */
-export type InsertMerchantAccount = InsertBrandLoginAccount;
-/** @deprecated Use brandLoginAccounts */
-export const merchantAccounts = brandLoginAccounts;
-
 export const insertBrandLoginAccountSchema = z.object({
   ownerUid: z.string().min(1),
   brandId: z.number().int().positive(),
@@ -1146,9 +1109,6 @@ export const insertBrandLoginAccountSchema = z.object({
   status: z.string().default("active"),
   metadata: z.record(z.any()).optional().nullable(),
 });
-
-/** @deprecated Use insertBrandLoginAccountSchema */
-export const insertMerchantAccountSchema = insertBrandLoginAccountSchema;
 
 export const orders = pgTable("orders", {
   id: serial("id").primaryKey(),

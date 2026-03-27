@@ -39,9 +39,7 @@ import {
   type Order, type InsertOrder,
   type CheckoutPage, type InsertCheckoutPage,
   type Sale, type InsertSale,
-  type Vendor, type InsertVendor,
   type BrandLoginAccount, type InsertBrandLoginAccount,
-  type MerchantAccount, type InsertMerchantAccount,
   type SavedShippingAddress, type InsertShippingAddress,
   type SellerProfile, type InsertSellerProfile,
   type Invoice, type InsertInvoice,
@@ -304,10 +302,6 @@ export interface IStorage {
   incrementCheckoutPageViewCount(checkoutPageId: string): Promise<void>;
   getBuyerCountForCheckoutPage(checkoutPageId: string): Promise<number>;
   getBuyerNamesForCheckoutPage(checkoutPageId: string): Promise<string[]>;
-  getVendorBySlug(slug: string): Promise<Vendor | null>;
-  getVendorById(id: number): Promise<Vendor | null>;
-  getAllVendors(): Promise<Vendor[]>;
-
   createBrandLoginAccount(data: InsertBrandLoginAccount): Promise<BrandLoginAccount>;
   getBrandLoginAccountsByOwner(ownerUid: string): Promise<BrandLoginAccount[]>;
   getBrandLoginAccountByBrand(ownerUid: string, brandId: number): Promise<BrandLoginAccount | null>;

@@ -111,6 +111,10 @@ New features should follow a feature-first folder structure. Each rail lives und
 - `owners.ts` — owner profiles (get/upsert)
 - `master-guardrails.ts` — master guardrails + cross-rail daily/monthly spend aggregation
 - `skills.ts` — skill drafts, evidence, submitter profiles, versioning, exports
+- `brand-index.ts` — brand catalog search, facets, upsert, readiness scoring
+- `brand-claims.ts` — brand ownership claims (create, verify, reject, revoke)
+- `brand-feedback.ts` — AXS rating feedback from agents and humans
+- `brand-login-accounts.ts` — per-brand login credentials for bot checkout
 - `approvals.ts` — unified approvals
 - `orders.ts` — central orders table CRUD (create, get by ID/externalId, get by owner with filters, get by wallet/card, update)
 - All consumers import from `@/server/storage` unchanged (the directory's `index.ts` is transparent).
