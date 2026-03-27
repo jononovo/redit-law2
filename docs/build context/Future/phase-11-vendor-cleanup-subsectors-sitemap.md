@@ -25,49 +25,95 @@ The `vendors` table (`shared/schema.ts` line 1082) is completely unused at runti
 - **`/api/v1/vendors` already migrated**: The route at `app/api/v1/vendors/route.ts` calls `storage.searchBrands({})` — it reads from `brand_index`, not `vendors`.
 - **`brandLoginAccounts` already migrated**: The table formerly known as `merchant_accounts` was renamed to `brand_login_accounts` and its `brandId` column references `brand_index.id`. A deprecated alias `merchantAccounts = brandLoginAccounts` exists in schema (line 1136-1137).
 
+### Audit results (verified 2025-03-26)
+
+Full codebase trace confirmed:
+
+- **`storage.getVendorBySlug()`** — defined in `server/storage/vendors.ts`, registered in `IStorage`, but **zero callers** across the entire codebase.
+- **`storage.getVendorById()`** — same: defined, registered, **zero callers**.
+- **`storage.getAllVendors()`** — same: defined, registered, **zero callers**.
+- **No file imports `Vendor`, `InsertVendor`, or `vendors`** from `shared/schema` except `server/storage/vendors.ts` (the file being deleted) and `server/storage/types.ts` (the import being cleaned up).
+- **No raw SQL** references `FROM vendors`, `JOIN vendors`, `INSERT INTO vendors`, `UPDATE vendors`, or `DELETE FROM vendors` anywhere in the TypeScript codebase.
+- **`orders.vendorId`** (schema line 1165) — a standalone `integer` column with **no FK constraint** to the `vendors` table. Additionally confirmed: no fulfillment handler (`rail1-fulfillment.ts` through `rail5-fulfillment.ts`), no checkout route, and no API route passes `vendorId` when calling `recordOrder()`. The column is nullable and never written.
+- **`listVersionsByVendor`** (types.ts line 252) — uses "vendor" in its method name but queries the `skill_versions` table by `vendorSlug`. No dependency on the `vendors` table. NOT affected by this change.
+- **`app/api/v1/vendors/route.ts`** — already rewritten. Calls `storage.searchBrands({})` from `brand_index`. Does NOT touch the `vendors` table or storage methods. NOT affected by this change.
+- **Historical migration** `drizzle/0000_late_giant_girl.sql` — contains `CREATE TABLE "vendors"`. This is a committed migration file and MUST NOT be modified.
+
 ### What to remove
 
 | File | Action | Detail |
 |---|---|---|
 | `shared/schema.ts` lines 1082-1109 | Delete | `vendors` table definition, `Vendor`/`InsertVendor` types, `insertVendorSchema` |
-| `shared/schema.ts` line 42 | Delete import | `type Vendor, type InsertVendor` from IStorage type imports |
 | `server/storage/vendors.ts` | Delete file | `vendorMethods` object (3 methods, all dead) |
 | `server/storage/index.ts` line 18 | Delete | `import { vendorMethods } from "./vendors"` |
 | `server/storage/index.ts` line 51 | Delete | `...vendorMethods,` spread |
 | `server/storage/types.ts` lines 307-309 | Delete | `getVendorBySlug`, `getVendorById`, `getAllVendors` from `IStorage` |
-| `server/storage/types.ts` line 42 | Delete | `Vendor` import |
+| `server/storage/types.ts` line 42 | Delete | `type Vendor, type InsertVendor` import |
+| `server/storage/types.ts` line 44 | Delete | `type MerchantAccount, type InsertMerchantAccount` import (unused — only imported here, never used in IStorage) |
 
-### Orders `vendorId` column — keep or remove?
+### What NOT to touch
 
-The `orders.vendorId` column (line 1165) is an optional integer that is **never populated in practice** — no fulfillment handler or checkout route passes a `vendorId` when calling `recordOrder()`. However, removing a column from a live table with existing data requires a migration and is a higher-risk operation. 
-
-**Recommendation**: Keep the column for now. It's harmless (nullable, never written). If desired, rename it to `brandId` in a future cleanup. The `vendor` text column (line 1164) stores the merchant display name and IS actively used — do not touch it.
+| Item | Reason |
+|---|---|
+| `orders.vendorId` column (schema line 1165) | Nullable, never written. Harmless. Removing a column from a live table requires a migration — not worth the risk for an unused nullable field. |
+| `orders.vendor` text column (schema line 1164) | Actively used — stores the merchant display name. |
+| `lib/procurement-skills/vendors/*.ts` files | Still used by the seed script (`scripts/seed-brand-index.ts`). These are vendor DATA files, not the vendors TABLE. |
+| `drizzle/0000_late_giant_girl.sql` | Historical migration. Must never be modified. |
+| `listVersionsByVendor` method name (types.ts line 252) | Just a naming convention for brand slugs. Queries `skill_versions`, not `vendors`. |
+| `app/api/v1/vendors/route.ts` | Already reads from `brand_index`. Endpoint stays for backward compatibility. |
 
 ### Deprecated alias cleanup
 
-`shared/schema.ts` line 1136-1137:
+`shared/schema.ts` has four deprecated aliases that should also be removed:
+
 ```typescript
-/** @deprecated Use brandLoginAccounts */
+// line 1133
+export type MerchantAccount = BrandLoginAccount;
+// line 1135
+export type InsertMerchantAccount = InsertBrandLoginAccount;
+// line 1137
 export const merchantAccounts = brandLoginAccounts;
+// line 1151
+export const insertMerchantAccountSchema = insertBrandLoginAccountSchema;
 ```
 
-**Remove this alias** — if any file still imports `merchantAccounts`, update it to import `brandLoginAccounts` directly. Search for:
-```
-grep -r "merchantAccounts" --include="*.ts" --include="*.tsx"
-```
+**Verified**: `merchantAccounts` is only referenced in `shared/schema.ts` itself (the alias definition). `MerchantAccount`/`InsertMerchantAccount` are imported by `server/storage/types.ts` line 44 but never used in the `IStorage` interface — it uses `BrandLoginAccount` directly. All four aliases can be safely removed.
+
+### Orders `vendorId` column — keep (confirmed)
+
+The `orders.vendorId` column (line 1165) is an optional integer that is **never populated in practice**. Confirmed by tracing every call to `recordOrder()` in the codebase:
+- `lib/orders/create.ts` line 17 passes `vendorId: input.vendorId ?? null`
+- `lib/orders/types.ts` line 14 defines `vendorId?: number | null`
+- No caller of `recordOrder` sets `vendorId` — it always falls through to `null`
+
+**Recommendation**: Keep the column. It's harmless (nullable, never written). Renaming to `brandId` is a future cleanup.
 
 ### Risk assessment
 
-- **Very low risk** — nothing calls these methods. The table exists in the DB but is not read or written by any code path.
-- **No migration needed** — Drizzle does not auto-drop tables. The `vendors` table will remain in PostgreSQL until manually dropped via `DROP TABLE vendors;`. Removing it from the schema just means Drizzle no longer knows about it. The actual `DROP TABLE` can be run manually after confirming no data dependency.
+- **Very low risk** — exhaustive trace confirms zero runtime dependencies on the `vendors` table, its types, or its storage methods.
+- **No migration needed** — Drizzle does not auto-drop tables. The `vendors` table will remain in PostgreSQL until manually dropped via `DROP TABLE vendors;`. Removing it from the schema just means Drizzle no longer generates queries for it.
 - **No data loss** — all vendor data was already migrated to `brand_index` during earlier phases.
+- **Build safety** — after removing these items, run `npx tsc --noEmit` to confirm zero TypeScript errors. The removals only affect dead code, so no errors are expected.
 
 ### Verification after removal
 
 ```bash
-# Confirm no TypeScript references remain
-grep -r "vendors" --include="*.ts" --include="*.tsx" | grep -v "node_modules" | grep -v "lib/procurement-skills/vendors/"
-# Expected: only display strings like "vendors" in UI text, doc comments, and the vendors/ data directory
+# 1. TypeScript compilation — must pass
+npx tsc --noEmit
+
+# 2. Confirm no TypeScript references to removed items remain
+grep -r "from.*storage/vendors" --include="*.ts"
+# Expected: zero matches
+
+grep -r "getVendorBySlug\|getVendorById\|getAllVendors" --include="*.ts" --include="*.tsx"
+# Expected: zero matches
+
+grep -r "InsertVendor\b" --include="*.ts" --include="*.tsx"
+# Expected: zero matches (note: InsertVendor, not InsertBrandIndex)
+
+# 3. Confirm the vendors/ data directory still exists (used by seed script)
+ls lib/procurement-skills/vendors/
+# Expected: 14 .ts files
 ```
 
 ---
