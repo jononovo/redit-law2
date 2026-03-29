@@ -13,7 +13,7 @@ All generated skill files follow the **shopy.sh** commerce skill standard — Cr
 | `product-index-taxonomy-plan.md` | Google Product Taxonomy adoption, UCP category model, product index schema |
 | `agent-readiness-and-product-index-service.md` | This document — three service tiers, agent gateway, implementation roadmap |
 | `shopy-sh-commerce-skill-standard.md` | The shopy.sh open standard — commerce SKILL.md format, frontmatter schema, catalog, CLI |
-| `scan-page-ux-design.md` | Page UX for `/agent-shopping-experience-checker` — layout, results page, URL structure, SEO meta tags |
+| `scan-page-ux-design.md` | Page UX for `/agentic-shopping-score` — layout, results page, URL structure, SEO meta tags |
 
 ---
 
@@ -91,7 +91,7 @@ All generated skill files follow the **shopy.sh** commerce skill standard — Cr
    - If no comparable brand exists in the database for this sector, skip the comparison — no empty state
    - This is purely domain-level signal comparison using existing scan data — no additional crawling of the comparison brand
 
-**Page:** `/agent-shopping-experience-checker` — public, no auth required. Form with domain input. Results page at `/agent-shopping-experience-checker/[domain]`. See `scan-page-ux-design.md` for full UX spec.
+**Page:** `/agentic-shopping-score` — public, no auth required. Form with domain input. Results page at `/agentic-shopping-score/[domain]`. See `scan-page-ux-design.md` for full UX spec.
 
 **Tech stack:** Server-side fetch + cheerio for HTML parsing. No browser automation needed.
 
@@ -836,9 +836,9 @@ CREATE TABLE ucp_submissions (
 
 | Route | Purpose | Auth |
 |---|---|---|
-| `/agent-shopping-experience-checker` | Domain input form + explainer (see `scan-page-ux-design.md`) | Public |
-| `/agent-shopping-experience-checker/[domain]` | Scan results + score + comparison + downloadable SKILL.md | Public |
-| `/agent-shopping-experience-checker/[domain]/history` | Score trend over time | Public |
+| `/agentic-shopping-score` | Domain input form + explainer (see `scan-page-ux-design.md`) | Public |
+| `/agentic-shopping-score/[domain]` | Scan results + score + comparison + downloadable SKILL.md | Public |
+| `/agentic-shopping-score/[domain]/history` | Score trend over time | Public |
 | `/dashboard/scans` | Manage your scanned domains (owner) | Auth |
 | `/dashboard/scans/[domain]/upgrade` | Purchase premium scan | Auth |
 | `/dashboard/index` | View your product index status (Tier 3) | Auth |
@@ -882,12 +882,12 @@ The free scan is the door. The enrichment and distribution is the value.
 ## Implementation Roadmap
 
 ### Phase 1: Free Scan MVP (Tier 1)
-- Build `/agent-shopping-experience-checker` page with domain input
+- Build `/agentic-shopping-score` page with domain input
 - Server-side crawl using fetch + cheerio
 - Score calculation engine (8 weighted signals)
 - SKILL.md template + generation with LLM
 - Save results to `brand_index` + `scan_history`
-- Public results page at `/agent-shopping-experience-checker/[domain]`
+- Public results page at `/agentic-shopping-score/[domain]`
 - Brand comparison: find one comparable brand in same sector, show side-by-side signal table
 
 ### Phase 2: Score Benchmarking

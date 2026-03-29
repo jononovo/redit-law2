@@ -1,4 +1,4 @@
-# Agent Shopping Experience Checker — Page UX & URL Design
+# Agentic Shopping Score — Page UX & URL Design
 
 ## Related Documents
 
@@ -29,9 +29,9 @@ The page serves three purposes:
 
 | Route | Purpose | SEO Target Keywords |
 |---|---|---|
-| `/agent-shopping-experience-checker` | Main scanner — domain input + results | "agent shopping experience checker", "AI shopping agent score", "can AI agents buy from my store" |
-| `/agent-shopping-experience-checker/[domain]` | Results page for a specific domain | "{domain} AI shopping experience", "{domain} agent shopping experience score" |
-| `/agent-shopping-experience-checker/[domain]/history` | Score trend over time | "{domain} agent shopping experience history" |
+| `/agentic-shopping-score` | Main scanner — domain input + results | "agent shopping experience checker", "AI shopping agent score", "can AI agents buy from my store" |
+| `/agentic-shopping-score/[domain]` | Results page for a specific domain | "{domain} AI shopping experience", "{domain} agent shopping experience score" |
+| `/agentic-shopping-score/[domain]/history` | Score trend over time | "{domain} agent shopping experience history" |
 
 ### Why "Shopping" in the URL
 
@@ -46,7 +46,7 @@ It also targets better SEO keywords. "AI shopping agent" is a more specific and 
 
 | Route | Purpose |
 |---|---|
-| `/agent-shopping-experience-checker` | Scanner tool (this page) |
+| `/agentic-shopping-score` | Scanner tool (this page) |
 | `/skills` | Existing skill catalog |
 | `/c/[sector]` | Existing sector pages |
 | `/c/[sector]/[subSector]` | Sub-sector pages (Phase 11 Part B) |
@@ -54,7 +54,7 @@ It also targets better SEO keywords. "AI shopping agent" is a more specific and 
 
 ---
 
-## Page 1: The Scanner (`/agent-shopping-experience-checker`)
+## Page 1: The Scanner (`/agentic-shopping-score`)
 
 ### Layout — Above the Fold
 
@@ -120,7 +120,7 @@ Inspired by: `ahrefs.com/website-authority-checker` and `checkpagerank.net`
 │                                                                   │
 │  1. Enter your domain                                            │
 │  2. We crawl your public-facing store (no login needed)          │
-│  3. Get your Agent Shopping Experience Score (0–100)              │
+│  3. Get your ASX Score (0–100)              │
 │  4. See specific recommendations to improve                     │
 │  5. Download a free SKILL.md for your store                     │
 │                                                                   │
@@ -153,11 +153,11 @@ Inspired by: `ahrefs.com/website-authority-checker` and `checkpagerank.net`
   - "Evaluating checkout flow..."
   - "Detecting APIs and MCP endpoints..."
   - "Calculating your score..."
-- **Redirect on complete:** Navigate to `/agent-shopping-experience-checker/[domain]`
+- **Redirect on complete:** Navigate to `/agentic-shopping-score/[domain]`
 
 ---
 
-## Page 2: Results (`/agent-shopping-experience-checker/[domain]`)
+## Page 2: Results (`/agentic-shopping-score/[domain]`)
 
 ### Layout — Score Header
 
@@ -172,7 +172,7 @@ Inspired by: `ahrefs.com/website-authority-checker` and `checkpagerank.net`
 │  │                                                          │    │
 │  │  [Logo]  staples.com                                     │    │
 │  │                                                          │    │
-│  │  Agent Shopping Experience Score                          │    │
+│  │  ASX Score                          │    │
 │  │                                                          │    │
 │  │        ┌─────────┐                                       │    │
 │  │        │         │                                       │    │
@@ -280,7 +280,7 @@ Inspired by: `ahrefs.com/website-authority-checker` and `checkpagerank.net`
 │  │  ## Overview                                              │    │
 │  │  - Domain: staples.com                                    │    │
 │  │  - Sector: Office Supplies                                │    │
-│  │  - Agent Shopping Experience Score: 67/100                 │    │
+│  │  - ASX Score: 67/100                 │    │
 │  │  ...                                                      │    │
 │  │  (preview — first 15 lines)                               │    │
 │  └──────────────────────────────────────────────────────────┘    │
@@ -411,15 +411,15 @@ While the scan is running (5–15 seconds), the page shows an animated progress 
 ## SEO & Meta Tags
 
 ```html
-<!-- /agent-shopping-experience-checker -->
-<title>Agent Shopping Experience Checker — Can AI Agents Buy From Your Store? | CreditClaw</title>
+<!-- /agentic-shopping-score -->
+<title>Agentic Shopping Score — Can AI Agents Buy From Your Store? | CreditClaw</title>
 <meta name="description" content="Free tool to check how easily AI shopping agents like ChatGPT, Claude, and Gemini can find your products, search your catalog, and complete a purchase. Get your score and actionable recommendations." />
-<meta property="og:title" content="Agent Shopping Experience Checker | CreditClaw" />
-<meta property="og:description" content="Can AI shopping agents buy from your store? Check your Agent Shopping Experience Score — see exactly where ChatGPT, Claude, and Gemini struggle with your catalog and checkout." />
+<meta property="og:title" content="Agentic Shopping Score | CreditClaw" />
+<meta property="og:description" content="Can AI shopping agents buy from your store? Check your ASX Score — see exactly where ChatGPT, Claude, and Gemini struggle with your catalog and checkout." />
 
-<!-- /agent-shopping-experience-checker/[domain] -->
-<title>{domain} Agent Shopping Experience Score: {score}/100 | CreditClaw</title>
-<meta name="description" content="{domain} scored {score}/100 on CreditClaw's Agent Shopping Experience Checker. See how well AI shopping agents can find, search, and buy from this store." />
+<!-- /agentic-shopping-score/[domain] -->
+<title>{domain} ASX Score: {score}/100 | CreditClaw</title>
+<meta name="description" content="{domain} scored {score}/100 on CreditClaw's Agentic Shopping Score. See how well AI shopping agents can find, search, and buy from this store." />
 <meta property="og:title" content="{domain} — Agent Shopping Experience: {score}/100" />
 <meta property="og:description" content="Can AI shopping agents buy from {domain}? Full score breakdown across 8 signals, actionable recommendations, and a free downloadable SKILL.md." />
 ```
@@ -430,7 +430,7 @@ While the scan is running (5–15 seconds), the page shows an animated progress 
 
 After getting their score, merchants should want to share it (especially if it's high). Include:
 
-- **Share buttons:** "Share your score" with pre-filled text: "Our store scored {score}/100 on CreditClaw's Agent Shopping Experience Checker! See how your store compares: {url}"
+- **Share buttons:** "Share your score" with pre-filled text: "Our store scored {score}/100 on CreditClaw's Agentic Shopping Score! See how your store compares: {url}"
 - **Embeddable badge:** A small badge merchants can add to their site: "Agent Shopping Experience: {score}/100 — Verified by CreditClaw"
 - **Score image:** Auto-generated OG image showing the score (so link previews look good when shared on social)
 
@@ -439,7 +439,7 @@ After getting their score, merchants should want to share it (especially if it's
 ## Data Flow
 
 ```
-1. User enters domain on /agent-shopping-experience-checker
+1. User enters domain on /agentic-shopping-score
 2. POST /api/v1/scan { domain: "staples.com" }
 3. Server crawls public surface (fetch + cheerio, 5-15 seconds)
 4. Server calculates score from 8 weighted signals
@@ -448,7 +448,7 @@ After getting their score, merchants should want to share it (especially if it's
 7. Server saves to:
    - brand_index (upsert — create or update existing record)
    - scan_history (new row — preserves historical scores)
-8. Redirect to /agent-shopping-experience-checker/staples.com
+8. Redirect to /agentic-shopping-score/staples.com
 9. Results page reads from brand_index + scan_history
 10. Comparison table shown if a comparable brand was found
 11. SKILL.md available for download
