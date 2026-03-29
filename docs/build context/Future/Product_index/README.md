@@ -21,6 +21,7 @@ This folder contains the planning documents for CreditClaw's agentic commerce st
 | `agentic-shopping-score-build-plan.md` | **Tier 1 scanner build plan.** Complete, sequenced, 6-phase plan for building the `/agentic-shopping-score` page and its backend. Phases: (1) `scan_history` DB table, (2) ASX Score calculation engine, (3) scan API endpoint, (4) scanner landing page, (5) results page, (6) polish & SEO. Each phase lists exact files to create/modify, schemas, types, and constraints. References `agentic-commerce-standard.md` for score definitions. |
 | `scan-page-ux-design.md` | **UX companion to the scanner build plan.** Wireframes and layout specs for the scanner landing page and results page (phases 4-5 of the build plan above). Includes: page layouts, URL structure, responsive behavior, loading states, component breakdown, and SEO meta tag templates. |
 | `multitenant-system-nextjs-implementation-plan.md` | **Multitenant infrastructure plan.** Complete implementation plan for serving multiple brands (creditclaw.com and shopy.sh) from a single Next.js deployment. Covers: middleware-based tenant resolution from domain, static tenant configs (`public/tenants/`), `generateMetadata()` per tenant, HSL theme injection, route-level separation, Firebase Auth scoping, and testing strategy. 727 lines, highly detailed. |
+| `shopy-cli-technical-plan.md` | **shopy CLI + registry API plan.** Technical plan for building the `npx shopy add amazon` CLI tool. Covers the three most complex pieces: (1) public registry API (`/api/v1/registry/`) — unauthenticated endpoints for search, download, and version manifests built on top of existing `brand_index` data, (2) the npm package itself — CLI architecture, config management, local manifest tracking, command implementations, (3) npm publishing — name registration, CI automation, versioning strategy, and whether to use a separate repo (recommended) or monorepo. |
 | `remaining-build-tasks.md` | **Catalog & SEO polish tasks.** Five outstanding tasks from previously completed phases: (1) URL-based filter state on `/skills`, (2) `generateStaticParams` for brand detail pages, (3) sub-sector landing pages, (4) sitemap splitting, (5) JSONB extraction for performance. Each task includes priority, implementation details, files to modify, and dependencies. |
 
 ### Vision Documents (future — no detailed build plans yet)
@@ -68,17 +69,30 @@ With the multitenant layer in place, build the shopy.sh-specific pages. These on
 
 The catalog and leaderboard pull from the same `brand_index` table — just different presentation components per tenant.
 
-### Step 4: Catalog SEO Polish ← IN PARALLEL WITH STEPS 2-3 OR AFTER
+### Step 4: Registry API + shopy CLI ← BUILD AFTER SHOPY.SH PAGES
+**Plan:** `shopy-cli-technical-plan.md` (3 phases, complete)
+
+Two-part build: first the registry API (new routes in the main codebase), then the npm package (separate repo).
+
+**Phase 1 — Registry API** (main codebase): Build `/api/v1/registry/` route group — unauthenticated public endpoints for search, download, sector listing, and a version manifest. These sit on top of the existing `brand_index` and `skill_versions` tables. This is what the CLI talks to.
+
+**Phase 2 — npm package**: Scaffold the `shopy` npm package (separate GitHub repo). Implement `add`, `search`, `list` commands. Do the first manual `npm publish` to secure the package name. Result: `npx shopy add amazon` works.
+
+**Phase 3 — Update + CI**: Implement `update` command (manifest diffing), `init` and `remove` commands, and set up GitHub Actions for automated publishing on version tags.
+
+**Important:** Secure the npm package name (`shopy` or `@shopy/cli`) as early as possible — even before building. Run `npm view shopy` to check availability. If it's open, publish a placeholder v0.0.1 to claim it.
+
+### Step 5: Catalog SEO Polish ← IN PARALLEL WITH STEPS 2-4 OR AFTER
 **Plan:** `remaining-build-tasks.md` (5 tasks)
 
-URL filter state, `generateStaticParams` for brand detail pages, sub-sector landing pages, sitemap splitting, JSONB extraction. Improves the existing catalog but not urgent at current scale (~14 brands). These are independent of the multitenant work and can be done in parallel or after.
+URL filter state, `generateStaticParams` for brand detail pages, sub-sector landing pages, sitemap splitting, JSONB extraction. Improves the existing catalog but not urgent at current scale (~14 brands). These are independent of the multitenant and CLI work and can be done in parallel or after.
 
-### Step 5: Tier 2 Premium Scan ← FUTURE (no build plan yet)
+### Step 6: Tier 2 Premium Scan ← FUTURE (no build plan yet)
 **Vision:** `agent-readiness-and-product-index-service.md` (Tier 2 section)
 
 Playwright browser automation, full shopping flow walk-through, CSS selectors, form field mappings, screenshot capture. A detailed build plan needs to be written before starting. This is the premium upsell from the free Tier 1 scan — "we scanned your site from the outside, now let us walk through it like an agent would."
 
-### Step 6: Taxonomy + Tier 3 Product Index ← FUTURE (no build plan yet)
+### Step 7: Taxonomy + Tier 3 Product Index ← FUTURE (no build plan yet)
 **Vision:** `product-index-taxonomy-plan.md` + `agent-readiness-and-product-index-service.md` (Tier 3 section)
 
 Full product catalog crawl, LLM-powered enrichment (agent summaries + purchase intent phrases), Google Product Taxonomy mapping, distribution to Shopify Catalog MCP and Google UCP, vector search layer, and the CreditClaw Agent Gateway. This is the big long-term vision. Build plans need to be written before starting.
@@ -88,13 +102,15 @@ Full product catalog crawl, LLM-powered enrichment (agent summaries + purchase i
 ```
 Step 1 (Scanner)
   ↓
-Step 2 (Multitenant) ──── Step 4 (SEO Polish) [independent, parallel OK]
+Step 2 (Multitenant) ──── Step 5 (SEO Polish) [independent, parallel OK]
   ↓
 Step 3 (shopy.sh Pages)
   ↓
-Step 5 (Tier 2 Scan) [future, needs build plan]
+Step 4 (Registry API + CLI)
   ↓
-Step 6 (Tier 3 Product Index) [future, needs build plan]
+Step 6 (Tier 2 Scan) [future, needs build plan]
+  ↓
+Step 7 (Tier 3 Product Index) [future, needs build plan]
 ```
 
 ---
