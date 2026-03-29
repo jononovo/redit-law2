@@ -142,6 +142,33 @@ When speaking to the developer audience:
 - Minimal color palette — black/white/one accent color
 - Data-forward design — scores, charts, comparisons front and center
 
+## Dual-Track UX: Technical Surface, Non-Technical On-Ramps
+
+The site should *look* like a developer-focused platform — clean, technical, data-forward. This builds trust with developers and CTOs who need to feel they're looking at a serious standard, not a marketing page. But it should also have clear, visible on-ramps for non-technical visitors (marketing managers, brand owners, e-commerce leads) who land on the site and think "this looks important but I don't know what to do with it."
+
+### On-page contextual cards
+
+Throughout the technical pages, small cards or expandable callouts appear with a plain-language explanation. For example:
+
+- On the `/spec` page, a card at the top: *"Not a developer? Here's what this means for your brand →"* linking to the guide.
+- On the `/catalog/[vendor]` page, next to the ASX Score breakdown: *"What does this score mean for my store?"* tooltip or expandable panel.
+- On the homepage CLI section, a callout: *"Don't have a developer? Here's how to get started without one →"*
+
+These are not modal pop-ups — they're inline, unobtrusive, clearly marked. They don't dilute the technical feel; they just signal "you're welcome here too."
+
+### `/guide` — The non-technical explainer page
+
+A dedicated page at `/guide` (or `/getting-started`) written in simple language with diagrams. Step-by-step:
+
+1. **What is agentic commerce?** — 2-3 sentences + a simple diagram showing: customer → AI agent → your store. "Instead of customers browsing your website, their AI assistant does the shopping for them."
+2. **Why does this matter for your brand?** — "If AI agents can't find or understand your products, they'll shop somewhere else. This is like not showing up in Google search results."
+3. **What is an ASX Score?** — "It's a score from 0-100 that tells you how easy it is for AI agents to shop at your store. Higher = more AI-driven sales."
+4. **How do I check my score?** — "Enter your domain here" → inline score checker or link to CreditClaw's scanner.
+5. **How do I improve my score?** — Simple checklist: structured product data, clear checkout flow, consistent naming, etc. No code, just "talk to your developer about these things" or "hire CreditClaw to do it for you."
+6. **What happens next?** — "Once your store is agent-ready, it gets listed in the shopy.sh catalog. AI agents discover you, shop at your store, and your sales grow."
+
+This page exists to make the concept accessible without dumbing down the main site.
+
 ## shopy.sh vs creditclaw.com
 
 | | shopy.sh | creditclaw.com |
@@ -176,6 +203,7 @@ shopy.sh is the front door and the open standard. creditclaw.com is the commerci
 | Route | Purpose |
 |---|---|
 | `/` | Landing page — what shopy.sh is, install instructions, quick start |
+| `/guide` | Non-technical explainer — plain-language walkthrough with diagrams for brand owners, marketers, and non-developers |
 | `/spec` | Full specification — frontmatter fields, body structure, validation rules |
 | `/catalog` | Searchable directory of all published commerce skills |
 | `/catalog/[vendor]` | Individual skill page — metadata, scores, download |
