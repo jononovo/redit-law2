@@ -1,4 +1,4 @@
-# Agent Shopping Readiness Checker — Page UX & URL Design
+# Agent Shopping Experience Checker — Page UX & URL Design
 
 ## Related Documents
 
@@ -19,7 +19,7 @@ The page serves three purposes:
 
 1. **Lead generation** — every scan grows the CreditClaw brand index
 2. **Onboarding funnel** — free scan → premium scan → full index subscription
-3. **SEO magnet** — ranks for "agent shopping readiness", "AI shopping agent checker", "can AI agents buy from my store"
+3. **SEO magnet** — ranks for "agent shopping experience", "AI shopping agent checker", "can AI agents buy from my store"
 
 ---
 
@@ -29,16 +29,16 @@ The page serves three purposes:
 
 | Route | Purpose | SEO Target Keywords |
 |---|---|---|
-| `/agent-shopping-readiness-checker` | Main scanner — domain input + results | "agent shopping readiness checker", "AI shopping agent score", "can AI agents buy from my store" |
-| `/agent-shopping-readiness-checker/[domain]` | Results page for a specific domain | "{domain} AI shopping readiness", "{domain} agent shopping score" |
-| `/agent-shopping-readiness-checker/[domain]/history` | Score trend over time | "{domain} agent shopping score history" |
+| `/agent-shopping-experience-checker` | Main scanner — domain input + results | "agent shopping experience checker", "AI shopping agent score", "can AI agents buy from my store" |
+| `/agent-shopping-experience-checker/[domain]` | Results page for a specific domain | "{domain} AI shopping experience", "{domain} agent shopping experience score" |
+| `/agent-shopping-experience-checker/[domain]/history` | Score trend over time | "{domain} agent shopping experience history" |
 
 ### Why "Shopping" in the URL
 
-The word "shopping" is critical. "Agent readiness" could mean anything — customer service agents, support agents, call center agents. Adding "shopping" immediately communicates:
+The word "shopping" is critical. "Agent readiness" could mean anything — customer service agents, support agents, call center agents. "Agent shopping experience" immediately communicates:
 - This is about **commerce** — buying and selling products
 - This is about **AI shopping agents** — ChatGPT, Claude, Gemini acting as shopping assistants
-- The tool checks whether your store is set up for this new channel
+- The tool measures the quality of that experience — not just whether you're "ready", but how good or bad the experience actually is
 
 It also targets better SEO keywords. "AI shopping agent" is a more specific and commercially valuable phrase than "AI agent" alone.
 
@@ -46,7 +46,7 @@ It also targets better SEO keywords. "AI shopping agent" is a more specific and 
 
 | Route | Purpose |
 |---|---|
-| `/agent-shopping-readiness-checker` | Scanner tool (this page) |
+| `/agent-shopping-experience-checker` | Scanner tool (this page) |
 | `/skills` | Existing skill catalog |
 | `/c/[sector]` | Existing sector pages |
 | `/c/[sector]/[subSector]` | Sub-sector pages (Phase 11 Part B) |
@@ -54,7 +54,7 @@ It also targets better SEO keywords. "AI shopping agent" is a more specific and 
 
 ---
 
-## Page 1: The Scanner (`/agent-shopping-readiness-checker`)
+## Page 1: The Scanner (`/agent-shopping-experience-checker`)
 
 ### Layout — Above the Fold
 
@@ -120,7 +120,7 @@ Inspired by: `ahrefs.com/website-authority-checker` and `checkpagerank.net`
 │                                                                   │
 │  1. Enter your domain                                            │
 │  2. We crawl your public-facing store (no login needed)          │
-│  3. Get your Agent Readiness Score (0–100)                       │
+│  3. Get your Agent Shopping Experience Score (0–100)              │
 │  4. See specific recommendations to improve                     │
 │  5. Download a free SKILL.md for your store                     │
 │                                                                   │
@@ -153,11 +153,11 @@ Inspired by: `ahrefs.com/website-authority-checker` and `checkpagerank.net`
   - "Evaluating checkout flow..."
   - "Detecting APIs and MCP endpoints..."
   - "Calculating your score..."
-- **Redirect on complete:** Navigate to `/agent-shopping-readiness-checker/[domain]`
+- **Redirect on complete:** Navigate to `/agent-shopping-experience-checker/[domain]`
 
 ---
 
-## Page 2: Results (`/agent-shopping-readiness-checker/[domain]`)
+## Page 2: Results (`/agent-shopping-experience-checker/[domain]`)
 
 ### Layout — Score Header
 
@@ -172,7 +172,7 @@ Inspired by: `ahrefs.com/website-authority-checker` and `checkpagerank.net`
 │  │                                                          │    │
 │  │  [Logo]  staples.com                                     │    │
 │  │                                                          │    │
-│  │  Agent Shopping Readiness Score                          │    │
+│  │  Agent Shopping Experience Score                          │    │
 │  │                                                          │    │
 │  │        ┌─────────┐                                       │    │
 │  │        │         │                                       │    │
@@ -280,7 +280,7 @@ Inspired by: `ahrefs.com/website-authority-checker` and `checkpagerank.net`
 │  │  ## Overview                                              │    │
 │  │  - Domain: staples.com                                    │    │
 │  │  - Sector: Office Supplies                                │    │
-│  │  - Agent Readiness Score: 67/100                          │    │
+│  │  - Agent Shopping Experience Score: 67/100                 │    │
 │  │  ...                                                      │    │
 │  │  (preview — first 15 lines)                               │    │
 │  └──────────────────────────────────────────────────────────┘    │
@@ -411,16 +411,16 @@ While the scan is running (5–15 seconds), the page shows an animated progress 
 ## SEO & Meta Tags
 
 ```html
-<!-- /agent-shopping-readiness-checker -->
-<title>Agent Shopping Readiness Checker — Can AI Agents Buy From Your Store? | CreditClaw</title>
+<!-- /agent-shopping-experience-checker -->
+<title>Agent Shopping Experience Checker — Can AI Agents Buy From Your Store? | CreditClaw</title>
 <meta name="description" content="Free tool to check how easily AI shopping agents like ChatGPT, Claude, and Gemini can find your products, search your catalog, and complete a purchase. Get your score and actionable recommendations." />
-<meta property="og:title" content="Agent Shopping Readiness Checker | CreditClaw" />
-<meta property="og:description" content="Can AI shopping agents buy from your store? Check your Agent Shopping Readiness Score and see exactly where ChatGPT, Claude, and Gemini struggle with your checkout flow." />
+<meta property="og:title" content="Agent Shopping Experience Checker | CreditClaw" />
+<meta property="og:description" content="Can AI shopping agents buy from your store? Check your Agent Shopping Experience Score — see exactly where ChatGPT, Claude, and Gemini struggle with your catalog and checkout." />
 
-<!-- /agent-shopping-readiness-checker/[domain] -->
-<title>{domain} Agent Shopping Readiness Score: {score}/100 | CreditClaw</title>
-<meta name="description" content="{domain} scored {score}/100 on CreditClaw's Agent Shopping Readiness Checker. See how well AI shopping agents can find, search, and buy from this store." />
-<meta property="og:title" content="{domain} — Agent Shopping Readiness: {score}/100" />
+<!-- /agent-shopping-experience-checker/[domain] -->
+<title>{domain} Agent Shopping Experience Score: {score}/100 | CreditClaw</title>
+<meta name="description" content="{domain} scored {score}/100 on CreditClaw's Agent Shopping Experience Checker. See how well AI shopping agents can find, search, and buy from this store." />
+<meta property="og:title" content="{domain} — Agent Shopping Experience: {score}/100" />
 <meta property="og:description" content="Can AI shopping agents buy from {domain}? Full score breakdown across 8 signals, actionable recommendations, and a free downloadable SKILL.md." />
 ```
 
@@ -430,8 +430,8 @@ While the scan is running (5–15 seconds), the page shows an animated progress 
 
 After getting their score, merchants should want to share it (especially if it's high). Include:
 
-- **Share buttons:** "Share your score" with pre-filled text: "Our store scored {score}/100 on CreditClaw's Agent Shopping Readiness Checker! See how your store compares: {url}"
-- **Embeddable badge:** A small badge merchants can add to their site: "Agent Shopping Ready: {score}/100 — Verified by CreditClaw"
+- **Share buttons:** "Share your score" with pre-filled text: "Our store scored {score}/100 on CreditClaw's Agent Shopping Experience Checker! See how your store compares: {url}"
+- **Embeddable badge:** A small badge merchants can add to their site: "Agent Shopping Experience: {score}/100 — Verified by CreditClaw"
 - **Score image:** Auto-generated OG image showing the score (so link previews look good when shared on social)
 
 ---
@@ -439,7 +439,7 @@ After getting their score, merchants should want to share it (especially if it's
 ## Data Flow
 
 ```
-1. User enters domain on /agent-shopping-readiness-checker
+1. User enters domain on /agent-shopping-experience-checker
 2. POST /api/v1/scan { domain: "staples.com" }
 3. Server crawls public surface (fetch + cheerio, 5-15 seconds)
 4. Server calculates score from 8 weighted signals
@@ -448,7 +448,7 @@ After getting their score, merchants should want to share it (especially if it's
 7. Server saves to:
    - brand_index (upsert — create or update existing record)
    - scan_history (new row — preserves historical scores)
-8. Redirect to /agent-shopping-readiness-checker/staples.com
+8. Redirect to /agent-shopping-experience-checker/staples.com
 9. Results page reads from brand_index + scan_history
 10. Comparison table shown if a comparable brand was found
 11. SKILL.md available for download

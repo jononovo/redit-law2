@@ -1,8 +1,8 @@
-# CreditClaw Agent Shopping Readiness & Product Index Service
+# CreditClaw Agent Shopping Experience & Product Index Service
 
 ## Vision
 
-A three-tier service that turns any merchant domain into an AI-shopping-agent-ready storefront. Starting with a free Agent Shopping Readiness scan and auto-generated skill file, scaling up to a premium browser-controlled deep audit, and culminating in a full product index with catalog enrichment, cross-vendor search, and distribution to Shopify's Catalog MCP, Google's Universal Commerce Protocol (UCP), and CreditClaw's own agent search index.
+A three-tier service that turns any merchant domain into an AI-shopping-agent-ready storefront. Starting with a free Agent Shopping Experience scan and auto-generated skill file, scaling up to a premium browser-controlled deep audit, and culminating in a full product index with catalog enrichment, cross-vendor search, and distribution to Shopify's Catalog MCP, Google's Universal Commerce Protocol (UCP), and CreditClaw's own agent search index.
 
 All generated skill files follow the **shopy.sh** commerce skill standard — CreditClaw's open specification for teaching AI agents how to shop. Built on top of Vercel's SKILL.md format (skills.sh), shopy.sh extends it with commerce-specific metadata: vendor identity, taxonomy, AXS ratings, API access tiers, checkout capabilities, and distribution status. See `shopy-sh-commerce-skill-standard.md` for the full spec.
 
@@ -13,13 +13,13 @@ All generated skill files follow the **shopy.sh** commerce skill standard — Cr
 | `product-index-taxonomy-plan.md` | Google Product Taxonomy adoption, UCP category model, product index schema |
 | `agent-readiness-and-product-index-service.md` | This document — three service tiers, agent gateway, implementation roadmap |
 | `shopy-sh-commerce-skill-standard.md` | The shopy.sh open standard — commerce SKILL.md format, frontmatter schema, catalog, CLI |
-| `scan-page-ux-design.md` | Page UX for `/agent-shopping-readiness-checker` — layout, results page, URL structure, SEO meta tags |
+| `scan-page-ux-design.md` | Page UX for `/agent-shopping-experience-checker` — layout, results page, URL structure, SEO meta tags |
 
 ---
 
 ## Service Tiers
 
-### Tier 1: Free Agent Readiness Scan + Auto-Generated Skill
+### Tier 1: Free Agent Shopping Experience Scan + Auto-Generated Skill
 
 **What the user does:** Enters a domain (e.g. `staples.com`) on a public CreditClaw page.
 
@@ -34,7 +34,7 @@ All generated skill files follow the **shopy.sh** commerce skill standard — Cr
    - Detect checkout flow entry points (add-to-cart buttons, cart pages)
    - Check for bot-blocking signals (Cloudflare challenge pages, CAPTCHAs on landing)
 
-2. **Agent Readiness Score (0–100)**
+2. **Agent Shopping Experience Score (0–100)**
 
    | Signal | Weight | What We Check |
    |---|---|---|
@@ -59,7 +59,7 @@ All generated skill files follow the **shopy.sh** commerce skill standard — Cr
    ## Overview
    - Domain: {domain}
    - Sector: {detected_sector}
-   - Agent Readiness Score: {score}/100
+   - Agent Shopping Experience Score: {score}/100
    
    ## Product Discovery
    - Search URL: {search_url_pattern}
@@ -75,7 +75,7 @@ All generated skill files follow the **shopy.sh** commerce skill standard — Cr
    - {list of detected issues}
    
    ## Recommendations
-   - {actionable advice to improve agent readiness}
+   - {actionable advice to improve agent shopping experience}
    ```
 
 4. **Save & Benchmark**
@@ -91,7 +91,7 @@ All generated skill files follow the **shopy.sh** commerce skill standard — Cr
    - If no comparable brand exists in the database for this sector, skip the comparison — no empty state
    - This is purely domain-level signal comparison using existing scan data — no additional crawling of the comparison brand
 
-**Page:** `/agent-shopping-readiness-checker` — public, no auth required. Form with domain input. Results page at `/agent-shopping-readiness-checker/[domain]`. See `scan-page-ux-design.md` for full UX spec.
+**Page:** `/agent-shopping-experience-checker` — public, no auth required. Form with domain input. Results page at `/agent-shopping-experience-checker/[domain]`. See `scan-page-ux-design.md` for full UX spec.
 
 **Tech stack:** Server-side fetch + cheerio for HTML parsing. No browser automation needed.
 
@@ -457,7 +457,7 @@ During the Tier 3 onboarding of a new vendor, we perform a deep API analysis:
 
 ### Recommendations Engine
 
-After analysis, the scan generates vendor-specific recommendations — both for the merchant (to improve agent-readiness) and for CreditClaw's internal routing config.
+After analysis, the scan generates vendor-specific recommendations — both for the merchant (to improve their agent shopping experience) and for CreditClaw's internal routing config.
 
 **Merchant-Facing Recommendations (included in SKILL.md and scan report):**
 
@@ -470,7 +470,7 @@ After analysis, the scan generates vendor-specific recommendations — both for 
 - Checkout: No API — redirect to website only
 - Data Freshness: Prices updated every 4 hours
 
-### Recommendations to Improve Agent Readiness
+### Recommendations to Improve Agent Shopping Experience
 1. **Expose a public product search endpoint.** Even a read-only, rate-limited 
    search API would allow agents to find products without partnership agreements.
    Estimated score impact: +15 points.
@@ -836,9 +836,9 @@ CREATE TABLE ucp_submissions (
 
 | Route | Purpose | Auth |
 |---|---|---|
-| `/agent-shopping-readiness-checker` | Domain input form + explainer (see `scan-page-ux-design.md`) | Public |
-| `/agent-shopping-readiness-checker/[domain]` | Scan results + score + comparison + downloadable SKILL.md | Public |
-| `/agent-shopping-readiness-checker/[domain]/history` | Score trend over time | Public |
+| `/agent-shopping-experience-checker` | Domain input form + explainer (see `scan-page-ux-design.md`) | Public |
+| `/agent-shopping-experience-checker/[domain]` | Scan results + score + comparison + downloadable SKILL.md | Public |
+| `/agent-shopping-experience-checker/[domain]/history` | Score trend over time | Public |
 | `/dashboard/scans` | Manage your scanned domains (owner) | Auth |
 | `/dashboard/scans/[domain]/upgrade` | Purchase premium scan | Auth |
 | `/dashboard/index` | View your product index status (Tier 3) | Auth |
@@ -882,12 +882,12 @@ The free scan is the door. The enrichment and distribution is the value.
 ## Implementation Roadmap
 
 ### Phase 1: Free Scan MVP (Tier 1)
-- Build `/agent-shopping-readiness-checker` page with domain input
+- Build `/agent-shopping-experience-checker` page with domain input
 - Server-side crawl using fetch + cheerio
 - Score calculation engine (8 weighted signals)
 - SKILL.md template + generation with LLM
 - Save results to `brand_index` + `scan_history`
-- Public results page at `/agent-shopping-readiness-checker/[domain]`
+- Public results page at `/agent-shopping-experience-checker/[domain]`
 - Brand comparison: find one comparable brand in same sector, show side-by-side signal table
 
 ### Phase 2: Score Benchmarking
@@ -960,7 +960,7 @@ The free scan is the door. The enrichment and distribution is the value.
 **What CreditClaw builds:**
 - The **universal bridge** between any merchant (Shopify or not) and every agent discovery platform
 - A **persistent, categorized product index** mapped to Google's taxonomy
-- An **agent readiness scoring system** that creates a quality signal for the ecosystem
+- An **agent shopping experience scoring system** that creates a quality signal for the ecosystem
 - The **SKILL.md standard** — a portable file that any agent can read to learn how to shop at a vendor
 - An **agent gateway** that eliminates the need for individual agents to negotiate API access with vendors — one key, one format, every vendor
 
