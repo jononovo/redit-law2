@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth/session";
 import { storage } from "@/server/storage";
 import { insertShippingAddressSchema } from "@/shared/schema";
+import { pushShippingFileToBots } from "@/lib/shipping/push-shipping-to-bots";
 
 export async function GET(request: NextRequest) {
   try {
@@ -32,6 +33,11 @@ export async function POST(request: NextRequest) {
     }
 
     const address = await storage.createShippingAddress(parsed.data);
+
+    pushShippingFileToBots(user.uid).catch((err) =>
+      console.error("[shipping-addresses/POST] Failed to push shipping file:", err)
+    );
+
     return NextResponse.json({ address }, { status: 201 });
   } catch (error) {
     console.error("POST /api/v1/shipping-addresses error:", error);

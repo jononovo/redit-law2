@@ -81,7 +81,8 @@ export function DeliveryResult({
 
   function handleRedownload() {
     if (!storedFileContent) return;
-    downloadEncryptedFile(storedFileContent, `Card-${cardName.replace(/[^a-zA-Z0-9-]/g, "")}-${cardLast4}.md`);
+    const baseName = `Card-${cardName.replace(/[^a-zA-Z0-9-]/g, "")}-${cardLast4}`;
+    downloadEncryptedFile(storedFileContent, `${baseName}.md`);
   }
 
   const botDisplayName = bots.find(b => b.bot_id === selectedBotId)?.bot_name || selectedBotId;

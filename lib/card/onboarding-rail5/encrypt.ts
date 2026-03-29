@@ -49,11 +49,25 @@ export async function encryptCardDetails(cardData: CardData): Promise<Encryption
   return { keyHex, ivHex, tagHex, ciphertextBytes };
 }
 
+export interface CardFileMetadata {
+  bin: string;
+  expMonth: string;
+  expYear: string;
+  cardholderName: string;
+  brand: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  zip?: string;
+  country?: string;
+}
+
 export function buildEncryptedCardFile(
   ciphertextBytes: Uint8Array,
   cardName: string,
   cardLast4: string,
   cardId: string,
+  meta?: CardFileMetadata,
 ): string {
   const b64 = btoa(String.fromCharCode(...ciphertextBytes));
   const lines = [
@@ -64,6 +78,29 @@ export function buildEncryptedCardFile(
     "This file contains your encrypted card details for Rail 5 sub-agent checkout.",
     "Do not edit or share this file. Place it in your bot's `.creditclaw/cards/` folder.",
     "",
+  ];
+
+  if (meta) {
+    lines.push(
+      "## Card Details",
+      "",
+      `- **First 4 Digits:** ${meta.bin}`,
+      `- **Expiry:** ${meta.expMonth.padStart(2, "0")}/${meta.expYear}`,
+      `- **Cardholder Name:** ${meta.cardholderName}`,
+      `- **Brand:** ${meta.brand}`,
+      "",
+      "## Billing Address",
+      "",
+      `- **Street:** ${meta.address || ""}`,
+      `- **City:** ${meta.city || ""}`,
+      `- **State:** ${meta.state || ""}`,
+      `- **ZIP:** ${meta.zip || ""}`,
+      `- **Country:** ${meta.country || "US"}`,
+      "",
+    );
+  }
+
+  lines.push(
     "## Quick Start",
     "",
     "1. Save this file to `.creditclaw/cards/`",
@@ -71,6 +108,12 @@ export function buildEncryptedCardFile(
     "3. Use the decrypt script below to extract card details when needed",
     "",
     "Full docs: https://creditclaw.com/skill.md#rail-5",
+    "",
+    "## Encrypted Card Data",
+    "",
+    "ENCRYPTED_CARD_START",
+    b64,
+    "ENCRYPTED_CARD_END",
     "",
     "## Decrypt Script",
     "",
@@ -94,13 +137,7 @@ export function buildEncryptedCardFile(
     "process.stdout.write(plain);",
     "DECRYPT_SCRIPT_END",
     "",
-    "## Encrypted Card Data",
-    "",
-    "ENCRYPTED_CARD_START",
-    b64,
-    "ENCRYPTED_CARD_END",
-    "",
-  ];
+  );
   return lines.join("\n");
 }
 

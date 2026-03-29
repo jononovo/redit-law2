@@ -66,6 +66,11 @@ New features should follow a feature-first folder structure. Each rail lives und
 - Types: `WebhookEventType`, `RailsUpdatedAction`.
 - Storage layer lives separately at `server/storage/webhooks.ts`.
 
+**Companion & Shipping Files** (bot checkout support):
+- **Merged Card File with Metadata** (`lib/card/onboarding-rail5/encrypt.ts`): During Rail 5 card onboarding, the encrypted card file includes plaintext "Card Details" and "Billing Address" sections above the encrypted blob. Contains non-sensitive metadata (first 4 digits, expiry, cardholder name, brand) and billing address. Bots read these sections to fill checkout form fields without decrypting. Single file — no separate companion file. Non-sensitive metadata is also saved to the `rail5_cards` DB table (`cardFirst4`, `expMonth`, `expYear`, `cardholderName`, `billingAddress`, `billingCity`, `billingState`, `billingZip`, `billingCountry`) for pre-filling future cards.
+- **Shipping File** (`lib/shipping/`): A central `.creditclaw/shipping.md` file shared across all cards. Generated from the `shipping_addresses` DB table. Auto-pushed to all owner's bots whenever addresses are created, updated, deleted, or default is changed. Bots can also fetch on demand via `GET /api/v1/bot/shipping-addresses`. Default address is marked for bot use at checkout.
+- Webhook event: `shipping.addresses.updated` (registered in `WebhookEventType`).
+
 **Bot Messaging System** (`lib/agent-management/bot-messaging/`):
 - `index.ts` — `sendToBot(botId, eventType, payload, options?)`: single function for all bot communication. Routes based on webhook health: tries webhook if status is `active` or `degraded`, skips webhook and goes straight to pending message if `unreachable` or `none`.
 - `expiry.ts` — per-event-type expiry config (`rail5.card.delivered` = 24h, general = 7 days).

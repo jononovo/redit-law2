@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth/session";
 import { storage } from "@/server/storage";
+import { pushShippingFileToBots } from "@/lib/shipping/push-shipping-to-bots";
 import { z } from "zod";
 
 const updateShippingAddressSchema = z.object({
@@ -46,6 +47,11 @@ export async function PATCH(
     }
 
     const address = await storage.updateShippingAddress(addressId, { ...parsed.data, ownerUid: user.uid });
+
+    pushShippingFileToBots(user.uid).catch((err) =>
+      console.error("[shipping-addresses/PATCH] Failed to push shipping file:", err)
+    );
+
     return NextResponse.json({ address });
   } catch (error) {
     console.error("PATCH /api/v1/shipping-addresses/[id] error:", error);
@@ -76,6 +82,11 @@ export async function DELETE(
     }
 
     await storage.deleteShippingAddress(addressId);
+
+    pushShippingFileToBots(user.uid).catch((err) =>
+      console.error("[shipping-addresses/DELETE] Failed to push shipping file:", err)
+    );
+
     return NextResponse.json({ ok: true });
   } catch (error) {
     console.error("DELETE /api/v1/shipping-addresses/[id] error:", error);

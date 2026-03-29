@@ -1,0 +1,374 @@
+# Task #11: Plaintext Companion File for Rail 5 Card Onboarding
+
+## Why We Built This
+
+### The Problem
+
+When a user onboards a card through CreditClaw's Rail 5 flow, the card details are AES-256-GCM encrypted and saved as a `.md` file. Bots receive this file and store it in `.creditclaw/cards/`. At checkout time, the bot must request a decryption key from the CreditClaw API to extract the full card number and CVV.
+
+However, checkout forms also require **non-sensitive** fields — expiry month/year dropdowns, cardholder name, card brand, and the full billing address. Triggering the full decryption flow just to read these fields is wasteful and adds latency. The decryption key is rate-limited, logged, and subject to human-approval policies, so using it for non-sensitive data creates unnecessary friction.
+
+### The Solution
+
+We introduced a **plaintext companion file** that sits alongside the encrypted card file. It contains only non-sensitive card metadata and the billing address — everything a bot needs to pre-fill checkout form fields without ever touching the decryption flow.
+
+### What Counts as "Non-Sensitive" Here
+
+- **BIN / first 4 digits** — These identify the issuing bank and card type. They are not sufficient to make a transaction and are commonly visible on receipts and statements.
+- **Expiry date** — Required for checkout forms but not useful on its own.
+- **Cardholder name** — Publicly visible on the physical card.
+- **Card brand** — Visa, Mastercard, Amex, etc. Derived from the card number prefix.
+- **Billing address** — PII, but intentionally included because bots need it for billing address fields at checkout. This is a deliberate design decision.
+
+**NOT included:** Full card number, CVV/CVC, or decryption keys.
+
+---
+
+## Architecture Overview
+
+The companion file feature touches 4 files across 3 layers:
+
+```
+lib/card/onboarding-rail5/encrypt.ts          ← Data model + file generation
+components/onboarding/rail5-wizard/use-rail5-wizard.ts  ← Frontend orchestration
+app/api/v1/rail5/deliver-to-bot/route.ts      ← API delivery route
+lib/agent-management/bot-messaging/templates/rail5-card-delivered.ts  ← Bot instructions
+```
+
+No database schema changes were needed. No new API routes were created.
+
+---
+
+## Detailed Implementation
+
+### 1. Data Model & File Generator (`lib/card/onboarding-rail5/encrypt.ts`)
+
+#### New Interface: `CompanionCardData`
+
+Added at line 107, after the existing `EncryptionResult` interface:
+
+```typescript
+export interface CompanionCardData {
+  cardId: string;
+  bin: string;          // First 4 digits of the card number
+  expMonth: string;     // "1" through "12"
+  expYear: string;      // "2025", "2026", etc.
+  cardholderName: string;
+  brand: string;        // "visa", "mastercard", "amex", "discover", "unknown"
+  address?: string;     // Street address line
+  city?: string;
+  state?: string;
+  zip?: string;
+  country?: string;     // ISO country code, e.g. "US"
+}
+```
+
+#### New Function: `buildCardCompanionFile(data: CompanionCardData): string`
+
+Added at line 121. Generates a markdown-formatted plaintext file:
+
+```typescript
+export function buildCardCompanionFile(data: CompanionCardData): string {
+  const lines = [
+    `# Card Details — ${data.cardholderName}`,
+    "",
+    "## Card Info",
+    "",
+    `- **Card ID:** ${data.cardId}`,
+    `- **First 4 Digits (BIN):** ${data.bin}`,
+    `- **Expiry:** ${data.expMonth.padStart(2, "0")}/${data.expYear}`,
+    `- **Cardholder Name:** ${data.cardholderName}`,
+    `- **Brand:** ${data.brand}`,
+    "",
+    "## Billing Address",
+    "",
+    `- **Street:** ${data.address || ""}`,
+    `- **City:** ${data.city || ""}`,
+    `- **State:** ${data.state || ""}`,
+    `- **ZIP:** ${data.zip || ""}`,
+    `- **Country:** ${data.country || ""}`,
+    "",
+  ];
+  return lines.join("\n");
+}
+```
+
+**Key design decisions:**
+- Markdown format matches the existing encrypted card file format for consistency.
+- Empty strings are used as defaults for optional address fields (not "N/A" or omitted lines) so bots can parse the file with a consistent structure.
+- The expiry month is zero-padded (`"1"` → `"01"`) to match how checkout forms typically expect it.
+
+#### What Already Existed (unchanged)
+
+- `CardData` interface — The raw card data input for encryption.
+- `encryptCardDetails()` — AES-256-GCM encryption function.
+- `buildEncryptedCardFile()` — Generates the encrypted `.md` file with embedded ciphertext and decrypt script.
+- `downloadEncryptedFile()` — Browser-side file download helper using Blob + anchor element.
+
+The `downloadEncryptedFile()` function is reused for both the encrypted file and the companion file download.
+
+---
+
+### 2. Frontend Orchestration (`components/onboarding/rail5-wizard/use-rail5-wizard.ts`)
+
+#### Import Change (line 6)
+
+Added `buildCardCompanionFile` to the existing import:
+
+```typescript
+import {
+  encryptCardDetails,
+  buildEncryptedCardFile,
+  buildCardCompanionFile,   // ← NEW
+  downloadEncryptedFile
+} from "@/lib/card/onboarding-rail5/encrypt";
+```
+
+#### Changes to `handleEncryptAndDownload()` (lines 169–293)
+
+This is the main function that runs when the user clicks "Encrypt & Download" on step 6 of the wizard. The changes are integrated into the existing flow at three points:
+
+**A. Generate companion content (lines 212–224)**
+
+After building the encrypted file content, immediately generate the companion file:
+
+```typescript
+const companionMd = buildCardCompanionFile({
+  cardId,
+  bin: cleanNumber.slice(0, 4),    // First 4 digits from the raw card number
+  expMonth: expMonth,
+  expYear: expYear,
+  cardholderName: holderName,
+  brand: cardBrand,                 // From detectCardBrand() + brandToApiValue()
+  address,
+  city,
+  state,
+  zip,
+  country,
+});
+```
+
+**B. Include companion in bot delivery payload (lines 241–242)**
+
+When delivering to a linked bot, the companion file content and suggested path are added to the existing payload:
+
+```typescript
+payload: {
+  card_id: cardId,
+  card_name: cardName,
+  card_last4: cardLast4,
+  file_content: md,
+  suggested_path: `.creditclaw/cards/${cardId}.md`,
+  companion_file_content: companionMd,                        // ← NEW
+  companion_suggested_path: `.creditclaw/cards/${cardId}-details.md`,  // ← NEW
+  instructions: RAIL5_CARD_DELIVERED,
+},
+```
+
+**C. Download companion file with delay (lines 258–261)**
+
+After downloading the encrypted file, wait 500ms, then download the companion file:
+
+```typescript
+const baseName = `Card-${cardName.replace(/[^a-zA-Z0-9-]/g, "")}-${cardLast4}`;
+downloadEncryptedFile(md, `${baseName}.md`);
+await new Promise(resolve => setTimeout(resolve, 500));       // ← 500ms delay
+downloadEncryptedFile(companionMd, `${baseName}-details.md`); // ← NEW
+```
+
+**Why the 500ms delay?** Browsers treat rapid successive download triggers as popup spam and block the second one. A 500ms gap between downloads reliably avoids this across Chrome, Firefox, and Safari. We tested with 200ms (blocked on some browsers) and 1000ms (unnecessary wait). 500ms was the sweet spot.
+
+**File naming convention:**
+- Encrypted file: `Card-MyCardName-1234.md`
+- Companion file: `Card-MyCardName-1234-details.md`
+
+The `-details` suffix distinguishes the companion file. Both files use the same sanitized card name and last-4 digits for easy pairing.
+
+---
+
+### 3. API Delivery Route (`app/api/v1/rail5/deliver-to-bot/route.ts`)
+
+#### Schema Update (lines 8–17)
+
+Added two optional fields to the Zod validation schema:
+
+```typescript
+const deliverSchema = z.object({
+  card_id: z.string().min(1),
+  bot_id: z.string().min(1),
+  file_content: z.string().min(1).optional(),
+  encrypted_file_content: z.string().min(1).optional(),
+  companion_file_content: z.string().min(1).optional(),       // ← NEW
+  companion_suggested_path: z.string().min(1).optional(),     // ← NEW
+}).refine(data => data.file_content || data.encrypted_file_content, {
+  message: "Either file_content or encrypted_file_content is required",
+});
+```
+
+Both fields are optional because:
+- Backward compatibility: Existing callers that don't send companion data still work.
+- The companion file is generated client-side; this route just forwards it.
+
+#### Destructuring Update (line 40)
+
+Added the new fields to the destructured parsed data:
+
+```typescript
+const { card_id, bot_id, companion_file_content, companion_suggested_path } = parsed.data;
+```
+
+#### Webhook Payload Update (lines 74–92)
+
+The companion fields are conditionally included in the webhook payload sent to the bot's callback URL:
+
+```typescript
+const payload = {
+  event: "rail5.card.delivered" as const,
+  timestamp: new Date().toISOString(),
+  bot_id: bot.botId,
+  data: {
+    card_id,
+    card_name: card.cardName,
+    card_last4: card.cardLast4,
+    file_content,
+    suggested_path: `.creditclaw/cards/Card-${card.cardName.replace(/[^a-zA-Z0-9-]/g, "")}-${card.cardLast4}.md`,
+    ...(companion_file_content && { companion_file_content }),
+    ...(companion_suggested_path
+      ? { companion_suggested_path }
+      : companion_file_content
+        ? { companion_suggested_path: `.creditclaw/cards/${card_id}-details.md` }
+        : {}),
+    instructions: RAIL5_CARD_DELIVERED,
+  },
+};
+```
+
+**Fallback logic for `companion_suggested_path`:**
+1. If the caller provides an explicit path → use it.
+2. If companion content exists but no path → default to `.creditclaw/cards/{card_id}-details.md`.
+3. If no companion content at all → omit the path field entirely.
+
+This ensures the bot always knows where to save the companion file when one is provided.
+
+---
+
+### 4. Bot Instruction Template (`lib/agent-management/bot-messaging/templates/rail5-card-delivered.ts`)
+
+Updated the instruction text that gets sent to bots alongside the card delivery:
+
+```typescript
+export const RAIL5_CARD_DELIVERED = `Check for your encrypted card file:
+GET https://creditclaw.com/api/v1/bot/messages
+with your CreditClaw API key.
+Save the card file to .creditclaw/cards/
+
+You will also receive a companion details file alongside the encrypted card file.
+Save the companion file to the path specified in companion_suggested_path (e.g. .creditclaw/cards/{card_id}-details.md).
+The companion file contains non-sensitive card info (BIN, expiry, cardholder name, brand) and the full billing address.
+Use these details to fill checkout form fields like expiry dropdowns and billing address without decrypting the card file.
+
+Once saved, confirm delivery:
+POST https://creditclaw.com/api/v1/bot/rail5/confirm-delivery
+with your CreditClaw API key.`;
+```
+
+The new paragraph (lines 6–9 of the template) tells the bot:
+1. A companion file exists alongside the encrypted file.
+2. Where to save it (using `companion_suggested_path` from the webhook payload).
+3. What it contains (BIN, expiry, name, brand, billing address).
+4. How to use it (fill checkout fields without triggering decryption).
+
+---
+
+## File Path Conventions
+
+| File | Suggested Path | Naming Pattern |
+|------|---------------|----------------|
+| Encrypted card | `.creditclaw/cards/{cardId}.md` (wizard) or `.creditclaw/cards/Card-{name}-{last4}.md` (deliver-to-bot route) | Contains ciphertext + decrypt script |
+| Companion file | `.creditclaw/cards/{cardId}-details.md` | Contains plaintext card metadata + billing address |
+
+**Note:** There is a pre-existing inconsistency in the encrypted file's suggested path between the wizard flow and the deliver-to-bot route. This was out of scope for this task and left unchanged.
+
+---
+
+## What Was NOT Changed
+
+- **Encrypted card file format** — The AES-256-GCM encrypted `.md` file structure is identical.
+- **Decryption flow** — The decrypt script embedded in the encrypted file, and the key delivery API, are unchanged.
+- **OpenClaw plugin** (`public/Plugins/OpenClaw/`) — The bot-side plugin that handles decryption was not modified. It already handles the encrypted file; the companion file is a separate, simpler file that bots read directly.
+- **Database schema** — No new tables or columns. The companion file is ephemeral (generated client-side, forwarded via webhook, downloaded by user).
+- **Existing API routes** — No new routes were created. Only the existing `deliver-to-bot` route was extended with optional fields.
+
+---
+
+## How a Bot Receives and Uses the Companion File
+
+### Via Webhook (automatic delivery)
+
+When the user has a bot linked, the webhook payload at the bot's callback URL now includes:
+
+```json
+{
+  "event": "rail5.card.delivered",
+  "timestamp": "2026-03-25T12:00:00.000Z",
+  "bot_id": "bot_abc123",
+  "data": {
+    "card_id": "card_xyz789",
+    "card_name": "Shopping Card",
+    "card_last4": "4242",
+    "file_content": "# CreditClaw Encrypted Card — ...",
+    "suggested_path": ".creditclaw/cards/Card-Shopping-Card-4242.md",
+    "companion_file_content": "# Card Details — John Doe\n\n## Card Info\n...",
+    "companion_suggested_path": ".creditclaw/cards/card_xyz789-details.md",
+    "instructions": "Check for your encrypted card file: ..."
+  }
+}
+```
+
+The bot should:
+1. Save `file_content` to `suggested_path` (encrypted card).
+2. Save `companion_file_content` to `companion_suggested_path` (companion details).
+3. At checkout, read the companion file for expiry, name, brand, and billing address.
+4. Only trigger decryption (via CreditClaw API) when the full card number or CVV is needed.
+
+### Via Manual Download (fallback)
+
+The user's browser downloads two files:
+1. `Card-ShoppingCard-4242.md` — Encrypted card file.
+2. `Card-ShoppingCard-4242-details.md` — Companion details file.
+
+The user manually places both files in the bot's `.creditclaw/cards/` directory.
+
+---
+
+## Example Companion File Output
+
+```markdown
+# Card Details — John Doe
+
+## Card Info
+
+- **Card ID:** card_xyz789
+- **First 4 Digits (BIN):** 4242
+- **Expiry:** 03/2027
+- **Cardholder Name:** John Doe
+- **Brand:** visa
+
+## Billing Address
+
+- **Street:** 123 Main St
+- **City:** San Francisco
+- **State:** CA
+- **ZIP:** 94102
+- **Country:** US
+```
+
+---
+
+## Testing Considerations
+
+- Verify both files download in the browser without popup blocking (the 500ms delay is critical).
+- Verify the companion file content matches the card details entered in the wizard.
+- Verify the webhook payload includes `companion_file_content` and `companion_suggested_path` when a bot is linked.
+- Verify the deliver-to-bot API route still works without companion fields (backward compatibility).
+- Verify empty address fields render as empty strings, not "undefined" or "null".
