@@ -12,7 +12,8 @@ All generated skill files follow the **shopy.sh** commerce skill standard — Cr
 |---|---|
 | `product-index-taxonomy-plan.md` | Google Product Taxonomy adoption, UCP category model, product index schema |
 | `agent-readiness-and-product-index-service.md` | This document — three service tiers, agent gateway, implementation roadmap |
-| `shopy-sh-commerce-skill-standard.md` | The shopy.sh open standard — frontmatter schema, skill body structure, catalog, CLI |
+| `shopy-sh-commerce-skill-standard.md` | The shopy.sh open standard — commerce SKILL.md format, frontmatter schema, catalog, CLI |
+| `scan-page-ux-design.md` | Page UX for `/agent-readiness-checker` — layout, results page, URL structure, SEO meta tags |
 
 ---
 
