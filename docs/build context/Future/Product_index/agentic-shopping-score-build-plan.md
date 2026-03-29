@@ -4,11 +4,11 @@
 
 | Document | What It Covers |
 |---|---|
-| `agent-readiness-and-product-index-service.md` | Full service vision, three tiers, gateway, schema |
+| `agentic-commerce-standard.md` | **Master standard** — metadata format, ASX Score pillars/signals/weights, AXS Rating algorithm |
+| `creditclaw-agentic-commerce-strategy.md` | Go-to-market strategy, service tiers, revenue model, competitive positioning |
+| `agent-readiness-and-product-index-service.md` | Three-tier service technical details, agent gateway |
 | `scan-page-ux-design.md` | Page layouts, UX wireframes, SEO meta tags |
 | `product-index-taxonomy-plan.md` | Google Product Taxonomy adoption |
-| `shopy-sh-commerce-skill-standard.md` | shopy.sh SKILL.md commerce format |
-| `agentic-shopping-score-build-plan.md` | This document — technical implementation plan for Tier 1 |
 
 ---
 

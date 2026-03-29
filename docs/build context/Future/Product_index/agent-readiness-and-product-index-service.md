@@ -4,16 +4,17 @@
 
 A three-tier service that turns any merchant domain into an AI-shopping-agent-ready storefront. Starting with a free Agent Shopping Experience scan and auto-generated skill file, scaling up to a premium browser-controlled deep audit, and culminating in a full product index with catalog enrichment, cross-vendor search, and distribution to Shopify's Catalog MCP, Google's Universal Commerce Protocol (UCP), and CreditClaw's own agent search index.
 
-All generated skill files follow the **shopy.sh** commerce skill standard — CreditClaw's open specification for teaching AI agents how to shop. Built on top of Vercel's SKILL.md format (skills.sh), shopy.sh extends it with commerce-specific metadata: vendor identity, taxonomy, AXS ratings, API access tiers, checkout capabilities, and distribution status. See `shopy-sh-commerce-skill-standard.md` for the full spec.
+All generated skill files follow the agentic commerce metadata standard — an open specification for teaching AI agents how to shop. Built on top of Vercel's SKILL.md format (skills.sh), it extends it with commerce-specific metadata: vendor identity, taxonomy, ASX Score, AXS Rating, API access tiers, checkout capabilities, and distribution status. See `agentic-commerce-standard.md` for the full metadata format, scoring pillars, signal weights, and feedback algorithm.
 
 ### Related Documents
 
 | Document | What It Covers |
 |---|---|
+| `agentic-commerce-standard.md` | **Master standard** — metadata format, ASX Score pillars/signals/weights, AXS Rating algorithm |
+| `creditclaw-agentic-commerce-strategy.md` | Go-to-market strategy, service tiers, revenue model, competitive positioning |
 | `product-index-taxonomy-plan.md` | Google Product Taxonomy adoption, UCP category model, product index schema |
-| `agent-readiness-and-product-index-service.md` | This document — three service tiers, agent gateway, implementation roadmap |
-| `shopy-sh-commerce-skill-standard.md` | The shopy.sh open standard — commerce SKILL.md format, frontmatter schema, catalog, CLI |
-| `scan-page-ux-design.md` | Page UX for `/agentic-shopping-score` — layout, results page, URL structure, SEO meta tags |
+| `agentic-shopping-score-build-plan.md` | Technical build plan for Tier 1 scanner |
+| `scan-page-ux-design.md` | Page UX for `/agentic-shopping-score` |
 
 ---
 
@@ -34,18 +35,9 @@ All generated skill files follow the **shopy.sh** commerce skill standard — Cr
    - Detect checkout flow entry points (add-to-cart buttons, cart pages)
    - Check for bot-blocking signals (Cloudflare challenge pages, CAPTCHAs on landing)
 
-2. **Agent Shopping Experience Score (0–100)**
+2. **Agent Shopping Experience Score (ASX Score, 0–100)**
 
-   | Signal | Weight | What We Check |
-   |---|---|---|
-   | Structured Product Data | 20 | JSON-LD Product schema, Open Graph tags, meta tags |
-   | Sitemap Quality | 10 | sitemap.xml exists, lists product URLs, is parseable |
-   | Search Functionality | 15 | Site search exists, returns structured results, supports query params |
-   | Cart/Checkout Accessibility | 15 | Add-to-cart works without JS-heavy SPA, checkout URL is predictable |
-   | API Availability | 15 | Public REST/GraphQL API, documented endpoints |
-   | Bot Friendliness | 10 | No aggressive bot blocking, reasonable rate limits, robots.txt allows crawl |
-   | Mobile/Responsive | 5 | Responsive design (agents often use headless viewports) |
-   | MCP/UCP Support | 10 | Shopify MCP endpoint, UCP integration, A2A protocol support |
+   Scored across 8 signals grouped into three pillars: Clarity (35pts), Speed (40pts), Reliability (25pts). See `agentic-commerce-standard.md` Part 2 for the full signal breakdown, weights, and scoring methodology.
 
 3. **Auto-Generated SKILL.md**
    - A markdown file the merchant can place at their domain root (e.g. `staples.com/SKILL.md`)

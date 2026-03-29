@@ -1050,11 +1050,11 @@ The `/skills` page no longer generates distinct `<title>` for `?sector=` params.
 
 ---
 
-## Part B: Feedback Loop (from source spec)
+## Part B: Feedback Loop
 
-### Source document
+### Standard reference
 
-The full technical spec is in `docs/build context/Future/skill-feedback-loop(1).md`. This section summarizes the key implementation steps.
+The feedback dimensions, aggregation algorithm, source/recency weighting, and minimum threshold are defined in `agentic-commerce-standard.md` Part 2 (AXS Rating section). This section covers the **implementation steps** for building the feedback system in the CreditClaw codebase.
 
 ### Step B1: `brand_feedback` table — schema + migration
 
@@ -1241,15 +1241,11 @@ A function (callable via API route or cron) that:
 
 1. Pulls all feedback rows from the last 90 days per brand
 2. Applies recency weighting (this week = full weight, 2 months ago = reduced)
-3. Applies source weighting:
-   - Authenticated agent: 1.0
-   - Anonymous agent: 0.5
-   - Human: 2.0
-4. Computes weighted average for each sub-rating
-5. `rating_overall` = average of three sub-ratings
-6. `rating_count` = raw count of feedback events
-7. Only writes non-null ratings when count >= 5 weighted events
-8. Updates `brand_index` row
+3. Applies source weighting and computes weighted averages (see `agentic-commerce-standard.md` for exact weights)
+4. `rating_overall` = average of three sub-ratings
+5. `rating_count` = raw count of feedback events
+6. Only writes non-null ratings when total weight >= 5
+7. Updates `brand_index` row
 
 **Create:** `app/api/internal/feedback/aggregate/route.ts`
 

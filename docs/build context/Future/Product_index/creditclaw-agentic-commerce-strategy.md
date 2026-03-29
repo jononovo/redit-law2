@@ -1,320 +1,231 @@
-# CreditClaw — Agentic Commerce Strategy & Standards Vision
+# CreditClaw — Agentic Commerce Go-to-Market Strategy
 
-## Purpose of This Document
+## What This Document Is
 
-This is the master strategic document for CreditClaw's positioning in the agentic commerce ecosystem. It defines CreditClaw's two primary standards contributions — the **ASX Score** and the **Agentic Procurement Metadata Standard** — and explains how CreditClaw's products and services connect to a broader vision of making every online store shoppable by AI agents.
+This is CreditClaw's commercial strategy for bringing the agentic commerce standards to market. It describes how CreditClaw delivers the standards defined in `agentic-commerce-standard.md` through products and services on creditclaw.com and shopy.sh.
 
-All tactical implementation plans, UX specs, and technical details live in sub-documents. This document is the "why" and "what"; those documents are the "how."
+For the standards themselves (metadata format, ASX Score, AXS Rating), see `agentic-commerce-standard.md`.
 
-### Sub-Documents
+### Related Documents
 
 | Document | What It Covers |
 |---|---|
-| `agent-readiness-and-product-index-service.md` | Three service tiers (free scan → premium scan → full product index), agent gateway, implementation roadmap |
-| `shopy-sh-commerce-skill-standard.md` | The shopy.sh open standard — commerce SKILL.md format, frontmatter schema, catalog, CLI |
-| `agentic-shopping-score-build-plan.md` | Technical build plan for the Tier 1 free scanner tool |
-| `scan-page-ux-design.md` | Page UX for `/agentic-shopping-score` — layout, results page, URL structure, SEO meta tags |
-| `product-index-taxonomy-plan.md` | Google Product Taxonomy adoption, UCP category model, product index schema |
-| `axs-technical-plan.md` | AXS scoring framework (readiness score + crowd-sourced rating) — technical implementation |
+| `agentic-commerce-standard.md` | The standards: metadata format, ASX Score pillars/signals, AXS Rating algorithm |
+| `agent-readiness-and-product-index-service.md` | Three-tier service technical details, agent gateway, product index |
+| `agentic-shopping-score-build-plan.md` | Technical build plan for the Tier 1 scanner tool |
+| `scan-page-ux-design.md` | Page UX for `/agentic-shopping-score` |
+| `product-index-taxonomy-plan.md` | Google Product Taxonomy adoption |
+| `phase-6-skill-feedback-loop.md` | Feedback loop implementation steps |
 
 ---
 
-## The Landscape
+## Positioning
 
-AI shopping agents are emerging from every major platform — ChatGPT (via Operator and plugins), Claude (via MCP), Gemini (via Google AI Mode and UCP), and custom-built procurement bots. But the infrastructure for agents to actually shop online is fragmented and immature:
+CreditClaw is the connective tissue between online merchants and AI shopping agents. We don't compete with Shopify or Google — we bridge the gap between any merchant (Shopify or not) and every agent platform (ChatGPT, Claude, Gemini, and custom procurement bots).
 
-- **Shopify** built MCP into every Shopify store — but only Shopify stores benefit.
-- **Google** launched UCP — but it's restricted-access and requires direct merchant integration.
-- **Existing metadata standards** (Open Graph, Schema.org, Google Product Taxonomy) describe products — but don't describe how an agent should navigate the store, handle checkout, or interact with shipping/payment/loyalty options.
-- **No one** is measuring or scoring how well a store actually works for AI agents.
-- **No one** has proposed a standard for the agentic procurement metadata that agents need beyond basic product discovery.
+We do this through two things no one else has:
 
-CreditClaw's opportunity is to fill these gaps — not by competing with Shopify or Google, but by building the **connective tissue** between any merchant and every agent platform.
+1. **An open standard** for describing a merchant's agentic commerce capabilities (the metadata format + SKILL.md files via shopy.sh)
+2. **A scoring system** that measures how well a store works for AI agents (ASX Score + AXS Rating)
 
----
-
-## CreditClaw's Two Standards Contributions
-
-### Standard 1: The ASX Score (Agent Shopping Experience Score)
-
-**What it is:** A public, standardized score (0–100) that measures how well any online store supports AI shopping agents. Think of it as the "Google PageRank for agentic commerce" — except instead of measuring how well a page ranks in search, it measures how well a store works when a shopping agent tries to find products, select specific options, check out, and complete a purchase.
-
-**Why it matters:** Merchants today have no way to know whether AI agents can shop at their store. The ASX Score gives them a concrete number and actionable recommendations — and gives the ecosystem a shared language for evaluating agent readiness.
-
-**Where it lives:** `/agentic-shopping-score` on CreditClaw — free, public, no login required.
-
-See [ASX Score Framework](#asx-score-framework) below for the full pillar/signal breakdown.
+And we commercialize these through a three-tier service model, an open skill catalog (shopy.sh), and an agent gateway.
 
 ---
 
-### Standard 2: Agentic Procurement Metadata Standard
+## Two Delivery Channels
 
-> **STATUS: PLACEHOLDER — To be developed in a future planning session.**
+### creditclaw.com — The Platform
 
-**What it is:** A proposed metadata extension for e-commerce sites that goes beyond existing product metadata (Schema.org, Open Graph, Google Merchant feeds) to include the specific information AI shopping agents need for end-to-end procurement.
+CreditClaw's main platform delivers the scoring, scanning, and enrichment services:
 
-**The gap:** Existing metadata standards tell an agent *what* a product is (name, price, image, availability). They don't tell an agent:
-
-- What **payment methods** are supported and how to use them programmatically
-- What **shipping options** are available, their costs, and estimated delivery times
-- Whether **loyalty programs** exist, how points accrue, and whether agent-initiated purchases earn points
-- Whether **tax exemption** is supported and how to apply it
-- Whether **PO numbers** can be submitted programmatically
-- What the **checkout flow** looks like (guest vs. registered, number of steps, required fields)
-- What **agentic payment protocols** are supported (x402, ACP, Agent Payments Protocol)
-- How **returns and exchanges** work when initiated by an agent
-
-**CreditClaw's proposal:** Define a metadata standard — potentially as an extension to Schema.org or as a standalone `.well-known/agentic-commerce.json` manifest — that merchants can publish to tell AI agents everything they need to know to shop there programmatically.
-
-**Relationship to shopy.sh:** The shopy.sh SKILL.md format already captures much of this information in its frontmatter fields. The Agentic Procurement Metadata Standard would be the *merchant-published* counterpart — a machine-readable manifest that any agent can discover at a well-known URL, without needing CreditClaw's SKILL.md file. The SKILL.md would reference and extend it.
-
-**Relationship to UCP:** Google's UCP defines building blocks for agentic commerce (discovery, buying, post-purchase). The Agentic Procurement Metadata Standard would be complementary — focusing on the metadata that helps agents *evaluate* a store before interacting with it, rather than the protocol for actually transacting.
-
-**Open questions (to be explored):**
-- Should this be a Schema.org extension, a `.well-known` JSON file, an HTTP header, or all three?
-- How does this relate to existing efforts like robots.txt (agent permissions), llms.txt (LLM instructions), and SKILL.md (agent skill files)?
-- Should CreditClaw propose this to a standards body, or establish it as a de facto standard through adoption?
-- What is the minimum viable set of fields that would provide immediate value to agent developers?
-
----
-
-## ASX Score Framework
-
-### The Three Pillars
-
-The ASX Score measures a store's agent shopping experience across three pillars that map to the natural flow of an agent-initiated purchase:
-
-```
-   Clarity          →         Speed            →        Reliability
-   ─────────────          ──────────────           ─────────────────
-   Can the agent          Can the agent            Does the end-to-end
-   FIND the store         DRILL IN quickly         experience actually
-   and UNDERSTAND         to specific products,    WORK when you try
-   what's available?      variants, stock,         to complete a real
-                          and delivery?            purchase?
-```
-
-#### Pillar 1: Clarity (Discovery & Metadata Quality)
-
-**The question:** Can the agent find the store, understand its catalog structure, and know what shipping/payment/loyalty options exist — before it even starts shopping?
-
-**What it covers:**
-- Is there structured product data (JSON-LD, Open Graph, Schema.org Product markup)?
-- Is there a well-formed sitemap with product URLs?
-- Is the site mobile/responsive (agents often use headless viewports)?
-- Are **shipping options** clearly described in metadata or page structure?
-- Are **payment methods** clearly described in metadata or page structure?
-- Are **loyalty programs** described — including whether agent-initiated purchases earn points?
-- Is the checkout page structure predictable and well-organized?
-
-**How it's measured:**
-- **Tier 1 (free scan):** Automated crawl checks for metadata presence, sitemap structure, page organization.
-- **Tier 2 (premium scan):** Browser-controlled verification that metadata matches reality.
-
-#### Pillar 2: Speed (Selection & Programmatic Access)
-
-**The question:** Once the agent has found the store, can it quickly and programmatically drill into specifics? Not just "find sneakers" — but "find these sneakers in size 9.5, in brown, check if that exact variant is in stock, and confirm delivery within a week."
-
-**What it covers:**
-- Is there a functional product search (site search, API, MCP, CLI)?
-- Is there a public API with documented endpoints?
-- Is there MCP/UCP support for native agent interaction?
-- Can the agent select specific **product variants** (size, color, configuration) programmatically?
-- Can the agent check **real-time stock** for a specific variant?
-- Can the agent get a **delivery estimate** for a specific address or region?
-- How many steps/calls does it take to go from search → specific variant → stock check → delivery estimate?
-
-**How it's measured:**
-- **Tier 1 (free scan):** Detects whether the capabilities exist (API endpoint found, MCP probe, search URL template). Does NOT test them.
-- **Tier 2 (premium scan):** Actually tests them — searches for a product, attempts variant selection, checks stock and delivery estimate. Measures response time and data quality.
-
-#### Pillar 3: Reliability (Lived Experience)
-
-**The question:** Does it actually work end-to-end in practice? When a real agent (or human using an agent) tries to search, find the specific item, check out, pay, and receive confirmation — does the whole thing succeed?
-
-**What it covers:**
-- Does checkout actually complete without errors?
-- Can the agent select the **shipping option** it wants (not just default)?
-- Does the **payment method** the agent intends to use actually work?
-- How many **retries** does it typically take?
-- Does **order confirmation** arrive correctly?
-- Do **loyalty points** actually accrue for agent-initiated purchases?
-- Does the store **block or throttle** agent traffic during real use?
-- Is the product that arrives actually what was ordered (correct size, color, condition)?
-
-**How it's measured:**
-- **Tier 1 (free scan):** Only proxy signals — is the site bot-friendly (robots.txt)? Is there a clear checkout URL? Is guest checkout available? These are necessary conditions for reliability, not sufficient ones.
-- **Tier 2 (premium scan):** Walks the checkout flow in a headless browser. Reports on form complexity, error handling, anti-bot measures. Can simulate a purchase up to (but not including) payment submission.
-- **Crowd-sourced AXS Rating:** Real-world feedback from agents and humans who completed actual purchases. This is the definitive reliability signal — like a Google review, but specifically for the agent shopping experience.
-
-### Pillar-to-Measurement Matrix
-
-| | Tier 1 (Free Scan) | Tier 2 (Premium Scan) | Crowd-Sourced Rating |
-|---|---|---|---|
-| **Clarity** | Full measurement — metadata, sitemap, page structure | Validation — does metadata match reality? | N/A |
-| **Speed** | Capability detection — does the feature exist? | Functional testing — does it actually work? How fast? | N/A |
-| **Reliability** | Proxy signals — bot-friendly? guest checkout? | Flow testing — walk checkout, report issues | Real-world results — success rates, failure modes |
-
-### Tier 1 ASX Score Signals (Free Scan)
-
-These are the specific signals measured in the free scan, grouped by pillar. Total: 100 points.
-
-#### Clarity Signals (35 points)
-
-| Signal | Max Points | What We Check |
-|---|---|---|
-| **Structured Product Data** | 20 | JSON-LD Product schema, Open Graph product tags, Schema.org markup, meta descriptions with product attributes |
-| **Sitemap Quality** | 10 | sitemap.xml exists, is valid XML, lists product URLs (not just pages), is linked from robots.txt |
-| **Mobile/Responsive** | 5 | Viewport meta tag present, responsive design indicators |
-
-**Potential expansion (optional, to be validated):**
-- Shipping/payment/loyalty metadata presence — could be added as sub-signals under Structured Product Data or as a new signal. Currently these are partially captured by the LLM analysis but not scored separately.
-
-#### Speed Signals (40 points)
-
-| Signal | Max Points | What We Check |
-|---|---|---|
-| **Search Functionality** | 15 | Site search exists, returns structured results, supports query parameters, search URL template discoverable |
-| **API Availability** | 15 | Public REST/GraphQL API detected, OpenAPI/Swagger docs, documented endpoints, developer portal |
-| **MCP/UCP Support** | 10 | Shopify MCP endpoint (`/api/mcp`), UCP registration, A2A protocol, x402 support, ACP manifest |
-
-**Potential expansion (optional, to be validated):**
-- Variant discoverability — does the product page expose variant data (sizes, colors) in structured format? Currently partially captured in LLM analysis but not scored.
-- Stock API — is there a way to check stock programmatically? Currently detected by probes but not weighted.
-
-#### Reliability Signals (25 points)
-
-| Signal | Max Points | What We Check |
-|---|---|---|
-| **Checkout Accessibility** | 15 | Guest checkout available, cart/checkout URLs predictable, tax exemption field present, PO number field present |
-| **Bot Friendliness** | 10 | robots.txt allows crawling, no CAPTCHA on landing pages, no aggressive bot blocking, reasonable crawl-delay |
-
-**Note:** These are proxy signals. True reliability can only be measured through Tier 2 flow testing and crowd-sourced ratings.
-
-### ASX Score Labels
-
-| Score Range | Label |
+| Page / Service | What It Does |
 |---|---|
-| 0–20 | Poor |
-| 21–40 | Needs Work |
-| 41–60 | Fair |
-| 61–80 | Good |
-| 81–100 | Excellent |
+| `/agentic-shopping-score` | Free public scanner — enter a domain, get an ASX Score |
+| `/agentic-shopping-score/[domain]` | Results page — score breakdown, recommendations, SKILL.md download, brand comparison |
+| `/skills` | Curated brand catalog — browse merchants by sector, score, capabilities |
+| `/skills/[vendor]` | Brand detail page — full metadata, skill preview, AXS Rating |
+| `/axs` | Methodology page — explains the scoring system |
+| `/c/[sector]` | Sector landing pages — SEO-optimized category pages |
+| `/dashboard/scans` | Manage scanned domains (authenticated users) |
+| `/dashboard/index` | Product index status for Tier 3 customers |
 
-### Crowd-Sourced AXS Rating (Separate from ASX Score)
+### shopy.sh — The Open Standard & Catalog
 
-The AXS Rating is a 1–5 star rating from real-world feedback, NOT part of the 0–100 ASX Score. It measures actual performance across the same three pillars:
+shopy.sh is the public face of the metadata standard. It's where the specification lives and where generated SKILL.md files are published.
 
-| Feedback Dimension | Pillar | What It Measures |
-|---|---|---|
-| `search_accuracy` (1–5) | Speed | How accurately catalog search returns relevant products |
-| `stock_reliability` (1–5) | Reliability | Whether in-stock items are actually available at checkout |
-| `checkout_completion` (1–5) | Reliability | How reliably checkout completes without errors |
+| Page | What It Does |
+|---|---|
+| `/` | Landing page — what shopy.sh is, how it works, install instructions |
+| `/spec` | Full metadata specification — frontmatter fields, body structure, validation rules |
+| `/catalog` | Searchable directory of all published commerce skills |
+| `/catalog/[vendor]` | Individual vendor skill page — metadata, ASX Score, AXS Rating, download |
+| `/sectors` | Browse skills by sector |
+| `/leaderboard` | Top-rated vendors by ASX Score and AXS Rating |
+| `/submit` | Submit new skills (vendors and community) |
+| `/docs` | Integration guide for agent developers |
 
-**Future feedback dimensions (to be added):**
-- `shipping_option_accuracy` — Could the agent select the intended shipping method?
-- `payment_method_success` — Did the intended payment method work?
-- `loyalty_attribution` — Were loyalty points correctly attributed to the agent-initiated purchase?
-- `delivery_accuracy` — Was the delivered product correct (size, color, condition)?
+**CLI (future):**
 
-See `axs-technical-plan.md` for the full technical specification of the rating aggregation algorithm.
+```bash
+npx shopy add amazon              # Install a skill
+npx shopy add --sector electronics # Install all skills in a sector
+npx shopy list                    # List available skills
+npx shopy search "office supplies" # Search for skills
+npx shopy update                  # Update installed skills
+```
+
+The CLI installs SKILL.md files into the agent's skill directory — compatible with any agent that supports the skills.sh format (Claude Code, Cursor, Copilot, Gemini, etc.).
 
 ---
 
-## How the Pieces Connect
+## Service Tiers
 
-```
-┌──────────────────────────────────────────────────────────────────────────┐
-│                    CreditClaw Strategic Layer                              │
-│                                                                           │
-│  ┌──────────────────────────┐   ┌──────────────────────────────────────┐ │
-│  │  Standard 1:              │   │  Standard 2:                         │ │
-│  │  ASX Score                │   │  Agentic Procurement Metadata        │ │
-│  │  (Agent Shopping          │   │  (PLACEHOLDER — future)              │ │
-│  │  Experience Score)        │   │  Proposed metadata extension for     │ │
-│  │                           │   │  e-commerce sites describing agent   │ │
-│  │  Three pillars:           │   │  procurement capabilities            │ │
-│  │  Clarity / Speed /        │   │                                      │ │
-│  │  Reliability              │   │  Relates to: Schema.org, UCP,        │ │
-│  │                           │   │  .well-known manifests                │ │
-│  └────────────┬──────────────┘   └──────────────────────────────────────┘ │
-│               │                                                           │
-│               ▼                                                           │
-│  ┌──────────────────────────────────────────────────────────────────────┐ │
-│  │                    Products & Services                                │ │
-│  │                                                                       │ │
-│  │  Tier 1: Free Scan ──────── ASX Score (Clarity + Speed signals)      │ │
-│  │    └─ Auto-generated SKILL.md (shopy.sh format)                      │ │
-│  │    └─ Recommendations to improve score                                │ │
-│  │    └─ Brand comparison with one peer                                  │ │
-│  │                                                                       │ │
-│  │  Tier 2: Premium Scan ──── Tested Speed + Reliability signals        │ │
-│  │    └─ Browser-controlled flow walk-through                            │ │
-│  │    └─ Premium SKILL.md with selectors and flow data                  │ │
-│  │    └─ Step-by-step checkout report                                    │ │
-│  │                                                                       │ │
-│  │  Tier 3: Full Index ─────── Product-level enrichment + distribution  │ │
-│  │    └─ Catalog crawl + LLM enrichment (summaries, intent phrases)     │ │
-│  │    └─ Google Product Taxonomy mapping                                 │ │
-│  │    └─ Distribution: Shopify Catalog API, Google UCP, CreditClaw      │ │
-│  │    └─ Agent Gateway (unified API proxy)                               │ │
-│  │                                                                       │ │
-│  │  AXS Rating ────────────── Crowd-sourced reliability feedback        │ │
-│  │    └─ Real-world purchase success rates                               │ │
-│  │    └─ Feedback from agents and humans                                 │ │
-│  └──────────────────────────────────────────────────────────────────────┘ │
-│               │                                                           │
-│               ▼                                                           │
-│  ┌──────────────────────────────────────────────────────────────────────┐ │
-│  │                    Open Standard: shopy.sh                            │ │
-│  │                                                                       │ │
-│  │  Commerce-specific SKILL.md format (extends Vercel's skills.sh)      │ │
-│  │  Published skill files for every scanned/indexed merchant             │ │
-│  │  Public catalog at shopy.sh                                           │ │
-│  │  CLI: npx shopy add {vendor}                                         │ │
-│  │  Compatible with any agent supporting SKILL.md                        │ │
-│  └──────────────────────────────────────────────────────────────────────┘ │
-└──────────────────────────────────────────────────────────────────────────┘
-```
+### Tier 1: Free Agent Shopping Experience Scan
+
+**What the user does:** Enters a domain on `/agentic-shopping-score`.
+
+**What we deliver:**
+- ASX Score (0–100) with 8-signal breakdown across Clarity, Speed, and Reliability pillars
+- Actionable recommendations grouped by impact (high / medium / quick wins)
+- Auto-generated SKILL.md in the agentic commerce metadata format
+- Side-by-side comparison with one similar brand from the curated catalog
+- Score saved to `scan_history` for tracking over time
+
+**Tech:** Server-side fetch + existing `analyzeVendor()` pipeline + supplementary fetches (sitemap.xml, robots.txt) + ASX Score computation engine. See `agentic-shopping-score-build-plan.md`.
+
+**Value to CreditClaw:** Lead generation, brand index growth, SEO (every scanned domain gets an indexable results page).
+
+### Tier 2: Premium Browser-Controlled Deep Scan
+
+**What the user does:** Pays for a deep audit. May provide test credentials.
+
+**What we deliver:**
+- Full shopping flow walk-through via headless browser (Playwright)
+- Tested Speed signals (actually searches for products, selects variants, checks stock)
+- Tested Reliability signals (walks the checkout flow, reports on form complexity, error handling, anti-bot measures)
+- Premium SKILL.md with CSS selectors, form field mappings, API endpoint signatures
+- Detailed step-by-step report with screenshots
+- Enhanced ASX Score based on real interaction, not just surface signals
+
+**Tech:** Playwright headless browser, screenshot capture, flow recording. See `agent-readiness-and-product-index-service.md` Tier 2 section.
+
+### Tier 3: Full Product Index + Catalog Enrichment + Distribution
+
+**What we deliver:**
+- Weekly product catalog crawl (API → Feed → Sitemap → deep crawl)
+- LLM-powered enrichment per product: agent-optimized natural language summary + 5-15 purchase intent phrases
+- Google Product Taxonomy mapping
+- Distribution to Shopify Catalog API, Google UCP, and CreditClaw's own searchable index
+- Agent Gateway access — one API key, every vendor
+
+**Tech:** See `agent-readiness-and-product-index-service.md` Tier 3 and `product-index-taxonomy-plan.md`.
+
+**Core pitch:** "We crawl your catalog, write agent-optimized descriptions and intent phrases for every product, map everything to the Google Product Taxonomy, and submit it all to Shopify, Google, and our own index — so your products are discoverable by every AI agent on every platform. You don't lift a finger."
+
+---
+
+## Revenue Model
+
+| Tier | Pricing | Pitch |
+|---|---|---|
+| **Tier 1** | Free | "See how agent-ready your store is" — instant score, basic SKILL.md, recommendations |
+| **Tier 2** | One-time fee per domain | "Make it 10x easier for agents to shop at your store" — deep audit, premium SKILL.md |
+| **Tier 3** | Monthly subscription | "Make every product findable by every AI agent" — catalog enrichment + distribution |
+| **Tier 3 VIP** | Custom retainer | "We work with your dev team" — dedicated support, custom enrichment, API integration |
+| **Gateway** | Per-query / included in Tier 3 | "One API key, every vendor" — agent-facing product search and checkout routing |
+| **Vendor-sponsored** | Custom | Featured placement in search results and skill catalog |
+| **Certification** | Included in Tier 2+ | "shopy.sh verified" badge for merchants who pass premium scan |
 
 ---
 
 ## Competitive Position
 
+**What exists today:**
+
+| Player | What They Do | Limitation |
+|---|---|---|
+| **Shopify MCP** | Exposes Shopify store products to AI agents | Only Shopify stores |
+| **Google UCP** | Agent commerce protocol for Google AI Mode / Gemini | Restricted access, requires direct integration |
+| **Firecrawl / Exa** | Web crawling services | No categorization, no indexes, no platform submission |
+| **Aggregator APIs** (RapidAPI etc.) | API access marketplaces | No agent-specific routing, no SKILL.md, no procurement context |
+
 **What CreditClaw builds that no one else has:**
 
-1. **The ASX Score** — No one is scoring stores for agent shopping experience. Merchants have SEO scores (Lighthouse, Ahrefs), accessibility scores (WCAG), but no agent-readiness score. CreditClaw defines this category.
+1. **The ASX Score** — No one is scoring stores for agent shopping experience. Merchants have SEO scores (Lighthouse, Ahrefs), accessibility scores (WCAG), but no agent-readiness score.
 
-2. **The shopy.sh standard** — A portable, open file format that tells any AI agent how to shop at any merchant. Built on Vercel's SKILL.md format, extended with commerce-specific metadata. Not locked to any platform.
+2. **The agentic commerce metadata standard** — A portable, open format that tells any AI agent how to shop at any merchant. Not locked to any platform.
 
-3. **The universal bridge** — CreditClaw connects any merchant (Shopify or not) to every agent discovery platform (Shopify Catalog MCP, Google UCP, CreditClaw index). One integration, universal distribution.
+3. **The universal bridge** — Connects any merchant to every agent discovery platform (Shopify Catalog MCP, Google UCP, CreditClaw index). One integration, universal distribution.
 
-4. **The agent gateway** — One API key, one format, every vendor. Agents don't need individual API keys for Amazon, Walmart, Grainger. CreditClaw holds the vendor relationships and routes requests.
+4. **The agent gateway** — One API key, one format, every vendor. Agents don't need individual API keys for Amazon, Walmart, Grainger.
 
 5. **The data flywheel** — Every scan grows the brand index. Every Tier 3 crawl grows the product index. Every gateway request trains the routing engine. Every agent purchase feeds back into reliability ratings.
 
 ---
 
-## Revenue Model Summary
+## How shopy.sh Connects to CreditClaw
 
-| Tier | Pricing | Pitch |
-|---|---|---|
-| **Tier 1** | Free | "See how agent-ready your store is" — instant score, basic SKILL.md, recommendations |
-| **Tier 2** | One-time fee | "Make it 10x easier for agents to shop at your store" — deep audit, premium SKILL.md |
-| **Tier 3** | Monthly subscription | "Make every product findable by every AI agent" — catalog enrichment + distribution |
-| **Gateway** | Per-query / included in Tier 3 | "One API key, every vendor" — agent-facing product search and checkout routing |
-| **Vendor-sponsored** | Custom | Featured placement in search results and skill catalog |
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        CreditClaw Platform                       │
+│                                                                   │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────────────┐ │
+│  │ Tier 1   │  │ Tier 2   │  │ Tier 3   │  │ Agent Gateway    │ │
+│  │ Free     │  │ Premium  │  │ Full     │  │ API Proxy +      │ │
+│  │ Scan     │  │ Scan     │  │ Index    │  │ Credential Vault │ │
+│  └────┬─────┘  └────┬─────┘  └────┬─────┘  └────────┬─────────┘ │
+│       │              │              │                 │           │
+│       └──────────────┴──────────────┴─────────────────┘           │
+│                              │                                    │
+│                     Generates / Updates                           │
+│                              │                                    │
+│                              ▼                                    │
+│                    ┌──────────────────┐                           │
+│                    │ SKILL.md Files   │                           │
+│                    │ (standard format)│                           │
+│                    └────────┬─────────┘                           │
+│                             │                                    │
+└─────────────────────────────┼────────────────────────────────────┘
+                              │
+                    Published to
+                              │
+                              ▼
+                    ┌──────────────────┐
+                    │   shopy.sh       │
+                    │   Public Catalog │
+                    │   + Spec Site    │
+                    └────────┬─────────┘
+                             │
+               Installed by agents via
+                             │
+                    ┌────────┴────────┐
+                    │  npx shopy add  │
+                    │  or manual      │
+                    └────────┬────────┘
+                             │
+                             ▼
+                    ┌──────────────────┐
+                    │   AI Agents      │
+                    │   (Any agent     │
+                    │   supporting     │
+                    │   SKILL.md)      │
+                    └──────────────────┘
+```
 
 ---
 
-## Open Strategic Questions
+## Strategic Open Questions
 
-1. **Standards body engagement.** Should CreditClaw propose the ASX Score and/or the Agentic Procurement Metadata Standard to a formal standards body (W3C, IETF, schema.org community group)? Or establish them as de facto standards through adoption first?
+1. **shopy.sh hosting.** Separate Next.js site or a section within creditclaw.com? Separate site gives more legitimacy as an open standard. Same site is simpler.
 
-2. **Relationship with Google UCP team.** CreditClaw's aggregator model for UCP (submitting feeds on behalf of merchants) requires Google's cooperation. Should we engage early as a partner, or wait until UCP access opens broadly?
+2. **Community contributions.** Should third parties submit skills to the shopy.sh catalog? If yes, we need a review/validation pipeline.
 
-3. **Relationship with Shopify.** Shopify built MCP into every store. CreditClaw extends this to non-Shopify merchants. Is Shopify a competitor or a partner? (Answer: partner — we drive more product data into their ecosystem.)
+3. **Google UCP relationship.** CreditClaw's aggregator model requires Google's cooperation. Engage early as a partner or wait for open access?
 
-4. **ASX Score as an industry benchmark.** For the score to matter, other platforms need to reference it. How do we get agent developers (OpenAI, Anthropic, Google) to consider ASX Score when ranking merchant results?
+4. **Shopify relationship.** Shopify built MCP into every store. CreditClaw extends this to non-Shopify merchants. Partner, not competitor — we drive more product data into their ecosystem.
 
-5. **Agentic Procurement Metadata timing.** When should we develop the full metadata standard proposal? After Tier 1 is live and we have real scan data? Or as a parallel workstream?
+5. **CLI naming.** Is `npx shopy` the right name? Mirrors `npx skills` cleanly. Alternative: `npx shopy-skills`.
+
+6. **Skill signing.** Should CreditClaw cryptographically sign generated skills so agents can verify authenticity?
+
+7. **Versioning.** When a vendor's site changes, the skill needs updating. Automated re-scan + re-generation? Manual review?
