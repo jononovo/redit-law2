@@ -18,9 +18,10 @@ This folder contains the planning documents for CreditClaw's agentic commerce st
 
 | Document | Purpose |
 |---|---|
-| `agentic-shopping-score-build-plan.md` | **Tier 1 scanner build plan — the first thing to build.** Complete, sequenced, 6-phase plan for building the `/agentic-shopping-score` page and its backend. Phases: (1) `scan_history` DB table, (2) ASX Score calculation engine, (3) scan API endpoint, (4) scanner landing page, (5) results page, (6) polish & SEO. Each phase lists exact files to create/modify, schemas, types, and constraints. References `agentic-commerce-standard.md` for score definitions. |
+| `agentic-shopping-score-build-plan.md` | **Tier 1 scanner build plan.** Complete, sequenced, 6-phase plan for building the `/agentic-shopping-score` page and its backend. Phases: (1) `scan_history` DB table, (2) ASX Score calculation engine, (3) scan API endpoint, (4) scanner landing page, (5) results page, (6) polish & SEO. Each phase lists exact files to create/modify, schemas, types, and constraints. References `agentic-commerce-standard.md` for score definitions. |
 | `scan-page-ux-design.md` | **UX companion to the scanner build plan.** Wireframes and layout specs for the scanner landing page and results page (phases 4-5 of the build plan above). Includes: page layouts, URL structure, responsive behavior, loading states, component breakdown, and SEO meta tag templates. |
-| `remaining-build-tasks.md` | **Catalog & SEO polish tasks.** Five outstanding tasks from previously completed phases: (1) URL-based filter state on `/skills`, (2) `generateStaticParams` for brand detail pages, (3) sub-sector landing pages, (4) sitemap splitting, (5) JSONB extraction for performance. Each task includes priority, implementation details, files to modify, and dependencies. These can be done in parallel with or after the scanner. |
+| `multitenant-system-nextjs-implementation-plan.md` | **Multitenant infrastructure plan.** Complete implementation plan for serving multiple brands (creditclaw.com and shopy.sh) from a single Next.js deployment. Covers: middleware-based tenant resolution from domain, static tenant configs (`public/tenants/`), `generateMetadata()` per tenant, HSL theme injection, route-level separation, Firebase Auth scoping, and testing strategy. 727 lines, highly detailed. |
+| `remaining-build-tasks.md` | **Catalog & SEO polish tasks.** Five outstanding tasks from previously completed phases: (1) URL-based filter state on `/skills`, (2) `generateStaticParams` for brand detail pages, (3) sub-sector landing pages, (4) sitemap splitting, (5) JSONB extraction for performance. Each task includes priority, implementation details, files to modify, and dependencies. |
 
 ### Vision Documents (future — no detailed build plans yet)
 
@@ -31,36 +32,69 @@ This folder contains the planning documents for CreditClaw's agentic commerce st
 
 ---
 
-## Build Sequence
+## Recommended Build Sequence
+
+### Step 1: ASX Score Scanner (Tier 1) ← NEXT TO BUILD
+**Plan:** `agentic-shopping-score-build-plan.md` (6 phases, complete)
+**UX:** `scan-page-ux-design.md`
+**Defs:** `agentic-commerce-standard.md`
+
+This is the lead gen tool, SEO magnet, and first public product. A merchant enters their domain, gets a 0-100 score with actionable breakdown. This drives awareness and gives CreditClaw something to sell against.
+
+Internal dependency chain:
+Phase 1 (DB) → Phase 2 (Score Engine) → Phase 3 (API) → Phase 4 (Scanner Page) + Phase 5 (Results Page) → Phase 6 (Polish)
+
+### Step 2: Multitenant System ← BUILD AFTER SCANNER
+**Plan:** `multitenant-system-nextjs-implementation-plan.md` (complete, 727 lines)
+**Brand:** `shopy-sh-brand-identity.md`
+
+This is the infrastructure that lets one codebase serve both creditclaw.com and shopy.sh. Middleware resolves the domain, loads the tenant config, and the app renders different branding, navigation, landing pages, metadata, and feature visibility per tenant. Build this before creating any shopy.sh-specific pages — once the multitenant layer is in place, shopy.sh pages are just new routes with tenant-aware rendering.
+
+Key pieces:
+- Middleware tenant resolution (domain → tenant ID via request header + cookie)
+- Tenant config files (`public/tenants/creditclaw/config.json`, `public/tenants/shopy/config.json`)
+- Root layout reads tenant config, injects theme colors, sets metadata
+- Route-level separation for brand-specific pages
+
+### Step 3: shopy.sh Pages ← BUILD AFTER MULTITENANT
+**Brand:** `shopy-sh-brand-identity.md` (website structure table)
+
+With the multitenant layer in place, build the shopy.sh-specific pages. These only render when the tenant is `shopy`:
+- `/` — shopy.sh landing page (what it is, why it matters, quick start)
+- `/standard` — the authoritative agentic commerce standard (creditclaw.com links here)
+- `/guide` — non-technical explainer with diagrams for brand owners and marketing teams
+- `/catalog` — same data as creditclaw.com's `/skills` but with developer-focused framing (install commands, spec fields)
+- `/leaderboard` — top vendors by ASX Score and AXS Rating
+
+The catalog and leaderboard pull from the same `brand_index` table — just different presentation components per tenant.
+
+### Step 4: Catalog SEO Polish ← IN PARALLEL WITH STEPS 2-3 OR AFTER
+**Plan:** `remaining-build-tasks.md` (5 tasks)
+
+URL filter state, `generateStaticParams` for brand detail pages, sub-sector landing pages, sitemap splitting, JSONB extraction. Improves the existing catalog but not urgent at current scale (~14 brands). These are independent of the multitenant work and can be done in parallel or after.
+
+### Step 5: Tier 2 Premium Scan ← FUTURE (no build plan yet)
+**Vision:** `agent-readiness-and-product-index-service.md` (Tier 2 section)
+
+Playwright browser automation, full shopping flow walk-through, CSS selectors, form field mappings, screenshot capture. A detailed build plan needs to be written before starting. This is the premium upsell from the free Tier 1 scan — "we scanned your site from the outside, now let us walk through it like an agent would."
+
+### Step 6: Taxonomy + Tier 3 Product Index ← FUTURE (no build plan yet)
+**Vision:** `product-index-taxonomy-plan.md` + `agent-readiness-and-product-index-service.md` (Tier 3 section)
+
+Full product catalog crawl, LLM-powered enrichment (agent summaries + purchase intent phrases), Google Product Taxonomy mapping, distribution to Shopify Catalog MCP and Google UCP, vector search layer, and the CreditClaw Agent Gateway. This is the big long-term vision. Build plans need to be written before starting.
+
+### Dependency Map
 
 ```
-Step 1: ASX Score Scanner (Tier 1)          ← NEXT TO BUILD
-  Plan:  agentic-shopping-score-build-plan.md (6 phases, complete)
-  UX:    scan-page-ux-design.md
-  Defs:  agentic-commerce-standard.md
-  Notes: This is the lead gen tool, SEO magnet, and first public product.
-         The build plan has a clear internal dependency chain:
-         Phase 1 (DB) → Phase 2 (Score Engine) → Phase 3 (API)
-           → Phase 4 (Scanner Page) + Phase 5 (Results Page) → Phase 6 (Polish)
-
-Step 2: Catalog SEO Polish                  ← IN PARALLEL OR AFTER
-  Plan:  remaining-build-tasks.md (5 tasks)
-  Notes: URL filter state, generateStaticParams, sub-sector pages,
-         sitemap splitting. Improves existing catalog but not urgent
-         at current scale (~14 brands).
-
-Step 3: Tier 2 Premium Scan                 ← FUTURE (no build plan yet)
-  Vision: agent-readiness-and-product-index-service.md (Tier 2 section)
-  Notes: Playwright browser automation, full shopping flow walk-through,
-         CSS selectors, form field mappings. A detailed build plan needs
-         to be written before starting.
-
-Step 4: Taxonomy + Tier 3 Product Index     ← FUTURE (no build plan yet)
-  Vision: product-index-taxonomy-plan.md
-          + agent-readiness-and-product-index-service.md (Tier 3 section)
-  Notes: Product crawl, LLM enrichment, vector search, Shopify/UCP
-         distribution, agent gateway. The big long-term vision.
-         Build plans need to be written before starting.
+Step 1 (Scanner)
+  ↓
+Step 2 (Multitenant) ──── Step 4 (SEO Polish) [independent, parallel OK]
+  ↓
+Step 3 (shopy.sh Pages)
+  ↓
+Step 5 (Tier 2 Scan) [future, needs build plan]
+  ↓
+Step 6 (Tier 3 Product Index) [future, needs build plan]
 ```
 
 ---
