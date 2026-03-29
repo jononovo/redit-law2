@@ -178,3 +178,14 @@ CreditClaw is the engine. shopy.sh is the distribution layer. They reinforce eac
 6. **Versioning.** How do skill versions work? Semantic versioning in the frontmatter? Auto-increment on re-scan? Breaking vs. non-breaking changes?
 
 7. **Pricing for catalog access.** Is the catalog fully free? Or are some skills (Tier 2/3 quality) behind a paywall or API key?
+
+---
+
+## Technical Implementation
+
+shopy.sh will run on the same codebase and database as creditclaw.com using the multitenant system described in `multitenant-system-nextjs-implementation-plan.md`. Middleware resolves the requesting domain, loads the tenant config, and the rest of the app renders accordingly — different branding, navigation, landing page, metadata, and feature visibility, all from a single deployment.
+
+Key considerations for shopy.sh as a tenant:
+- **Route-level separation.** Some pages are unique to each brand (`/spec` on shopy.sh, `/agentic-shopping-score` on creditclaw.com). This goes beyond feature flags — tenant-aware route groups or conditional page rendering will be needed.
+- **Shared data, different framing.** Both brands read from the same `brand_index` table. The catalog on shopy.sh shows install commands and spec fields (developer-focused). The catalog on creditclaw.com shows scores and recommendations (merchant-focused). Same data, different components.
+- **Navigation.** Each brand has its own nav structure, footer, and header — driven by the tenant config.
