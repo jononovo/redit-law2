@@ -4,6 +4,16 @@
 
 A three-tier service that turns any merchant domain into an AI-agent-ready storefront. Starting with a free scan and auto-generated skill file, scaling up to a premium browser-controlled deep audit, and culminating in a full product index with cross-vendor search and submission to Shopify's Catalog MCP and Google's Universal Commerce Protocol (UCP).
 
+All generated skill files follow the **shopy.sh** commerce skill standard — CreditClaw's open specification for teaching AI agents how to shop. Built on top of Vercel's SKILL.md format (skills.sh), shopy.sh extends it with commerce-specific metadata: vendor identity, taxonomy, AXS ratings, API access tiers, checkout capabilities, and distribution status. See `shopy-sh-commerce-skill-standard.md` for the full spec.
+
+### Related Documents
+
+| Document | What It Covers |
+|---|---|
+| `product-index-taxonomy-plan.md` | Google Product Taxonomy adoption, UCP category model, product index schema |
+| `agent-readiness-and-product-index-service.md` | This document — three service tiers, agent gateway, implementation roadmap |
+| `shopy-sh-commerce-skill-standard.md` | The shopy.sh open standard — frontmatter schema, skill body structure, catalog, CLI |
+
 ---
 
 ## Service Tiers
@@ -843,12 +853,12 @@ CREATE TABLE ucp_submissions (
 
 ## Open Questions
 
-1. **SKILL.md as a standard.** Should we propose SKILL.md as an open standard (like robots.txt) that any vendor can place at their root? This could become the "robots.txt for AI shopping agents."
-2. **Privacy/consent for Tier 3 crawls.** Do we need explicit merchant consent before crawling and indexing their products? For public data, probably not (same as Google indexing). For submitting to UCP on their behalf, probably yes.
+1. **shopy.sh as the output standard.** Resolved — all generated skill files follow the shopy.sh commerce skill standard (see `shopy-sh-commerce-skill-standard.md`). The format extends Vercel's SKILL.md (skills.sh) with commerce-specific metadata, so skills are compatible with any agent that supports SKILL.md. Published at `shopy.sh` (domain owned by CreditClaw).
+2. **Privacy/consent for Tier 3 crawls.** Do we need explicit merchant consent before crawling and indexing their products? For public data, probably not (same as Google indexing). For submitting to UCP on their behalf, probably yes. Note: the gateway model (Tier 3D) is a vendor-aware partnership — the brand opts in and benefits from agent distribution.
 3. **Vector DB choice.** zVec is file-based and lightweight but newer. LanceDB has more tooling. Chroma is the most mature. Need to evaluate based on our scale (initially thousands of products per vendor, eventually millions across all vendors).
 4. **Firecrawl vs Exa vs self-hosted.** Cost comparison needed. Firecrawl charges per page. Exa charges per query. Self-hosted Playwright is cheapest but most maintenance.
 5. **Google UCP timeline.** Currently restricted. We should apply to the waitlist now so we're ready when access opens. The Shopify integration can ship first since it's already open.
-6. **Gateway legal/TOS compliance.** Some vendor APIs (e.g., Amazon PA-API) have terms that restrict sub-licensing or proxy access. We need to review each vendor's API terms to ensure our gateway model is compliant — or structure the relationship as "CreditClaw is the application, agents are end-users of CreditClaw" rather than "CreditClaw resells API access."
+6. **Gateway as a vendor partnership.** The gateway is a distribution service — vendors are aware of and opt into having CreditClaw route agent traffic to their APIs. This is a partnership model, not proxy/sub-licensing. Vendors benefit because agents find and buy their products. Per-vendor terms may still need review for specific API programs (e.g., Amazon PA-API affiliate requirements).
 7. **Vendor-sponsored results.** If vendors can pay to boost their placement in gateway search results, we need to clearly label these as "sponsored" to maintain agent trust. Transparent ranking is critical.
 8. **Gateway SLA.** What uptime and latency guarantees do we offer agents? If the gateway goes down, agents can't shop. Need to design for high availability from the start.
 9. **Credential rotation.** API keys expire, get revoked, or hit rate limits. Need an automated system to monitor credential health, alert when keys are near expiration, and rotate gracefully without interrupting agent traffic.

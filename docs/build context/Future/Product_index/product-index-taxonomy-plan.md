@@ -4,6 +4,14 @@
 
 Define a standardized product categorization layer for CreditClaw's skill catalog that enables AI agents to find the right vendor for any product. This document covers: what standard we're adopting, how it maps to our existing data, and how we plan to build a cross-vendor product index.
 
+### Related Documents
+
+| Document | What It Covers |
+|---|---|
+| `product-index-taxonomy-plan.md` | This document — Google Product Taxonomy adoption, UCP category model, product index schema |
+| `agent-readiness-and-product-index-service.md` | Three service tiers, agent gateway, API analysis, implementation roadmap |
+| `shopy-sh-commerce-skill-standard.md` | The shopy.sh open standard — commerce SKILL.md format, frontmatter schema, catalog, CLI |
+
 ---
 
 ## The Problem
