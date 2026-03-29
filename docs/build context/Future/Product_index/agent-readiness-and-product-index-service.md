@@ -761,13 +761,16 @@ CREATE TABLE ucp_submissions (
 
 ---
 
-## Revenue Model
+## Revenue Model & Positioning
 
-| Tier | Pricing | Value |
-|---|---|---|
-| **Tier 1** | Free | Lead generation, brand index growth, basic SKILL.md |
-| **Tier 2** | One-time fee per domain | Deep audit, premium SKILL.md, detailed AXS Rating |
-| **Tier 3** | Monthly subscription per domain | Weekly crawl, product index, vector search, UCP distribution |
+**The Pitch:** "Ahrefs for Agentic Commerce." Just like Ahrefs lets you scan your domain and get an SEO score with backlink analysis and recommendations, CreditClaw lets you scan your domain and get an Agent Readiness score with checkout flow analysis and recommendations. Except instead of optimizing for Google's search crawler, you're optimizing for AI shopping agents — the future of search and commerce.
+
+| Tier | Pricing | Pitch | Value |
+|---|---|---|---|
+| **Tier 1** | Free | "See how agent-ready your store is" | Instant score, basic recommendations, auto-generated SKILL.md. Lead generation for CreditClaw, brand index growth. |
+| **Tier 2** | One-time fee per domain | "Make it 10x easier for agents to shop at your store" | Deep browser-controlled audit, premium SKILL.md with selectors and flow data, detailed AXS Rating. Actionable recommendations to improve score. |
+| **Tier 3** | Monthly subscription | "A retainer for the future of search" | Weekly product crawl, full index, vector search, gateway access, UCP distribution. Stay on the bleeding edge of AI-generated search placement — Shopify Catalog, Google UCP, and every new agent platform as they launch. |
+| **Tier 3 VIP** | Custom retainer | "We work with your dev team" | Dedicated support to integrate your API, push products into UCP and agent ecosystems, optimize checkout for agents, and continuously improve your placement in AI-generated search results. |
 
 **Tier 3 expansion:** Per-product-query pricing for high-volume agent API consumers (e.g., an agent making 10K product searches/month).
 
