@@ -1,8 +1,8 @@
-# CreditClaw Agent Readiness & Product Index Service
+# CreditClaw Agent Shopping Readiness & Product Index Service
 
 ## Vision
 
-A three-tier service that turns any merchant domain into an AI-agent-ready storefront. Starting with a free scan and auto-generated skill file, scaling up to a premium browser-controlled deep audit, and culminating in a full product index with cross-vendor search and submission to Shopify's Catalog MCP and Google's Universal Commerce Protocol (UCP).
+A three-tier service that turns any merchant domain into an AI-shopping-agent-ready storefront. Starting with a free Agent Shopping Readiness scan and auto-generated skill file, scaling up to a premium browser-controlled deep audit, and culminating in a full product index with catalog enrichment, cross-vendor search, and distribution to Shopify's Catalog MCP, Google's Universal Commerce Protocol (UCP), and CreditClaw's own agent search index.
 
 All generated skill files follow the **shopy.sh** commerce skill standard — CreditClaw's open specification for teaching AI agents how to shop. Built on top of Vercel's SKILL.md format (skills.sh), shopy.sh extends it with commerce-specific metadata: vendor identity, taxonomy, AXS ratings, API access tiers, checkout capabilities, and distribution status. See `shopy-sh-commerce-skill-standard.md` for the full spec.
 
@@ -13,7 +13,7 @@ All generated skill files follow the **shopy.sh** commerce skill standard — Cr
 | `product-index-taxonomy-plan.md` | Google Product Taxonomy adoption, UCP category model, product index schema |
 | `agent-readiness-and-product-index-service.md` | This document — three service tiers, agent gateway, implementation roadmap |
 | `shopy-sh-commerce-skill-standard.md` | The shopy.sh open standard — commerce SKILL.md format, frontmatter schema, catalog, CLI |
-| `scan-page-ux-design.md` | Page UX for `/agent-readiness-checker` — layout, results page, URL structure, SEO meta tags |
+| `scan-page-ux-design.md` | Page UX for `/agent-shopping-readiness-checker` — layout, results page, URL structure, SEO meta tags |
 
 ---
 
@@ -91,7 +91,7 @@ All generated skill files follow the **shopy.sh** commerce skill standard — Cr
    - If no comparable brand exists in the database for this sector, skip the comparison — no empty state
    - This is purely domain-level signal comparison using existing scan data — no additional crawling of the comparison brand
 
-**Page:** `/agent-readiness-checker` — public, no auth required. Form with domain input. Results page at `/agent-readiness-checker/[domain]`. See `scan-page-ux-design.md` for full UX spec.
+**Page:** `/agent-shopping-readiness-checker` — public, no auth required. Form with domain input. Results page at `/agent-shopping-readiness-checker/[domain]`. See `scan-page-ux-design.md` for full UX spec.
 
 **Tech stack:** Server-side fetch + cheerio for HTML parsing. No browser automation needed.
 
@@ -836,9 +836,9 @@ CREATE TABLE ucp_submissions (
 
 | Route | Purpose | Auth |
 |---|---|---|
-| `/agent-readiness-checker` | Domain input form + explainer (see `scan-page-ux-design.md`) | Public |
-| `/agent-readiness-checker/[domain]` | Scan results + score + downloadable SKILL.md | Public |
-| `/agent-readiness-checker/[domain]/history` | Score trend over time | Public |
+| `/agent-shopping-readiness-checker` | Domain input form + explainer (see `scan-page-ux-design.md`) | Public |
+| `/agent-shopping-readiness-checker/[domain]` | Scan results + score + comparison + downloadable SKILL.md | Public |
+| `/agent-shopping-readiness-checker/[domain]/history` | Score trend over time | Public |
 | `/dashboard/scans` | Manage your scanned domains (owner) | Auth |
 | `/dashboard/scans/[domain]/upgrade` | Purchase premium scan | Auth |
 | `/dashboard/index` | View your product index status (Tier 3) | Auth |
@@ -882,12 +882,13 @@ The free scan is the door. The enrichment and distribution is the value.
 ## Implementation Roadmap
 
 ### Phase 1: Free Scan MVP (Tier 1)
-- Build `/scan` page with domain input
+- Build `/agent-shopping-readiness-checker` page with domain input
 - Server-side crawl using fetch + cheerio
-- Score calculation engine
+- Score calculation engine (8 weighted signals)
 - SKILL.md template + generation with LLM
 - Save results to `brand_index` + `scan_history`
-- Public results page at `/scan/[domain]`
+- Public results page at `/agent-shopping-readiness-checker/[domain]`
+- Brand comparison: find one comparable brand in same sector, show side-by-side signal table
 
 ### Phase 2: Score Benchmarking
 - Sector average scores (how does this domain compare to others in its sector?)
