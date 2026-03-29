@@ -84,7 +84,7 @@ All generated skill files follow the **shopy.sh** commerce skill standard — Cr
    - Save a `scan_history` record so we can track score changes over time
    - Show the merchant a report page with their score, comparisons to sector averages, and improvement tips
 
-**Page:** `/scan` — public, no auth required. Form with domain input. Results page at `/scan/[domain]`.
+**Page:** `/agent-readiness-checker` — public, no auth required. Form with domain input. Results page at `/agent-readiness-checker/[domain]`. See `scan-page-ux-design.md` for full UX spec.
 
 **Tech stack:** Server-side fetch + cheerio for HTML parsing. No browser automation needed.
 
@@ -135,11 +135,11 @@ All generated skill files follow the **shopy.sh** commerce skill standard — Cr
 
 ---
 
-### Tier 3: Full Product Index + Cross-Vendor Search + UCP Submission
+### Tier 3: Full Product Index + Catalog Enrichment + UCP Distribution
 
-**What we do:** Weekly crawl of the merchant's entire product catalog, indexed and searchable across all vendors.
+**What we do:** Crawl the merchant's entire product catalog, enrich every product with agent-optimized natural language and purchase intent phrases, index everything for cross-vendor search, and distribute to all three discovery platforms (Shopify Catalog, Google UCP, CreditClaw index).
 
-#### 3A: Product Crawl & Index
+#### 3A: Product Crawl, Enrichment & Index
 
 **Crawl sources (in order of preference):**
 
@@ -159,6 +159,91 @@ shipping_info, review_count, review_score
 ```
 
 **Crawl cadence:** Weekly by default. Daily for high-velocity vendors (Amazon, Walmart). Configurable per merchant.
+
+#### Catalog Enrichment Pipeline
+
+After crawl, every product goes through an LLM-powered enrichment step. This is the core value-add of Tier 3 — not just indexing raw data, but making each product maximally findable by AI agents across all three distribution platforms.
+
+**Step 1: Natural Language Summary**
+
+For each product, generate an agent-optimized natural language summary. This is NOT marketing copy — it's descriptive, attribute-rich language written for how AI agents reason about products.
+
+```
+Input:  Raw product data (name, description, specs, category, reviews)
+Output: A 2–4 sentence natural language summary
+
+Example:
+  Product: "DeWalt DCD771C2 20V MAX Compact Drill/Driver Kit"
+  
+  Agent Summary: "A compact 20V lithium-ion cordless drill/driver from DeWalt, 
+  suitable for general household drilling and fastening. Includes two 1.3Ah 
+  batteries, a charger, and a contractor bag. Two-speed transmission 
+  (0–450/0–1,500 RPM) handles both driving and drilling tasks. Weighs 3.6 lbs 
+  and fits the DeWalt 20V MAX battery platform. Best for homeowners and light 
+  professional use — not rated for heavy-duty masonry or continuous industrial use."
+```
+
+The summary answers the questions an agent would ask: What is this? Who is it for? What does it do? What are the limits? What ecosystem does it belong to?
+
+**Step 2: Purchase Intent Phrases**
+
+For each product, generate a set of natural language purchase intent phrases — the actual prompts a shopper might type into an AI agent that should lead to this product.
+
+```
+Input:  Product data + category + attributes + summary
+Output: 5–15 purchase intent phrases per product
+
+Example:
+  Product: "DeWalt DCD771C2 20V MAX Compact Drill/Driver Kit"
+  
+  Intent Phrases:
+  - "best cordless drill for home use under $100"
+  - "compact drill driver with two batteries"
+  - "dewalt 20v drill starter kit"
+  - "lightweight drill for furniture assembly"
+  - "cordless drill for hanging shelves and pictures"
+  - "battery powered drill with charger included"
+  - "20v drill driver kit for DIY projects"
+  - "good drill for a first-time homeowner"
+```
+
+These phrases bridge the gap between how products are listed and how shoppers actually ask for them. When an agent receives a query like "I need a good drill for assembling IKEA furniture," the intent phrases make this product matchable — even though the original product listing never mentions furniture or IKEA.
+
+**Step 3: Category & Sub-Category Mapping**
+
+Map each product to the Google Product Taxonomy (GPT) at the most specific level possible. Also assign CreditClaw sector and sub-sector tags for internal routing.
+
+```
+Example:
+  Product: "DeWalt DCD771C2 20V MAX Compact Drill/Driver Kit"
+  
+  GPT Category: Hardware > Power Tools > Power Drills > Cordless Drills (ID: 1167)
+  CreditClaw Sector: Hardware / Tools
+  CreditClaw Sub-Sector: Power Tools, Cordless Drills
+```
+
+**Step 4: Metadata Embedding for Distribution**
+
+Before submitting to each platform, embed the enriched data into the appropriate metadata fields. The exact field mapping varies by platform:
+
+| Enrichment | CreditClaw Index | Shopify Catalog API | Google UCP |
+|---|---|---|---|
+| Agent Summary | `agent_summary` (dedicated field) | `description` extended or `metafield` | `description` or structured attribute |
+| Intent Phrases | `intent_phrases[]` (dedicated field) | Custom metafield (`custom.intent_phrases`) | `search_terms` or custom attribute |
+| GPT Category | `gpt_category_id` (relational) | `product_category` (Shopify taxonomy) | `google_product_category` (native) |
+| Sub-Categories | `sub_sectors[]` | Tags or metafields | `product_type` |
+
+**Note:** The exact Shopify metafield names and Google UCP attribute mappings need to be validated against each platform's current API docs at implementation time. The principle is: enrich once, embed everywhere.
+
+**Enrichment Quality:**
+
+| Source Quality | Enrichment Quality |
+|---|---|
+| Rich product data (API with specs, reviews) | High — summary and intents are detailed and accurate |
+| Basic product data (name, price, image) | Medium — summary is thin, intents are more generic |
+| Minimal data (just name and URL) | Low — mostly inferred from category and brand context |
+
+Products with low enrichment quality get flagged for the merchant: "These 47 products have insufficient data for strong agent discoverability. Add descriptions and specs to improve."
 
 #### 3B: Vector Search Layer
 
@@ -687,8 +772,13 @@ CREATE TABLE product_index (
   name            TEXT NOT NULL,
   brand           TEXT,
   description     TEXT,
+  agent_summary   TEXT,                       -- LLM-generated natural language summary optimized for agent reasoning
+  intent_phrases  TEXT[],                     -- LLM-generated purchase intent phrases (5-15 per product)
   gpt_category_id INTEGER,                   -- Google Product Taxonomy ID
+  sub_sectors     TEXT[],                     -- CreditClaw sub-sector tags
   image_urls      TEXT[],
+  enrichment_quality TEXT DEFAULT 'pending',  -- pending, low, medium, high
+  enriched_at     TIMESTAMP,                 -- when enrichment pipeline last ran
   created_at      TIMESTAMP DEFAULT NOW(),
   updated_at      TIMESTAMP DEFAULT NOW()
 );
@@ -714,6 +804,7 @@ CREATE INDEX product_listings_vendor_idx ON product_listings(vendor_brand_id);
 CREATE INDEX product_listings_product_idx ON product_listings(product_id);
 CREATE INDEX product_index_gpt_cat_idx ON product_index(gpt_category_id);
 CREATE INDEX product_index_brand_idx ON product_index(brand);
+CREATE INDEX product_index_enrichment_idx ON product_index(enrichment_quality);
 ```
 
 ### UCP Submission Tracking (Tier 3C)
@@ -738,9 +829,9 @@ CREATE TABLE ucp_submissions (
 
 | Route | Purpose | Auth |
 |---|---|---|
-| `/scan` | Domain input form + explainer | Public |
-| `/scan/[domain]` | Scan results + score + downloadable SKILL.md | Public |
-| `/scan/[domain]/history` | Score trend over time | Public |
+| `/agent-readiness-checker` | Domain input form + explainer (see `scan-page-ux-design.md`) | Public |
+| `/agent-readiness-checker/[domain]` | Scan results + score + downloadable SKILL.md | Public |
+| `/agent-readiness-checker/[domain]/history` | Score trend over time | Public |
 | `/dashboard/scans` | Manage your scanned domains (owner) | Auth |
 | `/dashboard/scans/[domain]/upgrade` | Purchase premium scan | Auth |
 | `/dashboard/index` | View your product index status (Tier 3) | Auth |
@@ -764,14 +855,18 @@ CREATE TABLE ucp_submissions (
 
 ## Revenue Model & Positioning
 
-**The Pitch:** "Ahrefs for Agentic Commerce." Just like Ahrefs lets you scan your domain and get an SEO score with backlink analysis and recommendations, CreditClaw lets you scan your domain and get an Agent Readiness score with checkout flow analysis and recommendations. Except instead of optimizing for Google's search crawler, you're optimizing for AI shopping agents — the future of search and commerce.
+**The Pitch:** CreditClaw is a free onboarding tool that shows any merchant how ready they are for AI shopping agents — then helps them get discovered everywhere. Think of it like an SEO audit tool, but instead of optimizing for Google's search crawler, you're optimizing for ChatGPT, Claude, Gemini, and every AI shopping agent entering the market.
+
+The free scan is the door. The enrichment and distribution is the value.
 
 | Tier | Pricing | Pitch | Value |
 |---|---|---|---|
-| **Tier 1** | Free | "See how agent-ready your store is" | Instant score, basic recommendations, auto-generated SKILL.md. Lead generation for CreditClaw, brand index growth. |
+| **Tier 1** | Free | "See how agent-ready your store is" | Instant score, basic recommendations, auto-generated SKILL.md, sector comparison with similar brands already scanned. Lead generation for CreditClaw, brand index growth. |
 | **Tier 2** | One-time fee per domain | "Make it 10x easier for agents to shop at your store" | Deep browser-controlled audit, premium SKILL.md with selectors and flow data, detailed AXS Rating. Actionable recommendations to improve score. |
-| **Tier 3** | Monthly subscription | "A retainer for the future of search" | Weekly product crawl, full index, vector search, gateway access, UCP distribution. Stay on the bleeding edge of AI-generated search placement — Shopify Catalog, Google UCP, and every new agent platform as they launch. |
-| **Tier 3 VIP** | Custom retainer | "We work with your dev team" | Dedicated support to integrate your API, push products into UCP and agent ecosystems, optimize checkout for agents, and continuously improve your placement in AI-generated search results. |
+| **Tier 3** | Monthly subscription | "Make every product in your catalog findable by every AI agent" | Weekly product crawl, LLM-powered enrichment (natural language summaries + purchase intent phrases for every SKU), Google Product Taxonomy mapping, distribution to Shopify Catalog API, Google UCP, and CreditClaw's own searchable index. Gateway access for agents. |
+| **Tier 3 VIP** | Custom retainer | "We work with your dev team" | Dedicated support to integrate your API, custom enrichment tuning, push products into UCP and agent ecosystems, optimize checkout for agents, and continuously improve your placement in AI-generated search results. |
+
+**Tier 3 core value proposition:** "We crawl your catalog, write agent-optimized descriptions and intent phrases for every product, map everything to the Google Product Taxonomy, and submit it all to Shopify, Google, and our own index — so your products are discoverable by every AI agent on every platform. You don't lift a finger."
 
 **Tier 3 expansion:** Per-product-query pricing for high-volume agent API consumers (e.g., an agent making 10K product searches/month).
 
@@ -806,17 +901,27 @@ CREATE TABLE ucp_submissions (
 - `product_index` + `product_listings` tables
 - Agent search API (`/api/v1/products/search`)
 
+### Phase 4B: Catalog Enrichment Pipeline
+- LLM-powered natural language summary generation per product (agent-optimized, not marketing copy)
+- Purchase intent phrase generation per product (5–15 phrases per SKU)
+- Enrichment quality scoring (high/medium/low based on source data richness)
+- `agent_summary`, `intent_phrases`, `enrichment_quality` fields on `product_index`
+- Merchant-facing report: "These N products need richer source data for strong agent discoverability"
+- Re-enrichment on crawl updates (weekly refresh of summaries and intents as product data changes)
+
 ### Phase 5: Vector Search (Tier 3B)
 - Vector DB setup (evaluate zVec vs LanceDB vs Chroma)
-- Embedding generation for product names + descriptions
+- Embedding generation for product names + descriptions + agent summaries + intent phrases
 - Pre-index layer for brand/category routing
-- Natural language product search
+- Natural language product search (intent phrases dramatically improve recall)
 
 ### Phase 6: UCP Distribution (Tier 3C)
-- Shopify Catalog API integration (submit product feeds)
-- Google UCP waitlist application + integration when access granted
+- Shopify Catalog API integration (submit product feeds with enriched metadata — summaries, intents, categories)
+- Google UCP integration (submit enriched feeds — intent phrases mapped to `search_terms` or equivalent)
+- CreditClaw index distribution (enriched data powers our own agent search API)
 - Submission tracking (`ucp_submissions` table)
-- Dashboard showing distribution status per vendor
+- Dashboard showing distribution status per vendor per platform
+- Metadata field mapping validation per platform (ensure enrichments land in the right fields)
 
 ### Phase 7: Agent Gateway (Tier 3D)
 - API analysis engine — detect and classify vendor APIs during Tier 3 onboarding
