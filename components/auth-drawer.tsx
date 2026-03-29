@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth/auth-context";
 import {
   Sheet,
@@ -17,9 +18,11 @@ interface AuthDrawerProps {
   children?: React.ReactNode;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
+  redirectTo?: string;
 }
 
-export function AuthDrawer({ children, open: controlledOpen, onOpenChange }: AuthDrawerProps) {
+export function AuthDrawer({ children, open: controlledOpen, onOpenChange, redirectTo }: AuthDrawerProps) {
+  const router = useRouter();
   const { signInWithGoogle, signInWithGithub, sendMagicLink } = useAuth();
   const [email, setEmail] = useState("");
   const [magicLinkSent, setMagicLinkSent] = useState(false);
@@ -36,6 +39,7 @@ export function AuthDrawer({ children, open: controlledOpen, onOpenChange }: Aut
     try {
       await signInWithGoogle();
       setOpen(false);
+      if (redirectTo) router.push(redirectTo);
     } catch (err: any) {
       setError(err?.message || "Google sign-in failed");
     } finally {
@@ -49,6 +53,7 @@ export function AuthDrawer({ children, open: controlledOpen, onOpenChange }: Aut
     try {
       await signInWithGithub();
       setOpen(false);
+      if (redirectTo) router.push(redirectTo);
     } catch (err: any) {
       setError(err?.message || "GitHub sign-in failed");
     } finally {
