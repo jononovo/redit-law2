@@ -150,7 +150,7 @@ The site should *look* like a developer-focused platform — clean, technical, d
 
 Throughout the technical pages, small cards or expandable callouts appear with a plain-language explanation. For example:
 
-- On the `/spec` page, a card at the top: *"Not a developer? Here's what this means for your brand →"* linking to the guide.
+- On the `/standard` page, a card at the top: *"Not a developer? Here's what this means for your brand →"* linking to the guide.
 - On the `/catalog/[vendor]` page, next to the ASX Score breakdown: *"What does this score mean for my store?"* tooltip or expandable panel.
 - On the homepage CLI section, a callout: *"Don't have a developer? Here's how to get started without one →"*
 
@@ -204,7 +204,7 @@ shopy.sh is the front door and the open standard. creditclaw.com is the commerci
 |---|---|
 | `/` | Landing page — what shopy.sh is, install instructions, quick start |
 | `/guide` | Non-technical explainer — plain-language walkthrough with diagrams for brand owners, marketers, and non-developers |
-| `/spec` | Full specification — frontmatter fields, body structure, validation rules |
+| `/standard` | The agentic commerce standard — frontmatter fields, body structure, validation rules. The authoritative definition that creditclaw.com links to. |
 | `/catalog` | Searchable directory of all published commerce skills |
 | `/catalog/[vendor]` | Individual skill page — metadata, scores, download |
 | `/sectors` | Browse skills by sector |
@@ -236,6 +236,6 @@ shopy.sh is the front door and the open standard. creditclaw.com is the commerci
 shopy.sh will run on the same codebase and database as creditclaw.com using the multitenant system described in `multitenant-system-nextjs-implementation-plan.md`. Middleware resolves the requesting domain, loads the tenant config, and the rest of the app renders accordingly — different branding, navigation, landing page, metadata, and feature visibility, all from a single deployment.
 
 Key considerations for shopy.sh as a tenant:
-- **Route-level separation.** Some pages are unique to each brand (`/spec` on shopy.sh, `/agentic-shopping-score` on creditclaw.com). This goes beyond feature flags — tenant-aware route groups or conditional page rendering will be needed.
+- **Route-level separation.** Some pages are unique to each brand (`/standard` on shopy.sh, `/agentic-shopping-score` on creditclaw.com). This goes beyond feature flags — tenant-aware route groups or conditional page rendering will be needed.
 - **Shared data, different framing.** Both brands read from the same `brand_index` table. The catalog on shopy.sh shows install commands and spec fields (developer-focused). The catalog on creditclaw.com shows scores and recommendations (merchant-focused). Same data, different components.
 - **Navigation.** Each brand has its own nav structure, footer, and header — driven by the tenant config.
