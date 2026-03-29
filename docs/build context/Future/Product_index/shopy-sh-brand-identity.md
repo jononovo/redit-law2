@@ -2,36 +2,54 @@
 
 ## What shopy.sh Is
 
-shopy.sh is an open-source developer tool and specification for teaching AI agents how to shop online. It extends Vercel's skills.sh format with commerce-specific metadata — turning a plain SKILL.md file into a complete procurement instruction set that any AI agent can read and execute.
+shopy.sh is an open standard and platform that makes online stores discoverable and shoppable by AI agents. It extends Vercel's skills.sh format with commerce-specific metadata — turning a plain SKILL.md file into a complete procurement instruction set that any AI agent can read and execute.
 
-Think of it as **skills.sh for commerce**.
+Think of it as **the open standard for agentic commerce** — the bridge between merchants who sell online and the AI agents that are starting to buy.
 
-skills.sh teaches agents how to use developer tools (deploy code, manage infrastructure, query databases). shopy.sh teaches agents how to shop (search products, compare prices, add to cart, check out, track orders).
+For merchants, it answers: "How do AI agents find and buy from my store?" For agent developers, it answers: "How do I teach my agent to shop at any store?"
 
 ## Who It's For
 
-**Primary audience: AI agent developers.**
+### Primary audience: Merchants and the people who run their stores
 
-Anyone building an AI agent that needs to buy things — whether that's a personal shopping assistant, a corporate procurement bot, an inventory management system, or a comparison engine. These developers need a standardized way to tell their agent: "here's how you shop at Amazon" or "here's how you buy office supplies from Staples."
+- **Developers managing merchant sites** — the engineers and agencies building and maintaining e-commerce platforms. They need to understand what makes a store agent-friendly and how to implement the metadata standard.
+- **CTOs of fashion, retail, and e-commerce brands** — technical leaders who need to ensure their stores are discoverable by the next generation of shopping interfaces (AI agents, not just browsers).
+- **E-commerce and marketing professionals** — people responsible for product discovery and conversion who need to understand this new channel. If SEO was about being found by Google, shopy.sh is about being found by ChatGPT, Claude, and Gemini.
 
-**Secondary audience: The agent ecosystem.**
+These are the people who care about their ASX Score, who want to see how their store compares, and who will adopt the metadata standard to make their products more discoverable.
 
-Platform builders (OpenAI, Anthropic, Google, open-source agent frameworks) who want their agents to have built-in shopping capabilities. shopy.sh gives them a standard format to ingest rather than building custom integrations per merchant.
+### Secondary audience: Agent developers
 
-**Not the primary audience: Merchants.**
+Developers building AI agents that need to buy things — personal shopping assistants, corporate procurement bots, inventory management systems, comparison engines. They use the shopy.sh catalog and CLI to install skills that teach their agents how to shop at specific stores. They care about the spec, the install experience, and the quality/reliability of skills.
 
-Merchants benefit from shopy.sh (their store becomes agent-discoverable), but they interact with shopy.sh through CreditClaw's services (scans, enrichment, distribution), not directly. A merchant who wants to improve their agent shopping experience goes to creditclaw.com. A developer who wants to install a shopping skill goes to shopy.sh.
+### Tertiary audience: The agent platform ecosystem
+
+Platform builders (OpenAI, Anthropic, Google, open-source agent frameworks) who want standardized commerce capabilities for their agents. shopy.sh gives them a single format to ingest rather than building custom integrations per merchant.
 
 ## The One-Liner
 
-**"Install shopping skills for your AI agent."**
+**"Make your store shoppable by AI agents."**
 
 Alternative framings:
-- "Teach your agent how to shop."
-- "The package manager for commerce skills."
-- "npm install, but for shopping."
+- "The open standard for agentic commerce."
+- "Get found by AI shopping agents."
+- "SEO was for search engines. shopy.sh is for shopping agents."
 
-## How It Works (Developer Experience)
+For the developer/CLI angle:
+- "Install shopping skills for your AI agent."
+- "The package manager for commerce skills."
+
+## How It Works
+
+### For Merchants
+
+1. Your store gets scanned (via CreditClaw or self-service)
+2. A SKILL.md file is generated in the shopy.sh format — it describes how agents can search, browse, cart, and check out at your store
+3. The skill is published to the shopy.sh catalog
+4. AI agents discover your store through the catalog, the CLI, or direct install
+5. Agents shop at your store, and their feedback feeds back into your ASX Score and AXS Rating
+
+### For Agent Developers (CLI)
 
 ### Install a skill
 
@@ -106,48 +124,52 @@ Every skill in the catalog shows:
 
 ## Brand Voice
 
-**Tone:** Technical, concise, no-nonsense. Like Vercel's docs or Stripe's API reference. Assumes the reader is a developer who builds things. No marketing fluff, no "revolutionizing" or "disrupting."
+**Tone:** Clear, authoritative, practical. Speaks to technical e-commerce professionals — people who understand SEO, structured data, and APIs, but aren't necessarily writing code every day. Think Shopify's partner docs or Stripe's merchant guides — professional and specific without being impenetrable.
 
-**Language patterns:**
-- "Install a skill" not "Empower your agent with capabilities"
+When speaking to the merchant/CTO audience:
+- "Make your store discoverable by AI shopping agents" not "Empower your agent with capabilities"
+- "Your ASX Score is 74/100 — here's what to improve" not "Achieve a strong agent readiness profile"
+- "Agents can't find your products because you're missing structured data" not "Optimize your agentic commerce metadata layer"
+- "SEO made you findable by Google. shopy.sh makes you findable by ChatGPT." not "Revolutionize your discoverability paradigm"
+
+When speaking to the developer audience:
 - "Run `npx shopy add amazon`" not "Get started by exploring our catalog"
 - "The skill tells your agent how to search, cart, and checkout" not "Seamlessly integrate commerce workflows"
-- "ASX Score: 74/100" not "This merchant has achieved a strong agent readiness profile"
 
 **Visual identity (initial direction):**
-- Monospace typography for the logo/wordmark (like Vercel, linear.app)
-- Terminal-inspired UI elements (command examples, code blocks)
+- Clean, modern typography — professional but with a technical edge
+- The `.sh` in the name signals technical credibility — lean into that
 - Minimal color palette — black/white/one accent color
-- The `.sh` in the name already signals "developer tool" — lean into that
+- Data-forward design — scores, charts, comparisons front and center
 
 ## shopy.sh vs creditclaw.com
 
 | | shopy.sh | creditclaw.com |
 |---|---|---|
-| **Audience** | Agent developers | Merchants and brand owners |
-| **Question it answers** | "How do I teach my agent to shop at X?" | "How agent-ready is my store?" |
-| **Primary action** | Install a skill | Scan your domain |
-| **Tone** | Developer docs | Product marketing |
-| **Content** | Specification + catalog + CLI | Scanner tool + brand catalog + dashboard |
-| **Open/closed** | Open standard, open catalog | Commercial platform |
-| **Revenue role** | Distribution channel (drives awareness, adoption) | Revenue engine (scans, subscriptions, gateway) |
+| **Audience** | Merchant dev teams, CTOs, e-commerce professionals + agent developers | Brand owners, procurement teams, agent operators |
+| **Question it answers** | "How do AI agents find and buy from my store?" | "How do I use AI agents to buy for my business?" |
+| **Primary action** | Check your store's score, read the spec, browse the catalog | Scan a domain, manage your brand, configure your agent |
+| **Tone** | Open standard / technical authority | Commercial platform / product marketing |
+| **Content** | Specification + catalog + leaderboard + CLI + developer docs | Scanner tool + brand dashboard + agent management + gateway |
+| **Open/closed** | Open standard, open catalog, community contributions | Commercial platform with free and paid tiers |
+| **Revenue role** | Awareness + adoption + credibility as a standards body | Revenue engine (scans, subscriptions, gateway) |
 
 ### The Flywheel
 
 ```
-creditclaw.com scans a merchant
-  → generates a SKILL.md in shopy.sh format
-    → publishes to shopy.sh catalog
-      → agent developers install the skill
-        → agents shop at the merchant
-          → agents POST feedback ratings
-            → AXS Ratings improve
-              → better skills attract more developers
-                → more agent traffic for merchants
-                  → merchants pay for premium scans / full index
+Merchant learns about agentic commerce via shopy.sh
+  → checks their ASX Score
+    → understands what to improve
+      → adopts the metadata standard (or pays CreditClaw to do it)
+        → skill is published to shopy.sh catalog
+          → agent developers install the skill
+            → agents shop at the merchant
+              → agents POST feedback → AXS Rating improves
+                → better ratings attract more agent traffic
+                  → merchant sees ROI → upgrades to premium / full index
 ```
 
-CreditClaw is the engine. shopy.sh is the distribution layer. They reinforce each other but speak to different audiences.
+shopy.sh is the front door and the open standard. creditclaw.com is the commercial engine behind it. Merchants discover the standard through shopy.sh and implement it through CreditClaw's services.
 
 ## Website Structure
 
