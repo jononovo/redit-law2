@@ -59,7 +59,7 @@ export async function GET(request: NextRequest) {
     orderings: parseCSV(orderingParam),
     paymentMethods: parseCSV(paymentMethodParam),
     subSector: subSectorParam ?? undefined,
-    minRatingOverall: minRating && !isNaN(parseFloat(minRating)) ? parseFloat(minRating) : undefined,
+    minAxsRating: minRating && !isNaN(parseFloat(minRating)) ? parseFloat(minRating) : undefined,
     minRatingSearch: minSearchRating && !isNaN(parseFloat(minSearchRating)) ? parseFloat(minSearchRating) : undefined,
     minRatingStock: minStockRating && !isNaN(parseFloat(minStockRating)) ? parseFloat(minStockRating) : undefined,
     minRatingCheckout: minCheckoutRating && !isNaN(parseFloat(minCheckoutRating)) ? parseFloat(minCheckoutRating) : undefined,
@@ -123,8 +123,8 @@ function brandToVendorResponse(b: BrandIndex) {
       deals_url: b.dealsUrl ?? null,
       loyalty_program: b.loyaltyProgram ?? null,
     } : null,
-    ratings: b.ratingOverall ? {
-      overall: Number(b.ratingOverall),
+    ratings: b.axsRating ? {
+      axs_rating: Number(b.axsRating),
       search_accuracy: Number(b.ratingSearchAccuracy),
       stock_reliability: Number(b.ratingStockReliability),
       checkout_completion: Number(b.ratingCheckoutCompletion),

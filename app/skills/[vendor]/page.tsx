@@ -157,9 +157,9 @@ export default async function VendorDetailPage({ params }: Props) {
       priceCurrency: "USD",
       availability: "https://schema.org/InStock",
     },
-    aggregateRating: brand.ratingOverall ? {
+    aggregateRating: brand.axsRating ? {
       "@type": "AggregateRating",
-      ratingValue: Number(brand.ratingOverall).toFixed(1),
+      ratingValue: Number(brand.axsRating).toFixed(1),
       bestRating: "5",
       worstRating: "1",
       ratingCount: brand.ratingCount ?? 0,
@@ -569,11 +569,11 @@ export default async function VendorDetailPage({ params }: Props) {
                   </div>
                 )}
 
-                {brand.ratingOverall && (
-                  <div className="bg-white rounded-2xl border border-neutral-100 p-6 mb-8" data-testid="panel-agent-ratings">
+                {brand.axsRating && (
+                  <div className="bg-white rounded-2xl border border-neutral-100 p-6 mb-8" data-testid="panel-axs-ratings">
                     <h3 className="font-bold text-neutral-900 mb-4 flex items-center gap-2">
                       <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
-                      Agent Ratings
+                      AXS Rating
                     </h3>
                     <div className="grid grid-cols-3 gap-4">
                       {[

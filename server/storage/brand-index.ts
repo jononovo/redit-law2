@@ -21,7 +21,7 @@ export interface BrandSearchFilters {
   paymentMethods?: string[];
   subSector?: string;
   minReadiness?: number;
-  minRatingOverall?: number;
+  minAxsRating?: number;
   minRatingSearch?: number;
   minRatingStock?: number;
   minRatingCheckout?: number;
@@ -58,7 +58,7 @@ const LITE_COLUMNS = {
   capabilities: brandIndex.capabilities,
   hasDeals: brandIndex.hasDeals,
   brandData: brandIndex.brandData,
-  ratingOverall: brandIndex.ratingOverall,
+  axsRating: brandIndex.axsRating,
   ratingCount: brandIndex.ratingCount,
   updatedAt: brandIndex.updatedAt,
 };
@@ -151,8 +151,8 @@ function buildConditions(filters: BrandSearchFilters) {
   if (filters.minReadiness !== undefined) {
     conditions.push(sql`${brandIndex.agentReadiness} >= ${filters.minReadiness}`);
   }
-  if (filters.minRatingOverall !== undefined) {
-    conditions.push(sql`${brandIndex.ratingOverall}::numeric >= ${filters.minRatingOverall}`);
+  if (filters.minAxsRating !== undefined) {
+    conditions.push(sql`${brandIndex.axsRating}::numeric >= ${filters.minAxsRating}`);
   }
   if (filters.minRatingSearch !== undefined) {
     conditions.push(sql`${brandIndex.ratingSearchAccuracy}::numeric >= ${filters.minRatingSearch}`);
@@ -174,7 +174,7 @@ export const brandIndexMethods: BrandIndexMethods = {
     const isRatingSort = filters.sortBy === "rating";
     const sortCol = filters.sortBy === "name" ? brandIndex.name
       : filters.sortBy === "created_at" ? brandIndex.createdAt
-      : isRatingSort ? brandIndex.ratingOverall
+      : isRatingSort ? brandIndex.axsRating
       : brandIndex.agentReadiness;
     const sortFn = filters.sortDir === "asc" ? asc : desc;
 
