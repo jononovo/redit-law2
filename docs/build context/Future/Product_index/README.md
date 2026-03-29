@@ -6,12 +6,13 @@ This folder contains the planning documents for CreditClaw's agentic commerce st
 
 ## Documents
 
-### Reference & Strategy (not build plans)
+### Reference, Strategy & Brand Identity (not build plans)
 
 | Document | Purpose |
 |---|---|
 | `agentic-commerce-standard.md` | **The standard itself.** Vendor-neutral definition of two proposed open standards: (1) the Agentic Procurement Metadata Standard (SKILL.md frontmatter format for commerce), and (2) the ASX Score & AXS Rating measurement framework. Anyone can read this without knowing CreditClaw. This is the canonical source for metadata field definitions, scoring pillars, signal weights, feedback dimensions, and the aggregation algorithm. |
 | `creditclaw-agentic-commerce-strategy.md` | **Go-to-market strategy.** How CreditClaw commercializes the standards through creditclaw.com and shopy.sh. Covers: what pages and services we offer, the three service tiers (free scan → premium scan → full product index), revenue model, competitive positioning, and how shopy.sh connects to CreditClaw. |
+| `shopy-sh-brand-identity.md` | **shopy.sh brand definition.** Defines shopy.sh as a separate developer-tool-focused brand: "skills.sh for commerce." Covers: what it is, who it's for (agent developers), brand voice (technical/concise like Vercel/Stripe), CLI experience (`npx shopy add amazon`), website structure, how it differs from creditclaw.com, the flywheel between both brands, and open questions. |
 
 ### Build Plans (ready to execute)
 
