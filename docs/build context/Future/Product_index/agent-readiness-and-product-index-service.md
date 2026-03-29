@@ -82,7 +82,14 @@ All generated skill files follow the **shopy.sh** commerce skill standard — Cr
    - Create/update a `brand_index` record with the scan results
    - Store the AXS Rating breakdown (search accuracy, stock reliability, checkout completion)
    - Save a `scan_history` record so we can track score changes over time
-   - Show the merchant a report page with their score, comparisons to sector averages, and improvement tips
+   - Show the merchant a report page with their score, recommendations, and improvement tips
+
+5. **Brand Comparison (Optional)**
+   - Find one comparable brand already in the CreditClaw database (same sector, closest sub-sector overlap, nearest overall score)
+   - Show a side-by-side comparison table: the scanned domain vs. the comparable brand, with all 8 scoring signals as rows
+   - Each metric row has a color indicator (ahead / tied / behind) and a summary line highlighting the biggest gap
+   - If no comparable brand exists in the database for this sector, skip the comparison — no empty state
+   - This is purely domain-level signal comparison using existing scan data — no additional crawling of the comparison brand
 
 **Page:** `/agent-readiness-checker` — public, no auth required. Form with domain input. Results page at `/agent-readiness-checker/[domain]`. See `scan-page-ux-design.md` for full UX spec.
 

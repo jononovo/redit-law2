@@ -330,7 +330,9 @@ Inspired by: `ahrefs.com/website-authority-checker` and `checkpagerank.net`
 └──────────────────────────────────────────────────────────────────┘
 ```
 
-### Layout — Comparison to Sector
+### Layout — Brand Comparison
+
+Show one comparable brand from the CreditClaw database alongside the scanned domain. The comparison brand is selected by: same sector first, then closest sub-sector overlap, then nearest overall score. If no comparable brand exists in the database for this sector, skip this section entirely.
 
 ```
 ┌──────────────────────────────────────────────────────────────────┐
@@ -338,25 +340,48 @@ Inspired by: `ahrefs.com/website-authority-checker` and `checkpagerank.net`
 │  How You Compare                                                 │
 │  ───────────────                                                 │
 │                                                                   │
-│  Office Supplies Sector Average: 61/100                          │
-│  Your Score: 67/100 (above average)                              │
+│  We compared your score to a similar brand in Office Supplies    │
+│  that we've already scanned.                                     │
 │                                                                   │
-│  ┌──────────────────────────────────────────────────────────┐    │
-│  │                                                          │    │
-│  │  Distribution chart showing where this domain falls      │    │
-│  │  relative to other scanned domains in the same sector    │    │
-│  │                                                          │    │
-│  │     ▁▂▃▅▇█▇▅▃▂▁                                        │    │
-│  │              ↑                                           │    │
-│  │          You (67)                                        │    │
-│  │                                                          │    │
-│  └──────────────────────────────────────────────────────────┘    │
+│  ┌─────────────────────────┬──────────────┬──────────────┐       │
+│  │ Metric                  │ staples.com  │ officedepot… │       │
+│  ├─────────────────────────┼──────────────┼──────────────┤       │
+│  │ Overall Score           │    67/100    │    72/100    │       │
+│  ├─────────────────────────┼──────────────┼──────────────┤       │
+│  │ Structured Product Data │    14/20     │    16/20     │       │
+│  │ Search Functionality    │    10/15     │    11/15     │       │
+│  │ Checkout Accessibility  │     8/15     │    12/15     │       │
+│  │ API Availability        │    12/15     │    10/15     │       │
+│  │ Sitemap Quality         │     8/10     │     9/10     │       │
+│  │ Bot Friendliness        │     7/10     │     7/10     │       │
+│  │ Mobile/Responsive       │     4/5      │     4/5      │       │
+│  │ MCP/UCP Support         │     4/10     │     3/10     │       │
+│  └─────────────────────────┴──────────────┴──────────────┘       │
 │                                                                   │
-│  Top scorer in your sector: amazon.com (82)                      │
-│  [View full leaderboard →]                                       │
+│  Each metric row has a color indicator:                           │
+│  🟢 You score higher  ⚪ Tied  🔴 They score higher              │
+│                                                                   │
+│  "You're ahead on API Availability and MCP/UCP Support.          │
+│   Your biggest gap is Checkout Accessibility — see                │
+│   recommendations above."                                        │
 │                                                                   │
 └──────────────────────────────────────────────────────────────────┘
 ```
+
+**Selection logic for the comparison brand:**
+
+1. Query `brand_index` for brands in the same primary sector
+2. If multiple matches, prefer brands with overlapping sub-sectors
+3. Among those, pick the one with the closest overall score (not the highest — we want a peer, not a leader)
+4. Never show the scanned domain as its own comparison
+5. If zero brands exist in the sector, skip comparison entirely — no empty state, just omit the section
+
+**What the comparison is NOT:**
+
+- Not competitive intelligence — we're not crawling the competitor deeper than their own scan
+- Not a ranking — we don't say "you're #3 in your sector"
+- Not product-level — purely domain-level signal comparison
+- The comparison brand's data comes entirely from their own previous Tier 1 scan (already in `brand_index` and `scan_history`)
 
 ---
 
