@@ -168,44 +168,79 @@ interface ASXScoreBreakdown {
 
 ### Phase 2: ASX Score Calculation Engine
 
-**Goal:** Build a scoring module that takes `BuilderOutput` + supplementary crawl data and produces the 8-signal ASX Score.
+**Goal:** Build a self-contained scoring module that fetches a domain's public surface and produces a 0-100 ASX Score with breakdown across 3 pillars and 10 signals.
 
-**New file: `lib/agentic-score/compute.ts`**
+**New directory: `lib/agentic-score/`**
 
-Note: This is a new directory (`lib/agentic-score/`), NOT inside `lib/procurement-skills/builder/`. The score engine is a consumer of the builder's output, not part of the builder itself.
+This is NOT inside `lib/procurement-skills/builder/`. The score engine is completely independent of `analyzeVendor()` — it does its own fetching and analysis. See "Future: Skill Builder / analyzeVendor() Improvements" section at the bottom of this document for how these two systems relate.
 
 **Input:**
 
 ```typescript
 interface ScoreInput {
-  builderOutput: BuilderOutput;       // from analyzeVendor()
+  domain: string;                     // e.g. "staples.com"
+  homepageHtml: string;              // raw HTML (including <script> tags for JSON-LD)
   sitemapContent: string | null;      // raw sitemap.xml content
   robotsTxtContent: string | null;    // raw robots.txt content
-  homepageHtml: string | null;        // for viewport meta tag check (already in BuilderOutput.evidence but may need raw HTML)
+  pageLoadTimeMs: number | null;      // time to fetch homepage in ms
 }
 ```
 
-**Scoring logic:**
+The scanner fetches all inputs itself (homepage, /sitemap.xml, /robots.txt) in parallel before calling the score engine. No dependency on `analyzeVendor()`, `fetchPage()`, or `BuilderOutput`.
 
-| Signal (8 total) | Max | How It's Scored | Data Source |
+**Scoring logic — 3 Pillars, 10 Signals, 100 Points:**
+
+#### Clarity (40 points) — "Can agents find your products?"
+
+| Signal | Max | How It's Scored | Data Source |
 |---|---|---|---|
-| **Structured Product Data** | 20 | JSON-LD Product schema? Open Graph tags? Schema.org markup? | `evidence[]` entries with source `structured_data` or `page_crawl` + check raw homepage HTML for JSON-LD/OG tags |
-| **Sitemap Quality** | 10 | Does `/sitemap.xml` exist? Is it valid XML? Contains product URLs? | `sitemapContent` (supplementary fetch) |
-| **Search Functionality** | 15 | Site search available? `searchUrlTemplate` found? Search API? | `draft.search` fields from BuilderOutput |
-| **Checkout Accessibility** | 15 | Guest checkout? Predictable cart/checkout URLs? Tax exempt? PO numbers? | `draft.checkout` fields from BuilderOutput |
-| **API Availability** | 15 | Public REST/GraphQL API? OpenAPI docs? Documented endpoints? | `draft.checkoutMethods` (includes `native_api` if detected) + evidence from `api_probe` |
-| **Bot Friendliness** | 10 | robots.txt allows crawling? Not blocked? Crawl-delay reasonable? | `robotsTxtContent` (supplementary fetch) |
-| **Mobile/Responsive** | 5 | Viewport meta tag present? | Check homepage HTML for `<meta name="viewport">` |
-| **MCP/UCP Support** | 10 | MCP endpoint? x402? ACP? A2A protocol? | `draft.checkoutMethods` (already includes MCP/x402/ACP from probes) |
+| **JSON-LD / Structured Data** | 20 | JSON-LD Product schema present? Open Graph product tags? Schema.org markup? Multiple product types detected? | Parse `<script type="application/ld+json">` from raw homepage HTML, check for OG tags |
+| **Product Feed / Sitemap** | 10 | Does `/sitemap.xml` exist? Valid XML? Contains product URLs (not just pages)? Linked from robots.txt? | `sitemapContent` fetch |
+| **Clean HTML / Semantic Markup** | 10 | Well-structured DOM? Semantic HTML5 elements? Reasonable tag nesting? Accessible landmarks? | Parse homepage HTML structure |
+
+#### Speed (25 points) — "Can agents search and navigate quickly?"
+
+| Signal | Max | How It's Scored | Data Source |
+|---|---|---|---|
+| **Search API / MCP** | 10 | Programmatic search API detected? MCP endpoint? OpenAPI/Swagger docs? x402/ACP/A2A protocol? | Check for `/api/`, `/.well-known/mcp.json`, OpenAPI links in HTML, MCP/protocol headers |
+| **Internal Site Search** | 10 | On-site search form present? Search URL template discoverable? Returns structured results? | Parse homepage HTML for search forms, `<link rel="search">`, opensearch.xml |
+| **Page Load Performance** | 5 | Homepage load time under thresholds (< 1s = full, < 2s = partial, > 3s = 0) | `pageLoadTimeMs` from fetch timing |
+
+#### Reliability (35 points) — "Can agents complete a purchase?"
+
+| Signal | Max | How It's Scored | Data Source |
+|---|---|---|---|
+| **Access & Authentication** | 10 | Guest checkout available? No mandatory registration? Clear auth paths? No phone verification walls? | Check for guest checkout indicators, account-wall detection in HTML |
+| **Order Management** | 10 | Can an agent select product variants (size/color/qty)? Predictable cart URLs? Clear add-to-cart flows? Editable shipping address forms? | Parse product pages for variant selectors, cart URL patterns, form structures |
+| **Checkout Flow** | 10 | Discount/voucher fields discoverable? Payment methods clearly labeled? Shipping options described with enough detail for agent comprehension? If programmatic checkout exists (MCP/CLI/API), does it include these options? | Analyze checkout URL patterns, payment/shipping option markup |
+| **Bot Tolerance** | 5 | robots.txt allows crawling? No CAPTCHA on landing pages? No aggressive bot-blocking? Reasonable crawl-delay? | `robotsTxtContent` analysis |
+
+**Note on Reliability:** These are proxy measurements from a scan. True reliability is measured through the crowd-sourced AXS Rating system (search accuracy, stock reliability, checkout completion) — which is a separate, untouched system.
+
+**Note on Checkout Flow vs programmatic checkout:** If a site has MCP, CLI, or API-based checkout that includes product selection, cart management, discount application, and payment — the browser-control assessment of Order Management and Checkout Flow becomes less relevant. The score engine should give full or near-full marks on those signals when programmatic checkout is detected.
 
 **Output:**
 
 ```typescript
 interface ASXScoreResult {
   overallScore: number;           // 0-100
-  breakdown: ASXScoreBreakdown;
+  breakdown: ASXScoreBreakdown;   // per-pillar and per-signal scores
   recommendations: ASXRecommendation[];
   label: "Poor" | "Needs Work" | "Fair" | "Good" | "Excellent";
+}
+
+interface ASXScoreBreakdown {
+  clarity: { score: number; max: 40; signals: SignalScore[] };
+  speed: { score: number; max: 25; signals: SignalScore[] };
+  reliability: { score: number; max: 35; signals: SignalScore[] };
+}
+
+interface SignalScore {
+  key: string;               // e.g. "json_ld", "bot_tolerance"
+  label: string;             // e.g. "JSON-LD / Structured Data"
+  score: number;
+  max: number;
+  detail: string;            // human-readable explanation of what was found
 }
 
 interface ASXRecommendation {
@@ -225,12 +260,12 @@ interface ASXRecommendation {
 - 81–100: "Excellent"
 
 **Files to create:**
-- `lib/agentic-score/compute.ts` — scoring engine
+- `lib/agentic-score/types.ts` — ASX score types (ScoreInput, ASXScoreResult, ASXScoreBreakdown, SignalScore, ASXRecommendation)
+- `lib/agentic-score/compute.ts` — scoring engine (takes ScoreInput, returns ASXScoreResult)
+- `lib/agentic-score/signals/` — individual signal detection modules (one per signal or grouped by pillar)
 - `lib/agentic-score/recommendations.ts` — generates recommendations from score gaps
-- `lib/agentic-score/types.ts` — ASX score types
 
-**Files to modify:**
-- `lib/procurement-skills/builder/types.ts` — add ASX score types (additive only, no breaking changes)
+**Files to modify:** None. This is fully self-contained.
 
 ---
 

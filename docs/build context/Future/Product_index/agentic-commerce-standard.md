@@ -94,9 +94,9 @@ metadata:
 
   # === ASX Score (scan-based, 0-100) ===
   asx_score: 82
-  asx_clarity: 30           # out of 35
-  asx_speed: 35             # out of 40
-  asx_reliability: 17       # out of 25
+  asx_clarity: 34           # out of 40
+  asx_speed: 20             # out of 25
+  asx_reliability: 28       # out of 35
   last_scanned: "2026-03-15"
   scan_tier: premium         # free | premium
 
@@ -188,9 +188,9 @@ metadata:
 | Field | Type | Required | Description |
 |---|---|---|---|
 | `asx_score` | integer | Yes | Overall ASX Score (0–100) |
-| `asx_clarity` | integer | No | Clarity pillar sub-score (0–35) |
-| `asx_speed` | integer | No | Speed pillar sub-score (0–40) |
-| `asx_reliability` | integer | No | Reliability pillar sub-score (0–25) |
+| `asx_clarity` | integer | No | Clarity pillar sub-score (0–40) |
+| `asx_speed` | integer | No | Speed pillar sub-score (0–25) |
+| `asx_reliability` | integer | No | Reliability pillar sub-score (0–35) |
 | `last_scanned` | date | No | ISO date of last scan |
 | `scan_tier` | string | No | `free` or `premium` |
 
@@ -442,39 +442,43 @@ Both the ASX Score and AXS Rating are organized around three pillars that map to
 
 ### Signal Breakdown
 
-#### Clarity Signals (35 points)
+#### Clarity Signals (40 points) — "Can agents find your products?"
 
 | Signal | Max Points | What We Check |
 |---|---|---|
-| **Structured Product Data** | 20 | JSON-LD Product schema, Open Graph product tags, Schema.org markup, meta descriptions with product attributes. Sub-signals include: shipping options described in metadata, payment methods described, loyalty program metadata present. |
-| **Sitemap Quality** | 10 | sitemap.xml exists, is valid XML, lists product URLs (not just pages), is linked from robots.txt |
-| **Mobile/Responsive** | 5 | Viewport meta tag present, responsive design indicators |
+| **JSON-LD / Structured Data** | 20 | JSON-LD Product schema, Open Graph product tags, Schema.org markup, meta descriptions with product attributes. Sub-signals include: shipping options described in metadata, payment methods described, loyalty program metadata present. |
+| **Product Feed / Sitemap** | 10 | sitemap.xml exists, is valid XML, lists product URLs (not just pages), is linked from robots.txt |
+| **Clean HTML / Semantic Markup** | 10 | Well-structured DOM using semantic HTML5 elements, reasonable tag nesting depth, accessible landmarks, enabling reliable content extraction even without structured data |
 
-#### Speed Signals (40 points)
-
-| Signal | Max Points | What We Check |
-|---|---|---|
-| **Search Functionality** | 15 | Site search exists, returns structured results, supports query parameters, search URL template discoverable |
-| **API Availability** | 15 | Public REST/GraphQL API detected, OpenAPI/Swagger docs, documented endpoints, developer portal |
-| **MCP/UCP Support** | 10 | MCP endpoint, UCP registration, A2A protocol, x402 support, ACP manifest |
-
-#### Reliability Signals (25 points)
+#### Speed Signals (25 points) — "Can agents search and navigate quickly?"
 
 | Signal | Max Points | What We Check |
 |---|---|---|
-| **Checkout Accessibility** | 15 | Guest checkout available, cart/checkout URLs predictable, tax exemption field present, PO number field present |
-| **Bot Friendliness** | 10 | robots.txt allows crawling, no CAPTCHA on landing pages, no aggressive bot blocking, reasonable crawl-delay |
+| **Search API / MCP** | 10 | Programmatic search API detected, MCP endpoint, OpenAPI/Swagger docs, x402/ACP/A2A protocol support |
+| **Internal Site Search** | 10 | On-site search form present, search URL template discoverable, returns relevant structured results |
+| **Page Load Performance** | 5 | Homepage load time under thresholds (< 1s = full marks, < 2s = partial, > 3s = zero). Fast load is critical for headless agent browsing. |
 
-**Note:** Reliability signals from a scan are proxy measurements only. True reliability is measured through the crowd-sourced AXS Rating.
+#### Reliability Signals (35 points) — "Can agents complete a purchase?"
 
-#### Potential Expansion Signals (Optional — To Be Validated)
+| Signal | Max Points | What We Check |
+|---|---|---|
+| **Access & Authentication** | 10 | Guest checkout available, no mandatory registration walls, clear auth paths, no phone verification barriers |
+| **Order Management** | 10 | Agent can select product variants (size/color/qty), predictable cart URLs, clear add-to-cart flows, editable shipping address forms, ability to modify orders before checkout |
+| **Checkout Flow** | 10 | Discount/voucher fields discoverable, payment methods clearly labeled and selectable, shipping options described with enough detail for agent comprehension. If programmatic checkout exists (MCP/CLI/API) and includes these options, browser-control assessment is less relevant. |
+| **Bot Tolerance** | 5 | robots.txt allows crawling, no CAPTCHA on landing pages, no aggressive bot-blocking, reasonable crawl-delay |
+
+**Note:** Reliability signals from a scan are proxy measurements only. True reliability is measured through the crowd-sourced AXS Rating (search accuracy, stock reliability, checkout completion from real agent interactions).
+
+**Note on programmatic checkout:** If a site provides MCP, CLI, or API-based checkout that covers product selection, cart management, discount application, and payment — the browser-control aspects of Order Management and Checkout Flow become less important. The score engine gives full or near-full marks on those signals when comprehensive programmatic checkout is detected.
+
+#### Potential Expansion Signals (Future — Post-Launch Validation)
 
 | Signal | Pillar | What It Would Check |
 |---|---|---|
-| Shipping/payment/loyalty metadata presence | Clarity | Currently folded into Structured Product Data; could be scored separately |
-| Variant discoverability | Speed | Does the product page expose variant data (sizes, colors) in structured format? |
-| Stock API availability | Speed | Is there a way to check stock programmatically? |
+| Variant discoverability in structured data | Clarity | Does the product page expose variant data (sizes, colors) in JSON-LD or Schema.org format? |
+| Stock API availability | Speed | Is there a way to check stock programmatically without visiting each product page? |
 | Delivery estimate API | Speed | Can the agent get a delivery timeframe without starting checkout? |
+| SKILL.md availability | Reliability | Does the site publish a SKILL.md file that tells arriving agents how to interact with the store? |
 
 ### Score Labels
 
@@ -662,7 +666,7 @@ A store can have a high ASX Score (great technical setup) but a low AXS Rating (
 
 2. **`.well-known/agentic-commerce.json` timing.** When should the merchant-published manifest be developed? After scan data validates the field set? Or as a parallel workstream?
 
-3. **Score signal weights.** The current weights (Clarity: 35, Speed: 40, Reliability: 25) are initial proposals. Should they be validated against real scan data before publishing?
+3. **Score signal weights.** The current weights (Clarity: 40, Speed: 25, Reliability: 35) are initial proposals. Should they be validated against real scan data before publishing?
 
 4. **Expansion signals.** The "potential expansion" signals (variant discoverability, stock API, delivery estimate API, separate shipping/payment/loyalty metadata scoring) — should any of these be included in v1?
 
