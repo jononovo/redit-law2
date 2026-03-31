@@ -427,3 +427,33 @@ Phase 1 (Database)
 ```
 
 Phases 1–3 are backend, phases 4–5 are frontend (can be built in parallel once the API exists), phase 6 is cleanup.
+
+---
+
+## Future: Skill Builder / analyzeVendor() Improvements
+
+The existing `analyzeVendor()` function (in `lib/procurement-skills/builder/analyze.ts`) powers the skill builder pipeline — it fetches a homepage, sends cleaned HTML to an LLM, and extracts a full `VendorSkill` object (sector, sub-sectors, checkout methods, capabilities, payment methods, etc.). It works but has known limitations:
+
+- **Single-page analysis** — Only looks at the homepage (and sometimes linked pages). Misses API docs, product feeds in sitemaps, and deep category structures.
+- **LLM-only taxonomy** — Categories are inferred by the LLM from page content, leading to inconsistent taxonomy across brands.
+- **No structured crawling** — Can't handle JavaScript-heavy SPAs or sites that require rendering.
+
+### Tools to Investigate
+
+| Tool | What It Could Improve |
+|---|---|
+| **Firecrawl** (`github.com/mendableai/firecrawl`) | Multi-page crawling, JS rendering, structured content extraction. Would dramatically improve category detection, checkout flow discovery, and capability identification. Could replace the basic `fetchPage()` with a much richer crawl. |
+| **Exa Web Sets** (`exa.ai`) | Pre-built category taxonomies and web-scale entity matching. Could provide a standardized product taxonomy (aligned with Google Product Taxonomy) that we match brands against, rather than asking the LLM to invent categories each time. Would make taxonomy consistent across the entire index. |
+
+### How This Relates to the ASX Score Scanner
+
+The ASX Score scanner (this build plan) and `analyzeVendor()` are intentionally separate:
+
+- **ASX Score scanner** = lightweight, fast, public-facing. Runs 8 signal checks on a single homepage fetch. Does NOT call `analyzeVendor()`.
+- **`analyzeVendor()`** = deep, rich, used when onboarding brands to the index. Builds full procurement skills.
+
+Future opportunity: after a free scan, offer to run the full `analyzeVendor()` pipeline as an upsell ("Want us to build a complete procurement skill for your store?"). But the two should remain separate functions with separate fetch paths.
+
+### Priority
+
+This is a **post-launch improvement** — not blocking the ASX Score Scanner build. Revisit once the scanner is live and generating leads.
