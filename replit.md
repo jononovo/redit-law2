@@ -308,6 +308,18 @@ Sole source of truth for all brand data across all surfaces (bots, humans, expor
 - `getAllBrandFacets` uses 10-minute in-memory cache (module-level). `invalidateFacetCache()` exported from `server/storage/brand-index.ts` and called automatically on `upsertBrandIndex`.
 - 22+ indexes (5 btree, 7 GIN on arrays, 1 GIN on tsvector, 7 partial)
 
+**ASX Score Engine** (`lib/agentic-score/`):
+Self-contained scoring module that evaluates how well a merchant's website supports AI shopping agents. Completely independent of `analyzeVendor()` and the skill builder pipeline.
+- `compute.ts` — main entry: `computeASXScore(input: ScoreInput): ASXScoreResult`
+- `fetch.ts` — parallel fetcher: `fetchScanInputs(domain: string): Promise<ScoreInput>` (fetches homepage + sitemap.xml + robots.txt in parallel with SSRF protection and manual redirect validation)
+- `recommendations.ts` — generates improvement recommendations sorted by potential point gain
+- `signals/clarity.ts` — JSON-LD (20pts), Product Feed/Sitemap (10pts), Clean HTML (10pts)
+- `signals/speed.ts` — Search API/MCP (10pts), Internal Site Search (10pts), Page Load (5pts)
+- `signals/reliability.ts` — Access & Auth (10pts), Order Management (10pts), Checkout Flow (10pts), Bot Tolerance (5pts)
+- 3 pillars: Clarity (40pts max) + Speed (25pts max) + Reliability (35pts max) = 100pts
+- Labels: Poor (0-20), Needs Work (21-40), Fair (41-60), Good (61-80), Excellent (81-100)
+- Output writes to `brand_index` via `overallScore`, `scoreBreakdown` (jsonb), `recommendations` (jsonb)
+
 **Brand Feedback** (`brand_feedback` table, `server/storage/brand-feedback.ts`):
 Agents and humans rate brands after purchase attempts. Three sub-ratings (search_accuracy, stock_reliability, checkout_completion) at 1-5 scale with outcome tracking.
 - `source` field: `agent` (authenticated bot), `anonymous_agent` (no auth), `human` (Firebase session)
