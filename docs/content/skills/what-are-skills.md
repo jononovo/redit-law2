@@ -29,16 +29,15 @@ Skills go through a lifecycle of quality levels:
 | **Community** | Submitted by users, reviewed but not fully verified |
 | **Draft** | Work in progress, not yet ready for production use |
 
-## Agent Friendliness Score
+## ASX Score
 
-Each skill includes an agent friendliness score (0–5) that indicates how easy it is for a bot to shop at that vendor. The score considers:
+Each vendor in the catalog has an ASX Score (0–100) that measures how well the site supports AI shopping agents. The score evaluates 10 signals across three pillars:
 
-- Whether guest checkout is available
-- Whether authentication is required for the primary checkout method
-- Support for programmatic checkout
-- Historical success rate from real bot purchases
+- **Clarity** — Can agents find products? (JSON-LD, sitemap, HTML structure)
+- **Speed** — Can agents search quickly? (APIs, site search, page load)
+- **Reliability** — Can agents complete a purchase? (guest checkout, cart management, checkout flow, bot tolerance)
 
-Higher scores mean smoother, more reliable automated purchasing.
+Higher scores mean smoother, more reliable automated purchasing. See [ASX Score](/docs/skills/asx-score) for the full breakdown.
 
 ## How Bots Use Skills
 
