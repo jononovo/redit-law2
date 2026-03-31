@@ -17,6 +17,9 @@ import {
   Clock,
   Code,
   Layers,
+  UserCheck,
+  ClipboardList,
+  Workflow,
 } from "lucide-react";
 import Link from "next/link";
 import type { Metadata } from "next";
@@ -33,19 +36,21 @@ export const metadata: Metadata = {
 
 const CLARITY_SIGNALS = [
   { label: "JSON-LD / Structured Data", description: "Product schema markup that AI agents can parse directly from the page without rendering", maxPoints: 20, icon: <FileJson className="w-4 h-4" /> },
-  { label: "Product Feed (XML/JSON)", description: "Structured data feed for bulk catalog ingestion by AI agents", maxPoints: 10, icon: <BarChart3 className="w-4 h-4" /> },
-  { label: "Clean HTML / Semantic Markup", description: "Well-structured DOM that enables reliable content extraction", maxPoints: 10, icon: <Code className="w-4 h-4" /> },
+  { label: "Product Feed / Sitemap", description: "Structured sitemap with product URLs for bulk catalog discovery by AI agents", maxPoints: 10, icon: <BarChart3 className="w-4 h-4" /> },
+  { label: "Clean HTML / Semantic Markup", description: "Well-structured DOM with semantic elements that enables reliable content extraction", maxPoints: 10, icon: <Code className="w-4 h-4" /> },
 ];
 
 const SPEED_SIGNALS = [
-  { label: "Search API / MCP", description: "Programmatic API or MCP endpoint for direct product queries without browser rendering", maxPoints: 15, icon: <Zap className="w-4 h-4" /> },
+  { label: "Search API / MCP", description: "Programmatic API or MCP endpoint for direct product queries without browser rendering", maxPoints: 10, icon: <Zap className="w-4 h-4" /> },
   { label: "Internal Site Search", description: "On-site search that returns relevant results for product queries", maxPoints: 10, icon: <Search className="w-4 h-4" /> },
-  { label: "Page Load Performance", description: "Fast initial load and time-to-interactive for headless browsing", maxPoints: 10, icon: <Clock className="w-4 h-4" /> },
+  { label: "Page Load Performance", description: "Fast initial load and time-to-interactive for headless agent browsing", maxPoints: 5, icon: <Clock className="w-4 h-4" /> },
 ];
 
 const RELIABILITY_SIGNALS = [
-  { label: "Guest Checkout", description: "No account registration required — critical for AI agent purchasing", maxPoints: 15, icon: <ShoppingCart className="w-4 h-4" /> },
-  { label: "Bot Tolerance", description: "No aggressive CAPTCHAs or bot-blocking that prevents agent interaction", maxPoints: 10, icon: <Shield className="w-4 h-4" /> },
+  { label: "Access & Authentication", description: "Guest checkout available, no mandatory registration or phone verification walls blocking agents", maxPoints: 10, icon: <UserCheck className="w-4 h-4" /> },
+  { label: "Order Management", description: "Agents can select product variants, manage cart items, and enter shipping details through clear, predictable flows", maxPoints: 10, icon: <ClipboardList className="w-4 h-4" /> },
+  { label: "Checkout Flow", description: "Discoverable discount fields, clearly labeled payment and shipping options that agents can comprehend and select", maxPoints: 10, icon: <Workflow className="w-4 h-4" /> },
+  { label: "Bot Tolerance", description: "No aggressive CAPTCHAs or bot-blocking that prevents agent interaction", maxPoints: 5, icon: <Shield className="w-4 h-4" /> },
 ];
 
 const FEEDBACK_DIMENSIONS = [
@@ -88,7 +93,7 @@ export default function AXSPage() {
                 <h2 className="text-xl font-bold mb-2">ASX Score</h2>
                 <p className="text-sm text-neutral-500 mb-4">AI-powered analysis &middot; 0&ndash;100 scale</p>
                 <p className="text-neutral-600 text-sm leading-relaxed">
-                  An AI-powered score computed by scanning a brand's website for 8 key signals across three pillars: Clarity, Speed, and Reliability. This measures how well AI shopping agents can find products, search catalogs, and complete purchases.
+                  An AI-powered score computed by scanning a brand's website for 10 key signals across three pillars: Clarity, Speed, and Reliability. This measures how well AI shopping agents can find products, search catalogs, and complete purchases.
                 </p>
               </div>
 
@@ -140,7 +145,7 @@ export default function AXSPage() {
                 number="03"
                 title="Reliability"
                 subtitle="Can the agent complete a purchase?"
-                description="Assesses whether an AI agent can reliably complete the buying process. Guest checkout is essential — requiring account creation blocks most agents. Bot tolerance matters too — aggressive CAPTCHAs prevent agents from interacting at all."
+                description="Assesses the full buying journey — from product selection through checkout. Can an agent pick variants, manage a cart, enter shipping details, apply discounts, and select payment methods? Sites with programmatic checkout (MCP, API, CLI) that cover these steps score highest. For browser-based flows, clarity and predictability of each step matters."
                 criteria={RELIABILITY_SIGNALS}
                 color="purple"
                 icon={<Shield className="w-6 h-6" />}
