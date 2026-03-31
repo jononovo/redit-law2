@@ -10,7 +10,7 @@ export interface SkillJsonPackage {
   checkoutMethods: string[];
   capabilities: string[];
   maturity: string;
-  agentFriendliness: number;
+  asxScore: number;
   search: {
     pattern: string;
     urlTemplate?: string;
@@ -56,7 +56,7 @@ export function generateSkillJson(vendor: VendorSkill): SkillJsonPackage {
     checkoutMethods: vendor.checkoutMethods,
     capabilities: vendor.capabilities,
     maturity: vendor.maturity,
-    agentFriendliness: computeAgentFriendliness(vendor),
+    asxScore: computeAgentFriendliness(vendor) * 20,
     search: vendor.search,
     checkout: vendor.checkout,
     shipping: vendor.shipping,

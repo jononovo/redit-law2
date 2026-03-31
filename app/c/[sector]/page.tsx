@@ -17,7 +17,7 @@ const getSectorBrands = cache(async (sector: VendorSector) => {
   return storage.searchBrands({
     sectors: [sector],
     maturities: ["verified", "official", "beta", "community"],
-    sortBy: "readiness",
+    sortBy: "score",
     sortDir: "desc",
     limit: 200,
     lite: true,
@@ -62,7 +62,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!label) return {};
 
   const title = `${label} AI Procurement Skills | CreditClaw`;
-  const description = `Browse ${label.toLowerCase()} procurement skills for AI agents. Compare checkout methods, agent readiness scores, and capabilities across ${label.toLowerCase()} vendors on CreditClaw.`;
+  const description = `Browse ${label.toLowerCase()} procurement skills for AI agents. Compare checkout methods, ASX scores, and capabilities across ${label.toLowerCase()} vendors on CreditClaw.`;
 
   return {
     title,
@@ -127,8 +127,8 @@ export default async function SectorPage({ params }: Props) {
 
           <p className="text-neutral-600 max-w-2xl" data-testid="text-sector-description">
             {brands.length} procurement {brands.length === 1 ? "skill" : "skills"} for AI
-            agents in the {label.toLowerCase()} sector. Compare checkout methods, agent
-            readiness scores, and capabilities.
+            agents in the {label.toLowerCase()} sector. Compare checkout methods, ASX
+            scores, and capabilities.
           </p>
         </div>
 

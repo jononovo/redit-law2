@@ -1531,7 +1531,12 @@ export const brandIndex = pgTable("brand_index", {
   lastVerified: text("last_verified"),
   activeVersionId: integer("active_version_id"),
 
-  agentReadiness: integer("agent_readiness").default(0),
+  overallScore: integer("overall_score"),
+  scoreBreakdown: jsonb("score_breakdown"),
+  recommendations: jsonb("recommendations"),
+  scanTier: text("scan_tier"),
+  lastScannedAt: timestamp("last_scanned_at"),
+  lastScannedBy: text("last_scanned_by"),
 
   ratingSearchAccuracy: numeric("rating_search_accuracy"),
   ratingStockReliability: numeric("rating_stock_reliability"),
@@ -1549,7 +1554,7 @@ export const brandIndex = pgTable("brand_index", {
   index("brand_index_sector_idx").on(table.sector),
   index("brand_index_tier_idx").on(table.tier),
   index("brand_index_maturity_idx").on(table.maturity),
-  index("brand_index_readiness_idx").on(table.agentReadiness),
+  index("brand_index_score_idx").on(table.overallScore),
 ]);
 
 export type BrandIndex = typeof brandIndex.$inferSelect;

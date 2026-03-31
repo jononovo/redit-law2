@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
   const validSortBy = sortParam === "rating" ? "rating"
     : sortParam === "name" ? "name"
     : sortParam === "created_at" ? "created_at"
-    : "readiness";
+    : "score" as const;
 
   const brands = await storage.searchBrands({
     q: search ?? undefined,
@@ -90,7 +90,7 @@ function brandToVendorResponse(b: BrandIndex) {
     checkout_methods: b.checkoutMethods,
     capabilities: b.capabilities,
     maturity: b.maturity,
-    agent_friendliness: Math.min(Math.floor((b.agentReadiness ?? 0) / 20) + 1, 5),
+    asx_score: b.overallScore ?? null,
     guest_checkout: b.ordering === "guest",
     bulk_pricing: b.capabilities.includes("bulk_pricing"),
     free_shipping_above: b.freeShippingThreshold ? parseFloat(b.freeShippingThreshold) : null,
@@ -130,7 +130,7 @@ function brandToVendorResponse(b: BrandIndex) {
       checkout_completion: Number(b.ratingCheckoutCompletion),
       count: b.ratingCount,
     } : null,
-    agent_readiness: b.agentReadiness,
+    agent_readiness: b.overallScore,
     carries_brands: b.carriesBrands ?? [],
     domain: b.domain,
   };

@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import {
-  Star,
   ShoppingCart,
   Zap,
   Globe,
@@ -13,6 +12,7 @@ import {
   TrendingUp,
   Layers,
   Tag,
+  Star,
 } from "lucide-react";
 import {
   CHECKOUT_METHOD_LABELS,
@@ -69,15 +69,24 @@ export const CHECKOUT_ICONS: Record<CheckoutMethod, React.ReactNode> = {
   browser_automation: <Monitor className="w-3 h-3" />,
 };
 
+export function getScoreColor(score: number | null | undefined): { bg: string; text: string; border: string } {
+  if (score == null) return { bg: "bg-neutral-50", text: "text-neutral-400", border: "border-neutral-200" };
+  if (score >= 86) return { bg: "bg-emerald-50", text: "text-emerald-700", border: "border-emerald-200" };
+  if (score >= 71) return { bg: "bg-green-50", text: "text-green-700", border: "border-green-200" };
+  if (score >= 51) return { bg: "bg-amber-50", text: "text-amber-700", border: "border-amber-200" };
+  if (score >= 31) return { bg: "bg-orange-50", text: "text-orange-700", border: "border-orange-200" };
+  return { bg: "bg-red-50", text: "text-red-700", border: "border-red-200" };
+}
+
 export function VendorCard({ brand }: { brand: BrandIndex }) {
   const vendor = brand.brandData as unknown as VendorSkill | null;
-  const friendliness = Math.min(Math.floor((brand.agentReadiness ?? 0) / 20) + 1, 5);
   const maturity = MATURITY_CONFIG[brand.maturity as SkillMaturity] ?? MATURITY_CONFIG.draft;
   const sectorKey = (brand.sector) as VendorSector;
   const checkoutMethods = (brand.checkoutMethods ?? []) as CheckoutMethod[];
   const capabilities = (brand.capabilities ?? []) as VendorCapability[];
   const subSectors = brand.subSectors ?? [];
   const tier = brand.tier as BrandTier | null;
+  const scoreColor = getScoreColor(brand.overallScore);
 
   return (
     <Link
@@ -160,16 +169,11 @@ export function VendorCard({ brand }: { brand: BrandIndex }) {
 
       <div className="flex items-center justify-between pt-3 border-t border-neutral-50">
         <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1" data-testid={`score-friendliness-${brand.slug}`}>
-            {Array.from({ length: 5 }).map((_, i) => (
-              <Star
-                key={i}
-                className={`w-3.5 h-3.5 ${
-                  i < friendliness ? "text-amber-400 fill-amber-400" : "text-neutral-200"
-                }`}
-              />
-            ))}
-            <span className="text-xs text-neutral-500 ml-1">Agent Score</span>
+          <div className="flex items-center gap-1.5" data-testid={`score-asx-${brand.slug}`}>
+            <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-bold border ${scoreColor.bg} ${scoreColor.text} ${scoreColor.border}`}>
+              {brand.overallScore != null ? brand.overallScore : "—"}
+            </span>
+            <span className="text-xs text-neutral-500">/ 100</span>
           </div>
           {brand.axsRating && (
             <div className="flex items-center gap-1 text-xs" data-testid={`rating-axs-${brand.slug}`}>

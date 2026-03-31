@@ -120,23 +120,13 @@ async function seed() {
 
   for (const vendor of vendors) {
     const row = vendorToRow(vendor);
-    let score = 0;
-    if (row.hasMcp) score += 25;
-    if (row.hasApi) score += 20;
-    if (row.ordering === "guest") score += 15;
-    if (row.capabilities?.includes("programmatic_checkout")) score += 10;
-    if (row.hasDeals) score += 5;
-    if (row.productFeed) score += 5;
-    if (row.maturity === "verified") score += 5;
-    row.agentReadiness = Math.min(score, 100);
-
     await db.insert(brandIndex)
       .values(row)
       .onConflictDoUpdate({
         target: brandIndex.slug,
         set: { ...row, updatedAt: new Date() },
       });
-    console.log(`  ✓ ${vendor.name} (readiness: ${row.agentReadiness}, sector: ${row.sector})`);
+    console.log(`  ✓ ${vendor.name} (sector: ${row.sector})`);
   }
 
   console.log(`\nDone! ${vendors.length} brands seeded.`);

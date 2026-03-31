@@ -298,13 +298,13 @@ Sole source of truth for all brand data across all surfaces (bots, humans, expor
 - `brand_data` jsonb — full VendorSkill object for retrieval
 - `skill_md` text — pre-generated skill markdown
 - `search_vector` tsvector with trigger (name+description at A, tags/sub_sectors/carries_brands at B, sector at C)
-- `agent_readiness` integer score (MCP=25, API=20, guest=15, programmatic_checkout=10, deals=5, feed=5, verified=5)
+- ASX Score columns: `overall_score` (integer, nullable — 0-100 AI-powered score), `score_breakdown` (jsonb — per-signal scores), `recommendations` (jsonb — improvement tips), `scan_tier` (text — free/paid), `last_scanned_at` (timestamp), `last_scanned_by` (text)
 - Rating columns: `rating_search_accuracy` (numeric), `rating_stock_reliability` (numeric), `rating_checkout_completion` (numeric), `axs_rating` (numeric — the "Agentic Experience Score" crowdsourced average), `rating_count` (integer). Null until 5+ weighted feedback events. Drizzle returns `numeric` as strings — always use `Number()` when displaying.
 - B2B columns: `tax_exempt_supported`, `po_number_supported`, `business_account`
 - Maturity progression: draft → community → official (brand claimed) → verified (CreditClaw audited)
-- Storage methods: `searchBrands`, `searchBrandsCount`, `getBrandById`, `getBrandBySlug`, `getRetailersForBrand`, `upsertBrandIndex`, `recomputeReadiness`, `getAllBrandFacets`
-- `searchBrands` supports `lite?: boolean` filter — when true, selects only catalog card fields (excludes `skillMd` and heavy metadata columns, but includes `axsRating` and `ratingCount`). Used by internal search API and sitemap. Export type `BrandCardRow` for type-safe lite consumers.
-- `searchBrands` supports rating-based filters: `minAxsRating`, `minRatingSearch`, `minRatingStock`, `minRatingCheckout`. Also supports `sortBy: "rating"`.
+- Storage methods: `searchBrands`, `searchBrandsCount`, `getBrandById`, `getBrandBySlug`, `getRetailersForBrand`, `upsertBrandIndex`, `getAllBrandFacets`
+- `searchBrands` supports `lite?: boolean` filter — when true, selects only catalog card fields (excludes `skillMd` and heavy metadata columns, but includes `axsRating`, `ratingCount`, `overallScore`). Used by internal search API and sitemap. Export type `BrandCardRow` for type-safe lite consumers.
+- `searchBrands` supports rating-based filters: `minAxsRating`, `minRatingSearch`, `minRatingStock`, `minRatingCheckout`. Also supports `sortBy: "rating"` and `sortBy: "score"` (ASX Score).
 - `getAllBrandFacets` uses 10-minute in-memory cache (module-level). `invalidateFacetCache()` exported from `server/storage/brand-index.ts` and called automatically on `upsertBrandIndex`.
 - 22+ indexes (5 btree, 7 GIN on arrays, 1 GIN on tsvector, 7 partial)
 
@@ -319,7 +319,7 @@ Agents and humans rate brands after purchase attempts. Three sub-ratings (search
 - Human feedback UI: `components/dashboard/purchase-feedback-prompt.tsx` — star rating component for post-purchase feedback.
 
 **Discovery API** (`app/api/v1/bot/skills/route.ts`):
-Now queries `brand_index` table via storage layer instead of in-memory registry. Query params: `category` (deprecated alias for `sector`), `search` (full-text), `sector`, `tier`, `maturity`, `checkout`, `capability`, `ordering_permission`, `payment_method`, `has_deals`, `search_api`, `mcp`, `carries_brand`, `ships_to`, `tax_exempt`, `po_number`, `min_rating`, `min_search_rating`, `min_stock_rating`, `min_checkout_rating`, `sort` (readiness|name|created_at|rating). Response includes full taxonomy/buying/deals metadata plus `agent_readiness`, `carries_brands`, `domain`, `ratings` (object with overall/search_accuracy/stock_reliability/checkout_completion/count, or null) per vendor, and `sectors`/`tiers` facets.
+Now queries `brand_index` table via storage layer instead of in-memory registry. Query params: `category` (deprecated alias for `sector`), `search` (full-text), `sector`, `tier`, `maturity`, `checkout`, `capability`, `ordering_permission`, `payment_method`, `has_deals`, `search_api`, `mcp`, `carries_brand`, `ships_to`, `tax_exempt`, `po_number`, `min_rating`, `min_search_rating`, `min_stock_rating`, `min_checkout_rating`, `sort` (score|name|created_at|rating). Response includes full taxonomy/buying/deals metadata plus `asx_score`, `agent_readiness` (backward compat alias for overallScore), `carries_brands`, `domain`, `ratings` (object with overall/search_accuracy/stock_reliability/checkout_completion/count, or null) per vendor, and `sectors`/`tiers` facets.
 
 **Post-publish hook**: When a skill draft is published (`app/api/v1/skills/drafts/[id]/publish/route.ts`), it auto-syncs the brand_index row via `upsertBrandIndex`.
 

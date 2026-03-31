@@ -13,7 +13,7 @@ export function generateDescriptionMd(vendor: VendorSkill, version: string): str
   md += `| **Sector** | ${SECTOR_LABELS[vendor.sector] || vendor.sector} |\n`;
   md += `| **URL** | ${vendor.url} |\n`;
   md += `| **Maturity** | ${vendor.maturity} |\n`;
-  md += `| **Agent Friendliness** | ${friendliness}/5 |\n\n`;
+  md += `| **ASX Score** | ${friendliness * 20}/100 |\n\n`;
 
   md += `## Description\n\n`;
   const caps = vendor.capabilities.map(c => CAPABILITY_LABELS[c] || c).join(", ");
