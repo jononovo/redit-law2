@@ -354,7 +354,6 @@ export interface IStorage {
   getBrandBySlug(slug: string): Promise<BrandIndex | null>;
   getRetailersForBrand(brandName: string): Promise<BrandIndex[]>;
   upsertBrandIndex(data: InsertBrandIndex): Promise<BrandIndex>;
-  recomputeReadiness(slug: string): Promise<number>;
   getAllBrandFacets(): Promise<{ sectors: string[]; tiers: string[] }>;
 
   createBrandFeedback(data: InsertBrandFeedback): Promise<BrandFeedback>;

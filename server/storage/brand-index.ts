@@ -20,28 +20,21 @@ export interface BrandSearchFilters {
   orderings?: string[];
   paymentMethods?: string[];
   subSector?: string;
-  minReadiness?: number;
+  minScore?: number;
   minAxsRating?: number;
   minRatingSearch?: number;
   minRatingStock?: number;
   minRatingCheckout?: number;
   limit?: number;
   offset?: number;
-  sortBy?: "readiness" | "name" | "created_at" | "rating";
+  sortBy?: "score" | "name" | "created_at" | "rating";
   sortDir?: "asc" | "desc";
-  /**
-   * When true, excludes heavy columns (skillMd, most metadata fields) from the query.
-   * Use for catalog card rendering and sitemap generation where only display fields are needed.
-   * Omitted fields will be undefined at runtime despite the BrandIndex return type.
-   * Included lite fields: id, slug, name, sector, subSectors, tier, maturity,
-   * agentReadiness, checkoutMethods, capabilities, hasDeals, brandData, updatedAt.
-   */
   lite?: boolean;
 }
 
 export type BrandCardRow = Pick<BrandIndex,
   | "id" | "slug" | "name" | "sector" | "subSectors" | "tier" | "maturity"
-  | "agentReadiness" | "checkoutMethods" | "capabilities" | "hasDeals"
+  | "overallScore" | "checkoutMethods" | "capabilities" | "hasDeals"
   | "brandData" | "updatedAt"
 >;
 
@@ -53,7 +46,7 @@ const LITE_COLUMNS = {
   subSectors: brandIndex.subSectors,
   tier: brandIndex.tier,
   maturity: brandIndex.maturity,
-  agentReadiness: brandIndex.agentReadiness,
+  overallScore: brandIndex.overallScore,
   checkoutMethods: brandIndex.checkoutMethods,
   capabilities: brandIndex.capabilities,
   hasDeals: brandIndex.hasDeals,
@@ -70,7 +63,6 @@ type BrandIndexMethods = Pick<IStorage,
   | "getBrandBySlug"
   | "getRetailersForBrand"
   | "upsertBrandIndex"
-  | "recomputeReadiness"
   | "getAllBrandFacets"
 >;
 
@@ -81,19 +73,6 @@ const FACET_CACHE_TTL_MS = 10 * 60 * 1000;
 export function invalidateFacetCache() {
   facetCache = null;
   facetCacheExpiry = 0;
-}
-
-function computeReadinessScore(row: Partial<InsertBrandIndex>): number {
-  let score = 0;
-  if (row.hasMcp) score += 25;
-  if (row.hasApi) score += 20;
-  if (row.ordering === "guest") score += 15;
-  const caps = row.capabilities ?? [];
-  if (caps.includes("programmatic_checkout")) score += 10;
-  if (row.hasDeals) score += 5;
-  if (row.productFeed) score += 5;
-  if (row.maturity === "verified") score += 5;
-  return Math.min(score, 100);
 }
 
 function buildConditions(filters: BrandSearchFilters) {
@@ -148,8 +127,8 @@ function buildConditions(filters: BrandSearchFilters) {
   if (filters.subSector) {
     conditions.push(sql`EXISTS (SELECT 1 FROM unnest(${brandIndex.subSectors}) AS s WHERE lower(s) LIKE ${'%' + filters.subSector.toLowerCase() + '%'})`);
   }
-  if (filters.minReadiness !== undefined) {
-    conditions.push(sql`${brandIndex.agentReadiness} >= ${filters.minReadiness}`);
+  if (filters.minScore !== undefined) {
+    conditions.push(sql`${brandIndex.overallScore} >= ${filters.minScore}`);
   }
   if (filters.minAxsRating !== undefined) {
     conditions.push(sql`${brandIndex.axsRating}::numeric >= ${filters.minAxsRating}`);
@@ -175,7 +154,7 @@ export const brandIndexMethods: BrandIndexMethods = {
     const sortCol = filters.sortBy === "name" ? brandIndex.name
       : filters.sortBy === "created_at" ? brandIndex.createdAt
       : isRatingSort ? brandIndex.axsRating
-      : brandIndex.agentReadiness;
+      : brandIndex.overallScore;
     const sortFn = filters.sortDir === "asc" ? asc : desc;
 
     const query = filters.lite
@@ -220,12 +199,11 @@ export const brandIndexMethods: BrandIndexMethods = {
   async getRetailersForBrand(brandName: string): Promise<BrandIndex[]> {
     return db.select().from(brandIndex)
       .where(sql`${brandIndex.carriesBrands} @> ARRAY[${brandName}]::text[]`)
-      .orderBy(desc(brandIndex.agentReadiness));
+      .orderBy(desc(brandIndex.overallScore));
   },
 
   async upsertBrandIndex(data: InsertBrandIndex): Promise<BrandIndex> {
-    const readiness = computeReadinessScore(data);
-    const values = { ...data, agentReadiness: readiness, updatedAt: new Date() };
+    const values = { ...data, updatedAt: new Date() };
 
     const [row] = await db.insert(brandIndex)
       .values(values)
@@ -238,17 +216,6 @@ export const brandIndexMethods: BrandIndexMethods = {
     invalidateFacetCache();
 
     return row;
-  },
-
-  async recomputeReadiness(slug: string): Promise<number> {
-    const existing = await brandIndexMethods.getBrandBySlug(slug);
-    if (!existing) return 0;
-
-    const score = computeReadinessScore(existing);
-    await db.update(brandIndex)
-      .set({ agentReadiness: score, updatedAt: new Date() })
-      .where(eq(brandIndex.slug, slug));
-    return score;
   },
 
   async getAllBrandFacets(): Promise<{ sectors: string[]; tiers: string[] }> {

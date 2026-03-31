@@ -14,7 +14,7 @@ export async function generateMetadata(): Promise<Metadata> {
   } catch {}
 
   const title = "Skill Index — AI Agent Procurement Skills | CreditClaw";
-  const description = `Browse ${total || ""}${total ? "+" : ""} procurement skills that teach AI agents how to shop at verified vendors. Filter by sector, checkout method, and agent readiness score.`;
+  const description = `Browse ${total || ""}${total ? "+" : ""} procurement skills that teach AI agents how to shop at verified vendors. Filter by sector, checkout method, and ASX score.`;
 
   return {
     title,
@@ -45,7 +45,7 @@ export default async function SkillsCatalogPage() {
     [brands, facets, total] = await Promise.all([
       storage.searchBrands({
         maturities: ["verified", "official", "beta", "community"],
-        sortBy: "readiness",
+        sortBy: "score",
         sortDir: "desc",
         limit: PAGE_SIZE,
         lite: true,

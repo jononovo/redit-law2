@@ -28,10 +28,10 @@ export async function GET(request: NextRequest) {
     orderings: parseCSV(url.searchParams.get("ordering")),
     paymentMethods: parseCSV(url.searchParams.get("payment_method")),
     subSector: url.searchParams.get("sub_sector") ?? undefined,
-    minReadiness: url.searchParams.get("min_readiness") ? parseInt(url.searchParams.get("min_readiness")!) : undefined,
+    minScore: url.searchParams.get("min_score") ? parseInt(url.searchParams.get("min_score")!) : undefined,
     limit: url.searchParams.get("limit") ? parseInt(url.searchParams.get("limit")!) : 50,
     offset: url.searchParams.get("offset") ? parseInt(url.searchParams.get("offset")!) : 0,
-    sortBy: (url.searchParams.get("sort") as "readiness" | "name" | "created_at") || "readiness",
+    sortBy: (url.searchParams.get("sort") as "score" | "name" | "created_at") || "score",
     sortDir: (url.searchParams.get("dir") as "asc" | "desc") || "desc",
   };
 

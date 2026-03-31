@@ -47,6 +47,7 @@ import {
 import { BrandClaimButton } from "./brand-claim-button";
 import { SkillPreviewPanel } from "./skill-preview-panel";
 import { CopySkillUrl } from "./copy-skill-url";
+import { getScoreColor } from "@/app/skills/vendor-card";
 import type { Metadata } from "next";
 
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || "https://creditclaw.com";
@@ -109,12 +110,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const brand = await getBrand(slug);
   if (!brand) return {};
 
-  const friendliness = Math.min(Math.floor((brand.agentReadiness ?? 0) / 20) + 1, 5);
+  const score = brand.overallScore;
   const capabilities = (brand.capabilities ?? []).slice(0, 5).join(", ");
 
   return {
     title: `${brand.name} — Agent Procurement Skill | CreditClaw`,
-    description: `${brand.name} agent friendliness: ${friendliness}/5. Checkout methods: ${(brand.checkoutMethods ?? []).join(", ")}. Capabilities: ${capabilities}. ${brand.description || ""}`.slice(0, 160),
+    description: `${brand.name} ASX Score: ${score ?? "unscored"}. Checkout methods: ${(brand.checkoutMethods ?? []).join(", ")}. Capabilities: ${capabilities}. ${brand.description || ""}`.slice(0, 160),
     openGraph: {
       title: `${brand.name} — Procurement Skill for AI Agents`,
       description: `Agent-ready procurement skill for ${brand.name}. Sector: ${brand.sector}. Maturity: ${brand.maturity}.`,
@@ -124,7 +125,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     twitter: {
       card: "summary",
       title: `${brand.name} — CreditClaw Procurement Skill`,
-      description: `Agent friendliness: ${friendliness}/5. ${(brand.checkoutMethods ?? []).length} checkout methods available.`,
+      description: `ASX Score: ${score ?? "unscored"}/100. ${(brand.checkoutMethods ?? []).length} checkout methods available.`,
     },
     alternates: {
       canonical: `${BASE_URL}/skills/${brand.slug}`,
@@ -138,7 +139,7 @@ export default async function VendorDetailPage({ params }: Props) {
   if (!brand) notFound();
 
   const vendor = brand.brandData as unknown as VendorSkill;
-  const friendliness = Math.min(Math.floor((brand.agentReadiness ?? 0) / 20) + 1, 5);
+  const score = brand.overallScore;
   const maturity = MATURITY_CONFIG[brand.maturity as SkillMaturity] ?? MATURITY_CONFIG.draft;
   const skillMd = brand.skillMd || generateVendorSkill(vendor);
   const skillUrl = `https://creditclaw.com/api/v1/bot/skills/${brand.slug}`;
@@ -167,8 +168,8 @@ export default async function VendorDetailPage({ params }: Props) {
     additionalProperty: [
       {
         "@type": "PropertyValue",
-        name: "agentFriendliness",
-        value: friendliness,
+        name: "asxScore",
+        value: score,
       },
       {
         "@type": "PropertyValue",
@@ -277,19 +278,17 @@ export default async function VendorDetailPage({ params }: Props) {
                 )}
 
                 <div className="flex items-center gap-6 mb-8">
-                  <div className="flex items-center gap-1" data-testid="score-agent-friendliness">
-                    {Array.from({ length: 5 }).map((_, i) => (
-                      <Star
-                        key={i}
-                        className={`w-5 h-5 ${
-                          i < friendliness ? "text-amber-400 fill-amber-400" : "text-neutral-200"
-                        }`}
-                      />
-                    ))}
-                    <span className="text-sm font-semibold text-neutral-700 ml-2">
-                      Agent Friendliness ({friendliness}/5)
-                    </span>
-                  </div>
+                  {(() => {
+                    const sc = getScoreColor(score);
+                    return (
+                      <div className="flex items-center gap-2" data-testid="score-asx">
+                        <span className={`inline-flex items-center px-3 py-1 rounded-lg text-lg font-bold border ${sc.bg} ${sc.text} ${sc.border}`}>
+                          {score != null ? score : "—"}
+                        </span>
+                        <span className="text-sm font-semibold text-neutral-500">/ 100 ASX Score</span>
+                      </div>
+                    );
+                  })()}
                   {vendor.feedbackStats?.successRate != null && (
                     <div className="flex items-center gap-1.5" data-testid="stat-success-rate">
                       <TrendingUp className="w-4 h-4 text-green-500" />

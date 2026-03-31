@@ -5,23 +5,28 @@ import {
   ShoppingCart,
   CreditCard,
   CheckCircle2,
-  XCircle,
   Zap,
   Globe,
-  Monitor,
   Star,
   ArrowRight,
   BarChart3,
   Users,
   Bot,
   Shield,
+  FileJson,
+  Clock,
+  Code,
+  Layers,
+  UserCheck,
+  ClipboardList,
+  Workflow,
 } from "lucide-react";
 import Link from "next/link";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Agentic Experience Score (AXS) | CreditClaw",
-  description: "How CreditClaw evaluates brands for AI agent commerce. Two complementary scores: Agentic Readiness (static capability analysis) and AXS Rating (crowdsourced performance from real agent interactions).",
+  description: "How CreditClaw evaluates brands for AI agent commerce. Two complementary scores: ASX Score (AI-powered analysis of agent shopping readiness) and AXS Rating (crowdsourced performance from real agent interactions).",
   openGraph: {
     title: "Agentic Experience Score (AXS) | CreditClaw",
     description: "The standard for measuring how well brands support AI agent commerce.",
@@ -29,26 +34,23 @@ export const metadata: Metadata = {
   },
 };
 
-const DISCOVERY_CRITERIA = [
-  { label: "MCP Protocol Support", description: "Brand exposes a Model Context Protocol server for structured product discovery", points: 25, icon: <Globe className="w-4 h-4" /> },
-  { label: "Search API", description: "Programmatic API for querying product catalogs and availability", points: 20, icon: <Zap className="w-4 h-4" /> },
-  { label: "Product Feed", description: "Structured data feed (XML/JSON) for bulk catalog ingestion", points: 5, icon: <BarChart3 className="w-4 h-4" /> },
-  { label: "Internal Site Search", description: "On-site search functionality accessible via browser automation", points: 0, icon: <Search className="w-4 h-4" /> },
+const CLARITY_SIGNALS = [
+  { label: "JSON-LD / Structured Data", description: "Product schema markup that AI agents can parse directly from the page without rendering", maxPoints: 20, icon: <FileJson className="w-4 h-4" /> },
+  { label: "Product Feed / Sitemap", description: "Structured sitemap with product URLs for bulk catalog discovery by AI agents", maxPoints: 10, icon: <BarChart3 className="w-4 h-4" /> },
+  { label: "Clean HTML / Semantic Markup", description: "Well-structured DOM with semantic elements that enables reliable content extraction", maxPoints: 10, icon: <Code className="w-4 h-4" /> },
 ];
 
-const ORDERING_CRITERIA = [
-  { label: "Guest Checkout", description: "No account registration required to complete a purchase", points: 15, icon: <ShoppingCart className="w-4 h-4" /> },
-  { label: "Programmatic Checkout", description: "API-driven order placement without browser interaction", points: 10, icon: <Zap className="w-4 h-4" /> },
-  { label: "Native API", description: "First-party commerce API for end-to-end purchasing", points: 0, icon: <Globe className="w-4 h-4" /> },
-  { label: "Browser Automation", description: "Checkout supported via headless browser control", points: 0, icon: <Monitor className="w-4 h-4" /> },
+const SPEED_SIGNALS = [
+  { label: "Search API / MCP", description: "Programmatic API or MCP endpoint for direct product queries without browser rendering", maxPoints: 10, icon: <Zap className="w-4 h-4" /> },
+  { label: "Internal Site Search", description: "On-site search that returns relevant results for product queries", maxPoints: 10, icon: <Search className="w-4 h-4" /> },
+  { label: "Page Load Performance", description: "Fast initial load and time-to-interactive for headless agent browsing", maxPoints: 5, icon: <Clock className="w-4 h-4" /> },
 ];
 
-const PURCHASING_CRITERIA = [
-  { label: "ACP / x402 Support", description: "Native support for Agent Checkout Protocol or HTTP 402 payment flows", points: 0, icon: <CreditCard className="w-4 h-4" /> },
-  { label: "Verified Maturity", description: "Skill has been tested and confirmed working by the CreditClaw team", points: 5, icon: <Shield className="w-4 h-4" /> },
-  { label: "Active Deals", description: "Current promotions or discount programs available for agents", points: 5, icon: <Star className="w-4 h-4" /> },
-  { label: "Tax Exemption", description: "Supports tax-exempt purchasing for qualifying organizations", points: 0, icon: <CheckCircle2 className="w-4 h-4" /> },
-  { label: "PO Numbers", description: "Purchase order reference field available at checkout", points: 0, icon: <CheckCircle2 className="w-4 h-4" /> },
+const RELIABILITY_SIGNALS = [
+  { label: "Access & Authentication", description: "Guest checkout available, no mandatory registration or phone verification walls blocking agents", maxPoints: 10, icon: <UserCheck className="w-4 h-4" /> },
+  { label: "Order Management", description: "Agents can select product variants, manage cart items, and enter shipping details through clear, predictable flows", maxPoints: 10, icon: <ClipboardList className="w-4 h-4" /> },
+  { label: "Checkout Flow", description: "Discoverable discount fields, clearly labeled payment and shipping options that agents can comprehend and select", maxPoints: 10, icon: <Workflow className="w-4 h-4" /> },
+  { label: "Bot Tolerance", description: "No aggressive CAPTCHAs or bot-blocking that prevents agent interaction", maxPoints: 5, icon: <Shield className="w-4 h-4" /> },
 ];
 
 const FEEDBACK_DIMENSIONS = [
@@ -79,19 +81,19 @@ export default function AXSPage() {
                 </span>
               </h1>
               <p className="text-lg text-neutral-600 leading-relaxed max-w-2xl mx-auto">
-                Every brand in our index is evaluated through two complementary lenses: a static analysis of technical capabilities, and a dynamic rating crowdsourced from real agent and human interactions.
+                Every brand in our index is evaluated through two complementary lenses: an AI-powered scan of technical agent-readiness, and a dynamic rating crowdsourced from real agent and human interactions.
               </p>
             </div>
 
             <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto mb-20">
-              <div className="bg-white rounded-2xl border border-neutral-100 p-8 shadow-sm" data-testid="card-readiness-score">
+              <div className="bg-white rounded-2xl border border-neutral-100 p-8 shadow-sm" data-testid="card-asx-score">
                 <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center mb-4">
                   <BarChart3 className="w-6 h-6 text-blue-600" />
                 </div>
-                <h2 className="text-xl font-bold mb-2">Agentic Readiness Score</h2>
-                <p className="text-sm text-neutral-500 mb-4">Static analysis &middot; 0&ndash;100 scale</p>
+                <h2 className="text-xl font-bold mb-2">ASX Score</h2>
+                <p className="text-sm text-neutral-500 mb-4">AI-powered analysis &middot; 0&ndash;100 scale</p>
                 <p className="text-neutral-600 text-sm leading-relaxed">
-                  A deterministic score computed from a brand's technical infrastructure. Evaluates protocol support, API availability, checkout flow complexity, and business features. This tells you what a brand <em>should</em> be capable of on paper.
+                  An AI-powered score computed by scanning a brand's website for 10 key signals across three pillars: Clarity, Speed, and Reliability. This measures how well AI shopping agents can find products, search catalogs, and complete purchases.
                 </p>
               </div>
 
@@ -114,39 +116,39 @@ export default function AXSPage() {
             <div className="max-w-3xl mx-auto text-center mb-12">
               <h2 className="text-3xl font-extrabold mb-4" data-testid="heading-pillars">The Three Pillars</h2>
               <p className="text-neutral-600">
-                The Agentic Readiness Score is built on three primary pillars that map to the full agent purchasing lifecycle.
+                The ASX Score is built on three pillars that map to the full AI agent shopping lifecycle — from finding products to completing checkout.
               </p>
             </div>
 
             <div className="max-w-5xl mx-auto space-y-12">
               <PillarSection
                 number="01"
-                title="Discovery"
-                subtitle="Can the agent find the brand and its products?"
-                description="Evaluates how easily an AI agent can reference, locate, and search a brand's product catalog. Brands that expose structured APIs or MCP endpoints score significantly higher than those requiring browser-based navigation."
-                criteria={DISCOVERY_CRITERIA}
+                title="Clarity"
+                subtitle="Can the agent understand the product catalog?"
+                description="Measures how clearly a brand's products are presented in machine-readable formats. JSON-LD structured data is the highest-value signal — it gives agents direct access to product names, prices, and availability without rendering the page."
+                criteria={CLARITY_SIGNALS}
                 color="blue"
-                icon={<Search className="w-6 h-6" />}
+                icon={<Layers className="w-6 h-6" />}
               />
 
               <PillarSection
                 number="02"
-                title="Ordering & Navigation"
-                subtitle="Can the agent browse, search, and build a cart?"
-                description="Measures the internal navigation experience — whether an agent can query inventory, check pricing, verify stock, and assemble an order through API calls, MCP tools, or browser automation."
-                criteria={ORDERING_CRITERIA}
+                title="Speed"
+                subtitle="Can the agent find products quickly?"
+                description="Evaluates how fast an AI agent can locate specific products. Brands with search APIs or MCP endpoints score highest because agents can query directly. Good internal search and fast page loads also contribute."
+                criteria={SPEED_SIGNALS}
                 color="green"
-                icon={<ShoppingCart className="w-6 h-6" />}
+                icon={<Zap className="w-6 h-6" />}
               />
 
               <PillarSection
                 number="03"
-                title="Purchasing"
-                subtitle="Can the agent complete checkout and pay?"
-                description="Assesses the end-to-end payment and checkout compatibility. Includes support for agentic payment protocols (ACP, x402), guest checkout availability, and business purchasing features like tax exemption and PO numbers."
-                criteria={PURCHASING_CRITERIA}
+                title="Reliability"
+                subtitle="Can the agent complete a purchase?"
+                description="Assesses the full buying journey — from product selection through checkout. Can an agent pick variants, manage a cart, enter shipping details, apply discounts, and select payment methods? Sites with programmatic checkout (MCP, API, CLI) that cover these steps score highest. For browser-based flows, clarity and predictability of each step matters."
+                criteria={RELIABILITY_SIGNALS}
                 color="purple"
-                icon={<CreditCard className="w-6 h-6" />}
+                icon={<Shield className="w-6 h-6" />}
               />
             </div>
           </div>
@@ -157,7 +159,7 @@ export default function AXSPage() {
             <div className="max-w-3xl mx-auto text-center mb-12">
               <h2 className="text-3xl font-extrabold mb-4" data-testid="heading-axs-rating">AXS Rating: Real-World Performance</h2>
               <p className="text-neutral-600">
-                While the Readiness Score measures capability on paper, the AXS Rating captures what actually happens when agents interact with a brand. It's crowdsourced from both AI agents and human reviewers.
+                While the ASX Score measures capability on paper, the AXS Rating captures what actually happens when agents interact with a brand. It's crowdsourced from both AI agents and human reviewers.
               </p>
             </div>
 
@@ -282,7 +284,7 @@ function PillarSection({
   title: string;
   subtitle: string;
   description: string;
-  criteria: { label: string; description: string; points: number; icon: React.ReactNode }[];
+  criteria: { label: string; description: string; maxPoints: number; icon: React.ReactNode }[];
   color: "blue" | "green" | "purple";
   icon: React.ReactNode;
 }) {
@@ -319,11 +321,9 @@ function PillarSection({
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
                 <span className="font-semibold text-sm text-neutral-900">{item.label}</span>
-                {item.points > 0 && (
-                  <span className={`text-[10px] font-bold ${c.text} ${c.bg} px-1.5 py-0.5 rounded border ${c.border}`}>
-                    +{item.points} pts
-                  </span>
-                )}
+                <span className={`text-[10px] font-bold ${c.text} ${c.bg} px-1.5 py-0.5 rounded border ${c.border}`}>
+                  up to {item.maxPoints} pts
+                </span>
               </div>
               <p className="text-xs text-neutral-500 mt-0.5">{item.description}</p>
             </div>

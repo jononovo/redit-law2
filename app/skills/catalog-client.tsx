@@ -39,7 +39,7 @@ import {
   VendorSkill,
 } from "@/lib/procurement-skills/types";
 import type { BrandIndex } from "@/shared/schema";
-import { VendorCard, MATURITY_CONFIG, SECTOR_ICONS, CHECKOUT_ICONS } from "@/app/skills/vendor-card";
+import { VendorCard, MATURITY_CONFIG, SECTOR_ICONS, CHECKOUT_ICONS, getScoreColor } from "@/app/skills/vendor-card";
 
 type FilterState = {
   search: string;
@@ -290,8 +290,8 @@ export default function CatalogClient({
         case "maturity":
           cmp = (a.maturity ?? "").localeCompare(b.maturity ?? "");
           break;
-        case "readiness":
-          cmp = (a.agentReadiness ?? 0) - (b.agentReadiness ?? 0);
+        case "score":
+          cmp = (a.overallScore ?? 0) - (b.overallScore ?? 0);
           break;
         case "deals":
           cmp = (a.hasDeals ? 1 : 0) - (b.hasDeals ? 1 : 0);
@@ -576,7 +576,7 @@ export default function CatalogClient({
                               <th className="text-left px-4 py-3"><SortHeader col="sector">Sector</SortHeader></th>
                               <th className="text-left px-4 py-3"><SortHeader col="tier">Tier</SortHeader></th>
                               <th className="text-left px-4 py-3"><SortHeader col="maturity">Maturity</SortHeader></th>
-                              <th className="text-left px-4 py-3"><SortHeader col="readiness">Agent Score</SortHeader></th>
+                              <th className="text-left px-4 py-3"><SortHeader col="score">ASX Score</SortHeader></th>
                               <th className="text-left px-4 py-3 hidden md:table-cell">Checkout</th>
                               <th className="text-center px-4 py-3"><SortHeader col="deals">Deals</SortHeader></th>
                             </tr>
@@ -584,9 +584,9 @@ export default function CatalogClient({
                           <tbody>
                             {sortedBrands.map((brand) => {
                               const maturity = MATURITY_CONFIG[brand.maturity as SkillMaturity] ?? MATURITY_CONFIG.draft;
-                              const friendliness = Math.min(Math.floor((brand.agentReadiness ?? 0) / 20) + 1, 5);
                               const checkoutMethods = (brand.checkoutMethods ?? []) as CheckoutMethod[];
                               const vendor = brand.brandData as unknown as VendorSkill | null;
+                              const scoreColor = getScoreColor(brand.overallScore);
                               return (
                                 <tr
                                   key={brand.id}
@@ -623,13 +623,11 @@ export default function CatalogClient({
                                     </span>
                                   </td>
                                   <td className="px-4 py-3">
-                                    <div className="flex items-center gap-0.5">
-                                      {Array.from({ length: 5 }).map((_, i) => (
-                                        <Star
-                                          key={i}
-                                          className={`w-3 h-3 ${i < friendliness ? "text-amber-400 fill-amber-400" : "text-neutral-200"}`}
-                                        />
-                                      ))}
+                                    <div className="flex items-center gap-1.5">
+                                      <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold border ${scoreColor.bg} ${scoreColor.text} ${scoreColor.border}`}>
+                                        {brand.overallScore != null ? brand.overallScore : "—"}
+                                      </span>
+                                      <span className="text-[10px] text-neutral-400">/ 100</span>
                                       {vendor?.feedbackStats?.successRate != null && (
                                         <span className="ml-1.5 text-[10px] font-semibold text-green-700 flex items-center gap-0.5">
                                           <TrendingUp className="w-2.5 h-2.5 text-green-500" />

@@ -126,7 +126,7 @@ description: "Shop ${vendor.name} using CreditClaw payment rails"
 homepage: https://creditclaw.com/skills/${vendor.slug}
 requires: [creditclaw]
 maturity: ${vendor.maturity}
-agent_friendliness: ${friendliness}/5
+asx_score: ${friendliness * 20}/100
 last_verified: ${vendor.lastVerified}
 ${vendor.taxonomy ? `sector: ${vendor.taxonomy.sector}
 tier: ${vendor.taxonomy.tier}
@@ -142,7 +142,7 @@ ${vendor.deals ? `current_deals: ${vendor.deals.currentDeals}` : ""}
 
 **Store URL:** ${vendor.url}
 **Sector:** ${vendor.sector}
-**Agent Friendliness:** ${"★".repeat(friendliness)}${"☆".repeat(5 - friendliness)} (${friendliness}/5)
+**ASX Score:** ${friendliness * 20}/100
 **Capabilities:** ${capsList}
 ${vendor.feedbackStats ? `**Success Rate:** ${Math.round(vendor.feedbackStats.successRate * 100)}%` : ""}
 
