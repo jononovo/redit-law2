@@ -352,6 +352,7 @@ export interface IStorage {
   searchBrandsCount(filters: BrandSearchFilters): Promise<number>;
   getBrandById(id: number): Promise<BrandIndex | null>;
   getBrandBySlug(slug: string): Promise<BrandIndex | null>;
+  getBrandByDomain(domain: string): Promise<BrandIndex | null>;
   getRetailersForBrand(brandName: string): Promise<BrandIndex[]>;
   upsertBrandIndex(data: InsertBrandIndex): Promise<BrandIndex>;
   getAllBrandFacets(): Promise<{ sectors: string[]; tiers: string[] }>;

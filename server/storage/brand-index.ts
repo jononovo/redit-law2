@@ -61,6 +61,7 @@ type BrandIndexMethods = Pick<IStorage,
   | "searchBrandsCount"
   | "getBrandById"
   | "getBrandBySlug"
+  | "getBrandByDomain"
   | "getRetailersForBrand"
   | "upsertBrandIndex"
   | "getAllBrandFacets"
@@ -193,6 +194,11 @@ export const brandIndexMethods: BrandIndexMethods = {
 
   async getBrandBySlug(slug: string): Promise<BrandIndex | null> {
     const [row] = await db.select().from(brandIndex).where(eq(brandIndex.slug, slug)).limit(1);
+    return row ?? null;
+  },
+
+  async getBrandByDomain(domain: string): Promise<BrandIndex | null> {
+    const [row] = await db.select().from(brandIndex).where(eq(brandIndex.domain, domain)).limit(1);
     return row ?? null;
   },
 
