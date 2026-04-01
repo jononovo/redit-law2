@@ -1,70 +1,11 @@
-import type { VendorSkill, CheckoutMethod } from "../types";
+// Re-export all types from the canonical source in lib/agentic-score/
+export type {
+  AnalysisEvidence,
+  BuilderOutput,
+  ProbeResult,
+  PageContent,
+  LLMCheckoutAnalysis,
+} from "@/lib/agentic-score/types";
 
-export interface AnalysisEvidence {
-  field: string;
-  source: "robots_txt" | "meta_tags" | "structured_data" | "page_crawl" | "api_probe" | "llm_inference";
-  url: string;
-  snippet: string;
-}
-
-export interface AnalysisResult {
-  vendor: Partial<VendorSkill>;
-  confidence: Record<string, number>;
-  evidence: AnalysisEvidence[];
-  warnings: string[];
-}
-
-export interface BuilderOutput {
-  draft: Partial<VendorSkill>;
-  confidence: Record<string, number>;
-  evidence: AnalysisEvidence[];
-  warnings: string[];
-  reviewNeeded: string[];
-  autoPublish: boolean;
-}
-
-export interface ProbeResult {
-  protocol: CheckoutMethod;
-  found: boolean;
-  url?: string;
-  details?: string;
-}
-
-export interface PageContent {
-  url: string;
-  html: string;
-  title?: string;
-  statusCode: number;
-}
-
-export interface LLMCheckoutAnalysis {
-  name: string;
-  slug: string;
-  category: string;
-  searchPattern: string;
-  searchUrlTemplate: string;
-  productIdFormat: string;
-  guestCheckout: boolean;
-  taxExemptField: boolean;
-  poNumberField: boolean;
-  freeShippingThreshold: number | null;
-  estimatedDeliveryDays: string;
-  businessShipping: boolean;
-  capabilities: string[];
-  tips: string[];
-  sector?: string;
-  subSectors?: string[];
-  tier?: string;
-  tags?: string[];
-  searchApi?: boolean;
-  mcp?: boolean;
-  orderingPermission?: string;
-  checkoutProviders?: string[];
-  paymentMethods?: string[];
-  deliveryOptions?: string;
-  freeDelivery?: string;
-  returnsPolicy?: string;
-  currentDeals?: boolean;
-  dealsUrl?: string;
-  loyaltyProgram?: string;
-}
+// Keep AnalysisResult for backwards compatibility
+export type { BuilderOutput as AnalysisResult } from "@/lib/agentic-score/types";

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { analyzeVendor } from "@/lib/procurement-skills/builder/analyze";
+import { analyzeVendor } from "@/lib/agentic-score";
 import { storage } from "@/server/storage";
 import { analyzeVendorSchema } from "@/shared/schema";
 
