@@ -261,32 +261,33 @@ The generator is a pure transformer — data in, SKILL.md out. No fetching, no L
 
 **What it does:** Makes generated SKILL.md files publicly accessible for AI agents.
 
-**Endpoint:** `GET /brands/[slug]/skill.md` — returns the raw SKILL.md text content.
+**Endpoint:** `GET /brands/[slug]/skill` — returns the raw SKILL.md text content with `Content-Type: text/markdown`.
 
-**Implementation options:**
+**Why `/skill` not `/skill.md`:** Next.js route segments are folder names. A folder literally named `skill.md` (with a dot) is an uncommon pattern that may behave unpredictably across deployments and edge runtimes. Using `/skill` as the route segment avoids this risk entirely — the `Content-Type: text/markdown` header tells clients and agents it's markdown regardless of URL extension.
 
-1. **Next.js API route** (`app/api/v1/scan/skill/route.ts` or `app/brands/[slug]/skill.md/route.ts`):
-   ```typescript
-   export async function GET(request: NextRequest, { params }: { params: { slug: string } }) {
-     const brand = await storage.getBrandBySlug(params.slug);
-     if (!brand?.skillMd) return new NextResponse("Not found", { status: 404 });
-     return new NextResponse(brand.skillMd, {
-       headers: {
-         "Content-Type": "text/markdown; charset=utf-8",
-         "Cache-Control": "public, max-age=86400",
-       },
-     });
-   }
+**Implementation:** `app/brands/[slug]/skill/route.ts`
+
+```typescript
+export async function GET(request: NextRequest, { params }: { params: { slug: string } }) {
+  const brand = await storage.getBrandBySlug(params.slug);
+  if (!brand?.skillMd) return new NextResponse("Not found", { status: 404 });
+  return new NextResponse(brand.skillMd, {
+    headers: {
+      "Content-Type": "text/markdown; charset=utf-8",
+      "Cache-Control": "public, max-age=86400",
+    },
+  });
+}
    ```
-
-2. **On-demand generation:** If `skillMd` is null but the brand has score data, generate it on the fly using the existing `brandData` JSONB + `generateVendorSkill()`, cache the result.
 
 **Trigger:** SKILL.md can be generated:
 - Automatically during scan (Phase 3b, requires Claude)
-- On-demand via `POST /api/v1/scan/skill` with `{ domain: string }`
+- On-demand via `POST /api/v1/scan/skill` with `{ domain: string }` (future)
 - Regenerated when the generator template changes (read `brandData` from DB, no re-scan)
 
-**Response:** Raw markdown text, `Content-Type: text/markdown`, 24-hour cache.
+**On-demand generation:** If `skillMd` is null but the brand has score data, the GET handler can generate it on the fly using the existing `brandData` JSONB + `generateVendorSkill()`, then cache the result to `brand_index.skillMd`.
+
+**Response:** Raw markdown text, `Content-Type: text/markdown; charset=utf-8`, 24-hour cache via `Cache-Control: public, max-age=86400`.
 
 ---
 
@@ -313,6 +314,18 @@ The generator is a pure transformer — data in, SKILL.md out. No fetching, no L
    - sector/subSectors updated if "uncategorized"/empty
    - skillMd saved
    - Curated fields never overwritten
+
+   ⚠ IMPORTANT: Taxonomy guard pattern — `upsertBrandIndex()` excludes only `slug`
+   and `domain` from the update set. All other passed fields (including `sector`)
+   WILL overwrite existing values on conflict. The scan route must preserve
+   curated sectors at the CALLER level, not rely on the storage layer:
+   ```typescript
+   sector: existing?.sector && existing.sector !== "uncategorized"
+     ? existing.sector
+     : taxonomyResult?.sectors[0] ?? "uncategorized",
+   ```
+   The current Tier 1 scan route already uses this pattern (`existing?.sector ?? "uncategorized"`).
+   Phase 3b must extend it — never pass Claude's taxonomy directly without checking first.
 10. Return response (includes slug, enhanced score, taxonomy info)
 ```
 
@@ -348,7 +361,7 @@ Total: ~8-15 seconds (steps 3 and 5 are sequential; within each, everything is p
     "reliability": { "score": 25, "max": 35, "signals": [...] }
   },
   "recommendations": [...],
-  "skillMdUrl": "/brands/staples/skill.md"
+  "skillMdUrl": "/brands/staples/skill"
 }
 ```
 
@@ -381,13 +394,13 @@ No other files change. Score engine, signals, recommendations, frontend — all 
 | `lib/agentic-score/llm.ts` | NEW — Claude analysis: checkout flow + taxonomy classification. Takes stripped HTML, returns structured findings + taxonomy. |
 | `lib/agentic-score/enhance.ts` | NEW — Applies LLM findings to boost regex signal scores (floor principle). |
 | `app/api/v1/scan/route.ts` | Add Claude analysis step after scoring, apply enhancement, persist taxonomy + skillMd. |
-| `server/storage/brand-index.ts` | Add taxonomy persistence: update `sector`/`subSectors` when "uncategorized"/empty. |
+| `server/storage/brand-index.ts` | No structural changes needed — taxonomy guard logic is in the scan route caller (see pipeline step 9 note). |
 
 ### Phase 3c (SKILL.md Serving) — Files to create
 
 | File | Change |
 |---|---|
-| `app/brands/[slug]/skill.md/route.ts` | NEW — GET handler returning raw SKILL.md text from `brand_index.skillMd`. |
+| `app/brands/[slug]/skill/route.ts` | NEW — GET handler returning raw SKILL.md text from `brand_index.skillMd` with `Content-Type: text/markdown`. |
 
 ### Future: Code Consolidation (Optional)
 
