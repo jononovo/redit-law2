@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth/session";
 import { storage } from "@/server/storage";
+import { normalizeDomain } from "@/lib/agentic-score";
 import { prepareVersionData } from "@/lib/procurement-skills/versioning";
 import { generateVendorSkill } from "@/lib/procurement-skills/generator";
 import type { VendorSkill } from "@/lib/procurement-skills/types";
@@ -81,7 +82,8 @@ export async function POST(
 
     try {
       const skillMd = generateVendorSkill(vendor);
-      const domain = (() => { try { return new URL(vendor.url).hostname.replace(/^www\./, ""); } catch { return null; } })();
+      const domain = (() => { try { return normalizeDomain(new URL(vendor.url).hostname); } catch { return null; } })();
+      if (!domain) throw new Error("Cannot derive domain from vendor URL");
       const brandRow: InsertBrandIndex = {
         slug: vendorSlug,
         name: vendor.name,

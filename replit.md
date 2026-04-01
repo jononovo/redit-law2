@@ -292,6 +292,8 @@ Human-facing catalog data source. Separate from the bot API — returns raw Bran
 
 **Brand Index** (`brand_index` table, `server/storage/brand-index.ts`):
 Sole source of truth for all brand data across all surfaces (bots, humans, exports). Single denormalized PostgreSQL table with:
+- **Primary identifier**: `domain` (text, NOT NULL, UNIQUE) — canonical dedup key for scans, cache lookups, upserts. Conflict target for `upsertBrandIndex`.
+- **URL routing key**: `slug` (text, NOT NULL, UNIQUE) — used for `/brands/[slug]` pages and `/brands/[slug]/skill.md`. Derived from domain via `domainToSlug()`: `.com` domains strip TLD (`staples.com` → `staples`), non-`.com` keep full domain minus dots (`staples.co.uk` → `staples-co-uk`). Slug is set on insert only — never overwritten by upsert (excluded from update set).
 - `brand_type` text — business model classification (brand, retailer, marketplace, chain, independent)
 - Flat indexed columns for every filterable field (sector, tier, maturity, ordering, etc.)
 - `carries_brands` text[] array (GIN-indexed) — distinguishes retailers from HQ brands (populated = retailer)
@@ -302,7 +304,7 @@ Sole source of truth for all brand data across all surfaces (bots, humans, expor
 - Rating columns: `rating_search_accuracy` (numeric), `rating_stock_reliability` (numeric), `rating_checkout_completion` (numeric), `axs_rating` (numeric — the "Agentic Experience Score" crowdsourced average), `rating_count` (integer). Null until 5+ weighted feedback events. Drizzle returns `numeric` as strings — always use `Number()` when displaying.
 - B2B columns: `tax_exempt_supported`, `po_number_supported`, `business_account`
 - Maturity progression: draft → community → official (brand claimed) → verified (CreditClaw audited)
-- Storage methods: `searchBrands`, `searchBrandsCount`, `getBrandById`, `getBrandBySlug`, `getRetailersForBrand`, `upsertBrandIndex`, `getAllBrandFacets`
+- Storage methods: `searchBrands`, `searchBrandsCount`, `getBrandById`, `getBrandBySlug`, `getBrandByDomain`, `getRetailersForBrand`, `upsertBrandIndex`, `getAllBrandFacets`
 - `searchBrands` supports `lite?: boolean` filter — when true, selects only catalog card fields (excludes `skillMd` and heavy metadata columns, but includes `axsRating`, `ratingCount`, `overallScore`). Used by internal search API and sitemap. Export type `BrandCardRow` for type-safe lite consumers.
 - `searchBrands` supports rating-based filters: `minAxsRating`, `minRatingSearch`, `minRatingStock`, `minRatingCheckout`. Also supports `sortBy: "rating"` and `sortBy: "score"` (ASX Score).
 - `getAllBrandFacets` uses 10-minute in-memory cache (module-level). `invalidateFacetCache()` exported from `server/storage/brand-index.ts` and called automatically on `upsertBrandIndex`.
@@ -311,7 +313,7 @@ Sole source of truth for all brand data across all surfaces (bots, humans, expor
 **ASX Score Engine** (`lib/agentic-score/`):
 Self-contained scoring module that evaluates how well a merchant's website supports AI shopping agents. Completely independent of `analyzeVendor()` and the skill builder pipeline.
 - `compute.ts` — main entry: `computeASXScore(input: ScoreInput): ASXScoreResult`
-- `fetch.ts` — parallel fetcher: `fetchScanInputs(domain: string): Promise<ScoreInput>` (fetches homepage + sitemap.xml + robots.txt in parallel with SSRF protection and manual redirect validation). Also exports `normalizeDomain(input: string): string` for domain validation/cleanup.
+- `fetch.ts` — parallel fetcher: `fetchScanInputs(domain: string): Promise<ScoreInput>` (fetches homepage + sitemap.xml + robots.txt in parallel with SSRF protection and manual redirect validation). Also exports `normalizeDomain(input: string): string` for domain validation/cleanup, and `domainToSlug(domain: string): string` for URL-friendly slug derivation (`.com` strips TLD, non-`.com` replaces dots with dashes).
 - `extract-meta.ts` — `extractMeta(html, domain)`: extracts `<title>` and `<meta description>` from HTML with domain-based fallbacks
 - `recommendations.ts` — generates improvement recommendations sorted by potential point gain
 - `signals/clarity.ts` — JSON-LD (20pts), Product Feed/Sitemap (10pts), Clean HTML (10pts)

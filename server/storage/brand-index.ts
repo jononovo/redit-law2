@@ -210,18 +210,32 @@ export const brandIndexMethods: BrandIndexMethods = {
 
   async upsertBrandIndex(data: InsertBrandIndex): Promise<BrandIndex> {
     const values = { ...data, updatedAt: new Date() };
+    const { slug: _slug, domain: _domain, ...updateSet } = values;
 
-    const [row] = await db.insert(brandIndex)
-      .values(values)
-      .onConflictDoUpdate({
-        target: brandIndex.slug,
-        set: values,
-      })
-      .returning();
+    const MAX_SLUG_RETRIES = 5;
+    for (let attempt = 0; attempt <= MAX_SLUG_RETRIES; attempt++) {
+      try {
+        const insertValues = attempt === 0
+          ? values
+          : { ...values, slug: `${values.slug}-${attempt}` };
 
-    invalidateFacetCache();
+        const [row] = await db.insert(brandIndex)
+          .values(insertValues)
+          .onConflictDoUpdate({
+            target: brandIndex.domain,
+            set: { ...updateSet, updatedAt: new Date() },
+          })
+          .returning();
 
-    return row;
+        invalidateFacetCache();
+        return row;
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : "";
+        const isSlugConflict = msg.includes("brand_index_slug_unique");
+        if (!isSlugConflict || attempt === MAX_SLUG_RETRIES) throw err;
+      }
+    }
+    throw new Error("Unreachable: slug collision retry exhausted");
   },
 
   async getAllBrandFacets(): Promise<{ sectors: string[]; tiers: string[] }> {

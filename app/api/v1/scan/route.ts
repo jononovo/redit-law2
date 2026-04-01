@@ -3,6 +3,7 @@ import { z } from "zod";
 import { storage } from "@/server/storage";
 import {
   normalizeDomain,
+  domainToSlug,
   fetchScanInputs,
   computeASXScore,
   extractMeta,
@@ -125,48 +126,27 @@ export async function POST(request: NextRequest) {
 
     const scoreResult = computeASXScore(input);
     const meta = extractMeta(input.homepageHtml, domain);
-    const slug = domain.replace(/\./g, "-").replace(/[^a-z0-9-]/g, "");
+    const slug = existing?.slug ?? domainToSlug(domain);
     const now = new Date();
 
-    const brandData: Record<string, unknown> = {};
-    if (existing) {
-      await storage.upsertBrandIndex({
-        slug: existing.slug,
-        name: existing.name,
-        domain,
-        url: existing.url,
-        description: existing.description,
-        sector: existing.sector,
-        submittedBy: existing.submittedBy,
-        submitterType: existing.submitterType,
-        brandData: existing.brandData,
-        overallScore: scoreResult.overallScore,
-        scoreBreakdown: scoreResult.breakdown,
-        recommendations: scoreResult.recommendations,
-        scanTier: "free",
-        lastScannedAt: now,
-        lastScannedBy: "public",
-      });
-    } else {
-      await storage.upsertBrandIndex({
-        slug,
-        name: meta.name,
-        domain,
-        url: `https://${domain}`,
-        description: meta.description,
-        sector: "uncategorized",
-        submittedBy: "asx-scanner",
-        submitterType: "auto_scan",
-        maturity: "draft",
-        overallScore: scoreResult.overallScore,
-        scoreBreakdown: scoreResult.breakdown,
-        recommendations: scoreResult.recommendations,
-        scanTier: "free",
-        lastScannedAt: now,
-        lastScannedBy: "public",
-        brandData,
-      });
-    }
+    await storage.upsertBrandIndex({
+      slug,
+      name: existing?.name ?? meta.name,
+      domain,
+      url: existing?.url ?? `https://${domain}`,
+      description: existing?.description ?? meta.description,
+      sector: existing?.sector ?? "uncategorized",
+      submittedBy: existing?.submittedBy ?? "asx-scanner",
+      submitterType: existing?.submitterType ?? "auto_scan",
+      maturity: existing?.maturity ?? "draft",
+      brandData: existing?.brandData ?? {},
+      overallScore: scoreResult.overallScore,
+      scoreBreakdown: scoreResult.breakdown,
+      recommendations: scoreResult.recommendations,
+      scanTier: "free",
+      lastScannedAt: now,
+      lastScannedBy: "public",
+    });
 
     return NextResponse.json({
       domain,
