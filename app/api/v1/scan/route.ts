@@ -103,6 +103,7 @@ export async function POST(request: NextRequest) {
     ) {
       return NextResponse.json({
         domain,
+        slug: existing.slug,
         name: existing.name,
         score: existing.overallScore,
         label: getScoreLabel(existing.overallScore),
@@ -150,6 +151,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       domain,
+      slug,
       name: existing?.name ?? meta.name,
       score: scoreResult.overallScore,
       label: scoreResult.label,

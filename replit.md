@@ -333,6 +333,25 @@ Public endpoint for the ASX Score Scanner — CreditClaw's lead gen tool. No aut
 - Existing brands: score fields always refreshed, curated fields (name, capabilities, etc.) never overwritten
 - Storage: `getBrandByDomain(domain)` added to IStorage interface and brand-index.ts
 
+**Public Brands API** (`app/api/v1/brands/[slug]/route.ts`):
+Public-facing brand data endpoint. No auth required.
+- `GET /api/v1/brands/[slug]` — returns lean brand profile (score, breakdown, recommendations, capabilities, meta) without full brandData JSONB
+- 404 if slug not found
+
+**Scanner Landing Page** (`app/agentic-shopping-score/page.tsx`):
+Public lead gen tool. SSR page with client-side form component.
+- Hero + domain input + scan button
+- States: idle → scanning → redirecting (auto-redirect to `/brands/[slug]` after 2.5s) → error
+- Uses `domainToSlug` from `lib/agentic-score/domain-utils.ts` (client-safe, no Node deps)
+
+**Brand Results Page** (`app/brands/[slug]/page.tsx`):
+SSR server component showing scan results. Bot-readable with full OG/Twitter/canonical meta.
+- Dynamic metadata via `generateMetadata`
+- Two states: scored (gauge + pillar breakdown + signal detail + recommendations) or unscanned (CTA to scan)
+- Client components: `scan-trigger.tsx` (scan/re-scan button), `copy-url-button.tsx` (share URL)
+- Reuses `getScoreColor` from `app/skills/vendor-card.tsx`
+- Score labels: Poor (0-20), Needs Work (21-40), Fair (41-60), Good (61-80), Excellent (81-100)
+
 **Brand Feedback** (`brand_feedback` table, `server/storage/brand-feedback.ts`):
 Agents and humans rate brands after purchase attempts. Three sub-ratings (search_accuracy, stock_reliability, checkout_completion) at 1-5 scale with outcome tracking.
 - `source` field: `agent` (authenticated bot), `anonymous_agent` (no auth), `human` (Firebase session)
