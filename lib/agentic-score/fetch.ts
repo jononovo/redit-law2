@@ -78,7 +78,7 @@ async function safeFetch(url: string, timeoutMs: number = FETCH_TIMEOUT, depth: 
   }
 }
 
-export function normalizeDomain(input: string): string {
+function normalizeDomain(input: string): string {
   if (!input || typeof input !== "string") {
     throw new Error("Domain is required");
   }
