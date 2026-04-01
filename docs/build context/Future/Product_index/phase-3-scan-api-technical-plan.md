@@ -1,278 +1,307 @@
 # Phase 3: Unified Scan API — Technical Plan
 
-**Status:** Planning  
-**Depends on:** Phase 0 (complete), Phase 2 (complete)  
+**Status:** Planning
+**Depends on:** Phase 0 (complete), Phase 2 (complete)
 **Outcome:** `POST /api/v1/scan` — a public endpoint that deeply scans a merchant domain and returns an ASX Score, signal breakdown, recommendations, and SKILL.md
 
 ---
 
-## First Principles: What Should the Scan Actually Do?
+## First Principles
 
-The original plan treated the scan as a quick regex check against a single homepage fetch. But the scan is the **first impression** of CreditClaw — it's the lead gen tool. A shallow scan produces shallow results that don't impress merchants or give them actionable insight. The scan should be as deep and valuable as we can make it while staying under ~15-20 seconds.
+The scan is CreditClaw's first impression — the lead gen tool. It needs to be as deep and valuable as possible while completing in ~15 seconds. One scan, one pipeline, everything gathered once and saved once.
 
-### What a merchant wants to know from a scan:
+**What a merchant wants:**
+1. How visible are my products to AI agents?
+2. How easily can an AI agent search my store?
+3. Can an AI agent actually buy something?
+4. What should I fix first?
 
-1. **How visible are my products to AI agents?** (Can they find and understand my catalog?)
-2. **How easily can an AI agent search my store?** (APIs, search forms, protocols)
-3. **Can an AI agent actually buy something?** (Checkout flow, guest access, payment methods)
-4. **What should I fix first?** (Prioritized, specific recommendations)
-5. **How do I compare to others in my sector?** (Context for the score)
-
-### What CreditClaw wants from every scan:
-
-1. A rich `brand_index` entry (name, sector, capabilities, checkout methods — not "uncategorized" stubs)
+**What CreditClaw wants from every scan:**
+1. A rich `brand_index` entry (name, sector, capabilities — not stubs)
 2. A SKILL.md file ready for agent consumption
-3. Lead qualification data (what tier of CreditClaw service could help this merchant?)
-4. Growing the index — every scan makes the platform more valuable
+3. Every scan grows the index — a data flywheel
 
 ---
 
-## The Unified Scan Pipeline
+## Two Modules, Clear Responsibilities
 
-One scan, one pipeline, maximum depth. No separate "score-only" and "skill-only" passes.
+### `lib/scan/` — Data Gathering + Scoring
 
-### Data Collection Layer
+Owns ALL data collection: page fetching, API probing, LLM analysis, and scoring. This is the intelligence step. It gathers everything once, scores it, saves everything, and passes the results forward.
 
-The scan fetches data from three sources in parallel:
+### `lib/procurement-skills/` — Skill Transformation (unchanged)
 
-#### Source 1: Multi-page crawl (homepage + key pages)
+A pure transformer. Takes structured data that the scan already gathered and formats it into a SKILL.md. No fetching, no analyzing, no LLM calls. Data in, skill file out.
 
-| Page | Why |
-|---|---|
-| `/` (homepage) | JSON-LD, meta tags, search forms, structured data, overall site structure |
-| `/cart` | Cart management patterns, add-to-cart flows |
-| `/checkout` | Guest checkout, payment methods, PO/tax fields, shipping options |
-| `/business` or `/b2b` | Business features (bulk pricing, invoicing, tax exemption) |
-| `/about` | Brand name, description, company info |
-| `/sitemap.xml` | Product URL structure, catalog size, feed availability |
-| `/robots.txt` | Bot tolerance, crawl rules, AI-specific blocks |
+`lib/procurement-skills/types.ts` stays where it is — it's imported across 12+ files in the app (label maps, type definitions, UI rendering). This is a shared type library, not a scan dependency.
 
-**Two versions of homepage HTML are needed:**
-- **Raw HTML** (with scripts) — for ASX Score signals that detect JSON-LD `<script type="application/ld+json">` blocks, CAPTCHA scripts, and other script-embedded signals
-- **Stripped HTML** (no scripts/styles/SVGs) — for LLM analysis to reduce tokens
+### The Flow
 
-All other pages only need stripped HTML (they go to the LLM, not the score engine).
+```
+lib/scan/run.ts                     → gathers all data, scores, saves to DB
+  ↓ passes BuilderOutput
+lib/procurement-skills/generator.ts → transforms into SKILL.md string
+  ↓ returns skillMd
+lib/scan/run.ts                     → saves skillMd to brand_index, returns everything
+```
 
-#### Source 2: Protocol and API probes (existing `probeForAPIs`)
+If skill generation needs to run again later (format update, re-generation), it reads `brandData` from the DB — no re-scan needed.
 
-- x402 detection (402 responses, x-402 headers)
-- ACP manifest (`.well-known/acp.json`)
-- Public API endpoints (`/api/v1`, `/api-docs`, `/developers`, etc.)
-- MCP endpoint (`.well-known/mcp.json`)
-- Business feature pages (`/tax-exempt`, `/purchase-orders`, `/bulk-orders`, etc.)
+---
 
-These are lightweight HEAD/GET requests that run in parallel.
+## `lib/scan/` — File Structure
 
-#### Source 3: LLM analysis (existing `analyzeCheckoutFlow`)
+```
+lib/scan/
+├── types.ts              All scan-specific types (ScoreInput, ScanResult, SignalKey, etc.)
+├── fetch.ts              SSRF-protected fetching — raw HTML + stripped HTML + sitemap + robots.txt
+├── probes.ts             API/protocol detection (x402, ACP, MCP, business features)
+├── llm.ts                Claude analysis of page content → structured vendor data
+├── score.ts              computeASXScore() — regex signals + LLM enhancement in one place
+├── signals/
+│   ├── clarity.ts        3 signals: JSON-LD, Sitemap, Clean HTML
+│   ├── speed.ts          3 signals: Search API, Site Search, Page Load
+│   └── reliability.ts    4 signals: Access, Order, Checkout, Bot Tolerance
+├── recommendations.ts    Generate prioritized recommendations from signal scores
+├── run.ts                runScan() — the single entry point, orchestrates everything
+└── index.ts              Barrel exports
+```
 
-Claude receives the stripped HTML from all fetched pages and extracts:
-- Brand name, slug, sector classification
-- Search URL templates and product ID formats
-- Guest checkout availability (confirmed from actual checkout page)
-- Payment methods accepted
-- Shipping thresholds and delivery estimates
-- Tax exemption and PO number support
-- Capabilities (from actual page evidence, not homepage guessing)
-- Actionable tips for AI agents
+**11 files. Each file does exactly one thing. The name tells you what it does.**
 
-### Scoring Layer
+### What happens to existing code
 
-`computeASXScore()` runs on the raw data and produces the 0-100 score across 10 signals / 3 pillars.
-
-**Key improvement:** After the regex-based score runs, the LLM findings can **boost** signals where the LLM has stronger evidence. This is a one-way enhancement — the LLM can upgrade a signal, never downgrade it (the regex-based score is the floor).
-
-| Signal | Regex detects from homepage | LLM can upgrade from |
+| Current file | What happens | Why |
 |---|---|---|
-| Access & Auth | "guest checkout" text patterns | Actual checkout page confirms guest flow |
-| Order Management | "add to cart" buttons, cart URLs | Cart page structure, variant selectors |
-| Checkout Flow | Payment method text/icons | Checkout page payment options, shipping fields |
-| Search API / MCP | `/api/v` URLs, MCP references | LLM extracts actual search URL template |
+| `lib/agentic-score/types.ts` | → `lib/scan/types.ts` | Rename, same content |
+| `lib/agentic-score/fetch.ts` | → `lib/scan/fetch.ts` | Merge with builder/fetch.ts — one fetch module, both raw + stripped HTML |
+| `lib/agentic-score/compute.ts` | → `lib/scan/score.ts` | Rename + add LLM enhancement logic (was planned as separate `enhance.ts`) |
+| `lib/agentic-score/recommendations.ts` | → `lib/scan/recommendations.ts` | Move, unchanged |
+| `lib/agentic-score/signals/*` | → `lib/scan/signals/*` | Move, unchanged |
+| `lib/agentic-score/index.ts` | → `lib/scan/index.ts` | Updated exports |
+| `lib/procurement-skills/builder/fetch.ts` | Absorbed into `lib/scan/fetch.ts` | Eliminates SSRF duplication (~100 lines) |
+| `lib/procurement-skills/builder/probes.ts` | → `lib/scan/probes.ts` | Move — probing is data collection, belongs in scan |
+| `lib/procurement-skills/builder/llm.ts` | → `lib/scan/llm.ts` | Move — LLM analysis is data collection, belongs in scan |
+| `lib/procurement-skills/builder/analyze.ts` | Absorbed into `lib/scan/run.ts` | The orchestration logic becomes part of the scan orchestrator |
+| `lib/procurement-skills/builder/types.ts` | Absorbed into `lib/scan/types.ts` | BuilderOutput, PageContent, LLMCheckoutAnalysis merge into scan types |
+| `lib/procurement-skills/generator.ts` | Stays | Pure transformer, no changes |
+| `lib/procurement-skills/types.ts` | Stays | Shared types used across 12+ app files |
 
-Signals that are regex-only (JSON-LD, Sitemap, Clean HTML, Page Load, Bot Tolerance) stay unchanged — the LLM doesn't add value there.
+**After the move:**
+```
+lib/procurement-skills/
+├── types.ts              Shared types (VendorSkill, CheckoutMethod, labels, etc.) — UNCHANGED
+├── generator.ts          generateVendorSkill() — pure data→SKILL.md transformer — UNCHANGED
+└── builder/              EMPTY — delete directory
+```
 
-### Output Layer
+### Callers that need import updates
 
-The pipeline produces:
+| File | Current import | New import |
+|---|---|---|
+| `app/api/v1/skills/submissions/route.ts` | `analyzeVendor` from `builder/analyze` | `runScan` from `lib/scan` (or keep analyzeVendor as re-export) |
+| `app/api/v1/skills/analyze/route.ts` | `analyzeVendor` from `builder/analyze` | Same |
 
-1. **ASXScoreResult** — overall score, label, per-signal breakdown, recommendations
-2. **BuilderOutput** — structured vendor data (name, sector, capabilities, checkout methods, etc.)
-3. **SKILL.md** — generated from BuilderOutput via `generateVendorSkill()`
-4. **brand_index row** — upserted with real data, not stubs
+Only 2 files import from `builder/`. We can either update them or add a re-export in `lib/scan/index.ts` for backward compatibility.
 
 ---
 
-## Future: Firecrawl + Exa Integration
+## The Unified Fetch Module: `lib/scan/fetch.ts`
 
-The pipeline above uses our existing fetch infrastructure. Two external tools would dramatically improve depth:
+This is where the duplication gets eliminated. One file handles all fetching with SSRF protection.
 
-### Firecrawl (`firecrawl.dev`)
+**Exports:**
 
-**What it does:** Multi-page crawling with JavaScript rendering, structured content extraction, and markdown conversion. Handles SPAs, infinite scroll, and JS-heavy sites that our basic `fetch()` misses entirely.
+```typescript
+normalizeDomain(input: string): string
+fetchScanPages(domain: string): Promise<ScanPages>
+```
 
-**Where it helps the scan:**
-- **Category detection:** Crawl product listing pages to understand the actual product taxonomy, not just what the homepage says
-- **Checkout flow discovery:** Render JS-heavy checkout flows (Shopify, WooCommerce) that are invisible to raw HTML fetch
-- **Capability identification:** Crawl `/returns`, `/track-order`, `/business` pages even when they redirect or require JS rendering
-- **Richer HTML for score signals:** JS-rendered DOM gives the JSON-LD and Clean HTML signals much more to work with
+**`ScanPages` contains everything, fetched once:**
 
-**Integration point:** Replace `fetchPages()` with a Firecrawl crawl call. The crawl returns rendered HTML + extracted content for each URL. Our scoring and LLM analysis consume the output the same way.
+```typescript
+interface ScanPages {
+  domain: string;
+  homepageRaw: string;           // Raw HTML with scripts — for score signals (JSON-LD, CAPTCHA detection)
+  homepageStripped: string;      // Stripped HTML — for LLM token efficiency
+  cartPage: PageContent | null;  // /cart — stripped
+  checkoutPage: PageContent | null; // /checkout — stripped
+  businessPage: PageContent | null; // /business — stripped
+  aboutPage: PageContent | null; // /about — stripped
+  sitemapContent: string | null; // /sitemap.xml
+  robotsTxtContent: string | null; // /robots.txt
+  pageLoadTimeMs: number;        // Time to fetch homepage
+}
+```
 
-**Cost model:** Per-page pricing. A 7-page scan would cost ~$0.007-0.01 per scan. At scale (10K scans/month), ~$70-100/month.
+**How it works:**
+1. Normalize domain
+2. Fetch all 7 URLs in parallel (homepage, cart, checkout, business, about, sitemap, robots.txt)
+3. Homepage gets TWO versions: raw (keep scripts for score engine) and stripped (remove scripts/styles/SVGs for LLM)
+4. All other pages get stripped only (they're for LLM consumption)
+5. Return everything in one object
 
-### Exa Web Sets (`exa.ai`)
+**One fetch, two HTML versions, no duplication.** The score engine reads `homepageRaw`. The LLM reads `homepageStripped` + the other stripped pages.
 
-**What it does:** Web-scale entity matching and semantic search. Can find pages that match a concept ("product listing pages on staples.com") rather than exact URL patterns.
-
-**Where it helps the scan:**
-- **Product taxonomy:** Match a merchant against Google Product Taxonomy categories using semantic understanding, not LLM guessing. Consistent taxonomy across the entire index.
-- **Competitor discovery:** Find similar merchants in the same sector for comparison scoring
-- **Catalog intelligence:** Understand what product categories a merchant carries without crawling their entire catalog
-
-**Integration point:** After the crawl + LLM analysis, call Exa to:
-1. Classify the merchant into standardized product categories
-2. Find comparison brands in the same sector
-3. Estimate catalog breadth
-
-**Cost model:** Per-query pricing. 1-2 queries per scan. At scale, ~$20-50/month.
-
-### When to add these
-
-**Phase 3a (now):** Build the pipeline with existing fetch infrastructure. This works today and produces good results.
-
-**Phase 3c (post-launch):** Add Firecrawl for JS rendering and multi-page depth. Biggest impact: sites that currently score poorly because their homepage is a JS shell.
-
-**Phase 3d (post-launch):** Add Exa for taxonomy standardization and competitor discovery. Biggest impact: consistent sector/category data across the index + the comparison feature on the results page.
-
-Both are additive — they slot into the pipeline without changing the scoring or output format. The scan gets deeper, the data gets richer, but the API contract stays the same.
+SSRF protection, redirect handling, timeouts — all in one place.
 
 ---
 
-## Phase 3a: Build the Unified Pipeline
+## `lib/scan/score.ts` — Scoring + LLM Enhancement
 
-### Architecture
+Combines what was `compute.ts` and the planned `enhance.ts` into one file. The score computation and LLM enhancement are one concern: "what's the ASX score?"
 
-```
-app/api/v1/scan/route.ts          → Thin route handler (validate, cache check, orchestrate, respond)
-lib/agentic-score/scan.ts         → NEW: Unified scan orchestrator
-lib/agentic-score/fetch.ts        → Existing: fetchScanInputs() — raw HTML fetch for score engine
-lib/agentic-score/compute.ts      → Existing: computeASXScore() — regex-based scoring
-lib/agentic-score/enhance.ts      → NEW: LLM-based signal enhancement
-lib/agentic-score/extract-meta.ts → NEW: HTML metadata extraction (title, description)
-lib/procurement-skills/builder/   → Existing: analyzeVendor() — LLM analysis + probes (NOT MODIFIED)
-lib/procurement-skills/generator.ts → Existing: generateVendorSkill() — SKILL.md generation (NOT MODIFIED)
-server/storage/brand-index.ts     → Add getBrandByDomain(), updateBrandScore()
-server/storage/types.ts           → Add method signatures
+```typescript
+function computeASXScore(pages: ScanPages, llmFindings: LLMCheckoutAnalysis | null): ASXScoreResult
 ```
 
-### New file: `lib/agentic-score/scan.ts` — The Orchestrator
+**How it works:**
 
-This is the single entry point. It coordinates everything and returns a unified result.
+1. Run all 10 regex-based signal scorers against the raw data (unchanged from current implementation)
+2. If LLM findings are available, apply floor-based enhancement to applicable signals:
+
+| Signal | LLM can upgrade from | Max boost |
+|---|---|---|
+| `access_auth` | LLM confirms guest checkout from /checkout page | +5 pts |
+| `order_management` | LLM found cart management, variant selection | +4 pts |
+| `checkout_flow` | LLM found payment methods, shipping options on checkout page | +4 pts |
+| `search_api` | LLM extracted actual search URL template | +3 pts |
+| `site_search` | LLM confirmed search functionality | +2 pts |
+
+3. Enhancement can only increase scores, never decrease (floor principle)
+4. Generate recommendations from final signal scores
+5. Return `ASXScoreResult`
+
+Signals that stay regex-only (LLM doesn't help):
+- `json_ld` — requires raw `<script>` tags the LLM never sees
+- `product_feed` — binary: sitemap exists or doesn't
+- `clean_html` — DOM structure analysis
+- `page_load` — timing measurement
+- `bot_tolerance` — robots.txt rules + CAPTCHA script detection
+
+---
+
+## `lib/scan/run.ts` — The Orchestrator
+
+Single entry point. Coordinates fetch → probe → LLM → score → skill generation.
 
 ```typescript
 interface ScanResult {
   domain: string;
   name: string;
   sector: string;
-  score: ASXScoreResult;           // overall score + breakdown + recommendations
-  builderOutput: BuilderOutput;    // structured vendor data from LLM
-  skillMd: string;                 // generated SKILL.md
+  score: ASXScoreResult;
+  vendorDraft: Partial<VendorSkill>;  // Structured vendor data from LLM + probes
+  skillMd: string | null;             // null if LLM failed (graceful degradation)
   scannedAt: Date;
+  partial: boolean;                   // true if LLM failed and results are regex-only
 }
 
 async function runScan(domain: string): Promise<ScanResult>
 ```
 
-**Pipeline inside `runScan()`:**
+**Pipeline:**
 
 ```
-1. Normalize domain
+1. fetchScanPages(domain)                    → ScanPages (all 7 pages, ~3-5s)
 
-2. Parallel fetch (all at once):
-   ├── fetchScanInputs(domain)        → raw homepage + sitemap + robots.txt + pageLoadTime
-   └── analyzeVendor(https://{domain}) → BuilderOutput (fetches 5 pages + probes + LLM)
+2. In parallel:
+   ├── probeForAPIs(domain)                  → checkout methods, API endpoints (~2-3s)
+   ├── detectBusinessFeatures(domain)        → capabilities (~2-3s)
+   └── analyzeCheckoutFlow(strippedPages)    → LLM structured data (~5-10s)
 
-3. Sequential processing:
-   a. computeASXScore(scanInputs)     → base ASXScoreResult (regex-only)
-   b. enhanceWithLLM(score, builderOutput) → boosted ASXScoreResult
-   c. extractMeta(rawHtml, domain)    → { name, description } (fallback if LLM missed)
-   d. generateVendorSkill(builderOutput.draft) → SKILL.md string
+3. Merge probe + LLM results into vendorDraft (Partial<VendorSkill>)
 
-4. Merge name/sector: prefer LLM name > extractMeta name > domain
-   Merge sector: prefer LLM sector > "uncategorized"
+4. computeASXScore(pages, llmFindings)       → ASXScoreResult (<10ms)
 
-5. Return ScanResult
+5. generateVendorSkill(vendorDraft)          → SKILL.md string (<10ms)
+
+6. Extract name/sector:
+   - name: LLM name > <title> tag > capitalize(domain)
+   - sector: LLM sector > "uncategorized"
+
+7. Return ScanResult
 ```
 
-Step 2 runs both fetches in parallel. `analyzeVendor()` takes ~10-15s (dominated by LLM). `fetchScanInputs()` takes ~2-5s. Total wall-clock time ≈ 10-15s.
+**Timing:**
+```
+Step 1: fetchScanPages              3-5s   (7 URLs in parallel)
+Step 2: probes + LLM               5-10s  (parallel, LLM dominates)
+Steps 3-7: computation             <100ms
 
-The homepage is fetched twice (once raw by `fetchScanInputs`, once stripped by `analyzeVendor`). This is intentional — they need different HTML versions, and the parallel execution means no time penalty.
+Total: ~8-15 seconds (steps 1 and 2 are sequential; within each, everything is parallel)
+```
 
-### New file: `lib/agentic-score/enhance.ts` — LLM Signal Enhancement
+**Graceful degradation:** If the LLM call fails (API error, timeout), the scan still completes with regex-only scores. `partial: true` is set, `skillMd` is null, and name/sector fall back to HTML extraction. The user gets a score and recommendations — just without the LLM-enhanced depth.
 
-Takes the base `ASXScoreResult` and the `BuilderOutput`, returns an enhanced `ASXScoreResult` with boosted signals.
+---
 
-Rules:
-- **Floor principle:** Enhancement can only increase signal scores, never decrease them
-- Only enhances signals where the LLM has concrete evidence from non-homepage pages
-- Updates the signal `detail` string to note what the LLM confirmed
+## `lib/scan/llm.ts` — LLM Analysis
 
-Enhancement map:
-
-| Signal | LLM field | Boost condition | Max boost |
-|---|---|---|---|
-| `access_auth` | `draft.checkout.guestCheckout` | LLM confirms guest checkout from /checkout page | Up to +5 pts |
-| `order_management` | `draft.checkout`, `draft.capabilities` | LLM found variant selection, cart management | Up to +4 pts |
-| `checkout_flow` | `draft.checkout`, `draft.shipping` | LLM found payment methods, shipping options | Up to +4 pts |
-| `search_api` | `draft.search.urlTemplate` | LLM extracted actual search URL template | Up to +3 pts |
-| `site_search` | `draft.search.pattern` | LLM confirmed search functionality | Up to +2 pts |
-
-Signals NOT enhanced (regex is definitive for these):
-- `json_ld` — requires raw HTML with `<script>` tags; LLM never sees these
-- `product_feed` — binary: sitemap exists or it doesn't
-- `clean_html` — structural analysis of raw DOM
-- `page_load` — timing measurement
-- `bot_tolerance` — robots.txt rules + CAPTCHA script detection
-
-### New file: `lib/agentic-score/extract-meta.ts` — Metadata Extraction
-
-Simple regex extraction from raw homepage HTML. Used as fallback when LLM doesn't provide name/description.
+Moved from `lib/procurement-skills/builder/llm.ts`. Same Claude call, same prompt, same output. The only change: it receives `PageContent[]` from the new unified fetch module instead of the old builder fetch.
 
 ```typescript
-function extractMeta(html: string, domain: string): { name: string; description: string }
+function analyzeCheckoutFlow(pages: PageContent[], baseUrl: string): Promise<{
+  analysis: Partial<LLMCheckoutAnalysis>;
+  confidence: Record<string, number>;
+  evidence: AnalysisEvidence[];
+}>
 ```
 
-- Extracts `<title>` tag, strips common suffixes (" | Official Site", " - Home", etc.)
-- Extracts `<meta name="description" content="...">` 
-- Fallback name: capitalize first segment of domain
-- Fallback description: "Online store at {domain}"
-- ~30 lines, pure regex, no dependencies
+No changes to the prompt or logic. Just a new home.
 
-### Modified: `lib/agentic-score/fetch.ts`
+---
 
-- Export `normalizeDomain()` (currently private)
-- No other changes
+## `lib/scan/probes.ts` — API/Protocol Detection
 
-### Modified: `lib/agentic-score/index.ts`
+Moved from `lib/procurement-skills/builder/probes.ts`. Same probe logic.
 
-- Add exports for `runScan`, `normalizeDomain`, `extractMeta`, `enhanceWithLLM`
+**One change:** Currently uses its own `probeUrl()` and `fetchPage()` from `builder/fetch.ts`. After the move, it imports from `lib/scan/fetch.ts` instead. Same SSRF protection, same behavior, no duplication.
 
-### New storage methods
-
-**`server/storage/types.ts`** — add:
 ```typescript
-getBrandByDomain(domain: string): Promise<BrandIndex | null>;
-updateBrandScore(domain: string, data: Partial<InsertBrandIndex>): Promise<BrandIndex | null>;
+function probeForAPIs(baseUrl: string): Promise<{ methods: CheckoutMethod[]; evidence: AnalysisEvidence[] }>
+function detectBusinessFeatures(baseUrl: string): Promise<{ capabilities: string[]; evidence: AnalysisEvidence[] }>
+function checkProtocolSupport(baseUrl: string, methods: string[]): Promise<{ methodConfig: Record<string, {...}>; evidence: AnalysisEvidence[] }>
 ```
 
-**`server/storage/brand-index.ts`** — implement:
+---
 
-`getBrandByDomain`: Simple `WHERE domain = $1 LIMIT 1`. Index already exists.
+## Storage Layer
 
-`updateBrandScore`: Targeted partial update that only writes the fields we pass. Does NOT overwrite existing rich data.
-- If row exists by domain: update only the provided fields (score, breakdown, recommendations, lastScannedAt, skillMd, etc.)
-- If row doesn't exist: return null (caller handles insert via upsertBrandIndex)
+### New methods in `server/storage/`
 
-### New file: `app/api/v1/scan/route.ts` — The API Route
+**`getBrandByDomain(domain: string): Promise<BrandIndex | null>`**
+
+Simple lookup. Index already exists (`brand_index_domain_idx`).
+
+**`updateBrandScore(domain: string, data: Partial<InsertBrandIndex>): Promise<BrandIndex | null>`**
+
+Targeted partial update. Only writes the fields passed in. Returns null if no row exists for that domain (caller falls back to full insert).
+
+### Data Persistence Rules: Never Overwrite, Always Enrich
+
+**New domain (no existing row):** Full insert with all scan data:
+- `slug`: domain-derived (`staples-com`)
+- `name`, `sector`, `capabilities`, `checkoutMethods`: from LLM + probes
+- `overallScore`, `scoreBreakdown`, `recommendations`: from score engine
+- `skillMd`: from generator
+- `brandData`: full vendorDraft as JSON (preserves all gathered data for future use)
+- `scanTier`: "free", `submittedBy`: "asx-scanner", `submitterType`: "auto_scan", `maturity`: "draft"
+- `lastScannedAt`: now
+
+**Existing row (re-scan or curated brand):** Partial update:
+
+| Category | Fields | Rule |
+|---|---|---|
+| Always update | `overallScore`, `scoreBreakdown`, `recommendations`, `lastScannedAt`, `lastScannedBy`, `scanTier` | Scan data is fresher |
+| Update if null/empty | `skillMd` (if null or `submitterType` is "auto_scan"), `sector` (if "uncategorized") | Don't overwrite curation |
+| Never overwrite | `name`, `capabilities`, `checkoutMethods`, `brandData`, `submittedBy`, `submitterType`, `claimedBy`, `maturity`, AXS Rating fields | Curated data is more valuable |
+
+---
+
+## API Route: `app/api/v1/scan/route.ts`
+
+Thin handler. Validates, checks cache, calls `runScan()`, persists, responds.
 
 ```
 POST /api/v1/scan
@@ -283,25 +312,19 @@ Content-Type: application/json
 **Route logic:**
 
 ```
-1. Parse + validate body (Zod: { domain: z.string().min(3) })
-2. Rate limit check (in-memory, 5 scans/min per IP)
-3. normalizeDomain(domain) — clean domain or throw → 400
-4. getBrandByDomain(domain) — cache check
-5. If cached AND lastScannedAt < 30 days AND overallScore exists:
-   → Return cached result with { cached: true }
+1. Parse body (Zod: { domain: z.string().min(3) })
+2. Rate limit (in-memory, 5/min per IP)
+3. normalizeDomain() → clean domain or 400
+4. getBrandByDomain() → cache check
+5. If cached AND lastScannedAt < 30 days AND overallScore exists → return with cached: true
 6. runScan(domain) → ScanResult
-7. Persist to brand_index:
-   a. getBrandByDomain again (may exist without score)
-   b. If exists: updateBrandScore() — partial update, preserve existing rich data
-   c. If not exists: upsertBrandIndex() — full insert with LLM-enriched data
-   d. Fields written:
-      - Always: overallScore, scoreBreakdown, recommendations, scanTier, lastScannedAt, lastScannedBy, skillMd
-      - Only on insert (new brand): slug, name, domain, url, description, sector, capabilities, checkoutMethods, brandData, submittedBy, submitterType, maturity
-      - Only if currently null (existing brand): name, sector (don't overwrite curated data)
+7. Persist:
+   - If brand exists: updateBrandScore() (partial update)
+   - If new: upsertBrandIndex() (full insert)
 8. Return response
 ```
 
-**Response shape:**
+**Response:**
 
 ```json
 {
@@ -311,6 +334,7 @@ Content-Type: application/json
   "label": "Good",
   "sector": "office",
   "cached": false,
+  "partial": false,
   "scannedAt": "2026-04-01T12:00:00.000Z",
   "breakdown": {
     "clarity": { "score": 30, "max": 40, "signals": [...] },
@@ -324,154 +348,91 @@ Content-Type: application/json
 }
 ```
 
-**Error handling:**
+**Errors:** 400 (bad domain), 422 (unreachable), 429 (rate limit), 500 (internal).
 
-| Status | Condition | Response |
-|---|---|---|
-| 400 | Invalid domain format | `{ error: "invalid_domain", message: "..." }` |
-| 422 | Domain unreachable / DNS failure | `{ error: "unreachable", message: "..." }` |
-| 429 | Rate limit exceeded | `{ error: "rate_limited", message: "Try again in X seconds" }` |
-| 500 | Internal error (LLM failure, etc.) | `{ error: "scan_failed", message: "..." }` |
-
-**Rate limiter:** In-memory `Map<string, number[]>` tracking request timestamps per IP. 5 requests per minute per IP. Cleaned on access (remove entries older than 60 seconds). Simple, no dependencies, works for single-process. Swap for Redis later if needed.
-
-**LLM failure handling:** If `analyzeVendor()` fails (API error, timeout), the scan still returns a result — just the regex-based score without LLM enhancement, and no SKILL.md. The response includes a `partial: true` flag and the `skillMd` field is null. This is a graceful degradation, not a 500.
+**LLM failure:** Returns regex-only score with `partial: true`, `skillMd: null`. Not a 500.
 
 ---
 
-## Phase 3b: SKILL.md as Part of the Unified Scan
+## Future: Firecrawl + Exa Integration
 
-In the unified pipeline, SKILL.md generation is NOT a separate step — it happens inside `runScan()` as step 3d. The `BuilderOutput.draft` from `analyzeVendor()` feeds directly into `generateVendorSkill()`.
+Both slot into the pipeline without changing the architecture:
 
-**What Phase 3b actually covers:**
+### Firecrawl (`firecrawl.dev`) — Phase 3c
 
-The SKILL.md generation already works via `generateVendorSkill()`. Phase 3b is about making sure:
+Replaces the fetch layer in `lib/scan/fetch.ts`. Instead of raw `fetch()` calls, use Firecrawl for JS rendering and multi-page crawling. Same `ScanPages` output shape, richer content.
 
-1. The generated SKILL.md includes the ASX Score (the current `asx_score` field in the SKILL.md frontmatter uses the old `friendliness * 20` calculation — needs to use the actual ASX score)
-2. The SKILL.md is stored in `brand_index.skillMd` and returned in the API response
-3. The SKILL.md is regenerated on re-scan (if score changed) but NOT if the brand has a manually curated skill (check `submitterType !== "auto_scan"`)
+Biggest impact: JS-heavy SPAs (Shopify, WooCommerce) that return empty HTML shells to raw fetch.
 
-**What needs to change in `generateVendorSkill()`:**
+### Exa Web Sets (`exa.ai`) — Phase 3d
 
-Nothing — we said DO NOT MODIFY. Instead, the scan orchestrator passes the correct data:
-- `BuilderOutput.draft` gets the ASX score injected before being passed to `generateVendorSkill()`
-- The `vendor.feedbackStats` can be populated from existing AXS rating data if available
+Adds a post-analysis step in `lib/scan/run.ts`. After LLM analysis, call Exa to standardize the sector/taxonomy against Google Product Taxonomy and find comparison brands.
+
+Biggest impact: consistent categorization across the index + competitor comparison on results page.
+
+Both are additive. The API contract stays the same.
 
 ---
 
-## File Summary
+## Migration Checklist
 
-### New files (4):
-| File | Purpose | Lines (est.) |
+### Files to create:
+| File | Lines (est.) | Purpose |
 |---|---|---|
-| `lib/agentic-score/scan.ts` | Unified scan orchestrator | ~80 |
-| `lib/agentic-score/enhance.ts` | LLM-based signal enhancement | ~100 |
-| `lib/agentic-score/extract-meta.ts` | HTML metadata extraction | ~40 |
-| `app/api/v1/scan/route.ts` | API route handler | ~120 |
+| `lib/scan/types.ts` | ~80 | Merged types from agentic-score + builder |
+| `lib/scan/fetch.ts` | ~180 | Unified fetch — raw + stripped HTML, SSRF protection |
+| `lib/scan/probes.ts` | ~230 | Moved from builder — API/protocol detection |
+| `lib/scan/llm.ts` | ~120 | Moved from builder — Claude analysis |
+| `lib/scan/score.ts` | ~120 | Merged compute + LLM enhancement |
+| `lib/scan/signals/clarity.ts` | ~196 | Moved unchanged |
+| `lib/scan/signals/speed.ts` | ~148 | Moved unchanged |
+| `lib/scan/signals/reliability.ts` | ~306 | Moved unchanged |
+| `lib/scan/recommendations.ts` | ~96 | Moved unchanged |
+| `lib/scan/run.ts` | ~100 | New orchestrator |
+| `lib/scan/index.ts` | ~15 | Barrel exports |
+| `app/api/v1/scan/route.ts` | ~120 | API route handler |
 
-### Modified files (4):
+### Files to modify:
 | File | Change |
 |---|---|
-| `lib/agentic-score/fetch.ts` | Export `normalizeDomain()` |
-| `lib/agentic-score/index.ts` | Add new exports |
 | `server/storage/types.ts` | Add `getBrandByDomain`, `updateBrandScore` |
 | `server/storage/brand-index.ts` | Implement new storage methods |
+| `app/api/v1/skills/submissions/route.ts` | Update import: `analyzeVendor` → `runScan` from `lib/scan` |
+| `app/api/v1/skills/analyze/route.ts` | Update import: same |
 
-### Untouched files (existing, called but not modified):
-| File | Role |
+### Files to delete (after migration):
+| File | Reason |
 |---|---|
-| `lib/agentic-score/compute.ts` | Regex-based scoring engine |
-| `lib/agentic-score/signals/*` | Individual signal scorers |
-| `lib/agentic-score/recommendations.ts` | Recommendation generator |
-| `lib/procurement-skills/builder/analyze.ts` | `analyzeVendor()` — LLM + probes |
-| `lib/procurement-skills/builder/llm.ts` | Claude analysis |
-| `lib/procurement-skills/builder/probes.ts` | API/protocol probes |
-| `lib/procurement-skills/builder/fetch.ts` | Page fetcher (strips HTML) |
-| `lib/procurement-skills/generator.ts` | `generateVendorSkill()` — SKILL.md |
+| `lib/agentic-score/` (entire directory) | Absorbed into `lib/scan/` |
+| `lib/procurement-skills/builder/` (entire directory) | Absorbed into `lib/scan/` |
+
+### Files that stay unchanged:
+| File | Why |
+|---|---|
+| `lib/procurement-skills/types.ts` | Shared types, imported by 12+ app files |
+| `lib/procurement-skills/generator.ts` | Pure transformer, called by scan + 2 other routes |
 
 ---
 
-## Timing Budget
+## Implementation Order
 
-```
-Parallel block (wall-clock ~12-15s):
-├── fetchScanInputs()              2-5s   (homepage + sitemap + robots.txt)
-└── analyzeVendor()               10-15s
-    ├── fetchPages (5 pages)       3-5s   (parallel)
-    ├── probeForAPIs               2-3s   (parallel with fetchPages)
-    ├── detectBusinessFeatures     2-3s   (parallel with fetchPages)
-    └── LLM call (Claude)          5-10s  (sequential after fetches)
+### Step 1: Create `lib/scan/` module
+Move and merge files. Get everything compiling with the new structure. No new functionality yet — just reorganization.
 
-Sequential block (wall-clock ~50-100ms):
-├── computeASXScore()              <10ms  (pure computation)
-├── enhanceWithLLM()               <10ms  (pure computation)
-├── extractMeta()                  <5ms   (regex)
-├── generateVendorSkill()          <10ms  (string concatenation)
-└── DB upsert                      20-50ms
+### Step 2: Unified fetch
+Merge the two fetch modules. One SSRF-protected fetcher that returns `ScanPages` with both raw and stripped HTML.
 
-Total: ~12-15 seconds
-```
+### Step 3: Score + LLM enhancement
+Merge `compute.ts` + enhancement logic into `score.ts`. Accept LLM findings as optional input.
 
----
+### Step 4: Orchestrator (`run.ts`)
+Wire everything together: fetch → probes + LLM (parallel) → score → skill generation.
 
-## Data Flow: Never Overwrite, Always Enrich
+### Step 5: Storage methods
+Add `getBrandByDomain()` and `updateBrandScore()`.
 
-### When brand_index row does NOT exist (new domain):
+### Step 6: API route
+Build the thin `POST /api/v1/scan` handler with cache check, rate limiting, persistence.
 
-Full insert with all available data:
-- `slug`: from LLM or domain-derived (`staples-com` pattern using full domain)
-- `name`: from LLM (fallback: extractMeta)
-- `domain`: normalized domain
-- `url`: `https://{domain}`
-- `description`: from LLM tips or extractMeta
-- `sector`: from LLM (fallback: "uncategorized")
-- `capabilities`: from LLM + probes
-- `checkoutMethods`: from probes
-- `overallScore`, `scoreBreakdown`, `recommendations`: from score engine
-- `skillMd`: from generator
-- `scanTier`: "free"
-- `lastScannedAt`: now
-- `lastScannedBy`: "public-scanner"
-- `submittedBy`: "asx-scanner"
-- `submitterType`: "auto_scan"
-- `maturity`: "draft"
-- `brandData`: full BuilderOutput.draft as JSON
-
-### When brand_index row ALREADY exists (re-scan or existing curated brand):
-
-Partial update — only refresh what the scan provides, never erase curated data:
-
-**Always update** (scan data is fresher):
-- `overallScore`, `scoreBreakdown`, `recommendations`
-- `lastScannedAt`, `lastScannedBy`, `scanTier`
-
-**Update only if currently null/empty** (don't overwrite curation):
-- `skillMd` (if null → generate; if present and `submitterType` is "auto_scan" → regenerate; if present and curated → keep)
-- `sector` (if "uncategorized" → update from LLM; if already classified → keep)
-
-**Never overwrite** (curated data is more valuable):
-- `name` (if set by human/community publish)
-- `capabilities`, `checkoutMethods` (if set by skill builder)
-- `brandData` (if populated by full skill publish)
-- `submittedBy`, `submitterType` (preserves provenance)
-- `claimedBy`, `claimId` (ownership data)
-- `maturity` (if "verified" or "beta", don't downgrade to "draft")
-- AXS Rating fields (`axsRating`, `ratingSearchAccuracy`, etc.)
-
-### Slug strategy for scan-created entries:
-
-Use full domain to avoid collisions: `staples.com` → `staples-com`, `staples.co.uk` → `staples-co-uk`.
-
-This differs from skill builder slugs (which use brand name like `staples`). But since the scan looks up by **domain** (not slug), this doesn't cause conflicts. If a curated skill already exists for the domain, the scan finds it by domain and does a partial update — no new row, no slug collision.
-
----
-
-## Open Questions
-
-1. **Firecrawl/Exa API keys:** Neither is integrated yet. Need API keys configured as environment secrets before Phase 3c/3d. Should we set these up now or defer?
-
-2. **LLM cost per scan:** Each scan calls Claude (~2K input tokens, ~500 output tokens). At Sonnet pricing, ~$0.01-0.02 per scan. At 1000 scans/month (early stage), ~$10-20/month. Acceptable for lead gen ROI. At scale, consider caching LLM results separately or reducing token usage.
-
-3. **Comparison brand feature:** The original plan included finding a comparison brand in the same sector. Deferred from 3a — the sector data from LLM makes this possible, but it requires enough brands in the index to be useful. Can add as a follow-up once the index has ~50+ scanned brands.
-
-4. **Re-scan policy:** Currently 30-day cache for free users. Should paid users be able to force re-scan? Should re-scan regenerate SKILL.md if the curated one hasn't changed? Need to define re-scan behavior for different user tiers.
+### Step 7: Update imports + cleanup
+Update the 2 routes that import from `builder/`. Delete old directories.
