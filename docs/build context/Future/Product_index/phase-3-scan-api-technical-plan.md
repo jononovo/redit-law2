@@ -24,9 +24,9 @@ The scan is CreditClaw's first impression — the lead gen tool. It needs to be 
 
 ---
 
-## Three External Services
+## Two External Services
 
-The scan uses three external services. Each does one thing that the others can't.
+The scan uses two external services. Each does one thing that the other can't.
 
 ### Firecrawl (`firecrawl.dev`) — Page Rendering
 
@@ -42,53 +42,33 @@ The scan uses three external services. Each does one thing that the others can't
 
 **Fallback:** If Firecrawl is unavailable, fall back to raw `fetch()`. Score may be lower for JS-heavy sites, but the scan still completes. Set `partial: true` with a note.
 
-### Claude (Anthropic) — Checkout Flow Analysis
+### Claude (Anthropic) — Checkout Flow Analysis + Taxonomy Classification
 
-**What it does:** Analyzes rendered page content to understand checkout flows, payment methods, cart behavior, guest checkout availability. Already exists in `lib/procurement-skills/builder/llm.ts`.
+**What it does:** Analyzes rendered page content for two purposes:
+1. **Checkout flow analysis:** Understands checkout flows, payment methods, cart behavior, guest checkout availability. Already exists in `lib/procurement-skills/builder/llm.ts`.
+2. **Taxonomy classification:** Maps the merchant to Google Product Taxonomy categories (L2 and L3) by examining navigation menus, breadcrumbs, product sections, and page structure.
 
-**Why we need it:** Regex can detect the presence of a checkout form, but only an LLM can understand "this site supports guest checkout via the third tab on the checkout page" or "payment options include Apple Pay, Google Pay, and credit card."
+**Why Claude handles taxonomy (not Exa):** Claude already sees the Firecrawl-rendered DOM — navigation menus, product sections, breadcrumbs. By providing Claude with the 192 L2 Google Product Taxonomy categories as a fixed option list, it can map the merchant to multiple categories with high accuracy. This is more grounded than entity-level classification because it's based on what the store actually displays. The CreditClaw sector mapping then derives automatically from the `sector_slug` column on the `ucp_categories` table — no guessing needed.
 
-**How it fits:** Called in parallel with probes and Exa after Firecrawl fetches pages. Receives stripped HTML (scripts/styles removed for token efficiency). Output feeds into score enhancement (floor principle: can only boost signals) and into the SKILL.md vendor data.
+**Decision rationale (April 2026):** Exa was evaluated for taxonomy classification but deferred. Exa's strength is merchant *discovery* (finding unknown sites by category), not classifying a known site whose pages we've already rendered. For classification of a single known URL, Claude with a fixed category list is more accurate, more deterministic, and eliminates an external dependency. If taxonomy results prove insufficient, Exa can be added later specifically for this purpose.
 
-**No changes to the prompt or logic.** Just a new home in `lib/scan/llm.ts`.
+**How it fits:** Called in parallel with probes after Firecrawl fetches pages. Receives stripped HTML (scripts/styles removed for token efficiency). Output feeds into:
+1. Score enhancement (floor principle: can only boost signals)
+2. SKILL.md vendor data
+3. Taxonomy categories → `brand_categories` junction table + `brand_index.sector`/`subSectors`
 
-### Exa (`exa.ai`) — Taxonomy Classification
+**Taxonomy standard:** Google Product Taxonomy, 3 levels deep for merchants.
+- **Layer 1:** CreditClaw's 21 sectors (retail, office, fashion, etc.) — derived from `ucp_categories.sector_slug`
+- **Layer 2:** ~192 Google L2 categories (Audio, Computers, Shoes, Power Tools, etc.)
+- **Layer 3:** ~1,349 Google L3 categories (Headphones, Laptops, Athletic Shoes, etc.)
+- A merchant can belong to **multiple** sectors and categories (e.g., Home Depot → construction + home, with Hardware > Power Tools, Home & Garden > Bathroom Accessories, etc.)
+- See `merchant-taxonomy-schema-note.md` for full schema and `ucp_categories` / `brand_categories` table design
 
-**What it does:** Classifies a merchant into standardized product categories using web-scale entity understanding. Not reading the page — classifying the business against its database of 70M+ companies.
+**No changes to the existing checkout analysis prompt or logic.** Taxonomy classification is an additional task in the same Claude call or a separate parallel call, depending on implementation.
 
-**Why we need it:** The index exists so agents can discover vendors by category. An agent searching for "Office Supplies" needs to find Staples, Office Depot, and Uline — even though each uses different language on their own sites. Without standardized taxonomy, the SKILL.md metadata has inconsistent categories and the index can't serve as a reliable discovery layer.
+**Cost:** ~$0.01 per scan (Claude call for checkout + taxonomy combined). No additional external service cost.
 
-Claude reading the rendered homepage would guess a sector ("office products", "office supplies", "office solutions") — but every merchant uses different language, and Claude produces different labels across runs. That makes the index unsearchable. Exa provides consistent, standardized classification because it's matching against entity knowledge, not page content.
-
-**How it fits:** Called in parallel with Claude and probes — it only needs the domain URL. Returns standardized `sector` (top-level) and `subSectors` (array of sub-categories). These go directly into:
-1. `brand_index.sector` and `brand_index.subSectors` — for index discovery
-2. The SKILL.md metadata section — so agents know what product categories this vendor covers
-3. The `vendorDraft` — preserved for future use
-
-**API approach — two options under evaluation:**
-
-**Option A: Exa Search API (synchronous, simpler)**
-- `POST /v1/contents` with `category: "company"` — synchronous, ~1-3s
-- Returns entity classification but in Exa's own taxonomy, not ours
-- Would need a mapping layer from Exa categories → our taxonomy
-- Simpler integration, faster response
-
-**Option B: Exa Websets (async, more control)**
-- Create a Webset → Import single URL → Add enrichment with our exact taxonomy options
-- `format: "options"` lets us pass our exact category list — Exa picks from it
-- Async — requires polling (5-30s for single item)
-- More control over taxonomy, but adds latency and complexity
-- 2 credits per enrichment column = very cheap
-
-**Recommendation:** Start with Option A (Search API). It's synchronous and fast. We define our own taxonomy mapping (Exa entity data → our 21 Google Product Taxonomy top-level categories). If the mapping proves unreliable, switch to Option B where we control the exact options.
-
-**Taxonomy standard:** Google Product Taxonomy — 21 top-level categories, 6000+ leaf categories. Industry standard for e-commerce. We store:
-- `sector`: one of the 21 top-level categories (e.g., "Office Supplies", "Electronics", "Health & Beauty")
-- `subSectors`: array of relevant sub-categories (e.g., ["Printers", "Paper Products", "Desk Accessories"])
-
-**Cost:** Search API: $5 per 1,000 requests = $0.005 per scan. Websets: 2 credits per enrichment per item.
-
-**Fallback:** If Exa is unavailable, fall back to Claude's best guess from page content. Store with a flag so it can be re-classified when Exa is available. Not ideal, but the scan still completes.
+**Fallback:** If Claude is unavailable, regex-only score with `partial: true` and sector set to "uncategorized". Taxonomy can be populated on next successful scan.
 
 ---
 
@@ -96,7 +76,7 @@ Claude reading the rendered homepage would guess a sector ("office products", "o
 
 ### `lib/scan/` — Data Gathering + Scoring
 
-Owns ALL data collection: Firecrawl page rendering, API probing, Claude analysis, Exa classification, and scoring. This is the intelligence step. It gathers everything once, scores it, saves everything, and passes the results forward.
+Owns ALL data collection: Firecrawl page rendering, API probing, Claude analysis (checkout + taxonomy), and scoring. This is the intelligence step. It gathers everything once, scores it, saves everything, and passes the results forward.
 
 ### `lib/procurement-skills/` — Skill Transformation (unchanged)
 
@@ -107,8 +87,8 @@ A pure transformer. Takes structured data that the scan already gathered and for
 ### The Flow
 
 ```
-lib/scan/run.ts                     → gathers all data (Firecrawl + Claude + Exa + probes), scores, saves to DB
-  ↓ passes BuilderOutput (with Exa-standardized taxonomy in metadata)
+lib/scan/run.ts                     → gathers all data (Firecrawl + Claude + probes), scores, saves to DB
+  ↓ passes BuilderOutput (with Claude-classified taxonomy in metadata)
 lib/procurement-skills/generator.ts → transforms into SKILL.md string (metadata categories are already correct)
   ↓ returns skillMd
 lib/scan/run.ts                     → saves skillMd to brand_index, returns everything
@@ -122,11 +102,10 @@ If skill generation needs to run again later (format update, re-generation), it 
 
 ```
 lib/scan/
-├── types.ts              All scan-specific types (ScoreInput, ScanResult, SignalKey, ExaTaxonomy, etc.)
+├── types.ts              All scan-specific types (ScoreInput, ScanResult, SignalKey, TaxonomyResult, etc.)
 ├── fetch.ts              Firecrawl-powered fetching — rendered HTML + stripped HTML + sitemap + robots.txt
-├── taxonomy.ts           Exa-powered classification — standardized sector + sub-sectors
 ├── probes.ts             API/protocol detection (x402, ACP, MCP, business features)
-├── llm.ts                Claude analysis of page content → structured vendor data
+├── llm.ts                Claude analysis of page content → structured vendor data + taxonomy classification
 ├── score.ts              computeASXScore() — regex signals + LLM enhancement in one place
 ├── signals/
 │   ├── clarity.ts        3 signals: JSON-LD, Sitemap, Clean HTML
@@ -137,13 +116,13 @@ lib/scan/
 └── index.ts              Barrel exports
 ```
 
-**12 files. Each file does exactly one thing. The name tells you what it does.**
+**11 files. Each file does exactly one thing. The name tells you what it does.**
 
 ### What happens to existing code
 
 | Current file | What happens | Why |
 |---|---|---|
-| `lib/agentic-score/types.ts` | → `lib/scan/types.ts` | Rename + add Exa/Firecrawl types |
+| `lib/agentic-score/types.ts` | → `lib/scan/types.ts` | Rename + add Firecrawl/taxonomy types |
 | `lib/agentic-score/fetch.ts` | → `lib/scan/fetch.ts` | Rewrite: Firecrawl replaces raw fetch, merge with builder/fetch.ts |
 | `lib/agentic-score/compute.ts` | → `lib/scan/score.ts` | Rename + add LLM enhancement logic |
 | `lib/agentic-score/recommendations.ts` | → `lib/scan/recommendations.ts` | Move, unchanged |
@@ -156,7 +135,7 @@ lib/scan/
 | `lib/procurement-skills/builder/types.ts` | Absorbed into `lib/scan/types.ts` | BuilderOutput, PageContent, LLMCheckoutAnalysis merge into scan types |
 | `lib/procurement-skills/generator.ts` | Stays | Pure transformer, no changes |
 | `lib/procurement-skills/types.ts` | Stays | Shared types used across 12+ app files |
-| NEW: `lib/scan/taxonomy.ts` | Created | Exa classification — new capability |
+| (no separate taxonomy file) | Taxonomy classification handled by Claude in `lib/scan/llm.ts` | Simpler — one LLM call handles both checkout analysis and taxonomy |
 
 **After the move:**
 ```
@@ -222,60 +201,35 @@ interface ScanPages {
 
 ---
 
-## `lib/scan/taxonomy.ts` — Exa-Powered Classification
+## Taxonomy Classification — Claude + `ucp_categories` Table
 
-New file. Classifies a merchant into standardized Google Product Taxonomy categories.
+Taxonomy classification is handled by Claude as part of the LLM analysis step (in `lib/scan/llm.ts`), not as a separate service. Claude receives the Firecrawl-rendered DOM and the list of ~192 L2 Google Product Taxonomy categories, and returns which categories the merchant sells in.
 
-**Exports:**
+**Output type:**
 
 ```typescript
 interface TaxonomyResult {
-  sector: string;          // Top-level GPT category (e.g., "Office Supplies")
-  subSectors: string[];    // Sub-categories (e.g., ["Printers", "Paper Products"])
+  sectors: string[];       // CreditClaw sectors (derived from ucp_categories.sector_slug)
+  googleL2Categories: string[];  // Google L2 category names matched
+  googleL3Categories: string[];  // Google L3 category names matched (optional, for richer data)
   confidence: number;      // 0-1 confidence score
-  source: "exa" | "llm_fallback"; // Which method produced this
+  source: "claude";        // Classification method
 }
-
-function classifyMerchant(domain: string): Promise<TaxonomyResult>
 ```
 
-**How it works (Option A — Search API):**
+**How it works:**
 
-1. Call Exa `POST /v1/contents` with `ids: ["https://{domain}"]`, `category: "company"`, `text: true`
-2. Exa returns entity classification data
-3. Map Exa's classification to our Google Product Taxonomy:
-   - Match against the 21 top-level categories
-   - Extract sub-categories from the entity text/description
-   - If no clear match, use `"Business & Industrial"` as default
-4. Return `TaxonomyResult`
+1. Claude receives stripped homepage HTML (navigation menus, breadcrumbs, product sections)
+2. Claude is given the ~192 L2 Google Product Taxonomy categories as a fixed option list
+3. Claude selects all matching L2 categories (a merchant can span multiple)
+4. CreditClaw sectors are derived via database lookup: `SELECT DISTINCT sector_slug FROM ucp_categories WHERE name IN (...matched categories)`
+5. No separate API call needed — taxonomy is part of the same Claude analysis that handles checkout flow
 
-**Google Product Taxonomy — the 21 top-level categories we map to:**
+**Prerequisite:** The `ucp_categories` table must be seeded with Google's taxonomy file before taxonomy classification can produce sector mappings. Until seeded, scans set `sector: "uncategorized"`.
 
-| # | Category |
-|---|---|
-| 1 | Animals & Pet Supplies |
-| 2 | Apparel & Accessories |
-| 3 | Arts & Entertainment |
-| 4 | Baby & Toddler |
-| 5 | Business & Industrial |
-| 6 | Cameras & Optics |
-| 7 | Electronics |
-| 8 | Food, Beverages & Tobacco |
-| 9 | Furniture |
-| 10 | Hardware |
-| 11 | Health & Beauty |
-| 12 | Home & Garden |
-| 13 | Luggage & Bags |
-| 14 | Mature |
-| 15 | Media |
-| 16 | Office Supplies |
-| 17 | Religious & Ceremonial |
-| 18 | Software |
-| 19 | Sporting Goods |
-| 20 | Toys & Games |
-| 21 | Vehicles & Parts |
+**Google Product Taxonomy reference:** See `merchant-taxonomy-schema-note.md` for the full 21 root categories, CreditClaw sector mappings, and the `ucp_categories` / `brand_categories` schema.
 
-**Fallback:** If Exa is unavailable, ask Claude to classify from the rendered homepage content using the same 21 categories as options. Store with `source: "llm_fallback"` so it can be re-classified later.
+**Fallback:** If Claude is unavailable, sector stays "uncategorized" and taxonomy is populated on next successful scan.
 
 ---
 
@@ -321,11 +275,10 @@ Single entry point. Coordinates Firecrawl → (Claude + Exa + probes in parallel
 interface ScanResult {
   domain: string;
   name: string;
-  sector: string;                    // From Exa (standardized)
-  subSectors: string[];              // From Exa (standardized)
-  taxonomySource: "exa" | "llm_fallback";
+  sector: string;                    // From Claude taxonomy (mapped via ucp_categories)
+  subSectors: string[];              // From Claude taxonomy (Google L2/L3 categories)
   score: ASXScoreResult;
-  vendorDraft: Partial<VendorSkill>; // Structured vendor data from Claude + Exa + probes
+  vendorDraft: Partial<VendorSkill>; // Structured vendor data from Claude + probes
   skillMd: string | null;            // null if Claude failed (graceful degradation)
   scannedAt: Date;
   partial: boolean;                  // true if Claude failed and results are regex-only
@@ -343,11 +296,10 @@ async function runScan(domain: string): Promise<ScanResult>
 2. In parallel:
    ├── probeForAPIs(domain)                  → checkout methods, API endpoints (~2-3s)
    ├── detectBusinessFeatures(domain)        → capabilities (~2-3s)
-   ├── analyzeCheckoutFlow(strippedPages)    → Claude structured data (~5-10s)
-   └── classifyMerchant(domain)              → Exa taxonomy (sector + sub-sectors, ~1-3s)
+   └── analyzeCheckoutFlow(strippedPages)    → Claude structured data + taxonomy (~5-10s)
 
 3. Merge all results into vendorDraft (Partial<VendorSkill>):
-   - sector + subSectors from Exa (standardized taxonomy)
+   - sector + subSectors from Claude taxonomy classification (mapped via ucp_categories)
    - capabilities from probes
    - checkoutMethods from probes + Claude
    - name from Claude > Firecrawl extraction > <title> tag > capitalize(domain)
@@ -356,7 +308,7 @@ async function runScan(domain: string): Promise<ScanResult>
 4. computeASXScore(pages, llmFindings)       → ASXScoreResult (<10ms)
 
 5. generateVendorSkill(vendorDraft)          → SKILL.md string (<10ms)
-   (metadata section already has correct categories from Exa)
+   (metadata section already has correct categories from Claude taxonomy)
 
 6. Return ScanResult
 ```
@@ -364,7 +316,7 @@ async function runScan(domain: string): Promise<ScanResult>
 **Timing:**
 ```
 Step 1: Firecrawl fetch             3-5s   (7 URLs in parallel via Firecrawl)
-Step 2: probes + Claude + Exa       5-10s  (all parallel, Claude dominates)
+Step 2: probes + Claude              5-10s  (all parallel, Claude dominates)
 Steps 3-6: computation             <100ms
 
 Total: ~8-15 seconds (steps 1 and 2 are sequential; within each, everything is parallel)
@@ -375,9 +327,8 @@ Total: ~8-15 seconds (steps 1 and 2 are sequential; within each, everything is p
 | Service down | Impact | Fallback |
 |---|---|---|
 | Firecrawl unavailable | JS-heavy sites score lower | Raw `fetch()`, `fetchMethod: "raw"` |
-| Claude unavailable | No LLM score enhancement, no checkout analysis | Regex-only score, `partial: true`, `skillMd: null` |
-| Exa unavailable | Taxonomy is unstandardized | Claude guesses sector, `taxonomySource: "llm_fallback"` |
-| All three down | Minimal scan | Raw fetch + regex scoring only. Still produces a score. |
+| Claude unavailable | No LLM score enhancement, no checkout analysis, no taxonomy | Regex-only score, `partial: true`, `skillMd: null`, `sector: "uncategorized"` |
+| Both down | Minimal scan | Raw fetch + regex scoring only. Still produces a score. |
 
 The scan never fails completely. Every degradation level still returns a usable score and recommendations.
 
@@ -429,7 +380,7 @@ Targeted partial update. Only writes the fields passed in. Returns null if no ro
 
 **New domain (no existing row):** Full insert with all scan data:
 - `slug`: domain-derived (`staples-com`)
-- `name`, `sector`, `subSectors`, `capabilities`, `checkoutMethods`: from Exa + Claude + probes
+- `name`, `sector`, `subSectors`, `capabilities`, `checkoutMethods`: from Claude + probes
 - `overallScore`, `scoreBreakdown`, `recommendations`: from score engine
 - `skillMd`: from generator
 - `brandData`: full vendorDraft as JSON (preserves all gathered data for future use)
@@ -481,7 +432,7 @@ Content-Type: application/json
   "label": "Good",
   "sector": "Office Supplies",
   "subSectors": ["Printers", "Paper Products", "Desk Accessories", "Office Furniture"],
-  "taxonomySource": "exa",
+  "taxonomySource": "claude",
   "cached": false,
   "partial": false,
   "fetchMethod": "firecrawl",
@@ -509,11 +460,10 @@ Content-Type: application/json
 | Service | Credits/Calls | Cost per scan |
 |---|---|---|
 | Firecrawl (Standard plan) | ~9 credits (5 pages + JSON extraction) | ~$0.008 |
-| Claude (Anthropic) | 1 call (~4k input tokens) | ~$0.01 |
-| Exa (Search API) | 1 request | ~$0.005 |
-| **Total** | | **~$0.023 per scan** |
+| Claude (Anthropic) | 1 call (~4k input tokens, checkout + taxonomy) | ~$0.01 |
+| **Total** | | **~$0.018 per scan** |
 
-At 1,000 scans/month: ~$23. At 10,000 scans/month: ~$230. Negligible for a lead gen tool.
+At 1,000 scans/month: ~$18. At 10,000 scans/month: ~$180. Negligible for a lead gen tool.
 
 ---
 
@@ -522,8 +472,7 @@ At 1,000 scans/month: ~$23. At 10,000 scans/month: ~$230. Negligible for a lead 
 | Key | Service | Notes |
 |---|---|---|
 | `FIRECRAWL_API_KEY` | Firecrawl | For page rendering |
-| `EXA_API_KEY` | Exa | For taxonomy classification |
-| `ANTHROPIC_API_KEY` | Anthropic | Already configured (used by existing Claude calls) |
+| `ANTHROPIC_API_KEY` | Anthropic | Already configured (used by existing Claude calls, now also taxonomy) |
 
 ---
 
@@ -532,17 +481,16 @@ At 1,000 scans/month: ~$23. At 10,000 scans/month: ~$230. Negligible for a lead 
 ### Files to create:
 | File | Lines (est.) | Purpose |
 |---|---|---|
-| `lib/scan/types.ts` | ~100 | Merged types from agentic-score + builder + Exa taxonomy types |
+| `lib/scan/types.ts` | ~100 | Merged types from agentic-score + builder + taxonomy types |
 | `lib/scan/fetch.ts` | ~200 | Firecrawl-powered fetching with raw fallback |
-| `lib/scan/taxonomy.ts` | ~100 | Exa-powered classification with Claude fallback |
 | `lib/scan/probes.ts` | ~230 | Moved from builder — API/protocol detection |
-| `lib/scan/llm.ts` | ~120 | Moved from builder — Claude analysis |
+| `lib/scan/llm.ts` | ~150 | Moved from builder — Claude analysis + taxonomy classification |
 | `lib/scan/score.ts` | ~120 | Merged compute + LLM enhancement |
 | `lib/scan/signals/clarity.ts` | ~196 | Moved unchanged |
 | `lib/scan/signals/speed.ts` | ~148 | Moved unchanged |
 | `lib/scan/signals/reliability.ts` | ~306 | Moved unchanged |
 | `lib/scan/recommendations.ts` | ~96 | Moved unchanged |
-| `lib/scan/run.ts` | ~120 | New orchestrator (Firecrawl + Claude + Exa + probes) |
+| `lib/scan/run.ts` | ~120 | New orchestrator (Firecrawl + Claude + probes) |
 | `lib/scan/index.ts` | ~15 | Barrel exports |
 | `app/api/v1/scan/route.ts` | ~120 | API route handler |
 
@@ -571,7 +519,7 @@ At 1,000 scans/month: ~$23. At 10,000 scans/month: ~$230. Negligible for a lead 
 ## Implementation Order
 
 ### Step 1: Environment setup
-Get Firecrawl and Exa API keys. Install SDK packages (`firecrawl-js`, `exa-js` or direct HTTP).
+Get Firecrawl API key. Install SDK package (`firecrawl-js` or direct HTTP). `ANTHROPIC_API_KEY` already configured.
 
 ### Step 2: Create `lib/scan/` module
 Move and merge files. Get everything compiling with the new structure. No new functionality yet — just reorganization.
@@ -579,14 +527,14 @@ Move and merge files. Get everything compiling with the new structure. No new fu
 ### Step 3: Firecrawl fetch
 Replace raw `fetch()` with Firecrawl `/v1/scrape`. Implement fallback path. Same `ScanPages` output shape.
 
-### Step 4: Exa taxonomy
-Build `taxonomy.ts` — Exa classification with Google Product Taxonomy mapping. Implement Claude fallback.
+### Step 4: Claude taxonomy classification
+Add taxonomy classification to the Claude analysis step in `lib/scan/llm.ts`. Provide the ~192 L2 Google Product Taxonomy categories as a fixed option list. Claude returns matched categories; CreditClaw sectors derived via `ucp_categories.sector_slug` lookup.
 
 ### Step 5: Score + LLM enhancement
 Merge `compute.ts` + enhancement logic into `score.ts`. Accept LLM findings as optional input.
 
 ### Step 6: Orchestrator (`run.ts`)
-Wire everything together: Firecrawl fetch → (probes + Claude + Exa in parallel) → score → skill generation.
+Wire everything together: Firecrawl fetch → (probes + Claude in parallel) → score → skill generation.
 
 ### Step 7: Storage methods
 Add `getBrandByDomain()` and `updateBrandScore()`.

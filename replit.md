@@ -311,7 +311,8 @@ Sole source of truth for all brand data across all surfaces (bots, humans, expor
 **ASX Score Engine** (`lib/agentic-score/`):
 Self-contained scoring module that evaluates how well a merchant's website supports AI shopping agents. Completely independent of `analyzeVendor()` and the skill builder pipeline.
 - `compute.ts` — main entry: `computeASXScore(input: ScoreInput): ASXScoreResult`
-- `fetch.ts` — parallel fetcher: `fetchScanInputs(domain: string): Promise<ScoreInput>` (fetches homepage + sitemap.xml + robots.txt in parallel with SSRF protection and manual redirect validation)
+- `fetch.ts` — parallel fetcher: `fetchScanInputs(domain: string): Promise<ScoreInput>` (fetches homepage + sitemap.xml + robots.txt in parallel with SSRF protection and manual redirect validation). Also exports `normalizeDomain(input: string): string` for domain validation/cleanup.
+- `extract-meta.ts` — `extractMeta(html, domain)`: extracts `<title>` and `<meta description>` from HTML with domain-based fallbacks
 - `recommendations.ts` — generates improvement recommendations sorted by potential point gain
 - `signals/clarity.ts` — JSON-LD (20pts), Product Feed/Sitemap (10pts), Clean HTML (10pts)
 - `signals/speed.ts` — Search API/MCP (10pts), Internal Site Search (10pts), Page Load (5pts)
@@ -319,6 +320,16 @@ Self-contained scoring module that evaluates how well a merchant's website suppo
 - 3 pillars: Clarity (40pts max) + Speed (25pts max) + Reliability (35pts max) = 100pts
 - Labels: Poor (0-20), Needs Work (21-40), Fair (41-60), Good (61-80), Excellent (81-100)
 - Output writes to `brand_index` via `overallScore`, `scoreBreakdown` (jsonb), `recommendations` (jsonb)
+
+**Scan API** (`app/api/v1/scan/route.ts`):
+Public endpoint for the ASX Score Scanner — CreditClaw's lead gen tool. No auth required.
+- `POST /api/v1/scan` — accepts `{ domain: string }`, returns score + breakdown + recommendations
+- Pipeline: normalizeDomain → cache check (getBrandByDomain, 30-day window) → fetchScanInputs → computeASXScore → extractMeta → upsertBrandIndex → response
+- Rate limiting: in-memory, 5 requests/min per IP (via x-forwarded-for)
+- Error responses: 400 (invalid domain), 422 (unreachable), 429 (rate limit), 500 (internal)
+- New brands created with sector "uncategorized", submitterType "auto_scan", maturity "draft"
+- Existing brands: score fields always refreshed, curated fields (name, capabilities, etc.) never overwritten
+- Storage: `getBrandByDomain(domain)` added to IStorage interface and brand-index.ts
 
 **Brand Feedback** (`brand_feedback` table, `server/storage/brand-feedback.ts`):
 Agents and humans rate brands after purchase attempts. Three sub-ratings (search_accuracy, stock_reliability, checkout_completion) at 1-5 scale with outcome tracking.
