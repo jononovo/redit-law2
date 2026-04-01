@@ -2,7 +2,7 @@
 
 **Status:** Planning
 **Depends on:** Phase 0 (complete), Phase 2 (complete)
-**Outcome:** `POST /api/v1/scan` — a public endpoint that deeply scans a merchant domain and returns an ASX Score, signal breakdown, recommendations, and SKILL.md
+**Outcome:** `POST /api/v1/scan` — a public endpoint that deeply scans a merchant domain and returns an ASX Score, signal breakdown, recommendations, standardized taxonomy, and SKILL.md
 
 ---
 
@@ -17,9 +17,78 @@ The scan is CreditClaw's first impression — the lead gen tool. It needs to be 
 4. What should I fix first?
 
 **What CreditClaw wants from every scan:**
-1. A rich `brand_index` entry (name, sector, capabilities — not stubs)
-2. A SKILL.md file ready for agent consumption
-3. Every scan grows the index — a data flywheel
+1. A rich `brand_index` entry (name, sector, sub-sectors, capabilities — not stubs)
+2. Standardized taxonomy so agents can discover vendors by category
+3. A SKILL.md file ready for agent consumption — with correct metadata categories
+4. Every scan grows the index — a data flywheel
+
+---
+
+## Three External Services
+
+The scan uses three external services. Each does one thing that the others can't.
+
+### Firecrawl (`firecrawl.dev`) — Page Rendering
+
+**What it does:** Renders JavaScript-heavy pages and returns the real DOM. Replaces raw `fetch()`.
+
+**Why we need it:** ~40% of e-commerce sites (Shopify, WooCommerce, modern SPAs) return empty HTML shells to raw `fetch()`. Without JS rendering, the score engine sees almost nothing — no products, no JSON-LD, no search forms. The score would be artificially low for what are actually well-built stores. Every signal in our scoring engine depends on HTML content. If the HTML is empty, the score is wrong.
+
+**How it fits:** Replaces the fetch layer in `lib/scan/fetch.ts`. Instead of `fetch(url)`, we call Firecrawl's `/v1/scrape` endpoint. Same `ScanPages` output shape, dramatically richer content. The rest of the pipeline (scoring, LLM analysis, probes) doesn't change — it just gets better input.
+
+**API used:** `POST /v1/scrape` — 1 credit per page, returns rendered HTML + markdown.
+
+**Cost:** ~5-7 credits per scan (homepage + cart + checkout + business + about + sitemap check + robots.txt). At Standard plan ($83/mo for 100k credits), that's ~$0.006 per scan. We also need the JSON extraction format for Firecrawl's schema-based extraction on the homepage (+4 credits), bringing per-scan cost to ~$0.01.
+
+**Fallback:** If Firecrawl is unavailable, fall back to raw `fetch()`. Score may be lower for JS-heavy sites, but the scan still completes. Set `partial: true` with a note.
+
+### Claude (Anthropic) — Checkout Flow Analysis
+
+**What it does:** Analyzes rendered page content to understand checkout flows, payment methods, cart behavior, guest checkout availability. Already exists in `lib/procurement-skills/builder/llm.ts`.
+
+**Why we need it:** Regex can detect the presence of a checkout form, but only an LLM can understand "this site supports guest checkout via the third tab on the checkout page" or "payment options include Apple Pay, Google Pay, and credit card."
+
+**How it fits:** Called in parallel with probes and Exa after Firecrawl fetches pages. Receives stripped HTML (scripts/styles removed for token efficiency). Output feeds into score enhancement (floor principle: can only boost signals) and into the SKILL.md vendor data.
+
+**No changes to the prompt or logic.** Just a new home in `lib/scan/llm.ts`.
+
+### Exa (`exa.ai`) — Taxonomy Classification
+
+**What it does:** Classifies a merchant into standardized product categories using web-scale entity understanding. Not reading the page — classifying the business against its database of 70M+ companies.
+
+**Why we need it:** The index exists so agents can discover vendors by category. An agent searching for "Office Supplies" needs to find Staples, Office Depot, and Uline — even though each uses different language on their own sites. Without standardized taxonomy, the SKILL.md metadata has inconsistent categories and the index can't serve as a reliable discovery layer.
+
+Claude reading the rendered homepage would guess a sector ("office products", "office supplies", "office solutions") — but every merchant uses different language, and Claude produces different labels across runs. That makes the index unsearchable. Exa provides consistent, standardized classification because it's matching against entity knowledge, not page content.
+
+**How it fits:** Called in parallel with Claude and probes — it only needs the domain URL. Returns standardized `sector` (top-level) and `subSectors` (array of sub-categories). These go directly into:
+1. `brand_index.sector` and `brand_index.subSectors` — for index discovery
+2. The SKILL.md metadata section — so agents know what product categories this vendor covers
+3. The `vendorDraft` — preserved for future use
+
+**API approach — two options under evaluation:**
+
+**Option A: Exa Search API (synchronous, simpler)**
+- `POST /v1/contents` with `category: "company"` — synchronous, ~1-3s
+- Returns entity classification but in Exa's own taxonomy, not ours
+- Would need a mapping layer from Exa categories → our taxonomy
+- Simpler integration, faster response
+
+**Option B: Exa Websets (async, more control)**
+- Create a Webset → Import single URL → Add enrichment with our exact taxonomy options
+- `format: "options"` lets us pass our exact category list — Exa picks from it
+- Async — requires polling (5-30s for single item)
+- More control over taxonomy, but adds latency and complexity
+- 2 credits per enrichment column = very cheap
+
+**Recommendation:** Start with Option A (Search API). It's synchronous and fast. We define our own taxonomy mapping (Exa entity data → our 21 Google Product Taxonomy top-level categories). If the mapping proves unreliable, switch to Option B where we control the exact options.
+
+**Taxonomy standard:** Google Product Taxonomy — 21 top-level categories, 6000+ leaf categories. Industry standard for e-commerce. We store:
+- `sector`: one of the 21 top-level categories (e.g., "Office Supplies", "Electronics", "Health & Beauty")
+- `subSectors`: array of relevant sub-categories (e.g., ["Printers", "Paper Products", "Desk Accessories"])
+
+**Cost:** Search API: $5 per 1,000 requests = $0.005 per scan. Websets: 2 credits per enrichment per item.
+
+**Fallback:** If Exa is unavailable, fall back to Claude's best guess from page content. Store with a flag so it can be re-classified when Exa is available. Not ideal, but the scan still completes.
 
 ---
 
@@ -27,7 +96,7 @@ The scan is CreditClaw's first impression — the lead gen tool. It needs to be 
 
 ### `lib/scan/` — Data Gathering + Scoring
 
-Owns ALL data collection: page fetching, API probing, LLM analysis, and scoring. This is the intelligence step. It gathers everything once, scores it, saves everything, and passes the results forward.
+Owns ALL data collection: Firecrawl page rendering, API probing, Claude analysis, Exa classification, and scoring. This is the intelligence step. It gathers everything once, scores it, saves everything, and passes the results forward.
 
 ### `lib/procurement-skills/` — Skill Transformation (unchanged)
 
@@ -38,9 +107,9 @@ A pure transformer. Takes structured data that the scan already gathered and for
 ### The Flow
 
 ```
-lib/scan/run.ts                     → gathers all data, scores, saves to DB
-  ↓ passes BuilderOutput
-lib/procurement-skills/generator.ts → transforms into SKILL.md string
+lib/scan/run.ts                     → gathers all data (Firecrawl + Claude + Exa + probes), scores, saves to DB
+  ↓ passes BuilderOutput (with Exa-standardized taxonomy in metadata)
+lib/procurement-skills/generator.ts → transforms into SKILL.md string (metadata categories are already correct)
   ↓ returns skillMd
 lib/scan/run.ts                     → saves skillMd to brand_index, returns everything
 ```
@@ -53,8 +122,9 @@ If skill generation needs to run again later (format update, re-generation), it 
 
 ```
 lib/scan/
-├── types.ts              All scan-specific types (ScoreInput, ScanResult, SignalKey, etc.)
-├── fetch.ts              SSRF-protected fetching — raw HTML + stripped HTML + sitemap + robots.txt
+├── types.ts              All scan-specific types (ScoreInput, ScanResult, SignalKey, ExaTaxonomy, etc.)
+├── fetch.ts              Firecrawl-powered fetching — rendered HTML + stripped HTML + sitemap + robots.txt
+├── taxonomy.ts           Exa-powered classification — standardized sector + sub-sectors
 ├── probes.ts             API/protocol detection (x402, ACP, MCP, business features)
 ├── llm.ts                Claude analysis of page content → structured vendor data
 ├── score.ts              computeASXScore() — regex signals + LLM enhancement in one place
@@ -67,25 +137,26 @@ lib/scan/
 └── index.ts              Barrel exports
 ```
 
-**11 files. Each file does exactly one thing. The name tells you what it does.**
+**12 files. Each file does exactly one thing. The name tells you what it does.**
 
 ### What happens to existing code
 
 | Current file | What happens | Why |
 |---|---|---|
-| `lib/agentic-score/types.ts` | → `lib/scan/types.ts` | Rename, same content |
-| `lib/agentic-score/fetch.ts` | → `lib/scan/fetch.ts` | Merge with builder/fetch.ts — one fetch module, both raw + stripped HTML |
-| `lib/agentic-score/compute.ts` | → `lib/scan/score.ts` | Rename + add LLM enhancement logic (was planned as separate `enhance.ts`) |
+| `lib/agentic-score/types.ts` | → `lib/scan/types.ts` | Rename + add Exa/Firecrawl types |
+| `lib/agentic-score/fetch.ts` | → `lib/scan/fetch.ts` | Rewrite: Firecrawl replaces raw fetch, merge with builder/fetch.ts |
+| `lib/agentic-score/compute.ts` | → `lib/scan/score.ts` | Rename + add LLM enhancement logic |
 | `lib/agentic-score/recommendations.ts` | → `lib/scan/recommendations.ts` | Move, unchanged |
 | `lib/agentic-score/signals/*` | → `lib/scan/signals/*` | Move, unchanged |
 | `lib/agentic-score/index.ts` | → `lib/scan/index.ts` | Updated exports |
-| `lib/procurement-skills/builder/fetch.ts` | Absorbed into `lib/scan/fetch.ts` | Eliminates SSRF duplication (~100 lines) |
+| `lib/procurement-skills/builder/fetch.ts` | Absorbed into `lib/scan/fetch.ts` | Firecrawl replaces both fetch modules |
 | `lib/procurement-skills/builder/probes.ts` | → `lib/scan/probes.ts` | Move — probing is data collection, belongs in scan |
 | `lib/procurement-skills/builder/llm.ts` | → `lib/scan/llm.ts` | Move — LLM analysis is data collection, belongs in scan |
 | `lib/procurement-skills/builder/analyze.ts` | Absorbed into `lib/scan/run.ts` | The orchestration logic becomes part of the scan orchestrator |
 | `lib/procurement-skills/builder/types.ts` | Absorbed into `lib/scan/types.ts` | BuilderOutput, PageContent, LLMCheckoutAnalysis merge into scan types |
 | `lib/procurement-skills/generator.ts` | Stays | Pure transformer, no changes |
 | `lib/procurement-skills/types.ts` | Stays | Shared types used across 12+ app files |
+| NEW: `lib/scan/taxonomy.ts` | Created | Exa classification — new capability |
 
 **After the move:**
 ```
@@ -106,9 +177,9 @@ Only 2 files import from `builder/`. We can either update them or add a re-expor
 
 ---
 
-## The Unified Fetch Module: `lib/scan/fetch.ts`
+## `lib/scan/fetch.ts` — Firecrawl-Powered Fetching
 
-This is where the duplication gets eliminated. One file handles all fetching with SSRF protection.
+This is where raw `fetch()` gets replaced with Firecrawl. One file handles all page rendering with SSRF protection as a secondary fallback.
 
 **Exports:**
 
@@ -122,7 +193,7 @@ fetchScanPages(domain: string): Promise<ScanPages>
 ```typescript
 interface ScanPages {
   domain: string;
-  homepageRaw: string;           // Raw HTML with scripts — for score signals (JSON-LD, CAPTCHA detection)
+  homepageRaw: string;           // Full rendered HTML with scripts — for score signals (JSON-LD, CAPTCHA detection)
   homepageStripped: string;      // Stripped HTML — for LLM token efficiency
   cartPage: PageContent | null;  // /cart — stripped
   checkoutPage: PageContent | null; // /checkout — stripped
@@ -131,19 +202,80 @@ interface ScanPages {
   sitemapContent: string | null; // /sitemap.xml
   robotsTxtContent: string | null; // /robots.txt
   pageLoadTimeMs: number;        // Time to fetch homepage
+  fetchMethod: "firecrawl" | "raw"; // Which method was used
 }
 ```
 
 **How it works:**
 1. Normalize domain
-2. Fetch all 7 URLs in parallel (homepage, cart, checkout, business, about, sitemap, robots.txt)
-3. Homepage gets TWO versions: raw (keep scripts for score engine) and stripped (remove scripts/styles/SVGs for LLM)
-4. All other pages get stripped only (they're for LLM consumption)
+2. Call Firecrawl `/v1/scrape` for each URL in parallel (homepage, cart, checkout, business, about)
+   - Homepage uses `formats: ["html", "rawHtml"]` — `rawHtml` keeps scripts for score engine, `html` is cleaned for LLM
+   - Other pages use `formats: ["html"]` — stripped only, they're for LLM consumption
+   - `onlyMainContent: true` for non-homepage pages to reduce noise
+3. Fetch sitemap.xml and robots.txt with raw `fetch()` (no JS rendering needed — they're plain text/XML)
+4. If Firecrawl is unavailable, fall back to raw `fetch()` with SSRF protection for all URLs. Set `fetchMethod: "raw"`.
 5. Return everything in one object
 
-**One fetch, two HTML versions, no duplication.** The score engine reads `homepageRaw`. The LLM reads `homepageStripped` + the other stripped pages.
+**Firecrawl credit cost per scan:** ~9 credits (5 pages at 1 credit each + homepage JSON extraction at 4 credits)
 
-SSRF protection, redirect handling, timeouts — all in one place.
+**SSRF protection stays** — used for the raw `fetch()` fallback path and for sitemap/robots.txt which don't need rendering.
+
+---
+
+## `lib/scan/taxonomy.ts` — Exa-Powered Classification
+
+New file. Classifies a merchant into standardized Google Product Taxonomy categories.
+
+**Exports:**
+
+```typescript
+interface TaxonomyResult {
+  sector: string;          // Top-level GPT category (e.g., "Office Supplies")
+  subSectors: string[];    // Sub-categories (e.g., ["Printers", "Paper Products"])
+  confidence: number;      // 0-1 confidence score
+  source: "exa" | "llm_fallback"; // Which method produced this
+}
+
+function classifyMerchant(domain: string): Promise<TaxonomyResult>
+```
+
+**How it works (Option A — Search API):**
+
+1. Call Exa `POST /v1/contents` with `ids: ["https://{domain}"]`, `category: "company"`, `text: true`
+2. Exa returns entity classification data
+3. Map Exa's classification to our Google Product Taxonomy:
+   - Match against the 21 top-level categories
+   - Extract sub-categories from the entity text/description
+   - If no clear match, use `"Business & Industrial"` as default
+4. Return `TaxonomyResult`
+
+**Google Product Taxonomy — the 21 top-level categories we map to:**
+
+| # | Category |
+|---|---|
+| 1 | Animals & Pet Supplies |
+| 2 | Apparel & Accessories |
+| 3 | Arts & Entertainment |
+| 4 | Baby & Toddler |
+| 5 | Business & Industrial |
+| 6 | Cameras & Optics |
+| 7 | Electronics |
+| 8 | Food, Beverages & Tobacco |
+| 9 | Furniture |
+| 10 | Hardware |
+| 11 | Health & Beauty |
+| 12 | Home & Garden |
+| 13 | Luggage & Bags |
+| 14 | Mature |
+| 15 | Media |
+| 16 | Office Supplies |
+| 17 | Religious & Ceremonial |
+| 18 | Software |
+| 19 | Sporting Goods |
+| 20 | Toys & Games |
+| 21 | Vehicles & Parts |
+
+**Fallback:** If Exa is unavailable, ask Claude to classify from the rendered homepage content using the same 21 categories as options. Store with `source: "llm_fallback"` so it can be re-classified later.
 
 ---
 
@@ -157,7 +289,7 @@ function computeASXScore(pages: ScanPages, llmFindings: LLMCheckoutAnalysis | nu
 
 **How it works:**
 
-1. Run all 10 regex-based signal scorers against the raw data (unchanged from current implementation)
+1. Run all 10 regex-based signal scorers against the raw rendered data (unchanged logic, but now operating on Firecrawl-rendered DOM instead of server HTML)
 2. If LLM findings are available, apply floor-based enhancement to applicable signals:
 
 | Signal | LLM can upgrade from | Max boost |
@@ -173,7 +305,7 @@ function computeASXScore(pages: ScanPages, llmFindings: LLMCheckoutAnalysis | nu
 5. Return `ASXScoreResult`
 
 Signals that stay regex-only (LLM doesn't help):
-- `json_ld` — requires raw `<script>` tags the LLM never sees
+- `json_ld` — requires raw `<script>` tags (Firecrawl's `rawHtml` preserves these)
 - `product_feed` — binary: sitemap exists or doesn't
 - `clean_html` — DOM structure analysis
 - `page_load` — timing measurement
@@ -183,18 +315,21 @@ Signals that stay regex-only (LLM doesn't help):
 
 ## `lib/scan/run.ts` — The Orchestrator
 
-Single entry point. Coordinates fetch → probe → LLM → score → skill generation.
+Single entry point. Coordinates Firecrawl → (Claude + Exa + probes in parallel) → score → skill generation.
 
 ```typescript
 interface ScanResult {
   domain: string;
   name: string;
-  sector: string;
+  sector: string;                    // From Exa (standardized)
+  subSectors: string[];              // From Exa (standardized)
+  taxonomySource: "exa" | "llm_fallback";
   score: ASXScoreResult;
-  vendorDraft: Partial<VendorSkill>;  // Structured vendor data from LLM + probes
-  skillMd: string | null;             // null if LLM failed (graceful degradation)
+  vendorDraft: Partial<VendorSkill>; // Structured vendor data from Claude + Exa + probes
+  skillMd: string | null;            // null if Claude failed (graceful degradation)
   scannedAt: Date;
-  partial: boolean;                   // true if LLM failed and results are regex-only
+  partial: boolean;                  // true if Claude failed and results are regex-only
+  fetchMethod: "firecrawl" | "raw";  // How pages were fetched
 }
 
 async function runScan(domain: string): Promise<ScanResult>
@@ -203,42 +338,54 @@ async function runScan(domain: string): Promise<ScanResult>
 **Pipeline:**
 
 ```
-1. fetchScanPages(domain)                    → ScanPages (all 7 pages, ~3-5s)
+1. fetchScanPages(domain)                    → ScanPages via Firecrawl (all 7 pages, ~3-5s)
 
 2. In parallel:
    ├── probeForAPIs(domain)                  → checkout methods, API endpoints (~2-3s)
    ├── detectBusinessFeatures(domain)        → capabilities (~2-3s)
-   └── analyzeCheckoutFlow(strippedPages)    → LLM structured data (~5-10s)
+   ├── analyzeCheckoutFlow(strippedPages)    → Claude structured data (~5-10s)
+   └── classifyMerchant(domain)              → Exa taxonomy (sector + sub-sectors, ~1-3s)
 
-3. Merge probe + LLM results into vendorDraft (Partial<VendorSkill>)
+3. Merge all results into vendorDraft (Partial<VendorSkill>):
+   - sector + subSectors from Exa (standardized taxonomy)
+   - capabilities from probes
+   - checkoutMethods from probes + Claude
+   - name from Claude > Firecrawl extraction > <title> tag > capitalize(domain)
+   - All other vendor fields from Claude analysis
 
 4. computeASXScore(pages, llmFindings)       → ASXScoreResult (<10ms)
 
 5. generateVendorSkill(vendorDraft)          → SKILL.md string (<10ms)
+   (metadata section already has correct categories from Exa)
 
-6. Extract name/sector:
-   - name: LLM name > <title> tag > capitalize(domain)
-   - sector: LLM sector > "uncategorized"
-
-7. Return ScanResult
+6. Return ScanResult
 ```
 
 **Timing:**
 ```
-Step 1: fetchScanPages              3-5s   (7 URLs in parallel)
-Step 2: probes + LLM               5-10s  (parallel, LLM dominates)
-Steps 3-7: computation             <100ms
+Step 1: Firecrawl fetch             3-5s   (7 URLs in parallel via Firecrawl)
+Step 2: probes + Claude + Exa       5-10s  (all parallel, Claude dominates)
+Steps 3-6: computation             <100ms
 
 Total: ~8-15 seconds (steps 1 and 2 are sequential; within each, everything is parallel)
 ```
 
-**Graceful degradation:** If the LLM call fails (API error, timeout), the scan still completes with regex-only scores. `partial: true` is set, `skillMd` is null, and name/sector fall back to HTML extraction. The user gets a score and recommendations — just without the LLM-enhanced depth.
+**Graceful degradation layers:**
+
+| Service down | Impact | Fallback |
+|---|---|---|
+| Firecrawl unavailable | JS-heavy sites score lower | Raw `fetch()`, `fetchMethod: "raw"` |
+| Claude unavailable | No LLM score enhancement, no checkout analysis | Regex-only score, `partial: true`, `skillMd: null` |
+| Exa unavailable | Taxonomy is unstandardized | Claude guesses sector, `taxonomySource: "llm_fallback"` |
+| All three down | Minimal scan | Raw fetch + regex scoring only. Still produces a score. |
+
+The scan never fails completely. Every degradation level still returns a usable score and recommendations.
 
 ---
 
-## `lib/scan/llm.ts` — LLM Analysis
+## `lib/scan/llm.ts` — Claude Analysis
 
-Moved from `lib/procurement-skills/builder/llm.ts`. Same Claude call, same prompt, same output. The only change: it receives `PageContent[]` from the new unified fetch module instead of the old builder fetch.
+Moved from `lib/procurement-skills/builder/llm.ts`. Same Claude call, same prompt, same output. The only change: it receives `PageContent[]` from Firecrawl-rendered content instead of raw HTML — which means it sees the actual page content for JS-heavy sites.
 
 ```typescript
 function analyzeCheckoutFlow(pages: PageContent[], baseUrl: string): Promise<{
@@ -248,7 +395,7 @@ function analyzeCheckoutFlow(pages: PageContent[], baseUrl: string): Promise<{
 }>
 ```
 
-No changes to the prompt or logic. Just a new home.
+No changes to the prompt or logic. Just a new home and better input.
 
 ---
 
@@ -282,7 +429,7 @@ Targeted partial update. Only writes the fields passed in. Returns null if no ro
 
 **New domain (no existing row):** Full insert with all scan data:
 - `slug`: domain-derived (`staples-com`)
-- `name`, `sector`, `capabilities`, `checkoutMethods`: from LLM + probes
+- `name`, `sector`, `subSectors`, `capabilities`, `checkoutMethods`: from Exa + Claude + probes
 - `overallScore`, `scoreBreakdown`, `recommendations`: from score engine
 - `skillMd`: from generator
 - `brandData`: full vendorDraft as JSON (preserves all gathered data for future use)
@@ -294,7 +441,7 @@ Targeted partial update. Only writes the fields passed in. Returns null if no ro
 | Category | Fields | Rule |
 |---|---|---|
 | Always update | `overallScore`, `scoreBreakdown`, `recommendations`, `lastScannedAt`, `lastScannedBy`, `scanTier` | Scan data is fresher |
-| Update if null/empty | `skillMd` (if null or `submitterType` is "auto_scan"), `sector` (if "uncategorized") | Don't overwrite curation |
+| Update if null/empty | `skillMd` (if null or `submitterType` is "auto_scan"), `sector` (if "uncategorized"), `subSectors` (if empty array) | Don't overwrite curation |
 | Never overwrite | `name`, `capabilities`, `checkoutMethods`, `brandData`, `submittedBy`, `submitterType`, `claimedBy`, `maturity`, AXS Rating fields | Curated data is more valuable |
 
 ---
@@ -332,9 +479,12 @@ Content-Type: application/json
   "name": "Staples",
   "score": 72,
   "label": "Good",
-  "sector": "office",
+  "sector": "Office Supplies",
+  "subSectors": ["Printers", "Paper Products", "Desk Accessories", "Office Furniture"],
+  "taxonomySource": "exa",
   "cached": false,
   "partial": false,
+  "fetchMethod": "firecrawl",
   "scannedAt": "2026-04-01T12:00:00.000Z",
   "breakdown": {
     "clarity": { "score": 30, "max": 40, "signals": [...] },
@@ -342,7 +492,7 @@ Content-Type: application/json
     "reliability": { "score": 25, "max": 35, "signals": [...] }
   },
   "recommendations": [...],
-  "skillMd": "---\nname: creditclaw-shop-staples\n...",
+  "skillMd": "---\nname: creditclaw-shop-staples\ncategories:\n  - Office Supplies > Printers\n  - Office Supplies > Paper Products\n...",
   "capabilities": ["price_lookup", "stock_check", "order_tracking"],
   "checkoutMethods": ["self_hosted_card", "browser_automation"]
 }
@@ -354,23 +504,26 @@ Content-Type: application/json
 
 ---
 
-## Future: Firecrawl + Exa Integration
+## Per-Scan Cost Breakdown
 
-Both slot into the pipeline without changing the architecture:
+| Service | Credits/Calls | Cost per scan |
+|---|---|---|
+| Firecrawl (Standard plan) | ~9 credits (5 pages + JSON extraction) | ~$0.008 |
+| Claude (Anthropic) | 1 call (~4k input tokens) | ~$0.01 |
+| Exa (Search API) | 1 request | ~$0.005 |
+| **Total** | | **~$0.023 per scan** |
 
-### Firecrawl (`firecrawl.dev`) — Phase 3c
+At 1,000 scans/month: ~$23. At 10,000 scans/month: ~$230. Negligible for a lead gen tool.
 
-Replaces the fetch layer in `lib/scan/fetch.ts`. Instead of raw `fetch()` calls, use Firecrawl for JS rendering and multi-page crawling. Same `ScanPages` output shape, richer content.
+---
 
-Biggest impact: JS-heavy SPAs (Shopify, WooCommerce) that return empty HTML shells to raw fetch.
+## Environment Variables Required
 
-### Exa Web Sets (`exa.ai`) — Phase 3d
-
-Adds a post-analysis step in `lib/scan/run.ts`. After LLM analysis, call Exa to standardize the sector/taxonomy against Google Product Taxonomy and find comparison brands.
-
-Biggest impact: consistent categorization across the index + competitor comparison on results page.
-
-Both are additive. The API contract stays the same.
+| Key | Service | Notes |
+|---|---|---|
+| `FIRECRAWL_API_KEY` | Firecrawl | For page rendering |
+| `EXA_API_KEY` | Exa | For taxonomy classification |
+| `ANTHROPIC_API_KEY` | Anthropic | Already configured (used by existing Claude calls) |
 
 ---
 
@@ -379,8 +532,9 @@ Both are additive. The API contract stays the same.
 ### Files to create:
 | File | Lines (est.) | Purpose |
 |---|---|---|
-| `lib/scan/types.ts` | ~80 | Merged types from agentic-score + builder |
-| `lib/scan/fetch.ts` | ~180 | Unified fetch — raw + stripped HTML, SSRF protection |
+| `lib/scan/types.ts` | ~100 | Merged types from agentic-score + builder + Exa taxonomy types |
+| `lib/scan/fetch.ts` | ~200 | Firecrawl-powered fetching with raw fallback |
+| `lib/scan/taxonomy.ts` | ~100 | Exa-powered classification with Claude fallback |
 | `lib/scan/probes.ts` | ~230 | Moved from builder — API/protocol detection |
 | `lib/scan/llm.ts` | ~120 | Moved from builder — Claude analysis |
 | `lib/scan/score.ts` | ~120 | Merged compute + LLM enhancement |
@@ -388,7 +542,7 @@ Both are additive. The API contract stays the same.
 | `lib/scan/signals/speed.ts` | ~148 | Moved unchanged |
 | `lib/scan/signals/reliability.ts` | ~306 | Moved unchanged |
 | `lib/scan/recommendations.ts` | ~96 | Moved unchanged |
-| `lib/scan/run.ts` | ~100 | New orchestrator |
+| `lib/scan/run.ts` | ~120 | New orchestrator (Firecrawl + Claude + Exa + probes) |
 | `lib/scan/index.ts` | ~15 | Barrel exports |
 | `app/api/v1/scan/route.ts` | ~120 | API route handler |
 
@@ -416,23 +570,29 @@ Both are additive. The API contract stays the same.
 
 ## Implementation Order
 
-### Step 1: Create `lib/scan/` module
+### Step 1: Environment setup
+Get Firecrawl and Exa API keys. Install SDK packages (`firecrawl-js`, `exa-js` or direct HTTP).
+
+### Step 2: Create `lib/scan/` module
 Move and merge files. Get everything compiling with the new structure. No new functionality yet — just reorganization.
 
-### Step 2: Unified fetch
-Merge the two fetch modules. One SSRF-protected fetcher that returns `ScanPages` with both raw and stripped HTML.
+### Step 3: Firecrawl fetch
+Replace raw `fetch()` with Firecrawl `/v1/scrape`. Implement fallback path. Same `ScanPages` output shape.
 
-### Step 3: Score + LLM enhancement
+### Step 4: Exa taxonomy
+Build `taxonomy.ts` — Exa classification with Google Product Taxonomy mapping. Implement Claude fallback.
+
+### Step 5: Score + LLM enhancement
 Merge `compute.ts` + enhancement logic into `score.ts`. Accept LLM findings as optional input.
 
-### Step 4: Orchestrator (`run.ts`)
-Wire everything together: fetch → probes + LLM (parallel) → score → skill generation.
+### Step 6: Orchestrator (`run.ts`)
+Wire everything together: Firecrawl fetch → (probes + Claude + Exa in parallel) → score → skill generation.
 
-### Step 5: Storage methods
+### Step 7: Storage methods
 Add `getBrandByDomain()` and `updateBrandScore()`.
 
-### Step 6: API route
+### Step 8: API route
 Build the thin `POST /api/v1/scan` handler with cache check, rate limiting, persistence.
 
-### Step 7: Update imports + cleanup
+### Step 9: Update imports + cleanup
 Update the 2 routes that import from `builder/`. Delete old directories.
