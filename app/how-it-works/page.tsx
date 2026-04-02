@@ -4,6 +4,7 @@ import { getTenantConfig } from "@/lib/tenants/config";
 const howItWorksComponents: Record<string, () => Promise<{ default: React.ComponentType }>> = {
   creditclaw: () => import("@/components/tenants/creditclaw/how-it-works"),
   shopy: () => import("@/components/tenants/shopy/how-it-works"),
+  brands: () => import("@/components/tenants/brands/how-it-works"),
 };
 
 export default async function HowItWorksPage() {

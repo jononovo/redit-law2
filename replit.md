@@ -704,7 +704,8 @@ The app supports multiple tenants (CreditClaw, shopy.sh) via hostname-based rout
 - **Footer**: Config-driven via `tenant.navigation.footer` in config.json — each tenant defines its own columns and social links
 - **How It Works**: `app/how-it-works/page.tsx` is a tenant router (same pattern as landing page)
 - **owners.signup_tenant**: Tracks which tenant a user signed up from (migration 0011)
-- To test locally as a different tenant: add `?tenant=shopy` to any URL, or set `TENANT_OVERRIDE=shopy` env var
+- **Active tenants**: creditclaw (payments), shopy (ASX scoring/readiness), brands (skill catalog/discovery)
+- To test locally as a different tenant: add `?tenant=shopy` or `?tenant=brands` to any URL
 
 ### Database Schema Workflow
 Schema changes flow through Drizzle ORM and are auto-synced to production on deploy:
