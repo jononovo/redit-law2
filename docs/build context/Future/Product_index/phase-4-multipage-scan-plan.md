@@ -666,3 +666,97 @@ lib/procurement-skills/
 | `docs/260217_procurement-skills-technical-plan-v3.md` | `docs/archive/` |
 | `docs/build context/Future/Product_index/agentic-shopping-score-build-plan.md` | `docs/archive/` |
 | `docs/build context/Future/Product_index/phase-3-scan-api-technical-plan.md` | `docs/archive/` |
+
+---
+
+## Notes: Scoring Architecture Redesign Ideas
+
+*These are ideas captured during the Phase 4 review. They question the current 
+scoring approach and propose alternatives.*
+
+### Idea 1: Agent as investigator, rubric as scorer
+
+Instead of the current 3-layer cake (regex scores → Claude enhancement → page boost), 
+separate the roles cleanly:
+
+- **The rubric** is a standalone, human-readable scoring matrix. It defines exactly what 
+  criteria exist, how many points each is worth, and what evidence is needed to award 
+  points. This is the single source of truth for scoring.
+- **The agent** explores the site and fills in the rubric — verifying which criteria are 
+  met by actually visiting the relevant pages.
+- **Regex detections** pre-populate factual criteria that are faster/cheaper to check 
+  programmatically (JSON-LD presence, sitemap structure, page load time, robots.txt rules).
+  The agent doesn't need to re-derive these.
+- **The score is computed from the filled rubric** — deterministic, transparent, auditable.
+
+This eliminates `enhanceScores()`, `boostFromAgentPages()`, and the entire boost pattern. 
+The rubric replaces all three layers with one clear mechanism.
+
+### Idea 2: Add "Product Page Quality" signal
+
+The #1 thing brand managers want to know: "Can an AI agent actually buy from my product 
+pages?" This would be an agent-assessed signal covering:
+- Machine-readable pricing (structured data vs rendered-only)
+- Variant selection (standard form elements vs complex JS)
+- Add-to-cart simplicity (clear button vs multi-step wizard)
+- Product ID in URL (direct navigation possible)
+- Breadcrumb/category context
+
+This signal can ONLY be scored by the agent (homepage regex can't assess product pages). 
+It's the flagship feature of the multi-page scan — "we actually tried to shop on your site."
+
+### Idea 3: Add assessment fields to agent's record_findings
+
+Let the agent express qualitative judgments that map to rubric criteria:
+- `productPageQuality: "excellent" | "good" | "fair" | "poor"`
+- `checkoutComplexity: "simple" | "moderate" | "complex"`
+- `cartAccessibility: "open" | "requires_auth" | "blocked"`
+- `priceTransparency: "visible" | "requires_interaction" | "hidden"`
+
+### Idea 4: Rename "Speed" pillar to "Discoverability"
+
+Current Speed pillar contains Search API/MCP (10), Site Search (10), Page Load (5). 
+Only Page Load is actually about speed. The others are about whether an agent can 
+find products. "Discoverability" or "Navigation" communicates more clearly to brand 
+managers reading the report.
+
+### Idea 5: Agent-generated recommendations (replace template lookup)
+
+Currently, recommendations come from a static template table keyed by signal name 
+(`recommendations.ts`). The agent is in a far better position to write specific, 
+actionable recommendations because it has actually visited the site. Example:
+
+- Template says: "Add JSON-LD structured data"
+- Agent could say: "Your product pages at /products/* have no structured data, but your 
+  homepage does. Extend your Shopify theme's product.liquid template to include Product 
+  schema with Offer pricing."
+
+The agent's recommendations would be specific to the store, its platform, and what it 
+actually observed — much higher value for brand managers.
+
+### Idea 6: Returns/refund policy and price transparency
+
+Brand managers care about:
+- **Returns policy clarity** — Is there a clear, machine-readable returns policy? 
+  Agent needs to know return windows and conditions before purchasing for procurement.
+- **Price transparency** — Are prices shown without login or zipcode? Some B2B sites 
+  hide pricing entirely, making agent shopping impossible.
+- **Multi-currency / international** — Currency switching, international shipping.
+
+These could be criteria within the rubric rather than standalone signals.
+
+### Idea 7: Rubric as a standalone human-readable document
+
+The scoring criteria should exist as a data file (JSON, YAML, or TypeScript const) that:
+- A product person can read and modify without understanding the scoring code
+- Can be versioned (v1.0, v2.0) so scores are comparable over time
+- Defines for each criterion: name, description, max points, evidence type 
+  (regex-detectable vs agent-assessed), and what constitutes each point level
+- The scoring engine reads this file and applies it — separation of policy from mechanism
+
+### Current state: no standalone rubric exists
+
+The scoring criteria are currently embedded across 4 TypeScript files as hardcoded 
+`score += N` statements. There is no human-readable rubric document. Updating scoring 
+criteria requires modifying code in multiple files. This should be fixed as part of 
+Phase 4.
