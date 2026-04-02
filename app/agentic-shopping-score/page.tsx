@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Nav } from "@/components/nav";
 import { Footer } from "@/components/footer";
 import { ScannerForm } from "./scanner-form";
+import Link from "next/link";
 
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || "https://creditclaw.com";
 
@@ -79,6 +80,19 @@ export default function AgenticShoppingScorePage() {
                   <div className="text-2xl font-extrabold text-neutral-900" data-testid="stat-time">&lt;30s</div>
                   <div className="text-xs text-neutral-500 font-medium mt-1">Scan Time</div>
                 </div>
+              </div>
+
+              <div
+                className="mt-8 animate-fade-in-up"
+                style={{ animationDelay: "0.6s" }}
+              >
+                <Link
+                  href="/agentic-shopping-score/methodology"
+                  className="text-sm text-neutral-500 hover:text-primary transition-colors underline underline-offset-4"
+                  data-testid="link-methodology"
+                >
+                  See how we calculate the score →
+                </Link>
               </div>
             </div>
           </div>
