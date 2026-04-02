@@ -6,6 +6,12 @@ Last updated: 2026-04-02
 
 ---
 
+## Scale Context
+
+The ASX Score Scanner and brand catalog are the primary growth engines. **Expect tens of thousands of scans and listed domains within the next few weeks.** Every scan upserts a row into `brand_index`, so the catalog will grow rapidly from the current 14 seeded brands to thousands, then tens of thousands. All build decisions should account for this scale — pagination, query performance, sitemap size, pre-rendering, and JSONB payload weight all matter at 10K+ rows.
+
+---
+
 ## What's Already Complete
 
 For reference — these are done and archived:
