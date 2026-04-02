@@ -1,7 +1,7 @@
 import { storage } from "@/server/storage";
 import CatalogClient from "./catalog-client";
 import type { Metadata } from "next";
-import { parseSearchParams, filtersToMetaTitle, filtersToCanonicalParams } from "@/lib/catalog/parse-filters";
+import { parseSearchParams, filtersToMetaTitle, filtersToCanonicalParams, DEFAULT_MATURITIES } from "@/lib/catalog/parse-filters";
 
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || "https://creditclaw.com";
 const PAGE_SIZE = 50;
@@ -12,21 +12,21 @@ type Props = {
 
 export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
   const params = await searchParams;
-  const filters = parseSearchParams(params);
-  filters.limit = PAGE_SIZE;
+  const rawFilters = parseSearchParams(params);
+  const queryFilters = { ...rawFilters, maturities: rawFilters.maturities ?? DEFAULT_MATURITIES, limit: PAGE_SIZE };
 
   let total = 0;
   try {
-    total = await storage.searchBrandsCount(filters);
+    total = await storage.searchBrandsCount(queryFilters);
   } catch {}
 
-  const title = filtersToMetaTitle(filters);
-  const hasFilters = !!(filters.q || filters.tiers?.length || filters.checkoutMethods?.length || filters.capabilities?.length);
+  const title = filtersToMetaTitle(rawFilters);
+  const hasFilters = !!(rawFilters.q || rawFilters.tiers?.length || rawFilters.checkoutMethods?.length || rawFilters.capabilities?.length);
   const description = hasFilters
     ? `${total || ""} matching AI agent procurement skills. Filter by sector, checkout method, and ASX score.`
     : `Browse ${total || ""}${total ? "+" : ""} procurement skills that teach AI agents how to shop at verified vendors. Filter by sector, checkout method, and ASX score.`;
 
-  const canonicalParams = filtersToCanonicalParams(filters);
+  const canonicalParams = filtersToCanonicalParams(rawFilters);
 
   return {
     title,
@@ -50,8 +50,8 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
 
 export default async function SkillsCatalogPage({ searchParams }: Props) {
   const params = await searchParams;
-  const filters = parseSearchParams(params);
-  filters.limit = PAGE_SIZE;
+  const rawFilters = parseSearchParams(params);
+  const queryFilters = { ...rawFilters, maturities: rawFilters.maturities ?? DEFAULT_MATURITIES, limit: PAGE_SIZE };
 
   let brands: Awaited<ReturnType<typeof storage.searchBrands>> = [];
   let facets: Awaited<ReturnType<typeof storage.getAllBrandFacets>> = { sectors: [], tiers: [] };
@@ -60,21 +60,21 @@ export default async function SkillsCatalogPage({ searchParams }: Props) {
   try {
     [brands, facets, total] = await Promise.all([
       storage.searchBrands({
-        ...filters,
+        ...queryFilters,
         lite: true,
       }),
       storage.getAllBrandFacets(),
-      storage.searchBrandsCount(filters),
+      storage.searchBrandsCount(queryFilters),
     ]);
   } catch {}
 
   const initialFilters = {
-    search: filters.q ?? "",
-    checkoutMethods: (filters.checkoutMethods ?? []) as string[],
-    capabilities: (filters.capabilities ?? []) as string[],
-    maturity: (filters.maturities ?? []) as string[],
-    sectors: (filters.sectors ?? []) as string[],
-    tiers: (filters.tiers ?? []) as string[],
+    search: rawFilters.q ?? "",
+    checkoutMethods: (rawFilters.checkoutMethods ?? []) as string[],
+    capabilities: (rawFilters.capabilities ?? []) as string[],
+    maturity: (rawFilters.maturities ?? []) as string[],
+    sectors: (rawFilters.sectors ?? []) as string[],
+    tiers: (rawFilters.tiers ?? []) as string[],
   };
 
   return (

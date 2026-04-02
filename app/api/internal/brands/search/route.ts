@@ -1,17 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { storage } from "@/server/storage";
-import { parseSearchParams } from "@/lib/catalog/parse-filters";
+import { parseSearchParams, DEFAULT_MATURITIES } from "@/lib/catalog/parse-filters";
 
 export async function GET(request: NextRequest) {
   const url = new URL(request.url);
   const filters = parseSearchParams(url.searchParams);
 
-  if (!filters.sectors?.length) {
-    const sectorParam = url.searchParams.get("sector");
-    if (sectorParam) {
-      const vals = sectorParam.split(",").map(s => s.trim()).filter(Boolean);
-      if (vals.length > 0) filters.sectors = vals;
-    }
+  if (!filters.maturities?.length) {
+    filters.maturities = DEFAULT_MATURITIES;
   }
 
   try {

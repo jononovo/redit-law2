@@ -6,6 +6,8 @@ function parseCSV(param: string | null | undefined): string[] | undefined {
   return vals.length > 0 ? vals : undefined;
 }
 
+export const DEFAULT_MATURITIES = ["verified", "official", "beta", "community"];
+
 export function parseSearchParams(
   params: Record<string, string | string[] | undefined> | URLSearchParams
 ): BrandSearchFilters {
@@ -19,8 +21,9 @@ export function parseSearchParams(
 
   return {
     q: get("q") ?? undefined,
+    sectors: parseCSV(get("sector")),
     tiers: parseCSV(get("tier")),
-    maturities: parseCSV(get("maturity")) ?? ["verified", "official", "beta", "community"],
+    maturities: parseCSV(get("maturity")),
     hasMcp: get("mcp") === "true" ? true : undefined,
     hasApi: get("search_api") === "true" ? true : undefined,
     hasDeals: get("has_deals") === "true" ? true : undefined,
