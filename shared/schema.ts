@@ -968,13 +968,6 @@ export const rail5ConfirmSchema = z.object({
   merchant_name: z.string().max(200).optional(),
 });
 
-export const analyzeVendorSchema = z.object({
-  url: z.string().url().min(1).max(2000),
-});
-
-export const submitVendorSchema = z.object({
-  url: z.string().url().min(1).max(2000),
-});
 
 export const updateSkillDraftSchema = z.object({
   vendorData: z.record(z.any()).optional(),

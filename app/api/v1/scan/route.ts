@@ -246,9 +246,10 @@ export async function POST(request: NextRequest) {
 
     const agentEvidence = agentResult?.evidence ?? {};
     const agentFindings = agentResult?.findings ?? {};
-    const enhanced = agentResult !== null && !agentResult.error && Object.keys(agentEvidence).length > 0;
+    const hasAgentEvidence = agentResult !== null && Object.keys(agentEvidence).length > 0;
+    const enhanced = hasAgentEvidence;
 
-    const finalEvidence = enhanced
+    const finalEvidence = hasAgentEvidence
       ? mergeEvidence(detectorEvidence, agentEvidence)
       : detectorEvidence;
 

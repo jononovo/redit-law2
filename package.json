@@ -7,7 +7,6 @@
     "start": "next start -p 5000 -H 0.0.0.0"
   },
   "dependencies": {
-    "@anthropic-ai/claude-agent-sdk": "^0.2.90",
     "@anthropic-ai/sdk": "^0.82.0",
     "@base-org/account": "^2.5.2",
     "@base-org/account-ui": "^1.0.1",

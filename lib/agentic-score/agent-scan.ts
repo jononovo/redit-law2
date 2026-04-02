@@ -14,6 +14,27 @@ const MAX_HTML_PER_PAGE = 120_000;
 const FETCH_TIMEOUT_MS = 12_000;
 const AGENT_TIMEOUT_MS = 90_000;
 
+const VALID_EVIDENCE_KEYS = new Set<string>();
+for (const pillar of SCORING_RUBRIC.pillars) {
+  for (const signal of pillar.signals) {
+    for (const criterion of signal.criteria) {
+      VALID_EVIDENCE_KEYS.add(criterion.evidence);
+    }
+  }
+}
+
+function coerceEvidenceValue(value: unknown): boolean | number | string | null {
+  if (value === null) return null;
+  if (typeof value === "boolean") return value;
+  if (typeof value === "number") return value;
+  if (typeof value === "string") {
+    if (value === "true") return true;
+    if (value === "false") return false;
+    return value;
+  }
+  return null;
+}
+
 const BLOCKED_HOSTS = [
   "localhost", "127.0.0.1", "0.0.0.0", "::1",
   "metadata.google.internal", "169.254.169.254",
@@ -70,52 +91,71 @@ async function resolveAndValidate(url: string, domain: string): Promise<boolean>
   }
 }
 
-async function agentFetchPage(url: string, domain: string): Promise<{ html: string; statusCode: number; loadTimeMs: number }> {
+const MAX_REDIRECTS = 5;
+
+async function safeFetchWithRedirects(url: string, domain: string, depth: number = 0): Promise<Response> {
+  if (depth > MAX_REDIRECTS) throw new Error(`Too many redirects (>${MAX_REDIRECTS})`);
+
   const safe = await resolveAndValidate(url, domain);
   if (!safe) throw new Error(`URL not allowed: must be on ${domain}`);
 
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
-  const start = Date.now();
   try {
-    const firecrawlKey = process.env.FIRECRAWL_API_KEY;
-    if (firecrawlKey) {
-      try {
-        const FirecrawlApp = (await import("@mendable/firecrawl-js")).default;
-        const app = new FirecrawlApp({ apiKey: firecrawlKey });
-        const result = await Promise.race([
-          app.scrapeUrl(url, { formats: ["html"] }),
-          new Promise<never>((_, reject) => setTimeout(() => reject(new Error("Firecrawl timeout")), FETCH_TIMEOUT_MS)),
-        ]);
-        if (result && "html" in result && typeof result.html === "string" && result.html.length > 100) {
-          return {
-            html: result.html.slice(0, MAX_HTML_PER_PAGE),
-            statusCode: 200,
-            loadTimeMs: Date.now() - start,
-          };
-        }
-      } catch {
-        // fall through to raw fetch
-      }
-    }
-
     const res = await fetch(url, {
       signal: controller.signal,
       headers: {
         "User-Agent": "CreditClaw-ASXScanner/1.0 (+https://creditclaw.com/asx)",
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
       },
-      redirect: "follow",
+      redirect: "manual",
     });
-    const text = await res.text();
-    return {
-      html: text.slice(0, MAX_HTML_PER_PAGE),
-      statusCode: res.status,
-      loadTimeMs: Date.now() - start,
-    };
+    if (res.status >= 300 && res.status < 400) {
+      const location = res.headers.get("location");
+      if (!location) throw new Error(`Redirect ${res.status} without Location header`);
+      const redirectUrl = new URL(location, url).toString();
+      return safeFetchWithRedirects(redirectUrl, domain, depth + 1);
+    }
+    return res;
   } finally {
     clearTimeout(timer);
   }
+}
+
+async function agentFetchPage(url: string, domain: string): Promise<{ html: string; statusCode: number; loadTimeMs: number }> {
+  const safe = await resolveAndValidate(url, domain);
+  if (!safe) throw new Error(`URL not allowed: must be on ${domain}`);
+
+  const start = Date.now();
+
+  const firecrawlKey = process.env.FIRECRAWL_API_KEY;
+  if (firecrawlKey) {
+    try {
+      const FirecrawlApp = (await import("@mendable/firecrawl-js")).default;
+      const app = new FirecrawlApp({ apiKey: firecrawlKey });
+      const result = await Promise.race([
+        app.scrapeUrl(url, { formats: ["html"] }),
+        new Promise<never>((_, reject) => setTimeout(() => reject(new Error("Firecrawl timeout")), FETCH_TIMEOUT_MS)),
+      ]);
+      if (result && "html" in result && typeof result.html === "string" && result.html.length > 100) {
+        return {
+          html: result.html.slice(0, MAX_HTML_PER_PAGE),
+          statusCode: 200,
+          loadTimeMs: Date.now() - start,
+        };
+      }
+    } catch {
+      // fall through to raw fetch
+    }
+  }
+
+  const res = await safeFetchWithRedirects(url, domain);
+  const text = await res.text();
+  return {
+    html: text.slice(0, MAX_HTML_PER_PAGE),
+    statusCode: res.status,
+    loadTimeMs: Date.now() - start,
+  };
 }
 
 const TOOLS: Anthropic.Tool[] = [
@@ -311,12 +351,23 @@ export async function agenticScan(
 
             case "record_evidence": {
               const ev = toolUse.input.evidence as Record<string, unknown>;
+              const accepted: string[] = [];
+              const rejected: string[] = [];
               for (const [key, value] of Object.entries(ev)) {
-                if (typeof value === "boolean" || typeof value === "number" || typeof value === "string" || value === null) {
-                  evidence[key] = value;
+                if (!VALID_EVIDENCE_KEYS.has(key)) {
+                  rejected.push(key);
+                  continue;
+                }
+                const coerced = coerceEvidenceValue(value);
+                if (coerced !== null) {
+                  evidence[key] = coerced;
+                  accepted.push(key);
                 }
               }
-              result = `Recorded ${Object.keys(ev).length} evidence keys: ${Object.keys(ev).join(", ")}`;
+              result = `Recorded ${accepted.length} evidence keys: ${accepted.join(", ")}`;
+              if (rejected.length > 0) {
+                result += `. Rejected ${rejected.length} unknown keys: ${rejected.join(", ")}`;
+              }
               break;
             }
 

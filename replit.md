@@ -311,16 +311,16 @@ Sole source of truth for all brand data across all surfaces (bots, humans, expor
 - 22+ indexes (5 btree, 7 GIN on arrays, 1 GIN on tsvector, 7 partial)
 
 **ASX Score Engine** (`lib/agentic-score/`):
-Self-contained scoring module that evaluates how well a merchant's website supports AI shopping agents. Completely independent of `analyzeVendor()` and the skill builder pipeline.
-- `compute.ts` — main entry: `computeASXScore(input: ScoreInput): ASXScoreResult`
-- `fetch.ts` — parallel fetcher: `fetchScanInputs(domain: string): Promise<ScoreInput>` (fetches homepage + sitemap.xml + robots.txt in parallel with SSRF protection and manual redirect validation). Firecrawl JS rendering enabled when `FIRECRAWL_API_KEY` is set (falls back to raw fetch on failure or missing key). Also exports `normalizeDomain(input: string): string` for domain validation/cleanup, and `domainToSlug(domain: string): string` for URL-friendly slug derivation (`.com` strips TLD, non-`.com` replaces dots with dashes).
-- `llm.ts` — `analyzeScanWithClaude(html, domain)`: Claude-powered analysis extracting checkout flow, taxonomy (sector/subSectors/tier), capabilities, and shopping tips. Returns `LLMScanFindings` (partial, all fields optional). Graceful failure: returns `{}` if ANTHROPIC_API_KEY missing or Claude fails.
-- `enhance.ts` — `enhanceScores(baseResult, findings)`: boosts regex-based signal scores using LLM findings. Floor principle: never lowers a score, only boosts. Returns enhanced `ASXScoreResult`.
+Self-contained scoring module that evaluates how well a merchant's website supports AI shopping agents.
+Architecture: Single central rubric → regex detectors + agentic scan → merged evidence → deterministic scoring.
+- `rubric.ts` — pure data: `SCORING_RUBRIC` with 57 criteria, 10 signals, 3 pillars. Types: `RubricCriterion`, `EvidenceMap`, etc. Source of truth for all scoring.
+- `scoring-engine.ts` — `computeScoreFromRubric(rubric, evidence)`: deterministic scorer. Also exports `rubricToPromptText()`, `rubricToCsv()`, and recommendation generation.
+- `detectors.ts` — `detectAll(html, sitemap, robots, loadTime)`: 10 regex-based evidence extractors producing `EvidenceMap` from homepage HTML, sitemap, robots.txt.
+- `compute.ts` — thin wrapper: `computeASXScore(input)` calls `detectAll` → `computeScoreFromRubric`.
+- `agent-scan.ts` — `agenticScan(domain, homepageHtml)`: agentic multi-page scanner using Anthropic SDK with tool use. 4 tools: `fetch_page`, `record_evidence`, `record_findings`, `complete_scan`. Domain-locked SSRF protection, page budget (8), timeout (90s), Firecrawl integration. Returns `AgenticScanResult` with evidence, findings, pages fetched. Graceful degradation if API key missing or errors.
+- `fetch.ts` — parallel fetcher: `fetchScanInputs(domain)` fetches homepage + sitemap.xml + robots.txt with SSRF protection. Firecrawl JS rendering when `FIRECRAWL_API_KEY` set. Also exports `normalizeDomain()` and `domainToSlug()`.
 - `extract-meta.ts` — `extractMeta(html, domain)`: extracts `<title>` and `<meta description>` from HTML with domain-based fallbacks
-- `recommendations.ts` — generates improvement recommendations sorted by potential point gain
-- `signals/clarity.ts` — JSON-LD (20pts), Product Feed/Sitemap (10pts), Clean HTML (10pts)
-- `signals/speed.ts` — Search API/MCP (10pts), Internal Site Search (10pts), Page Load (5pts)
-- `signals/reliability.ts` — Access & Auth (10pts), Order Management (10pts), Checkout Flow (10pts), Bot Tolerance (5pts)
+- `types.ts` — all type definitions including `PageFetch`, `AgenticScanResult`, `SignalKey`, etc.
 - 3 pillars: Clarity (40pts max) + Speed (25pts max) + Reliability (35pts max) = 100pts
 - Labels: Poor (0-20), Needs Work (21-40), Fair (41-60), Good (61-80), Excellent (81-100)
 - Output writes to `brand_index` via `overallScore`, `scoreBreakdown` (jsonb), `recommendations` (jsonb), `skillMd` (text)
@@ -328,11 +328,11 @@ Self-contained scoring module that evaluates how well a merchant's website suppo
 **Scan API** (`app/api/v1/scan/route.ts`):
 Public endpoint for the ASX Score Scanner — CreditClaw's lead gen tool. No auth required.
 - `POST /api/v1/scan` — accepts `{ domain: string }`, returns score + breakdown + recommendations + `skillMdUrl` + `enhanced` flag
-- Pipeline: normalizeDomain → cache check (30-day window) → fetchScanInputs (Firecrawl → raw fallback) → computeASXScore → analyzeScanWithClaude → enhanceScores → buildVendorSkillDraft → generateVendorSkill (SKILL.md) → upsertBrandIndex → response
-- Claude analysis is optional: if ANTHROPIC_API_KEY missing or credits exhausted, regex-only scores and default SKILL.md are used
+- Pipeline: normalizeDomain → cache check (30-day window) → fetchScanInputs → detectAll (regex) → agenticScan (multi-page Claude analysis) → mergeEvidence (agent evidence upgrades detector evidence, never downgrades) → computeScoreFromRubric → buildVendorSkillDraft → generateVendorSkill (SKILL.md) → upsertBrandIndex → response
+- Agentic scan is optional: if ANTHROPIC_API_KEY missing or agent errors, regex-only scores and default SKILL.md are used
 - Rate limiting: in-memory, 5 requests/min per IP (via x-forwarded-for)
 - Error responses: 400 (invalid domain), 422 (unreachable), 429 (rate limit), 500 (internal)
-- Taxonomy guard: existing non-"uncategorized" sector is never overwritten by Claude's classification
+- Taxonomy guard: existing non-"uncategorized" sector is never overwritten by agent classification
 - Capability persistence: boolean fields (`hasApi`, `hasMcp`) use OR-merge (false→true upgrade), arrays use set-union merge
 - Storage: `getBrandByDomain(domain)` added to IStorage interface and brand-index.ts
 
