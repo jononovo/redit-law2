@@ -36,10 +36,9 @@ import {
   VendorSector,
   BrandTier,
   SkillMaturity,
-  VendorSkill,
 } from "@/lib/procurement-skills/types";
 import type { BrandIndex } from "@/shared/schema";
-import { VendorCard, MATURITY_CONFIG, SECTOR_ICONS, CHECKOUT_ICONS, getScoreColor } from "@/app/skills/vendor-card";
+import { VendorCard, MATURITY_CONFIG, SECTOR_ICONS, CHECKOUT_ICONS, getScoreColor, getSuccessRate } from "@/app/skills/vendor-card";
 
 type FilterState = {
   search: string;
@@ -585,7 +584,7 @@ export default function CatalogClient({
                             {sortedBrands.map((brand) => {
                               const maturity = MATURITY_CONFIG[brand.maturity as SkillMaturity] ?? MATURITY_CONFIG.draft;
                               const checkoutMethods = (brand.checkoutMethods ?? []) as CheckoutMethod[];
-                              const vendor = brand.brandData as unknown as VendorSkill | null;
+                              const successRate = getSuccessRate(brand);
                               const scoreColor = getScoreColor(brand.overallScore);
                               return (
                                 <tr
@@ -628,10 +627,10 @@ export default function CatalogClient({
                                         {brand.overallScore != null ? brand.overallScore : "—"}
                                       </span>
                                       <span className="text-[10px] text-neutral-400">/ 100</span>
-                                      {vendor?.feedbackStats?.successRate != null && (
+                                      {successRate != null && (
                                         <span className="ml-1.5 text-[10px] font-semibold text-green-700 flex items-center gap-0.5">
                                           <TrendingUp className="w-2.5 h-2.5 text-green-500" />
-                                          {Math.round(vendor.feedbackStats.successRate * 100)}%
+                                          {Math.round(successRate * 100)}%
                                         </span>
                                       )}
                                     </div>

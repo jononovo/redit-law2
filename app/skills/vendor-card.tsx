@@ -25,7 +25,6 @@ import {
   VendorSector,
   BrandTier,
   SkillMaturity,
-  VendorSkill,
 } from "@/lib/procurement-skills/types";
 import type { BrandIndex } from "@/shared/schema";
 
@@ -78,8 +77,17 @@ export function getScoreColor(score: number | null | undefined): { bg: string; t
   return { bg: "bg-red-50", text: "text-red-700", border: "border-red-200" };
 }
 
+export function getSuccessRate(brand: any): number | null {
+  if ('successRate' in brand && brand.successRate != null) {
+    const val = Number(brand.successRate);
+    return isNaN(val) ? null : val;
+  }
+  const vendor = brand.brandData as any;
+  return vendor?.feedbackStats?.successRate ?? null;
+}
+
 export function VendorCard({ brand }: { brand: BrandIndex }) {
-  const vendor = brand.brandData as unknown as VendorSkill | null;
+  const successRate = getSuccessRate(brand);
   const maturity = MATURITY_CONFIG[brand.maturity as SkillMaturity] ?? MATURITY_CONFIG.draft;
   const sectorKey = (brand.sector) as VendorSector;
   const checkoutMethods = (brand.checkoutMethods ?? []) as CheckoutMethod[];
@@ -192,11 +200,11 @@ export function VendorCard({ brand }: { brand: BrandIndex }) {
               Deals
             </span>
           )}
-          {vendor?.feedbackStats?.successRate != null && (
+          {successRate != null && (
             <div className="flex items-center gap-1 text-xs" data-testid={`stat-success-${brand.slug}`}>
               <TrendingUp className="w-3 h-3 text-green-500" />
               <span className="font-semibold text-green-700">
-                {Math.round(vendor.feedbackStats.successRate * 100)}%
+                {Math.round(successRate * 100)}%
               </span>
             </div>
           )}
