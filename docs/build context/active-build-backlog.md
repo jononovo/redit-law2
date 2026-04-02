@@ -26,26 +26,57 @@ For reference — these are done and archived:
 
 ## Build Sequence
 
-### Step 1: Shareable Catalog URLs
+### Step 1: Catalog Scale Readiness
 
-#### URL-Based Filter State on `/skills`
+Three independent tasks to prepare the catalog for thousands of brands.
+
+#### 1A. URL-Based Filter State on `/skills`
 
 **Priority:** Medium
 **Status:** Not started
-**Source:** `completed/remaining-build-tasks.md` Task 1
 
-The catalog page (`/skills`) ignores `searchParams` server-side. Filters are client-only via `catalog-client.tsx`, so crawlers always see the default unfiltered view and filtered URLs can't be shared or bookmarked.
+The catalog page ignores `searchParams` server-side. Filters are client-only, so crawlers always see the default view and filtered URLs can't be shared or bookmarked.
 
 **What's needed:**
 - `app/skills/page.tsx` reads `searchParams`, passes filters to `storage.searchBrands()` server-side
-- `catalog-client.tsx` refactored to accept initial server data + use `router.replace()` for filter changes
-- `generateMetadata()` reflects current filters (e.g., "Office AI Procurement Skills" instead of generic title)
+- `catalog-client.tsx` accepts initial server data + uses `router.replace()` for filter changes
+- `generateMetadata()` reflects current filters (e.g., "Office AI Procurement Skills")
 - Sector filters use `/c/[sector]` routes, NOT `?sector=` on `/skills`
 - `/skills` handles: `?q=`, `?checkout=`, `?tier=`, `?capability=`, `?maturity=`
 
-**Code context:** The internal API route (`app/api/internal/brands/search/route.ts`) already maps URL params to `BrandSearchFilters` — the same mapping logic works server-side. `storage.searchBrands()` supports all needed filters. The server component currently fetches a hardcoded default view (limit 50, sorted by score, public maturities only).
+**Code context:** `app/api/internal/brands/search/route.ts` already maps URL params to `BrandSearchFilters` — same logic works server-side. The server component currently fetches a hardcoded default (limit 50, sorted by score, public maturities only).
 
 **Files:** `app/skills/page.tsx`, `app/skills/catalog-client.tsx`
+
+---
+
+#### 1B. `generateStaticParams` for Brand Detail Pages
+
+**Priority:** High — with thousands of brands, on-demand SSR for every page view is wasteful
+**Status:** Not started
+
+Add `generateStaticParams()` to `app/skills/[vendor]/page.tsx` so verified/official brand pages are pre-rendered at build time. At thousands of brands, this means the most-visited pages serve instantly without hitting the database.
+
+**Files:** `app/skills/[vendor]/page.tsx`
+
+---
+
+#### 1C. Lean Catalog Query (drop `brandData` from lite select)
+
+**Priority:** High — at 2,000+ brands this is 100-200 KB of unnecessary data per catalog page load
+**Status:** Not started
+
+The `LITE_COLUMNS` object in `searchBrands({ lite: true })` pulls the full `brandData` JSONB blob (~2-4 KB per brand). Catalog cards only use **one field** from it: `feedbackStats.successRate`. The brand detail page uses the full blob, but it queries with `lite: false` so it's unaffected.
+
+**Fix (no migration needed):** Replace `brandData: brandIndex.brandData` in `LITE_COLUMNS` with a Drizzle SQL expression that extracts just the one value:
+```ts
+successRate: sql<number>`(${brandIndex.brandData}->'feedbackStats'->>'successRate')::numeric`.as('success_rate')
+```
+Then update `vendor-card.tsx` and `catalog-client.tsx` to read `brand.successRate` instead of `(brand.brandData as VendorSkill).feedbackStats?.successRate`.
+
+No new column, no migration, no schema change — just a smarter query that returns a number instead of a multi-KB JSON blob.
+
+**Files:** `server/storage/brand-index.ts` (LITE_COLUMNS), `app/skills/vendor-card.tsx`, `app/skills/catalog-client.tsx`
 
 ---
 
@@ -137,13 +168,9 @@ Full product catalog crawl, LLM-powered enrichment, Google Product Taxonomy mapp
 
 ## Scale-Triggered Optimizations (not active — revisit when thresholds are hit)
 
-These are valid ideas but premature at current scale (14 seeded brands, ~30 total public URLs). They should be reconsidered when the catalog grows.
-
 | Optimization | Trigger | What to do | Source |
 |---|---|---|---|
-| `generateStaticParams` for `/skills/[vendor]` | 100+ verified/official brands | Pre-render high-traffic brand pages at build time | `completed/remaining-build-tasks.md` Task 2 |
 | Sitemap splitting | 1,000+ URLs | Use `generateSitemaps()` to split by content type or sector | `completed/remaining-build-tasks.md` Task 4 |
-| Remove `brandData` from `LITE_COLUMNS` | 200+ brands or measurable catalog slowness | Promote `feedbackStats.successRate` to a top-level column, then drop `brandData` from lite query. Both `vendor-card.tsx` and `catalog-client.tsx` currently access `brandData.feedbackStats.successRate` so it's not a one-line fix — requires migration + aggregation job update | `completed/remaining-build-tasks.md` Task 5 |
 
 ## Other Future Items (no build plans)
 
@@ -158,7 +185,11 @@ These are valid ideas but premature at current scale (14 seeded brands, ~30 tota
 ## Dependency Map
 
 ```
-Step 1 (Shareable Catalog URLs) ←── independent, can start now
+Step 1 (Catalog Scale Readiness) ←── independent, can start now
+  1A URL-based filters ─── no deps
+  1B generateStaticParams ── no deps
+  1C lean catalog query ──── no deps
+  (all three are independent of each other)
 
 Step 2 (Multitenant) ←── independent, can start now
   ↓
@@ -175,4 +206,4 @@ Step 7 (Tier 3 Product Index) ←── depends on Step 6
 
 Steps 1, 2, 5, and 6 can all run in parallel.
 Category landing pages are under Step 6 (depends on UCP tables).
-Scale-triggered optimizations (staticParams, sitemap split, JSONB lite) are parked until thresholds are hit.
+Sitemap splitting is parked until 1,000+ URLs.
