@@ -67,6 +67,10 @@ export interface EvidenceCitation {
   value: boolean | number | string | null;
   sourceUrl: string;
   snippet: string;
+  pillar: "clarity" | "speed" | "reliability";
+  signal: SignalKey;
+  signalLabel: string;
+  criterion: string;
 }
 
 export interface AgenticScanResult {

@@ -3,7 +3,7 @@ import { lookup } from "dns/promises";
 import type { EvidenceMap } from "./rubric";
 import { SCORING_RUBRIC } from "./rubric";
 import { rubricToPromptText } from "./scoring-engine";
-import type { PageFetch, AgenticScanResult, EvidenceCitation } from "./types";
+import type { PageFetch, AgenticScanResult, EvidenceCitation, SignalKey } from "./types";
 import type { VendorSector } from "@/lib/procurement-skills/taxonomy/sectors";
 import type { BrandTier } from "@/lib/procurement-skills/taxonomy/tiers";
 
@@ -14,11 +14,25 @@ const MAX_HTML_PER_PAGE = 120_000;
 const FETCH_TIMEOUT_MS = 12_000;
 const AGENT_TIMEOUT_MS = 90_000;
 
+interface EvidenceKeyMeta {
+  pillar: "clarity" | "speed" | "reliability";
+  signal: SignalKey;
+  signalLabel: string;
+  criterion: string;
+}
+
 const VALID_EVIDENCE_KEYS = new Set<string>();
+const EVIDENCE_KEY_META = new Map<string, EvidenceKeyMeta>();
 for (const pillar of SCORING_RUBRIC.pillars) {
   for (const signal of pillar.signals) {
     for (const criterion of signal.criteria) {
       VALID_EVIDENCE_KEYS.add(criterion.evidence);
+      EVIDENCE_KEY_META.set(criterion.evidence, {
+        pillar: pillar.id,
+        signal: signal.id,
+        signalLabel: signal.label,
+        criterion: criterion.condition,
+      });
     }
   }
 }
@@ -371,10 +385,20 @@ export async function agenticScan(
                   continue;
                 }
                 const coerced = coerceEvidenceValue(value);
-                if (coerced !== null) {
+                const meta = EVIDENCE_KEY_META.get(key);
+                if (coerced !== null && meta) {
                   evidence[key] = coerced;
                   accepted.push(key);
-                  citations.push({ key, value: coerced, sourceUrl, snippet });
+                  citations.push({
+                    key,
+                    value: coerced,
+                    sourceUrl,
+                    snippet,
+                    pillar: meta.pillar,
+                    signal: meta.signal,
+                    signalLabel: meta.signalLabel,
+                    criterion: meta.criterion,
+                  });
                 }
               }
               result = `Recorded ${accepted.length} evidence keys: ${accepted.join(", ")}`;
