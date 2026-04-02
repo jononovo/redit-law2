@@ -5,15 +5,17 @@ import {
   normalizeDomain,
   domainToSlug,
   fetchScanInputs,
-  computeASXScore,
   extractMeta,
 } from "@/lib/agentic-score";
-import { analyzeScanWithClaude } from "@/lib/agentic-score/llm";
-import { enhanceScores } from "@/lib/agentic-score/enhance";
+import { detectAll } from "@/lib/agentic-score/detectors";
+import { SCORING_RUBRIC } from "@/lib/agentic-score/rubric";
+import { computeScoreFromRubric } from "@/lib/agentic-score/scoring-engine";
+import { agenticScan } from "@/lib/agentic-score/agent-scan";
 import { generateVendorSkill } from "@/lib/procurement-skills/generator";
 import type { VendorSkill, VendorCapability } from "@/lib/procurement-skills/types";
 import type { VendorSector } from "@/lib/procurement-skills/taxonomy/sectors";
 import type { ScoreLabel } from "@/lib/agentic-score";
+import type { EvidenceMap } from "@/lib/agentic-score/rubric";
 
 const CACHE_WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
 const RATE_LIMIT_WINDOW_MS = 60 * 1000;
@@ -136,8 +138,22 @@ function buildVendorSkillDraft(
     ],
     version: "1.0.0",
     lastVerified: new Date().toISOString().split("T")[0],
-    generatedBy: "skill_builder",
+    generatedBy: "agentic_scanner",
   };
+}
+
+function mergeEvidence(detectorEvidence: EvidenceMap, agentEvidence: EvidenceMap): EvidenceMap {
+  const merged = { ...detectorEvidence };
+  for (const [key, value] of Object.entries(agentEvidence)) {
+    if (value === null || value === undefined) continue;
+    const existing = merged[key];
+    if (existing === null || existing === undefined || existing === false) {
+      merged[key] = value;
+    } else if (typeof value === "boolean" && value === true) {
+      merged[key] = true;
+    }
+  }
+  return merged;
 }
 
 export async function POST(request: NextRequest) {
@@ -211,41 +227,48 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const baseScoreResult = computeASXScore(input);
+    const detectorEvidence = detectAll(
+      input.homepageHtml || "",
+      input.sitemapContent ?? null,
+      input.robotsTxtContent ?? null,
+      input.pageLoadTimeMs ?? null,
+    );
+
     const meta = extractMeta(input.homepageHtml, domain);
     const slug = existing?.slug ?? domainToSlug(domain);
 
-    let findings: Record<string, unknown> = {};
-    let enhanced = false;
+    let agentResult;
     try {
-      const llmResult = await analyzeScanWithClaude(input.homepageHtml, domain);
-      if (Object.keys(llmResult).length > 0) {
-        findings = llmResult as Record<string, unknown>;
-        enhanced = true;
-      }
+      agentResult = await agenticScan(domain, input.homepageHtml);
     } catch {
-      // Claude analysis failed; continue with regex-only scores
+      agentResult = null;
     }
 
-    const scoreResult = enhanced
-      ? enhanceScores(baseScoreResult, findings as Parameters<typeof enhanceScores>[1])
-      : baseScoreResult;
+    const agentEvidence = agentResult?.evidence ?? {};
+    const agentFindings = agentResult?.findings ?? {};
+    const enhanced = agentResult !== null && !agentResult.error && Object.keys(agentEvidence).length > 0;
 
-    const resolvedName = existing?.name ?? (findings.name as string | undefined) ?? meta.name;
+    const finalEvidence = enhanced
+      ? mergeEvidence(detectorEvidence, agentEvidence)
+      : detectorEvidence;
+
+    const scoreResult = computeScoreFromRubric(SCORING_RUBRIC, finalEvidence);
+
+    const resolvedName = existing?.name ?? (agentFindings.name as string | undefined) ?? meta.name;
 
     const resolvedSector = existing?.sector && existing.sector !== "uncategorized"
       ? existing.sector
-      : (findings.sector as string | undefined) ?? "uncategorized";
+      : (agentFindings.sector as string | undefined) ?? "uncategorized";
 
     const resolvedSubSectors = existing?.subSectors && existing.subSectors.length > 0
       ? existing.subSectors
-      : Array.isArray(findings.subSectors) ? findings.subSectors as string[] : [];
+      : Array.isArray(agentFindings.subSectors) ? agentFindings.subSectors as string[] : [];
 
-    const resolvedTier = existing?.tier ?? (findings.tier as string | undefined) ?? null;
+    const resolvedTier = existing?.tier ?? (agentFindings.tier as string | undefined) ?? null;
 
     let skillMd: string | null = null;
     try {
-      const draft = buildVendorSkillDraft(slug, domain, resolvedName, resolvedSector, findings);
+      const draft = buildVendorSkillDraft(slug, domain, resolvedName, resolvedSector, agentFindings);
       skillMd = generateVendorSkill(draft);
     } catch {
       // SKILL.md generation failed; non-critical
@@ -269,16 +292,16 @@ export async function POST(request: NextRequest) {
       overallScore: scoreResult.overallScore,
       scoreBreakdown: scoreResult.breakdown,
       recommendations: scoreResult.recommendations,
-      scanTier: enhanced ? "enhanced" : "free",
+      scanTier: enhanced ? "agentic" : "free",
       lastScannedAt: now,
       lastScannedBy: "public",
       skillMd: skillMd ?? existing?.skillMd ?? undefined,
       capabilities: mergeArrayField(
         existing?.capabilities,
-        findings.capabilities as string[] | undefined,
+        agentFindings.capabilities as string[] | undefined,
       ),
-      hasApi: (existing?.hasApi || (findings.hasApi as boolean | undefined)) ?? false,
-      hasMcp: (existing?.hasMcp || (findings.hasMcp as boolean | undefined)) ?? false,
+      hasApi: (existing?.hasApi || (agentFindings.hasApi as boolean | undefined)) ?? false,
+      hasMcp: (existing?.hasMcp || (agentFindings.hasMcp as boolean | undefined)) ?? false,
     });
 
     return NextResponse.json({

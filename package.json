@@ -7,6 +7,7 @@
     "start": "next start -p 5000 -H 0.0.0.0"
   },
   "dependencies": {
+    "@anthropic-ai/claude-agent-sdk": "^0.2.90",
     "@anthropic-ai/sdk": "^0.82.0",
     "@base-org/account": "^2.5.2",
     "@base-org/account-ui": "^1.0.1",
@@ -88,7 +89,7 @@
     "vaul": "^1.1.2",
     "viem": "^2.45.3",
     "vitest": "^4.0.18",
-    "zod": "^3.25.76"
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@types/node": "^20.19.0",
