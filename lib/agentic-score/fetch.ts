@@ -2,6 +2,7 @@ import { lookup } from "dns/promises";
 import type { ScoreInput } from "./types";
 
 const FETCH_TIMEOUT = 15000;
+const FIRECRAWL_TIMEOUT = 30000;
 const MAX_HTML_LENGTH = 200000;
 const MAX_REDIRECTS = 5;
 
@@ -78,6 +79,35 @@ async function safeFetch(url: string, timeoutMs: number = FETCH_TIMEOUT, depth: 
   }
 }
 
+async function fetchWithFirecrawl(url: string): Promise<string | null> {
+  const apiKey = process.env.FIRECRAWL_API_KEY;
+  if (!apiKey) return null;
+
+  const safe = await resolveAndValidate(url);
+  if (!safe) return null;
+
+  try {
+    const FirecrawlApp = (await import("@mendable/firecrawl-js")).default;
+    const app = new FirecrawlApp({ apiKey });
+
+    const result = await Promise.race([
+      app.scrapeUrl(url, { formats: ["html"] }),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("Firecrawl timeout")), FIRECRAWL_TIMEOUT)
+      ),
+    ]);
+
+    if (result && "html" in result && typeof result.html === "string" && result.html.length > 100) {
+      return result.html.slice(0, MAX_HTML_LENGTH);
+    }
+
+    return null;
+  } catch (err) {
+    console.warn("Firecrawl fallback to raw fetch:", err instanceof Error ? err.message : err);
+    return null;
+  }
+}
+
 export function normalizeDomain(input: string): string {
   if (!input || typeof input !== "string") {
     throw new Error("Domain is required");
@@ -101,11 +131,15 @@ export async function fetchScanInputs(rawDomain: string): Promise<ScoreInput> {
   const startTime = Date.now();
 
   const [homepageResult, sitemapResult, robotsResult] = await Promise.allSettled([
-    safeFetch(baseUrl).then(async (res) => {
+    (async () => {
+      const firecrawlHtml = await fetchWithFirecrawl(baseUrl);
+      if (firecrawlHtml) return firecrawlHtml;
+
+      const res = await safeFetch(baseUrl);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const text = await res.text();
       return text.slice(0, MAX_HTML_LENGTH);
-    }),
+    })(),
     safeFetch(`${baseUrl}/sitemap.xml`, 8000).then(async (res) => {
       if (!res.ok) return null;
       const text = await res.text();

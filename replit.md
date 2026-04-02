@@ -313,7 +313,9 @@ Sole source of truth for all brand data across all surfaces (bots, humans, expor
 **ASX Score Engine** (`lib/agentic-score/`):
 Self-contained scoring module that evaluates how well a merchant's website supports AI shopping agents. Completely independent of `analyzeVendor()` and the skill builder pipeline.
 - `compute.ts` — main entry: `computeASXScore(input: ScoreInput): ASXScoreResult`
-- `fetch.ts` — parallel fetcher: `fetchScanInputs(domain: string): Promise<ScoreInput>` (fetches homepage + sitemap.xml + robots.txt in parallel with SSRF protection and manual redirect validation). Also exports `normalizeDomain(input: string): string` for domain validation/cleanup, and `domainToSlug(domain: string): string` for URL-friendly slug derivation (`.com` strips TLD, non-`.com` replaces dots with dashes).
+- `fetch.ts` — parallel fetcher: `fetchScanInputs(domain: string): Promise<ScoreInput>` (fetches homepage + sitemap.xml + robots.txt in parallel with SSRF protection and manual redirect validation). Firecrawl JS rendering enabled when `FIRECRAWL_API_KEY` is set (falls back to raw fetch on failure or missing key). Also exports `normalizeDomain(input: string): string` for domain validation/cleanup, and `domainToSlug(domain: string): string` for URL-friendly slug derivation (`.com` strips TLD, non-`.com` replaces dots with dashes).
+- `llm.ts` — `analyzeScanWithClaude(html, domain)`: Claude-powered analysis extracting checkout flow, taxonomy (sector/subSectors/tier), capabilities, and shopping tips. Returns `LLMScanFindings` (partial, all fields optional). Graceful failure: returns `{}` if ANTHROPIC_API_KEY missing or Claude fails.
+- `enhance.ts` — `enhanceScores(baseResult, findings)`: boosts regex-based signal scores using LLM findings. Floor principle: never lowers a score, only boosts. Returns enhanced `ASXScoreResult`.
 - `extract-meta.ts` — `extractMeta(html, domain)`: extracts `<title>` and `<meta description>` from HTML with domain-based fallbacks
 - `recommendations.ts` — generates improvement recommendations sorted by potential point gain
 - `signals/clarity.ts` — JSON-LD (20pts), Product Feed/Sitemap (10pts), Clean HTML (10pts)
@@ -321,17 +323,23 @@ Self-contained scoring module that evaluates how well a merchant's website suppo
 - `signals/reliability.ts` — Access & Auth (10pts), Order Management (10pts), Checkout Flow (10pts), Bot Tolerance (5pts)
 - 3 pillars: Clarity (40pts max) + Speed (25pts max) + Reliability (35pts max) = 100pts
 - Labels: Poor (0-20), Needs Work (21-40), Fair (41-60), Good (61-80), Excellent (81-100)
-- Output writes to `brand_index` via `overallScore`, `scoreBreakdown` (jsonb), `recommendations` (jsonb)
+- Output writes to `brand_index` via `overallScore`, `scoreBreakdown` (jsonb), `recommendations` (jsonb), `skillMd` (text)
 
 **Scan API** (`app/api/v1/scan/route.ts`):
 Public endpoint for the ASX Score Scanner — CreditClaw's lead gen tool. No auth required.
-- `POST /api/v1/scan` — accepts `{ domain: string }`, returns score + breakdown + recommendations
-- Pipeline: normalizeDomain → cache check (getBrandByDomain, 30-day window) → fetchScanInputs → computeASXScore → extractMeta → upsertBrandIndex → response
+- `POST /api/v1/scan` — accepts `{ domain: string }`, returns score + breakdown + recommendations + `skillMdUrl` + `enhanced` flag
+- Pipeline: normalizeDomain → cache check (30-day window) → fetchScanInputs (Firecrawl → raw fallback) → computeASXScore → analyzeScanWithClaude → enhanceScores → buildVendorSkillDraft → generateVendorSkill (SKILL.md) → upsertBrandIndex → response
+- Claude analysis is optional: if ANTHROPIC_API_KEY missing or credits exhausted, regex-only scores and default SKILL.md are used
 - Rate limiting: in-memory, 5 requests/min per IP (via x-forwarded-for)
 - Error responses: 400 (invalid domain), 422 (unreachable), 429 (rate limit), 500 (internal)
-- New brands created with sector "uncategorized", submitterType "auto_scan", maturity "draft"
-- Existing brands: score fields always refreshed, curated fields (name, capabilities, etc.) never overwritten
+- Taxonomy guard: existing non-"uncategorized" sector is never overwritten by Claude's classification
+- Capability persistence: boolean fields (`hasApi`, `hasMcp`) use OR-merge (false→true upgrade), arrays use set-union merge
 - Storage: `getBrandByDomain(domain)` added to IStorage interface and brand-index.ts
+
+**SKILL.md Serving** (`app/brands/[slug]/skill/route.ts`):
+Public endpoint serving raw SKILL.md markdown for a brand.
+- `GET /brands/[slug]/skill` — returns `Content-Type: text/markdown; charset=utf-8` with 24-hour cache
+- 404 if brand not found or skillMd is null
 
 **Public Brands API** (`app/api/v1/brands/[slug]/route.ts`):
 Public-facing brand data endpoint. No auth required.
