@@ -36,47 +36,11 @@ For reference — these are done and archived:
 - `agentic-commerce-standard.md` updated to v1.1 (Discoverability pillar, UCP taxonomy, returns, platform, skill.json)
 - `skill.json` schema defined (`Shopy/skill-json-schema.md`)
 - Step 1: Catalog Scale Readiness (1A URL-based filters, 1B generateStaticParams, 1C lean catalog query)
+- GIN indexes + partial boolean indexes on `brand_index` (migration 0007 — `sub_sectors`, `tags`, `carries_brands`, `capabilities`, `checkout_methods`, `payment_methods_accepted`, `supported_countries`, `search_vector` GIN; `has_mcp`, `has_api`, `has_deals`, `ordering=guest`, `tax_exempt`, `po_number`, `claimed_by` partial; plus `search_vector` trigger)
 
 ---
 
 ## Build Sequence
-
-### Step 1D: GIN Indexes for Array Columns
-
-**Priority:** High — required before scale; array containment queries degrade rapidly without GIN indexes
-**Status:** Not started
-**Depends on:** Nothing (independent, can run anytime)
-
-The `brand_index` table has multiple `text[]` array columns that are filtered with `ANY()` containment checks, but only B-tree indexes exist today (on `sector`, `tier`, `maturity`, `overallScore`). At tens of thousands of rows, queries filtering on capabilities, checkout methods, carries_brands, etc. will slow down significantly.
-
-**What's needed — add GIN indexes via migration:**
-
-```sql
-CREATE INDEX brand_index_capabilities_gin ON brand_index USING gin (capabilities);
-CREATE INDEX brand_index_checkout_methods_gin ON brand_index USING gin (checkout_methods);
-CREATE INDEX brand_index_carries_brands_gin ON brand_index USING gin (carries_brands);
-CREATE INDEX brand_index_sub_sectors_gin ON brand_index USING gin (sub_sectors);
-CREATE INDEX brand_index_tags_gin ON brand_index USING gin (tags);
-CREATE INDEX brand_index_payment_methods_gin ON brand_index USING gin (payment_methods_accepted);
-CREATE INDEX brand_index_creditclaw_supports_gin ON brand_index USING gin (creditclaw_supports);
-CREATE INDEX brand_index_supported_countries_gin ON brand_index USING gin (supported_countries);
-CREATE INDEX brand_index_delivery_options_gin ON brand_index USING gin (delivery_options);
-```
-
-Also add partial indexes for boolean filters (only index `true` rows — much smaller):
-
-```sql
-CREATE INDEX brand_index_has_mcp_idx ON brand_index (has_mcp) WHERE has_mcp = true;
-CREATE INDEX brand_index_has_api_idx ON brand_index (has_api) WHERE has_api = true;
-CREATE INDEX brand_index_has_deals_idx ON brand_index (has_deals) WHERE has_deals = true;
-CREATE INDEX brand_index_tax_exempt_idx ON brand_index (tax_exempt_supported) WHERE tax_exempt_supported = true;
-CREATE INDEX brand_index_po_number_idx ON brand_index (po_number_supported) WHERE po_number_supported = true;
-```
-
-**Source:** `brand-index-implementation-plan-v3.md` (Indexes section)
-**Files:** New migration file
-
----
 
 ### Step 2: Multitenant System
 
@@ -187,9 +151,6 @@ Full product catalog crawl, LLM-powered enrichment, Google Product Taxonomy mapp
 ## Dependency Map
 
 ```
-Step 1D (GIN Indexes) ←── independent, can run anytime
-  (small migration, no code changes needed)
-
 Step 2 (Multitenant) ←── independent, can start now
   ↓
 Step 3 (shopy.sh Pages) ←── depends on Step 2
@@ -203,7 +164,7 @@ Step 6 (UCP Taxonomy + Category Pages) ←── independent, can start now
 Step 7 (Tier 3 Product Index) ←── depends on Step 6
 ```
 
-Steps 1D, 2, 5, and 6 can all run in parallel.
+Steps 2, 5, and 6 can all run in parallel.
 Category landing pages are under Step 6 (depends on UCP tables).
 Master Skill ships with Step 4 (registry API).
 Sitemap splitting is parked until 1,000+ URLs.
