@@ -34,6 +34,46 @@
 
   "features": {},
 
+  "navigation": {
+    "footer": {
+      "columns": [
+        {
+          "title": "Product",
+          "links": [
+            { "label": "How It Works", "href": "/how-it-works" },
+            { "label": "Allowance", "href": "/allowance" },
+            { "label": "Safety", "href": "/safety" },
+            { "label": "Vendor Skills", "href": "/skills" },
+            { "label": "Score Scanner", "href": "/agentic-shopping-score" },
+            { "label": "Get Started", "href": "/onboarding" }
+          ]
+        },
+        {
+          "title": "Dashboard",
+          "links": [
+            { "label": "Overview", "href": "/overview" },
+            { "label": "Cards", "href": "/cards" },
+            { "label": "Transactions", "href": "/transactions" },
+            { "label": "Settings", "href": "/settings" }
+          ]
+        },
+        {
+          "title": "Resources",
+          "links": [
+            { "label": "Documentation", "href": "/docs" },
+            { "label": "Developer", "href": "/docs/api/introduction" },
+            { "label": "Newsroom", "href": "/newsroom" }
+          ]
+        }
+      ],
+      "socials": [
+        { "label": "Twitter", "href": "https://x.com/creditclawapp" },
+        { "label": "Instagram", "href": "#" },
+        { "label": "TikTok", "href": "#" }
+      ]
+    }
+  },
+
   "tracking": {
     "gaId": "G-EGT42NKHLB"
   }

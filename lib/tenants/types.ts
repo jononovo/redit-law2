@@ -34,6 +34,16 @@ export interface TenantConfig {
 
   features: Record<string, boolean>;
 
+  navigation?: {
+    footer: {
+      columns: {
+        title: string;
+        links: { label: string; href: string; external?: boolean }[];
+      }[];
+      socials?: { label: string; href: string }[];
+    };
+  };
+
   tracking?: {
     gaId: string;
   };
