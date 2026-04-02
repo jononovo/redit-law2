@@ -20,3 +20,6 @@ Private technical documentation for the CreditClaw / shopy.sh engineering team. 
 | File | Feature | Summary |
 |------|---------|---------|
 | `multitenant-system.md` | Multitenant | Hostname routing, tenant configs, theming, adding new tenants |
+| `product-index.md` | Product Index | Brand catalog, LITE_COLUMNS, filtering, generateStaticParams, search_vector |
+| `asx-scanner.md` | ASX Scanner | Multi-page scan flow, rubric v1.1.0, 11 signals, SKILL.md generation, evidence system |
+| `metadata-and-taxonomy.md` | Metadata & Taxonomy | Google Product Taxonomy, UCP, sectors, tiers, capabilities, skill.json |

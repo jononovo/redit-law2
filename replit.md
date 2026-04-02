@@ -717,6 +717,9 @@ Schema changes flow through Drizzle ORM and are auto-synced to production on dep
 Private technical documentation covering implementation details, fragile areas, expansion plans, and operational guides. Not served publicly — for the engineering team only.
 - `README.md` — index of all internal doc pages
 - `multitenant-system.md` — hostname routing, tenant configs, theming, how to add tenants, fragile areas
+- `product-index.md` — brand catalog, LITE_COLUMNS, filtering, generateStaticParams, search_vector
+- `asx-scanner.md` — multi-page scan flow, rubric v1.1.0, 11 signals, SKILL.md generation, evidence system
+- `metadata-and-taxonomy.md` — Google Product Taxonomy, UCP, sectors, tiers, capabilities, skill.json
 
 ### Documentation System (`docs/content/`, `app/docs/`)
 Self-hosted documentation at `/docs` with sidebar navigation, audience toggle (User Guide / Developers), and markdown rendering.
