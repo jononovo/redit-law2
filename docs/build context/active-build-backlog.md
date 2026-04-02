@@ -45,6 +45,8 @@ The catalog page (`/skills`) ignores `searchParams` server-side. Filters are cli
 - Sector filters use `/c/[sector]` routes, NOT `?sector=` on `/skills`
 - `/skills` handles: `?q=`, `?checkout=`, `?tier=`, `?capability=`, `?maturity=`
 
+**Verified (2026-04-02):** The internal API route (`app/api/internal/brands/search/route.ts`) already maps URL params to `BrandSearchFilters` — that parsing logic can be reused. `storage.searchBrands()` supports all needed filters (full-text search, sector, tier, maturity, checkout methods, capabilities, payment methods). The server component currently fetches a hardcoded default view (limit 50, sorted by score, public maturities only).
+
 **Files:** `app/skills/page.tsx`, `app/skills/catalog-client.tsx`
 
 ---
@@ -61,44 +63,31 @@ Add `generateStaticParams()` to `app/skills/[vendor]/page.tsx` for verified/offi
 
 ---
 
-#### 1C. Category Landing Pages (replaces old "Sub-Sector Pages")
-
-**Priority:** Low — wait until catalog has 50+ brands
-**Status:** Needs re-planning (old plan used freeform `sub_sectors`, now replaced by UCP categories)
-**Source:** `completed/remaining-build-tasks.md` Task 3 (outdated — needs rewrite for UCP)
-
-The old plan was `/c/[sector]/[subSector]` using freeform `sub_sectors` strings. Now that taxonomy uses the structured UCP `categories` array with GPT IDs, this needs a fresh approach:
-- Category pages driven by GPT IDs, not freeform slugs
-- Route structure TBD: could be `/c/[sector]/[category-slug]` with slug derived from GPT category name
-- Storage methods need to query the `categories` JSONB structure, not `unnest(sub_sectors)`
-- Only generate pages for categories with enough brands to be useful
-
-**Depends on:** UCP categories being populated in `brand_index` for enough merchants
-
----
-
-#### 1D. Sitemap Splitting
+#### 1C. Sitemap Splitting
 
 **Priority:** Low — wait until 1,000+ URLs
 **Status:** Not started
 **Source:** `completed/remaining-build-tasks.md` Task 4
-**Depends on:** 1C (so sitemaps include category page URLs from the start)
 
-Replace single `sitemap()` in `app/sitemap.ts` with `generateSitemaps()` — one sitemap per sector.
+Replace single `sitemap()` in `app/sitemap.ts` with `generateSitemaps()` — one sitemap per sector. Can be done independently by splitting by content type (pages, brands, blog) rather than waiting for category pages.
+
+**Verified (2026-04-02):** Current sitemap uses a single `sitemap()` function that includes static pages, docs, newsroom (posts + categories + tags), brand pages (up to 500), and sector pages. No `generateSitemaps()` in use. When category pages exist (Step 6), their URLs should be added.
 
 **Files:** `app/sitemap.ts`
 
 ---
 
-#### 1E. JSONB Extraction for Catalog Performance
+#### 1D. Remove `brandData` from Catalog Lite Query
 
-**Priority:** Low — only matters at 1,000+ brands
+**Priority:** Low-Medium — quick win, reduces payload size per catalog request
 **Status:** Not started
 **Source:** `completed/remaining-build-tasks.md` Task 5
 
-Extract fields that catalog cards need (description, capabilities, checkout methods, tier) into top-level columns on `brand_index` so the catalog query doesn't need JSONB.
+The `LITE_COLUMNS` used by `searchBrands({ lite: true })` still includes `brandData` (the full ~1.8KB JSONB blob per row). Catalog cards don't need it — they already have `description`, `capabilities`, `checkoutMethods`, `tier`, `sector`, `overallScore`, `axsRating` as top-level columns in `LITE_COLUMNS`.
 
-**Files:** `shared/schema.ts`, `server/storage/brand-index.ts`, migration
+**Verified (2026-04-02):** `LITE_COLUMNS` in `server/storage/brand-index.ts` (line 41) includes `brandData`. The catalog client component and `vendor-card.tsx` should be checked for any `brandData` field usage — if cards don't access it, simply removing `brandData` from `LITE_COLUMNS` is the fix. No migration or schema change needed in that case.
+
+**Files:** `server/storage/brand-index.ts`, `app/skills/catalog-client.tsx`, `app/skills/vendor-card.tsx`
 
 ---
 
@@ -174,6 +163,7 @@ Paid, end-user triggered via paywall. Webhook-triggered external browser agents 
 - Migrate existing freeform `sub_sectors` to GPT ID mappings
 - Agent scan auto-detects UCP categories during scoring
 - Category-based navigation and filtering
+- **Category Landing Pages** (moved from Step 1 — depends on UCP tables): Build `/c/[sector]/[category-slug]` pages driven by GPT IDs. Requires `ucp_categories` and `brand_categories` tables to exist. Old plan (`completed/remaining-build-tasks.md` Task 3) used freeform `sub_sectors` — needs full rewrite for UCP model.
 
 ---
 
@@ -201,11 +191,10 @@ Full product catalog crawl, LLM-powered enrichment, Google Product Taxonomy mapp
 
 ```
 Step 1 (Catalog SEO Polish) ←── independent, can start now
-  1A URL filters ─── no deps
-  1B staticParams ── no deps
-  1C category pages ── needs UCP data (Step 6)
-  1D sitemap split ── depends on 1C
-  1E JSONB extract ── no deps
+  1A URL filters ──── no deps
+  1B staticParams ─── no deps
+  1C sitemap split ── no deps (can split by content type now)
+  1D JSONB lite fix ── no deps (may be a one-line change)
 
 Step 2 (Multitenant) ←── independent, can start now
   ↓
@@ -220,4 +209,5 @@ Step 6 (UCP Taxonomy) ←── independent, can start now
 Step 7 (Tier 3 Product Index) ←── depends on Step 6
 ```
 
-Steps 1A/1B/1E, 2, 5, and 6 can all run in parallel.
+Steps 1A-1D, 2, 5, and 6 can all run in parallel.
+Category landing pages are now under Step 6 (depends on UCP tables).
