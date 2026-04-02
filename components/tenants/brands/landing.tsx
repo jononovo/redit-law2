@@ -38,7 +38,7 @@ export default function BrandsLanding() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/api/v1/brands?limit=100&lite=true")
+    fetch("/api/v1/brands?limit=100&lite=true&maturity=verified,official,beta,community,draft")
       .then((r) => r.json())
       .then((data) => {
         setBrands(data.brands || data || []);
