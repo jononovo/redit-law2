@@ -67,7 +67,7 @@ export function AuthDrawer({ children, open: controlledOpen, onOpenChange, redir
     setError(null);
     setLoading(true);
     try {
-      await sendMagicLink(email.trim());
+      await sendMagicLink(email.trim(), redirectTo);
       setMagicLinkSent(true);
     } catch (err: any) {
       setError(err?.message || "Failed to send magic link");

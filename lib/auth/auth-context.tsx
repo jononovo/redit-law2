@@ -26,7 +26,7 @@ interface AuthContextType {
   loading: boolean;
   signInWithGoogle: () => Promise<void>;
   signInWithGithub: () => Promise<void>;
-  sendMagicLink: (email: string) => Promise<void>;
+  sendMagicLink: (email: string, redirectTo?: string) => Promise<void>;
   completeMagicLink: () => Promise<void>;
   logout: () => Promise<void>;
 }
@@ -92,9 +92,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (sessionUser) setUser(sessionUser);
   }, []);
 
-  const sendMagicLink = useCallback(async (email: string) => {
+  const sendMagicLink = useCallback(async (email: string, redirectTo?: string) => {
     const actionCodeSettings = {
-      url: window.location.origin + "/overview",
+      url: window.location.origin + (redirectTo || "/overview"),
       handleCodeInApp: true,
     };
     await sendSignInLinkToEmail(auth, email, actionCodeSettings);
