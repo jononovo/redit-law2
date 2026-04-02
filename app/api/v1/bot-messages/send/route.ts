@@ -7,7 +7,7 @@ import { z } from "zod";
 const sendSchema = z.object({
   bot_id: z.string().min(1),
   event_type: z.string().min(1),
-  payload: z.record(z.unknown()),
+  payload: z.record(z.string(), z.unknown()),
 });
 
 export async function POST(request: NextRequest) {
