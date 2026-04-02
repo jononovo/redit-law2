@@ -713,6 +713,11 @@ Schema changes flow through Drizzle ORM and are auto-synced to production on dep
 5. Config: `drizzle.config.ts` points at `DATABASE_URL` with `pg` driver
 6. The `spending_permissions` table exists in both databases but is not tracked in the schema (legacy table)
 
+### Internal Developer Docs (`docs/internal/`)
+Private technical documentation covering implementation details, fragile areas, expansion plans, and operational guides. Not served publicly — for the engineering team only.
+- `README.md` — index of all internal doc pages
+- `multitenant-system.md` — hostname routing, tenant configs, theming, how to add tenants, fragile areas
+
 ### Documentation System (`docs/content/`, `app/docs/`)
 Self-hosted documentation at `/docs` with sidebar navigation, audience toggle (User Guide / Developers), and markdown rendering.
 - **Config**: `docs/content/sections.ts` — typed section/page registry with audience tagging.
