@@ -13,18 +13,37 @@ Also merge existing curated `brandData` into SKILL.md generation.
 
 ---
 
-## Architecture: Agentic Scan
+## Architecture: Rubric-Based Scoring (Implemented)
 
-### Current state (static pipeline)
+### What changed since the original plan
+
+The scoring architecture was redesigned before the agent scan work began. The 3-layer 
+cake (regex score → Claude enhance → page boost) is replaced by a single-authority 
+rubric engine:
+
+- **The rubric** (`rubric.ts`) defines all 57 criteria across 10 signals and 3 pillars. 
+  It is the single source of truth for scoring — a pure data file.
+- **Detectors** (`detectors.ts`) run regex checks on HTML/sitemap/robots.txt and produce 
+  an evidence map (flat key-value object of boolean/number/string facts).
+- **The agent** explores the site and fills in additional evidence keys that regex can't 
+  detect (guest checkout, variant selectors, checkout complexity).
+- **The scoring engine** (`scoring-engine.ts`) takes the rubric + evidence map and 
+  produces the final `ASXScoreResult` deterministically.
+- **A methodology page** at `/agentic-shopping-score/methodology` shows the full rubric 
+  publicly — three tables, one per pillar, with all criteria and point values.
+
+### Current state (rubric-based pipeline)
 
 ```
 fetchScanInputs(domain)          → homepage + sitemap + robots
   ↓
-computeASXScore(input)           → regex-only scoring on homepage
+detectAll(html, sitemap, robots) → EvidenceMap (regex-detected boolean facts)
   ↓
-analyzeScanWithClaude(html)      → one Claude call, homepage only, flat prompt
+computeScoreFromRubric(rubric, evidence) → ASXScoreResult (deterministic)
   ↓
-enhanceScores(base, findings)    → boost scores from Claude findings
+analyzeScanWithClaude(html)      → one Claude call, homepage only (LEGACY — to be replaced)
+  ↓
+enhanceScores(base, findings)    → boost scores from Claude findings (LEGACY — to be replaced)
   ↓
 buildVendorSkillDraft(findings)  → construct VendorSkill from Claude output
   ↓
@@ -33,36 +52,62 @@ generateVendorSkill(draft)       → render SKILL.md
 upsertBrandIndex(...)            → persist everything
 ```
 
-Problems:
-- Claude only sees the homepage — misses product pages, cart, search
-- No intelligence about WHICH pages matter for THIS specific store
-- Single static prompt — no progressive learning across pages
-- Completely separate from skill builder pipeline (redundant work)
+The `computeASXScore()` wrapper in `compute.ts` calls `detectAll()` → 
+`computeScoreFromRubric()` internally. The scan route still calls `analyzeScanWithClaude()` 
+and `enhanceScores()` as a second pass, but these are legacy — the rubric engine already 
+scores everything the regex detectors find.
 
 ### Proposed state (agentic pipeline)
 
 ```
 fetchScanInputs(domain)          → homepage + sitemap + robots (unchanged)
   ↓
-computeASXScore(input)           → regex-only scoring on homepage (unchanged)
+detectAll(html, sitemap, robots) → EvidenceMap (regex-detected facts)
   ↓
 agenticScan(input)               → Claude Agent SDK explores the site:
   │                                  Agent reads homepage → identifies store
-  │                                  Agent calls fetch_page() for a product page
-  │                                  Agent reads product page → finds cart/search
-  │                                  Agent calls fetch_page() for cart and search
-  │                                  Agent calls record_findings() progressively
-  │                                  Returns: AgenticScanResult
+  │                                  Agent calls fetch_page() for product/cart/search pages
+  │                                  Agent calls record_evidence() to set evidence keys
+  │                                  Agent calls complete_scan() with summary
+  │                                  Returns: { agentEvidence, findings, fetchedPages }
   ↓
-enhanceScores(base, findings)    → boost scores from Claude findings (unchanged)
+computeScoreFromRubric(rubric, mergedEvidence) → final ASXScoreResult
   ↓
-boostFromPages(base, pages)      → NEW: boost signal scores from fetched page HTML
-  ↓
-buildVendorSkillDraft(...)       → construct VendorSkill (now also merges brandData)
+buildVendorSkillDraft(...)       → construct VendorSkill (merges brandData + agent findings)
   ↓
 generateVendorSkill(draft)       → render SKILL.md (unchanged)
   ↓
 upsertBrandIndex(...)            → persist everything
+```
+
+Key difference from the original plan: **no `enhanceScores()`, no `boostFromAgentPages()`**. 
+The agent writes directly to the evidence map, and one call to `computeScoreFromRubric()` 
+produces the final score. Single scoring authority.
+
+---
+
+## File Structure (Current)
+
+```
+lib/agentic-score/
+  rubric.ts          ← Pure data: 57 criteria, 10 signals, 3 pillars, types
+  scoring-engine.ts  ← computeScoreFromRubric() + recommendations + CSV/prompt utilities
+  detectors.ts       ← All 10 regex evidence extractors (consolidated from old signals/)
+  compute.ts         ← Thin wrapper: detectAll → computeScoreFromRubric
+  index.ts           ← Barrel exports
+  agent-scan.ts      ← TO CREATE: Agent SDK engine
+  fetch.ts           ← Firecrawl + SSRF protection (unchanged)
+  extract-meta.ts    ← Meta extraction (unchanged)
+  types.ts           ← Shared types (unchanged)
+  domain-utils.ts    ← Domain normalization (unchanged)
+  enhance.ts         ← LEGACY — to be deleted when agent replaces it
+  llm.ts             ← LEGACY — to be deleted when agent replaces it
+
+app/agentic-shopping-score/
+  page.tsx            ← Scanner form page
+  scanner-form.tsx    ← Form component
+  methodology/
+    page.tsx          ← Scoring rubric tables (implemented)
 ```
 
 ---
@@ -92,7 +137,6 @@ Use `claude-sonnet-4-6-20260320` (Sonnet 4.6) via the `model` option in `query()
 | File | Change |
 |---|---|
 | `package.json` | Add `@anthropic-ai/claude-agent-sdk` |
-| `lib/agentic-score/llm.ts` | Model constant already updated to `claude-sonnet-4-6-20260320` (**DONE**) |
 
 ---
 
@@ -105,12 +149,15 @@ tools disabled — the agent can ONLY use our custom tools.
 
 ### Tool definitions (using `tool()` + Zod)
 
+The agent now works with **evidence keys** from the rubric, not ad-hoc findings fields.
+
 ```typescript
 import { tool, createSdkMcpServer, query } from "@anthropic-ai/claude-agent-sdk";
 import { z } from "zod";
 
 // Shared state for the scan session
-let findings: LLMScanFindings = {};
+let agentEvidence: EvidenceMap = {};
+let agentFindings: Record<string, unknown> = {};
 let fetchedPages: PageFetch[] = [];
 
 // --- Tool 1: fetch_page ---
@@ -139,12 +186,35 @@ const fetchPageTool = tool(
   { annotations: { readOnlyHint: true, openWorldHint: true } }
 );
 
-// --- Tool 2: record_findings ---
+// --- Tool 2: record_evidence ---
+// The agent sets evidence keys that map directly to rubric criteria.
+// The system prompt includes the full rubric so the agent knows which keys to set.
+const recordEvidenceTool = tool(
+  "record_evidence",
+  "Set evidence keys that feed the scoring rubric. Each key maps to a specific " +
+  "criterion in the rubric. Set a key to true when you confirm the criterion is met. " +
+  "Only set keys for things you've actually verified on the site. " +
+  "You can call this multiple times — keys are merged (never overwritten to false).",
+  {
+    evidence: z.record(z.union([z.boolean(), z.number(), z.string()])),
+  },
+  async ({ evidence }) => {
+    for (const [key, value] of Object.entries(evidence)) {
+      if (value !== false && value !== null && value !== undefined) {
+        agentEvidence[key] = value;
+      }
+    }
+    return { content: [{ type: "text", text: `Evidence recorded: ${Object.keys(evidence).join(", ")}` }] };
+  },
+  { annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false } }
+);
+
+// --- Tool 3: record_findings ---
+// The agent also records structured findings for SKILL.md generation.
 const recordFindingsTool = tool(
   "record_findings",
-  "Save structured findings about this store. Call this whenever you've learned " +
-  "something new. You can call it multiple times — findings are merged progressively. " +
-  "Don't wait until the end; save as you go.",
+  "Save structured findings about this store for the SKILL.md file. " +
+  "Call this whenever you've learned something new. Findings are merged progressively.",
   {
     name: z.string().optional(),
     sector: z.enum([...VALID_SECTORS]).optional(),
@@ -165,20 +235,16 @@ const recordFindingsTool = tool(
     capabilities: z.array(z.string()).optional(),
     hasApi: z.boolean().optional(),
     hasMcp: z.boolean().optional(),
-    jsonLdTypes: z.array(z.string()).optional(),
-    variantSelectors: z.array(z.string()).optional(),
-    priceFormat: z.string().optional(),
     tips: z.array(z.string()).optional(),
   },
   async (incoming) => {
-    // Deep-merge: booleans OR-merge, arrays set-union, strings last-write-wins
-    mergeFindings(findings, incoming);
+    mergeFindings(agentFindings, incoming);
     return { content: [{ type: "text", text: "Findings recorded." }] };
   },
   { annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false } }
 );
 
-// --- Tool 3: complete_scan ---
+// --- Tool 4: complete_scan ---
 const completeScanTool = tool(
   "complete_scan",
   "Call this when you have finished exploring the site and recorded all findings.",
@@ -196,16 +262,14 @@ const completeScanTool = tool(
 ### MCP Server + query() call
 
 ```typescript
-// Create in-process MCP server with our custom tools
 const scanServer = createSdkMcpServer({
   name: "scan",
   version: "1.0.0",
-  tools: [fetchPageTool, recordFindingsTool, completeScanTool],
+  tools: [fetchPageTool, recordEvidenceTool, recordFindingsTool, completeScanTool],
 });
 
-// Run the agent
 for await (const message of query({
-  prompt: buildInitialMessage(input),  // homepage HTML + sitemap + robots
+  prompt: buildInitialMessage(input),
   options: {
     model: "claude-sonnet-4-6-20260320",
     systemPrompt: SYSTEM_PROMPT,
@@ -213,34 +277,26 @@ for await (const message of query({
     mcpServers: { scan: scanServer },
     allowedTools: [
       "mcp__scan__fetch_page",
+      "mcp__scan__record_evidence",
       "mcp__scan__record_findings",
       "mcp__scan__complete_scan",
     ],
     permissionMode: "acceptEdits",
-    maxBudgetUsd: 0.15,  // Hard cost cap per scan
+    maxBudgetUsd: 0.15,
   },
 })) {
-  // Stream messages — the SDK handles the agent loop automatically
-  // We just monitor for the result
   if (message.type === "result" && message.subtype === "success") {
     // Agent finished
   }
 }
 
-return { findings, fetchedPages, complete: true };
+return { agentEvidence, findings: agentFindings, fetchedPages, complete: true };
 ```
 
-### Key advantages over manual tool_use loop
-
-1. **No manual while loop** — the SDK handles the agent loop, conversation history, 
-   tool dispatch, and termination
-2. **`maxBudgetUsd`** — built-in cost guardrail, no manual token counting
-3. **Future extensibility** — to add WebSearch, filesystem access, or subagents later, 
-   just add to `allowedTools`. No architecture change needed.
-4. **Hooks** — can add pre/post tool execution hooks for logging, rate limiting, etc.
-5. **Sessions** — can resume scans or review past scan conversations for debugging
-
 ### System prompt
+
+The system prompt now includes the full rubric (via `rubricToPromptText()`) so the 
+agent knows exactly which evidence keys to set:
 
 ```
 You are a site analyst for CreditClaw, an AI procurement platform. Your job is to 
@@ -254,51 +310,46 @@ things:
 2. PRODUCT STRUCTURE — How are products displayed? What variants, pricing, IDs exist?
 3. CHECKOUT FLOW — How would an agent complete a purchase?
 
-You have tools to fetch additional pages. Use them strategically:
+## Scoring Rubric
 
-- Start by analyzing the homepage. Identify the store, its sector, and find links to 
-  product pages, cart, and search.
-- Fetch a product page to understand product structure (variants, pricing, add-to-cart).
-- From the product page, identify the cart URL and search pattern.
-- Fetch the cart page to understand checkout flow (guest checkout, payment methods, 
-  tax exemption, PO numbers).
-- Fetch a search results page to verify the search pattern works and understand result 
-  structure.
+Below is the full scoring rubric. Your job is to investigate and set evidence keys 
+using the record_evidence tool. Automated detectors have already set evidence for 
+keys marked as "detect" source. Focus on keys marked "agent" or "either" — these 
+are the ones only you can verify by actually visiting pages.
 
-Call record_findings whenever you learn something new. Don't wait until the end — 
-save findings progressively so nothing is lost if the scan is interrupted.
+{rubricToPromptText(SCORING_RUBRIC)}
 
-Call complete_scan when you've gathered enough information or run out of useful pages 
-to visit.
+## Tools
+
+- Use fetch_page to visit product pages, cart, search results, or other pages.
+- Use record_evidence to set rubric evidence keys (e.g., guestCheckout: true).
+- Use record_findings to save structured data for the SKILL.md file.
+- Use complete_scan when you're done.
+
+Call record_evidence and record_findings whenever you learn something new. Don't wait 
+until the end — save as you go.
 
 You are analyzing: {domain}
 ```
 
-### Initial user message
+### Key design decision: two recording tools
 
-```
-Here is the homepage of {domain}:
+The agent has **two** recording tools because they serve different purposes:
 
-{stripped homepage HTML, up to 25,000 chars}
+1. **`record_evidence`** — sets boolean/numeric keys that feed the rubric scoring engine. 
+   These are machine-consumed. Example: `{ guestCheckout: true, variantSelectors: true }`.
+2. **`record_findings`** — saves structured fields for the SKILL.md file (search URL 
+   templates, payment methods, tips). These are human-consumed.
 
-{if sitemap exists:}
-Here is the sitemap.xml (may contain product URLs you can fetch):
-{sitemap content, up to 10,000 chars}
-
-{if robots.txt exists:}
-Here is robots.txt:
-{robots.txt content, up to 5,000 chars}
-
-Explore this site. Start by analyzing what you see on the homepage, then use 
-fetch_page to visit the most important pages for understanding how an agent would 
-shop here.
-```
+Some fields overlap (e.g., `guestCheckout` appears in both). This is intentional — the 
+evidence map drives scoring, the findings drive SKILL.md content.
 
 ### Return type
 
 ```typescript
 interface AgenticScanResult {
-  findings: LLMScanFindings;
+  agentEvidence: EvidenceMap;
+  findings: Record<string, unknown>;
   fetchedPages: PageFetch[];
   complete: boolean;
   summary?: string;
@@ -318,7 +369,7 @@ interface PageFetch {
 | Guardrail | Mechanism | Value |
 |---|---|---|
 | Cost cap | `maxBudgetUsd` option | $0.15 per scan |
-| Tool restriction | `tools: []` + `allowedTools` | Only our 3 custom tools |
+| Tool restriction | `tools: []` + `allowedTools` | Only our 4 custom tools |
 | Domain lock | `fetch_page` handler validates URL hostname | Same domain only |
 | SSRF protection | `resolveAndValidate()` in `fetch_page` handler | Blocks private IPs |
 | Page size | `fetch_page` handler truncates HTML | 20,000 chars per page |
@@ -326,7 +377,7 @@ interface PageFetch {
 
 ### Token budget estimate
 
-- System prompt: ~500 tokens
+- System prompt (with rubric): ~2,500 tokens
 - Initial message (homepage + sitemap + robots): ~10,000 tokens
 - Per tool round-trip (Claude reasoning + tool call + result): ~8,000 tokens
 - Typical scan (3-4 page fetches): ~35,000-45,000 tokens total
@@ -335,62 +386,36 @@ interface PageFetch {
 ### Graceful degradation
 
 If the agentic scan fails for any reason (API error, timeout, budget exceeded):
-- Return whatever findings were accumulated via `record_findings` so far
-- Return whatever pages were fetched (for signal boosting)
-- The pipeline continues with partial data — same as current behavior when Claude 
-  fails entirely (regex-only scores persist)
+- Return whatever evidence was accumulated via `record_evidence` so far
+- Return whatever findings were recorded
+- Return whatever pages were fetched
+- The pipeline continues with detector-only evidence — `computeScoreFromRubric()` 
+  still produces a score, just without agent-verified criteria
 
 ### Files to create/modify
 
 | File | Change |
 |---|---|
-| `lib/agentic-score/agent-scan.ts` | **NEW** — Agent SDK integration: tool definitions, MCP server, query() call, message handling |
-| `lib/agentic-score/llm.ts` | Keep for backward compatibility. Scan route will call `agenticScan()` instead |
+| `lib/agentic-score/agent-scan.ts` | **NEW** — Agent SDK integration: tool definitions, MCP server, query() call |
 | `lib/agentic-score/types.ts` | Add `PageFetch`, `AgenticScanResult` interfaces |
-| `app/api/v1/scan/route.ts` | Replace `analyzeScanWithClaude()` with `agenticScan()` |
+| `lib/agentic-score/index.ts` | Add `agenticScan` + types exports |
+| `app/api/v1/scan/route.ts` | Replace `analyzeScanWithClaude()` + `enhanceScores()` with `agenticScan()` + evidence merge |
 
 ---
 
-## Part 3: Signal Boosting from Agent-Fetched Pages
+## ~~Part 3: Signal Boosting from Agent-Fetched Pages~~ (REMOVED)
 
-### Approach: additive enhancement layer (no signal refactor)
+**This part is no longer needed.** The rubric engine replaces the 3-layer scoring model. 
+Instead of boosting scores from fetched pages, the agent sets evidence keys directly via 
+`record_evidence`, and `computeScoreFromRubric()` produces the final score in one pass.
 
-All 10 existing signal functions remain untouched. They continue scoring on homepage HTML 
-only. A new function `boostFromAgentPages()` takes the base score result + the pages 
-the agent fetched and applies floor-based boosts.
-
-This follows the same pattern as `enhanceScores()` — additive, never lowers scores.
-
-### New file: `lib/agentic-score/boost-pages.ts`
-
-```typescript
-export function boostFromAgentPages(
-  baseResult: ASXScoreResult,
-  pages: PageFetch[],
-): ASXScoreResult
-```
-
-### Boost rules by signal
-
-| Signal | Page type | What to check | Boost logic |
-|---|---|---|---|
-| `json_ld` (max 20) | product | `<script type="application/ld+json">` with Product type | If product page has Product JSON-LD, boost to floor of 12. If has Offer too, floor of 16. |
-| `clean_html` (max 10) | product | Semantic markup: `<main>`, `<article>`, headings | If product page has better semantic structure, boost to floor of 6 |
-| `order_management` (max 10) | product, cart | Add-to-cart form, quantity input, variant selectors | If product page has add-to-cart + variants, floor of 5. If cart page has item management, floor of 7. |
-| `checkout_flow` (max 10) | cart | Checkout button, payment indicators, guest checkout | If cart page reveals checkout flow, floor of 5. If guest checkout visible, floor of 7. |
-| `access_auth` (max 10) | cart | Does cart load without redirect to login? | If cart page loads directly (200, no login form), floor of 7. |
-| `site_search` (max 10) | search | Does search page return results? | If search page has product results, floor of 7. |
-| `bot_tolerance` (max 10) | any | Did Firecrawl succeed on all pages? | If 3+ pages fetched successfully, floor of 5. |
-
-### Files to create
-
-| File | Change |
-|---|---|
-| `lib/agentic-score/boost-pages.ts` | **NEW** — additive score boosting from agent-fetched pages |
+The old `boost-pages.ts` file is not created.
 
 ---
 
-## Part 4: Brand Data Enrichment for SKILL.md
+## Part 3: Brand Data Enrichment for SKILL.md
+
+*(Renumbered from Part 4)*
 
 ### Current state
 
@@ -436,24 +461,28 @@ sources in priority order:
 // 1. Fetch homepage + sitemap + robots (unchanged)
 const input = await fetchScanInputs(domain);
 
-// 2. Regex-only base scoring on homepage (unchanged)
-const baseScoreResult = computeASXScore(input);
+// 2. Run regex detectors → baseline evidence map
+const detectorEvidence = detectAll(
+  input.homepageHtml, input.sitemapContent, input.robotsTxtContent, input.pageLoadTimeMs
+);
 
 // 3. Agentic scan — Claude Agent explores the site (NEW)
-let agentResult: AgenticScanResult = { findings: {}, fetchedPages: [], complete: false };
+let agentResult: AgenticScanResult = { 
+  agentEvidence: {}, findings: {}, fetchedPages: [], complete: false 
+};
 try {
-  agentResult = await agenticScan(input);
+  agentResult = await agenticScan(input, detectorEvidence);
 } catch {
-  // Falls back to regex-only scores
+  // Falls back to detector-only evidence
 }
 
-// 4. Enhance scores from Claude findings (unchanged, same function)
-const enhancedResult = enhanceScores(baseScoreResult, agentResult.findings);
+// 4. Merge evidence: detectors + agent (agent can confirm/override "either" keys)
+const mergedEvidence = { ...detectorEvidence, ...agentResult.agentEvidence };
 
-// 5. Boost scores from pages the agent fetched (NEW)
-const finalResult = boostFromAgentPages(enhancedResult, agentResult.fetchedPages);
+// 5. Single scoring pass — rubric is the only authority
+const scoreResult = computeScoreFromRubric(SCORING_RUBRIC, mergedEvidence);
 
-// 6. Build VendorSkill draft (updated to merge brandData)
+// 6. Build VendorSkill draft (merges brandData + agent findings)
 const draft = buildVendorSkillDraft(slug, domain, name, sector, 
   agentResult.findings, existing?.brandData);
 
@@ -471,16 +500,16 @@ await storage.upsertBrandIndex({ ... });
 ```
 Part 1: Install Claude Agent SDK + verify model
   ↓
-Part 2: Build agentic scan engine (agent-scan.ts)  ← core new module
+Part 2: Build agentic scan engine (agent-scan.ts) — core new module
   ↓
-Part 3: Signal boosting from fetched pages (boost-pages.ts)
-  ↓
-Part 4: Brand data enrichment in buildVendorSkillDraft()
+Part 3: Brand data enrichment in buildVendorSkillDraft()
   ↓
 Integration: Wire everything together in scan/route.ts
+  ↓
+Part 4: Legacy cleanup — delete obsolete files
 ```
 
-Parts 3 and 4 are independent of each other and can be done in parallel after Part 2.
+Part 3 can be done in parallel with Part 2.
 
 ---
 
@@ -488,12 +517,12 @@ Parts 3 and 4 are independent of each other and can be done in parallel after Pa
 
 | Risk | Mitigation |
 |---|---|
-| Agent makes bad navigation decisions | `maxBudgetUsd: 0.15` hard cap. Progressive `record_findings` means partial data is preserved. Domain lock prevents wandering off-site. |
+| Agent makes bad navigation decisions | `maxBudgetUsd: 0.15` hard cap. Progressive `record_evidence` means partial data is preserved. Domain lock prevents wandering off-site. |
 | Scan takes too long | Agent SDK manages the loop. `maxBudgetUsd` prevents runaway token usage. Typical scan: 30-60s. |
 | Firecrawl rate limits (up to 5 pages/scan) | 500 pages/month ÷ 5 = 100 scans/month on free tier. Quality over quantity. Upgrade plan when volume justifies. |
 | Token cost ~$0.06-0.10/scan | Acceptable — each scan replaces two separate pipelines (scan + skill builder). `maxBudgetUsd` prevents surprises. |
 | Agent SDK adds complexity | Actually simpler — no manual while loop, no conversation history management. The SDK handles all of that. |
-| Built-in tools token overhead (~16k tokens) | Set `tools: []` to strip all built-ins. Only our 3 custom tools in context. |
+| Built-in tools token overhead (~16k tokens) | Set `tools: []` to strip all built-ins. Only our 4 custom tools in context. |
 
 ---
 
@@ -517,34 +546,43 @@ None of these require changing the core architecture. Just update `options`.
 
 ## What We Do NOT Change
 
-- `generateVendorSkill()` in `lib/procurement-skills/generator.ts` — untouched  
-- `computeASXScore()` and all signal functions — untouched
-- `enhanceScores()` in `enhance.ts` — untouched
+- `generateVendorSkill()` in `lib/procurement-skills/generator.ts` — untouched
 - `fetchScanInputs()` in `fetch.ts` — untouched (still fetches homepage + sitemap + robots)
 - AXS Rating system — untouched
-- Existing signal max point values — same 100-point scale
+- 100-point scoring scale — same total
 - `lib/procurement-skills/taxonomy/` — sector, tier, and type definitions stay
 - `lib/procurement-skills/types.ts` — VendorSkill type stays (used by generator)
+- `SCORING_RUBRIC` in `rubric.ts` — data stays the same, engine reads it dynamically
+- `upsertBrandIndex()` NEVER OVERWRITE rules — preserved
 
 ---
 
-## Part 5: Legacy Cleanup
+## Part 4: Legacy Cleanup
 
-The agentic scan unifies what was previously two separate pipelines. This section 
-captures everything that becomes redundant and should be removed.
+The agentic scan + rubric engine unify what was previously multiple overlapping systems. 
+This section captures everything that becomes redundant and should be removed.
 
-### 5a. Remove `analyzeScanWithClaude()` (replaced by `agenticScan()`)
+### 4a. Already cleaned up (DONE)
 
-| File | Action |
-|---|---|
-| `lib/agentic-score/llm.ts` | **DELETE** — entire file. `analyzeScanWithClaude()` is directly replaced by `agenticScan()` in `agent-scan.ts`. |
-| `lib/agentic-score/index.ts` | Remove `export { analyzeScanWithClaude } from "./llm"` and `export type { LLMScanFindings } from "./llm"`. Add exports for `agenticScan` and its types from `agent-scan.ts`. |
-| `app/api/v1/scan/route.ts` | Remove `import { analyzeScanWithClaude }`. Already covered in Part 2 (replace with `agenticScan()`). |
+These were removed during the rubric refactor:
 
-The `LLMScanFindings` interface moves to `agent-scan.ts` (or `types.ts`) since 
-`enhance.ts` still references it.
+| File / Directory | What it was | Status |
+|---|---|---|
+| `lib/agentic-score/signals/clarity.ts` | JSON-LD, product feed, clean HTML signal functions | **DELETED** — logic moved to `detectors.ts` |
+| `lib/agentic-score/signals/speed.ts` | Search API, site search, page load signal functions | **DELETED** — logic moved to `detectors.ts` |
+| `lib/agentic-score/signals/reliability.ts` | Access auth, order mgmt, checkout, bot tolerance | **DELETED** — logic moved to `detectors.ts` |
+| `lib/agentic-score/signals/` | Directory | **DELETED** |
+| `lib/agentic-score/recommendations.ts` | Template-based recommendation generator | **DELETED** — logic moved to `scoring-engine.ts` |
 
-### 5b. Remove the legacy Skill Builder pipeline
+### 4b. Remove after agent scan is wired (TODO)
+
+| File | Action | Why |
+|---|---|---|
+| `lib/agentic-score/llm.ts` | **DELETE** | `analyzeScanWithClaude()` replaced by `agenticScan()` |
+| `lib/agentic-score/enhance.ts` | **DELETE** | `enhanceScores()` replaced by rubric engine — agent writes to evidence map, one `computeScoreFromRubric()` call produces the score |
+| `lib/agentic-score/index.ts` | Remove `analyzeScanWithClaude`, `enhanceScores` exports; remove `LLMScanFindings` type export | Clean up barrel |
+
+### 4c. Remove the legacy Skill Builder pipeline (TODO)
 
 The entire `lib/procurement-skills/builder/` directory was the original skill builder — 
 a separate multi-step analysis pipeline (fetch pages → LLM checkout analysis → probes).
@@ -556,7 +594,6 @@ The agentic scan now does everything it did, better. It has exactly two callers:
 | Skill submissions endpoint | `app/api/v1/skills/submissions/route.ts` | Community submission — runs `analyzeVendor()`, creates a draft |
 
 **Migration:** Both endpoints should be rewritten to call `agenticScan()` instead. The 
-agentic scan returns richer findings that can populate the same skill draft fields. The 
 `buildVendorSkillDraft()` function in `scan/route.ts` already does this translation — 
 extract it into a shared utility so both the scan endpoint and the submissions endpoint 
 can use it.
@@ -565,21 +602,19 @@ After migration:
 
 | File | Action |
 |---|---|
-| `lib/procurement-skills/builder/analyze.ts` | **DELETE** — `analyzeVendor()` has zero callers |
-| `lib/procurement-skills/builder/llm.ts` | **DELETE** — `analyzeCheckoutFlow()` was only called by `analyze.ts` |
-| `lib/procurement-skills/builder/fetch.ts` | **DELETE** — duplicate of `agentic-score/fetch.ts` (which has Firecrawl + SSRF) |
-| `lib/procurement-skills/builder/probes.ts` | **DELETE** — x402/ACP/API probes. The agentic scan detects APIs and capabilities via Claude analysis. If specific probe logic is still valuable, it can be added as a tool the agent can call. |
-| `lib/procurement-skills/builder/types.ts` | **DELETE** — `BuilderOutput`, `AnalysisEvidence`, etc. No longer needed. |
+| `lib/procurement-skills/builder/analyze.ts` | **DELETE** — zero callers |
+| `lib/procurement-skills/builder/llm.ts` | **DELETE** — zero callers |
+| `lib/procurement-skills/builder/fetch.ts` | **DELETE** — duplicate of `agentic-score/fetch.ts` |
+| `lib/procurement-skills/builder/probes.ts` | **DELETE** — capabilities detected by agent |
+| `lib/procurement-skills/builder/types.ts` | **DELETE** — types no longer needed |
 
-**Result:** The entire `lib/procurement-skills/builder/` directory is removed.
-
-### 5c. Clean up schema references
+### 4d. Clean up schema references (TODO)
 
 | File | Action |
 |---|---|
-| `shared/schema.ts` | Remove `analyzeVendorSchema` (line ~971) — only used by the deleted `skills/analyze/route.ts` endpoint. The submissions endpoint uses `submitVendorSchema` which stays. |
+| `shared/schema.ts` | Remove `analyzeVendorSchema` — only used by the deleted `skills/analyze/route.ts` endpoint |
 
-### 5d. Archive superseded plan documents
+### 4e. Archive superseded plan documents (TODO)
 
 These documents describe architectures that no longer exist. Move to 
 `docs/archive/` to keep history without creating confusion:
@@ -590,27 +625,21 @@ These documents describe architectures that no longer exist. Move to
 | `docs/build context/Future/Product_index/agentic-shopping-score-build-plan.md` | Phase 1-2 build plan. Contains "DO NOT modify analyzeVendor()" warnings that are now wrong. Completed work. |
 | `docs/build context/Future/Product_index/phase-3-scan-api-technical-plan.md` | Phase 3 plan. Completed. References the static `analyzeScanWithClaude()` pipeline. |
 
-The Phase 4 plan (this document) becomes the single source of truth for the scan 
-architecture.
+The Phase 4 plan (this document) is the single source of truth for the scan architecture.
 
-### 5e. Update replit.md
+### 4f. Update replit.md (TODO)
 
-`replit.md` documents the old pipeline flow:
-```
-Pipeline: normalizeDomain → cache check → fetchScanInputs → computeASXScore → 
-analyzeScanWithClaude → enhanceScores → buildVendorSkillDraft → ...
-```
+Update pipeline documentation to reflect the rubric-based flow:
 
-Update to reflect:
 ```
-Pipeline: normalizeDomain → cache check → fetchScanInputs → computeASXScore → 
-agenticScan (Claude Agent SDK) → enhanceScores → boostFromAgentPages → 
-buildVendorSkillDraft → ...
+Pipeline: normalizeDomain → cache check → fetchScanInputs → detectAll → 
+agenticScan (Claude Agent SDK) → merge evidence → computeScoreFromRubric → 
+buildVendorSkillDraft → generateVendorSkill → upsertBrandIndex
 ```
 
-Also remove references to `analyzeScanWithClaude` and the builder pipeline.
+Remove references to `analyzeScanWithClaude`, `enhanceScores`, and the builder pipeline.
 
-### 5f. What stays in `lib/procurement-skills/`
+### 4g. What stays in `lib/procurement-skills/`
 
 After cleanup, the `lib/procurement-skills/` directory retains:
 
@@ -633,33 +662,62 @@ lib/procurement-skills/
 | File | Purpose |
 |---|---|
 | `lib/agentic-score/agent-scan.ts` | Agentic scan engine: tool definitions, MCP server, Agent SDK query() |
-| `lib/agentic-score/boost-pages.ts` | Signal boosting from agent-fetched pages |
 
-### Modified files
+### Already created/modified (DONE)
 
 | File | Change |
 |---|---|
-| `package.json` | Add `@anthropic-ai/claude-agent-sdk`; `@anthropic-ai/sdk` already at v0.82.0 |
-| `lib/agentic-score/types.ts` | Add `PageFetch`, `AgenticScanResult` |
-| `lib/agentic-score/index.ts` | Remove old exports, add `agenticScan` + types |
-| `app/api/v1/scan/route.ts` | Replace `analyzeScanWithClaude()` with `agenticScan()`, add `boostFromAgentPages()`, pass `brandData` |
-| `app/api/v1/skills/analyze/route.ts` | Rewrite to use `agenticScan()` instead of `analyzeVendor()` |
-| `app/api/v1/skills/submissions/route.ts` | Rewrite to use `agenticScan()` instead of `analyzeVendor()` |
+| `lib/agentic-score/rubric.ts` | Pure data: 57 criteria, types, `SCORING_RUBRIC` const |
+| `lib/agentic-score/scoring-engine.ts` | `computeScoreFromRubric()`, recommendations, CSV/prompt utilities |
+| `lib/agentic-score/detectors.ts` | Consolidated regex evidence extractors (10 detector functions) |
+| `lib/agentic-score/compute.ts` | Simplified: `detectAll()` → `computeScoreFromRubric()` |
+| `lib/agentic-score/index.ts` | Updated exports for rubric architecture (partial — legacy exports still present, will be cleaned up in Part 4b) |
+| `app/agentic-shopping-score/methodology/page.tsx` | Public scoring rubric tables |
+| `docs/asx-scoring-rubric.csv` | CSV export of full rubric |
+
+### Current reality snapshot
+
+The scan route (`app/api/v1/scan/route.ts`) still uses the legacy pipeline:
+`computeASXScore()` → `analyzeScanWithClaude()` → `enhanceScores()`. This works but 
+uses the old boost pattern. Internally `computeASXScore()` now uses the rubric engine, 
+but `enhanceScores()` still applies a second-pass boost. This legacy wiring is replaced 
+in the integration step after Part 2.
+
+### To modify (TODO)
+
+| File | Change |
+|---|---|
+| `package.json` | Add `@anthropic-ai/claude-agent-sdk` |
+| `lib/agentic-score/types.ts` | Add `PageFetch`, `AgenticScanResult` interfaces |
+| `lib/agentic-score/index.ts` | Add `agenticScan` exports, remove legacy `analyzeScanWithClaude` + `enhanceScores` exports |
+| `app/api/v1/scan/route.ts` | Replace legacy pipeline with rubric-based flow |
+| `app/api/v1/skills/analyze/route.ts` | Rewrite to use `agenticScan()` |
+| `app/api/v1/skills/submissions/route.ts` | Rewrite to use `agenticScan()` |
 | `shared/schema.ts` | Remove `analyzeVendorSchema` |
 | `replit.md` | Update pipeline documentation |
 
-### Deleted files
+### To delete (TODO)
 
 | File | Reason |
 |---|---|
 | `lib/agentic-score/llm.ts` | Replaced by `agent-scan.ts` |
+| `lib/agentic-score/enhance.ts` | Replaced by rubric engine |
 | `lib/procurement-skills/builder/analyze.ts` | Zero callers after migration |
 | `lib/procurement-skills/builder/llm.ts` | Zero callers after migration |
 | `lib/procurement-skills/builder/fetch.ts` | Duplicate of `agentic-score/fetch.ts` |
-| `lib/procurement-skills/builder/probes.ts` | Capabilities detected by agent now |
+| `lib/procurement-skills/builder/probes.ts` | Capabilities detected by agent |
 | `lib/procurement-skills/builder/types.ts` | Types no longer needed |
 
-### Archived docs
+### Already deleted (DONE)
+
+| File | Reason |
+|---|---|
+| `lib/agentic-score/signals/clarity.ts` | Consolidated into `detectors.ts` |
+| `lib/agentic-score/signals/speed.ts` | Consolidated into `detectors.ts` |
+| `lib/agentic-score/signals/reliability.ts` | Consolidated into `detectors.ts` |
+| `lib/agentic-score/recommendations.ts` | Moved into `scoring-engine.ts` |
+
+### Archived docs (TODO)
 
 | File | Destination |
 |---|---|
@@ -669,28 +727,14 @@ lib/procurement-skills/
 
 ---
 
-## Notes: Scoring Architecture Redesign Ideas
+## Notes: Scoring Architecture Ideas
 
-*These are ideas captured during the Phase 4 review. They question the current 
-scoring approach and propose alternatives.*
+### ✅ Idea 1: Agent as investigator, rubric as scorer — IMPLEMENTED
 
-### Idea 1: Agent as investigator, rubric as scorer
-
-Instead of the current 3-layer cake (regex scores → Claude enhancement → page boost), 
-separate the roles cleanly:
-
-- **The rubric** is a standalone, human-readable scoring matrix. It defines exactly what 
-  criteria exist, how many points each is worth, and what evidence is needed to award 
-  points. This is the single source of truth for scoring.
-- **The agent** explores the site and fills in the rubric — verifying which criteria are 
-  met by actually visiting the relevant pages.
-- **Regex detections** pre-populate factual criteria that are faster/cheaper to check 
-  programmatically (JSON-LD presence, sitemap structure, page load time, robots.txt rules).
-  The agent doesn't need to re-derive these.
-- **The score is computed from the filled rubric** — deterministic, transparent, auditable.
-
-This eliminates `enhanceScores()`, `boostFromAgentPages()`, and the entire boost pattern. 
-The rubric replaces all three layers with one clear mechanism.
+The rubric (`rubric.ts`) is a standalone data file defining all 57 criteria. The scoring 
+engine reads it and produces scores deterministically from an evidence map. Detectors 
+pre-populate factual evidence. The agent fills in agent-assessed criteria. 
+`enhanceScores()` and `boostFromAgentPages()` are eliminated.
 
 ### Idea 2: Add "Product Page Quality" signal
 
@@ -703,9 +747,9 @@ pages?" This would be an agent-assessed signal covering:
 - Breadcrumb/category context
 
 This signal can ONLY be scored by the agent (homepage regex can't assess product pages). 
-It's the flagship feature of the multi-page scan — "we actually tried to shop on your site."
+It's the flagship feature of the multi-page scan.
 
-### Idea 3: Add assessment fields to agent's record_findings
+### Idea 3: Add assessment fields to agent's record_evidence
 
 Let the agent express qualitative judgments that map to rubric criteria:
 - `productPageQuality: "excellent" | "good" | "fair" | "poor"`
@@ -722,41 +766,27 @@ managers reading the report.
 
 ### Idea 5: Agent-generated recommendations (replace template lookup)
 
-Currently, recommendations come from a static template table keyed by signal name 
-(`recommendations.ts`). The agent is in a far better position to write specific, 
-actionable recommendations because it has actually visited the site. Example:
+Currently, recommendations come from a static template table in `scoring-engine.ts`. 
+The agent is in a far better position to write specific, actionable recommendations 
+because it has actually visited the site. Example:
 
 - Template says: "Add JSON-LD structured data"
 - Agent could say: "Your product pages at /products/* have no structured data, but your 
   homepage does. Extend your Shopify theme's product.liquid template to include Product 
   schema with Offer pricing."
 
-The agent's recommendations would be specific to the store, its platform, and what it 
-actually observed — much higher value for brand managers.
-
 ### Idea 6: Returns/refund policy and price transparency
 
 Brand managers care about:
-- **Returns policy clarity** — Is there a clear, machine-readable returns policy? 
-  Agent needs to know return windows and conditions before purchasing for procurement.
-- **Price transparency** — Are prices shown without login or zipcode? Some B2B sites 
-  hide pricing entirely, making agent shopping impossible.
+- **Returns policy clarity** — Is there a clear, machine-readable returns policy?
+- **Price transparency** — Are prices shown without login or zipcode?
 - **Multi-currency / international** — Currency switching, international shipping.
 
 These could be criteria within the rubric rather than standalone signals.
 
-### Idea 7: Rubric as a standalone human-readable document
+### ✅ Idea 7: Rubric as a standalone human-readable document — IMPLEMENTED
 
-The scoring criteria should exist as a data file (JSON, YAML, or TypeScript const) that:
-- A product person can read and modify without understanding the scoring code
-- Can be versioned (v1.0, v2.0) so scores are comparable over time
-- Defines for each criterion: name, description, max points, evidence type 
-  (regex-detectable vs agent-assessed), and what constitutes each point level
-- The scoring engine reads this file and applies it — separation of policy from mechanism
-
-### Current state: no standalone rubric exists
-
-The scoring criteria are currently embedded across 4 TypeScript files as hardcoded 
-`score += N` statements. There is no human-readable rubric document. Updating scoring 
-criteria requires modifying code in multiple files. This should be fixed as part of 
-Phase 4.
+The rubric exists as a TypeScript const (`SCORING_RUBRIC`) with CSV export 
+(`rubricToCsv()`) and prompt text export (`rubricToPromptText()`). It's also publicly 
+visible at `/agentic-shopping-score/methodology` as three interactive tables. A product 
+person can read the TypeScript data or the CSV to understand and modify scoring criteria.
