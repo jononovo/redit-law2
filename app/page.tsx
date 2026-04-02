@@ -3,6 +3,7 @@ import { getTenantConfig } from "@/lib/tenants/config";
 
 const landingComponents: Record<string, () => Promise<{ default: React.ComponentType }>> = {
   "/creditclaw": () => import("@/components/landings/creditclaw-landing"),
+  "/shopy": () => import("@/components/landings/shopy-landing"),
 };
 
 export default async function RootPage() {
