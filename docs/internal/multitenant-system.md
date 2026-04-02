@@ -125,9 +125,9 @@ The biggest fragility in the system. `config.json` has a `domains` array and `mi
 
 **What to check:** Every theme value must be a valid HSL triplet without the `hsl()` wrapper. Example: `"10 85% 55%"` not `"hsl(10, 85%, 55%)"`.
 
-### signupTenant is write-once
+### signupTenant is write-once (owners and bots)
 
-The `owners.signup_tenant` column is only written on the first login (insert). Subsequent logins (update path) explicitly drop `signupTenant` from the update payload in `server/storage/owners.ts`. This is intentional — it captures which tenant brought the user in originally, even if they later use the other tenant.
+Both `owners.signup_tenant` and `bots.signup_tenant` record which tenant the entity was created through. For owners, it's only written on the first login (insert) — subsequent logins explicitly drop `signupTenant` from the update payload in `server/storage/owners.ts`. For bots, it's set at registration time in `app/api/v1/bots/register/route.ts` (both pairing code and standard registration paths).
 
 **If you need to track "last used tenant":** Add a separate column. Do not change the `signupTenant` behavior.
 
