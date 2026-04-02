@@ -1,0 +1,66 @@
+{
+  "id": "brands",
+  "domains": ["brands.sh", "www.brands.sh"],
+
+  "branding": {
+    "name": "brands.sh",
+    "tagline": "The skill registry for AI shopping agents.",
+    "logo": "/tenants/brands/images/logo.png",
+    "logoEmoji": "📦",
+    "favicon": "",
+    "supportEmail": "hello@brands.sh",
+    "mascot": ""
+  },
+
+  "meta": {
+    "title": "brands.sh — Shopping skills for AI agents",
+    "description": "Find, install, and use brand skills that teach AI agents how to search, browse, and buy from any store. The npm registry for agentic commerce.",
+    "ogImage": "/tenants/brands/images/og-image.png",
+    "twitterImage": "/tenants/brands/images/og-twitter.png",
+    "url": "https://brands.sh"
+  },
+
+  "theme": {
+    "primaryColor": "220 15% 15%",
+    "primaryForeground": "0 0% 100%",
+    "accentColor": "220 10% 30%",
+    "secondaryColor": "220 8% 50%"
+  },
+
+  "routes": {
+    "guestLanding": "/brands",
+    "authLanding": "/overview"
+  },
+
+  "features": {
+    "showCatalog": true,
+    "showLeaderboard": true
+  },
+
+  "navigation": {
+    "footer": {
+      "columns": [
+        {
+          "title": "Catalog",
+          "links": [
+            { "label": "Browse Skills", "href": "/skills" },
+            { "label": "Sectors", "href": "/skills" },
+            { "label": "How It Works", "href": "/how-it-works" }
+          ]
+        },
+        {
+          "title": "Developers",
+          "links": [
+            { "label": "API Reference", "href": "/docs/api/introduction" },
+            { "label": "SKILL.md Standard", "href": "/docs" },
+            { "label": "CLI", "href": "/docs" }
+          ]
+        }
+      ],
+      "socials": [
+        { "label": "Twitter", "href": "https://x.com/brandssh" },
+        { "label": "GitHub", "href": "https://github.com/brandssh" }
+      ]
+    }
+  }
+}
