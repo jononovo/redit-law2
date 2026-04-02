@@ -26,68 +26,26 @@ For reference — these are done and archived:
 
 ## Build Sequence
 
-### Step 1: Catalog SEO & Infrastructure Polish
+### Step 1: Shareable Catalog URLs
 
-These are independent of the shopy.sh work and can be done now.
-
-#### 1A. URL-Based Filter State on `/skills`
+#### URL-Based Filter State on `/skills`
 
 **Priority:** Medium
 **Status:** Not started
 **Source:** `completed/remaining-build-tasks.md` Task 1
 
-The catalog page (`/skills`) ignores `searchParams` server-side. Filters are client-only via `catalog-client.tsx`, so crawlers see the unfiltered view and filtered URLs aren't shareable.
+The catalog page (`/skills`) ignores `searchParams` server-side. Filters are client-only via `catalog-client.tsx`, so crawlers always see the default unfiltered view and filtered URLs can't be shared or bookmarked.
 
 **What's needed:**
 - `app/skills/page.tsx` reads `searchParams`, passes filters to `storage.searchBrands()` server-side
 - `catalog-client.tsx` refactored to accept initial server data + use `router.replace()` for filter changes
-- `generateMetadata()` reflects current filters
+- `generateMetadata()` reflects current filters (e.g., "Office AI Procurement Skills" instead of generic title)
 - Sector filters use `/c/[sector]` routes, NOT `?sector=` on `/skills`
 - `/skills` handles: `?q=`, `?checkout=`, `?tier=`, `?capability=`, `?maturity=`
 
-**Verified (2026-04-02):** The internal API route (`app/api/internal/brands/search/route.ts`) already maps URL params to `BrandSearchFilters` — that parsing logic can be reused. `storage.searchBrands()` supports all needed filters (full-text search, sector, tier, maturity, checkout methods, capabilities, payment methods). The server component currently fetches a hardcoded default view (limit 50, sorted by score, public maturities only).
+**Code context:** The internal API route (`app/api/internal/brands/search/route.ts`) already maps URL params to `BrandSearchFilters` — the same mapping logic works server-side. `storage.searchBrands()` supports all needed filters. The server component currently fetches a hardcoded default view (limit 50, sorted by score, public maturities only).
 
 **Files:** `app/skills/page.tsx`, `app/skills/catalog-client.tsx`
-
----
-
-#### 1B. `generateStaticParams` for Brand Detail Pages
-
-**Priority:** Low
-**Status:** Not started
-**Source:** `completed/remaining-build-tasks.md` Task 2
-
-Add `generateStaticParams()` to `app/skills/[vendor]/page.tsx` for verified/official brands so they're pre-rendered at build time.
-
-**Files:** `app/skills/[vendor]/page.tsx`
-
----
-
-#### 1C. Sitemap Splitting
-
-**Priority:** Low — wait until 1,000+ URLs
-**Status:** Not started
-**Source:** `completed/remaining-build-tasks.md` Task 4
-
-Replace single `sitemap()` in `app/sitemap.ts` with `generateSitemaps()` — one sitemap per sector. Can be done independently by splitting by content type (pages, brands, blog) rather than waiting for category pages.
-
-**Verified (2026-04-02):** Current sitemap uses a single `sitemap()` function that includes static pages, docs, newsroom (posts + categories + tags), brand pages (up to 500), and sector pages. No `generateSitemaps()` in use. When category pages exist (Step 6), their URLs should be added.
-
-**Files:** `app/sitemap.ts`
-
----
-
-#### 1D. Remove `brandData` from Catalog Lite Query
-
-**Priority:** Low-Medium — quick win, reduces payload size per catalog request
-**Status:** Not started
-**Source:** `completed/remaining-build-tasks.md` Task 5
-
-The `LITE_COLUMNS` used by `searchBrands({ lite: true })` still includes `brandData` (the full ~1.8KB JSONB blob per row). Catalog cards don't need it — they already have `description`, `capabilities`, `checkoutMethods`, `tier`, `sector`, `overallScore`, `axsRating` as top-level columns in `LITE_COLUMNS`.
-
-**Verified (2026-04-02):** `LITE_COLUMNS` in `server/storage/brand-index.ts` (line 41) includes `brandData`. The catalog client component and `vendor-card.tsx` should be checked for any `brandData` field usage — if cards don't access it, simply removing `brandData` from `LITE_COLUMNS` is the fix. No migration or schema change needed in that case.
-
-**Files:** `server/storage/brand-index.ts`, `app/skills/catalog-client.tsx`, `app/skills/vendor-card.tsx`
 
 ---
 
@@ -177,6 +135,16 @@ Full product catalog crawl, LLM-powered enrichment, Google Product Taxonomy mapp
 
 ---
 
+## Scale-Triggered Optimizations (not active — revisit when thresholds are hit)
+
+These are valid ideas but premature at current scale (14 seeded brands, ~30 total public URLs). They should be reconsidered when the catalog grows.
+
+| Optimization | Trigger | What to do | Source |
+|---|---|---|---|
+| `generateStaticParams` for `/skills/[vendor]` | 100+ verified/official brands | Pre-render high-traffic brand pages at build time | `completed/remaining-build-tasks.md` Task 2 |
+| Sitemap splitting | 1,000+ URLs | Use `generateSitemaps()` to split by content type or sector | `completed/remaining-build-tasks.md` Task 4 |
+| Remove `brandData` from `LITE_COLUMNS` | 200+ brands or measurable catalog slowness | Promote `feedbackStats.successRate` to a top-level column, then drop `brandData` from lite query. Both `vendor-card.tsx` and `catalog-client.tsx` currently access `brandData.feedbackStats.successRate` so it's not a one-line fix — requires migration + aggregation job update | `completed/remaining-build-tasks.md` Task 5 |
+
 ## Other Future Items (no build plans)
 
 | Item | Source | Notes |
@@ -190,11 +158,7 @@ Full product catalog crawl, LLM-powered enrichment, Google Product Taxonomy mapp
 ## Dependency Map
 
 ```
-Step 1 (Catalog SEO Polish) ←── independent, can start now
-  1A URL filters ──── no deps
-  1B staticParams ─── no deps
-  1C sitemap split ── no deps (can split by content type now)
-  1D JSONB lite fix ── no deps (may be a one-line change)
+Step 1 (Shareable Catalog URLs) ←── independent, can start now
 
 Step 2 (Multitenant) ←── independent, can start now
   ↓
@@ -204,10 +168,11 @@ Step 4 (Registry API + CLI) ←── depends on Step 3
 
 Step 5 (Premium Scan) ←── independent of Steps 2-4, can start now
 
-Step 6 (UCP Taxonomy) ←── independent, can start now
+Step 6 (UCP Taxonomy + Category Pages) ←── independent, can start now
   ↓
 Step 7 (Tier 3 Product Index) ←── depends on Step 6
 ```
 
-Steps 1A-1D, 2, 5, and 6 can all run in parallel.
-Category landing pages are now under Step 6 (depends on UCP tables).
+Steps 1, 2, 5, and 6 can all run in parallel.
+Category landing pages are under Step 6 (depends on UCP tables).
+Scale-triggered optimizations (staticParams, sitemap split, JSONB lite) are parked until thresholds are hit.
