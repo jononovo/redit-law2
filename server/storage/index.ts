@@ -10,7 +10,6 @@ import { masterGuardrailMethods } from "./master-guardrails";
 import { rail4GuardrailMethods } from "./rail4-guardrails";
 import { rail5GuardrailMethods } from "./rail5-guardrails";
 import { procurementControlMethods } from "./procurement-controls";
-import { skillMethods } from "./skills";
 import { rail5Methods } from "./rail5";
 import { approvalMethods } from "./approvals";
 import { orderMethods } from "./orders";
@@ -42,7 +41,6 @@ export const storage: IStorage = {
   ...rail4GuardrailMethods,
   ...rail5GuardrailMethods,
   ...procurementControlMethods,
-  ...skillMethods,
   ...rail5Methods,
   ...approvalMethods,
   ...orderMethods,

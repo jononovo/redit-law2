@@ -94,7 +94,6 @@ export const sections: DocSection[] = [
       { title: "What Are Skills", slug: "what-are-skills" },
       { title: "ASX Score", slug: "asx-score" },
       { title: "Browsing the Supplier Hub", slug: "browsing-skills" },
-      { title: "Skill Builder", slug: "skill-builder" },
       { title: "Submitting a Supplier", slug: "submitting-a-supplier" },
     ],
   },

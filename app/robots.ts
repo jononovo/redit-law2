@@ -27,7 +27,6 @@ export default function robots(): MetadataRoute.Robots {
           "/orders",
           "/shop",
           "/checkout",
-          "/skill-builder",
           "/pay",
           "/payment",
         ],

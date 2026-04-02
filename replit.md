@@ -110,7 +110,6 @@ New features should follow a feature-first folder structure. Each rail lives und
 - `bot-messages.ts` — bot pending messages CRUD (create, get, count, ack, purge, delete by ref)
 - `owners.ts` — owner profiles (get/upsert)
 - `master-guardrails.ts` — master guardrails + cross-rail daily/monthly spend aggregation
-- `skills.ts` — skill drafts, evidence, submitter profiles, versioning, exports
 - `brand-index.ts` — brand catalog search, facets, upsert, readiness scoring
 - `brand-claims.ts` — brand ownership claims (create, verify, reject, revoke)
 - `brand-feedback.ts` — AXS rating feedback from agents and humans
@@ -391,7 +390,7 @@ Self-service brand ownership verification. Brand owners claim their brand from t
 - Transactional `verifyClaim` upgrades `brand_index.maturity` to "official", sets `claimed_by`/`claim_id`
 - Transactional `revokeClaim` reverts brand to "community" maturity; only affects brand_index if claim_id matches
 - API endpoints: `POST /api/v1/brands/[slug]/claim`, `GET /api/v1/brands/claims/mine`, `POST /api/v1/brands/claims/[id]/revoke`, `GET /api/v1/brands/claims/review` (admin), `POST /api/v1/brands/claims/[id]/review` (admin verify/reject)
-- UI: Claim button on vendor detail page (`app/skills/[vendor]/page.tsx` — ghost button, shows for logged-out too, links badges to My Skills), unified "My Skills" page (`app/(dashboard)/skill-builder/submit/page.tsx` — submissions + claims in one list, claim search modal), Admin review queue (`app/admin123/brand-claims/page.tsx` — behind admin auth gate)
+- UI: Claim button on vendor detail page (`app/skills/[vendor]/page.tsx` — ghost button, shows for logged-out too), Admin review queue (`app/admin123/brand-claims/page.tsx` — behind admin auth gate)
 
 **UI** — Catalog page uses hybrid SSR: `app/skills/page.tsx` is a **server component** that fetches the initial 50 brands + facets + total count via `storage.searchBrands({ lite: true })` and passes them as props to `app/skills/catalog-client.tsx` (`"use client"`). The client component initializes state from these server-provided props (no loading skeleton on first paint), then takes over for filtering/search/pagination via the internal API. Dynamic `generateMetadata()` in `page.tsx` uses live total count. `VendorCard` extracted to `app/skills/vendor-card.tsx` (shared between catalog and sector pages). Vendor detail page (`app/skills/[vendor]/page.tsx`, **server component** — SSR for SEO) with `generateMetadata()` for title/OG/Twitter/canonical tags, `cache()` for deduplicating DB queries between metadata and page, and three extracted client components:
   - `brand-claim-button.tsx` — auth check + claim API call
@@ -403,13 +402,6 @@ Self-service brand ownership verification. Brand owners claim their brand from t
 
 Sitemap (`app/sitemap.ts`) is async and includes all brand detail pages and populated sector landing pages.
 
-### Community Submissions Module
-Registered users can submit vendor websites for analysis, contributing to the procurement skills library.
-- **Submission API:** `POST /api/v1/skills/submissions` (authenticated, triggers 4-pass analysis), `GET /api/v1/skills/submissions/mine` (list user's own submissions with profile stats).
-- **Submitter Profiles:** `skill_submitter_profiles` table tracks per-user submission counts (submitted, published, rejected).
-- **Trust Badges:** Submissions are tagged as "official" (email domain matches vendor domain) or "community" (all others).
-- **Review Integration:** Community submissions feed into the existing review queue at `/skill-builder/review` with source filtering (Admin/Community) and submitter attribution badges.
-- **Submission UI:** `/skill-builder/submit` provides a form to submit vendor URLs, view submission history, and track acceptance rates.
 
 ### Unified Approval System
 `unified_approvals` is the **sole source of truth** for all approval state across all rails. The old `privy_approvals` and `crossmint_approvals` tables have been dropped. All approval reads, writes, and decisions go through this single table.
@@ -616,28 +608,9 @@ Rail 1 (`stripe-wallet/page.tsx`, ~313 lines) and Rail 2 (`card-wallet/page.tsx`
 - `/self-hosted`: Self-hosted card management (Rail 4)
 - `/sub-agent-cards`: Sub-agent card management (Rail 5)
 - `/transactions`: Transaction history, orders, and unified approvals (three tabs)
-- `/skill-builder/submit`: Community vendor skill submission
-- `/skill-builder/review/[id]/versions`: Version history with diff view and rollback
-- `/skill-builder/export`: Export delta report for ClawHub.ai and skills.sh
 - `/settings`: Account settings
 - `/onboarding`: Guided setup wizard
 
-### Skill Builder Module
-An LLM-powered tool that analyzes vendor websites and generates procurement skill files automatically.
-- **Builder Core** (`lib/procurement-skills/builder/`): 4-pass analysis (API probing, LLM checkout flow analysis, business feature detection, protocol support checking) with per-field confidence scoring.
-- **Database Tables:** `skill_drafts` (vendor analysis results with confidence scores), `skill_evidence` (provenance records for each field), `skill_versions` (versioned snapshots with 4-file bundles), and `skill_exports` (export tracking per destination).
-- **API Routes:** `POST /api/v1/skills/analyze` (trigger analysis), `GET /api/v1/skills/drafts` (list), `GET/PATCH/DELETE /api/v1/skills/drafts/[id]` (CRUD), `POST /api/v1/skills/drafts/[id]/publish` (approve and create versioned record with all 4 files).
-- **Version API:** `GET /api/v1/skills/versions?vendor=slug` (list), `GET /api/v1/skills/versions/[id]` (detail), `GET /api/v1/skills/versions/[id]/diff` (semantic diff), `POST /api/v1/skills/versions/[id]/rollback` (rollback), `GET /api/v1/skills/versions/[id]/files` (4-file bundle download).
-- **Export API:** `GET /api/v1/skills/export?destination=clawhub|skills_sh` (delta report), `POST /api/v1/skills/export/mark` (mark as exported, supports batch), `GET /api/v1/skills/export/download/[vendorSlug]` (download active version package).
-- **Review UI:** `/skill-builder/review` (draft queue with analyze form) and `/skill-builder/review/[id]` (detail editor with confidence badges, evidence snippets, field overrides, publish/reject buttons).
-- **Security:** SSRF-safe fetching with DNS resolution validation, private IP blocking (IPv4/IPv6), redirect validation, HTTPS-only.
-- **Tests:** 41 API endpoint tests covering full draft lifecycle, 52 versioning unit tests.
-
-### Skill Versioning & Multi-File Packages
-Skills are packaged as 4-file bundles: `SKILL.md` (agent instructions), `skill.json` (structured metadata), `payments.md` (CreditClaw payment rules), `description.md` (human-readable listing card).
-- **Package Generators** (`lib/procurement-skills/package/`): `skill-json.ts`, `payments-md.ts`, `description-md.ts` plus existing `generator.ts` for SKILL.md.
-- **Versioning Core** (`lib/procurement-skills/versioning/`): Semantic field-level diff algorithm with severity classification (breaking/notable/minor), automatic semver bumping, SHA-256 checksums, and rollback support.
-- **Export System:** Weekly manual export workflow with delta reports showing new/updated skills for ClawHub.ai and skills.sh external marketing sites. Mark-as-exported tracking per destination.
 
 ### Agent Management (`lib/agent-management/`)
 Bot/agent-facing API infrastructure consolidated into a feature folder:
@@ -679,7 +652,7 @@ CreditClaw provides distinct API endpoints for each rail and for master guardrai
 - **SendGrid:** Transactional email services.
 - **shadcn/ui:** UI component library.
 - **React Query (@tanstack/react-query):** Server state management.
-- **Anthropic (@anthropic-ai/sdk):** LLM-powered vendor analysis for Skill Builder.
+- **Anthropic (@anthropic-ai/sdk):** LLM-powered vendor analysis for ASX Score Scanner.
 - **react-markdown + remark-gfm + @tailwindcss/typography:** Markdown rendering for documentation pages.
 
 ### Testing (`tests/`, `docs/testing.md`)

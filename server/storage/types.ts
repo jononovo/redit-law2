@@ -28,11 +28,6 @@ import {
   type Rail4Guardrail, type InsertRail4Guardrail,
   type Rail5Guardrail, type InsertRail5Guardrail,
   type ProcurementControl, type InsertProcurementControl,
-  type SkillDraft, type InsertSkillDraft,
-  type SkillEvidence, type InsertSkillEvidence,
-  type SkillSubmitterProfile, type InsertSkillSubmitterProfile,
-  type SkillVersion, type InsertSkillVersion,
-  type SkillExport, type InsertSkillExport,
   type UnifiedApproval, type InsertUnifiedApproval,
   type Rail5Card, type InsertRail5Card,
   type Rail5Checkout, type InsertRail5Checkout,
@@ -229,31 +224,6 @@ export interface IStorage {
   getProcurementControls(ownerUid: string): Promise<ProcurementControl[]>;
   getProcurementControlsByScope(ownerUid: string, scope: string, scopeRefId?: string | null): Promise<ProcurementControl | null>;
   upsertProcurementControls(ownerUid: string, scope: string, scopeRefId: string | null, data: Partial<InsertProcurementControl>): Promise<ProcurementControl>;
-
-  createSkillDraft(data: InsertSkillDraft): Promise<SkillDraft>;
-  createSkillDraftWithEvidence(draftData: InsertSkillDraft, evidenceData: InsertSkillEvidence[]): Promise<SkillDraft>;
-  getSkillDraft(id: number): Promise<SkillDraft | null>;
-  listSkillDrafts(status?: string): Promise<SkillDraft[]>;
-  updateSkillDraft(id: number, data: Partial<InsertSkillDraft>): Promise<SkillDraft | null>;
-  deleteSkillDraft(id: number): Promise<void>;
-  createSkillEvidence(data: InsertSkillEvidence): Promise<SkillEvidence>;
-  getSkillEvidenceByDraftId(draftId: number): Promise<SkillEvidence[]>;
-
-  upsertSubmitterProfile(ownerUid: string, data: Partial<InsertSkillSubmitterProfile>): Promise<SkillSubmitterProfile>;
-  getSubmitterProfile(ownerUid: string): Promise<SkillSubmitterProfile | null>;
-  incrementSubmitterStat(ownerUid: string, field: "skillsSubmitted" | "skillsPublished" | "skillsRejected"): Promise<void>;
-  listSkillDraftsBySubmitter(ownerUid: string): Promise<SkillDraft[]>;
-
-  createSkillVersion(data: InsertSkillVersion): Promise<SkillVersion>;
-  getSkillVersion(id: number): Promise<SkillVersion | null>;
-  getActiveVersion(vendorSlug: string): Promise<SkillVersion | null>;
-  listVersionsByVendor(vendorSlug: string): Promise<SkillVersion[]>;
-  deactivateVersions(vendorSlug: string): Promise<void>;
-
-  createSkillExport(data: InsertSkillExport): Promise<SkillExport>;
-  getLastExport(vendorSlug: string, destination: string): Promise<SkillExport | null>;
-  listExportsByDestination(destination: string): Promise<SkillExport[]>;
-  createSkillExportBatch(items: InsertSkillExport[]): Promise<SkillExport[]>;
 
   createRail5Card(data: InsertRail5Card): Promise<Rail5Card>;
   getRail5CardByCardId(cardId: string): Promise<Rail5Card | null>;
