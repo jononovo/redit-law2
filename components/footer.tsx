@@ -25,6 +25,7 @@ export function Footer() {
 
   const columns = tenant.navigation?.footer?.columns ?? DEFAULT_COLUMNS;
   const socials = tenant.navigation?.footer?.socials ?? DEFAULT_SOCIALS;
+  const showLogo = tenant.navigation?.footer?.showLogo !== false;
 
   return (
     <footer className="bg-neutral-900 text-white pt-16 pb-8">
@@ -32,7 +33,9 @@ export function Footer() {
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-12 mb-12">
           <div className="col-span-2 md:col-span-1">
             <Link href="/" className="flex items-center gap-2 mb-4" data-testid="footer-logo-link">
-              <Image src={tenant.branding.logo} alt={`${tenant.branding.name} Logo`} width={32} height={32} className="object-contain" />
+              {showLogo && (
+                <Image src={tenant.branding.logo} alt={`${tenant.branding.name} Logo`} width={32} height={32} className="object-contain" />
+              )}
               <span className="font-bold text-lg tracking-tight">{tenant.branding.name}</span>
             </Link>
             <p className="text-sm text-neutral-400 font-medium leading-relaxed">

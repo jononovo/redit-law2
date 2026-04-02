@@ -48,7 +48,7 @@ const WHAT_SKILLS_CONTAIN = [
 export default function BrandsHowItWorks() {
   return (
     <div className="min-h-screen bg-neutral-950 text-neutral-100 font-sans">
-      <Nav variant="dark" />
+      <Nav />
 
       <main>
         <section className="pt-32 pb-20 relative overflow-hidden">

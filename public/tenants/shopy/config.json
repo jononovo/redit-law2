@@ -41,6 +41,15 @@
   },
 
   "navigation": {
+    "header": {
+      "variant": "light",
+      "showLogo": true,
+      "links": [
+        { "label": "Score Scanner", "href": "/agentic-shopping-score" },
+        { "label": "Shopping Skills", "href": "/skills" },
+        { "label": "AXS", "href": "/axs" }
+      ]
+    },
     "footer": {
       "columns": [
         {

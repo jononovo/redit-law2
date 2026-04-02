@@ -58,7 +58,7 @@ export default function BrandsLanding() {
 
   return (
     <div className="min-h-screen bg-neutral-950 text-neutral-100 font-sans">
-      <Nav variant="dark" />
+      <Nav />
       <main>
         <section className="pt-20 pb-8">
           <div className="container mx-auto px-6">
