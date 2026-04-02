@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useTenant } from "@/lib/tenants/tenant-context";
 
-const DEFAULT_COLUMNS = [
+const DEFAULT_COLUMNS: { title: string; links: { label: string; href: string; external?: boolean }[] }[] = [
   {
     title: "Product",
     links: [
