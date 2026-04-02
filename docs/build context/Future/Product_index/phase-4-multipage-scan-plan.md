@@ -67,26 +67,19 @@ upsertBrandIndex(...)            → persist everything
 
 ### Upgrade Anthropic SDK
 
-Current: `@anthropic-ai/sdk` v0.37.0
-Target: Latest available (v0.82.0+)
-
-```bash
-npm install @anthropic-ai/sdk@latest
-```
+Current: `@anthropic-ai/sdk` v0.37.0 → **DONE: upgraded to v0.82.0**
 
 ### Model selection
 
-Use the latest Claude Sonnet model available. Current code uses `claude-sonnet-4-20250514`.
-At build time, verify latest model identifier and update. The agentic scan benefits from
-the strongest available reasoning model since it needs to make autonomous decisions about
-site navigation.
+Use `claude-sonnet-4-6-20260320` (Sonnet 4.6, March 2026) for all scan operations.
+Update the model constant in `llm.ts` and use the same model in the new `agent-scan.ts`.
 
 ### Files to modify
 
 | File | Change |
 |---|---|
-| `package.json` | Upgrade `@anthropic-ai/sdk` to latest |
-| `lib/agentic-score/llm.ts` | Update model constant if newer model available |
+| `package.json` | **DONE** — upgraded `@anthropic-ai/sdk` to v0.82.0 |
+| `lib/agentic-score/llm.ts` | Update model constant to `claude-sonnet-4-6-20260320` |
 
 ---
 
@@ -552,6 +545,6 @@ Parts 3 and 4 are independent of each other and can be done in parallel after Pa
 
 | File | Change |
 |---|---|
-| `package.json` | Upgrade `@anthropic-ai/sdk` to latest |
+| `package.json` | **DONE** — upgraded to v0.82.0 |
 | `lib/agentic-score/types.ts` | Add `PageFetch`, `AgenticScanResult` |
 | `app/api/v1/scan/route.ts` | Replace `analyzeScanWithClaude()` with `agenticScan()`, add `boostFromAgentPages()`, pass `brandData` to `buildVendorSkillDraft()` |
