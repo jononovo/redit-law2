@@ -33,7 +33,7 @@ export interface BrandSearchFilters {
 }
 
 export type BrandCardRow = Pick<BrandIndex,
-  | "id" | "slug" | "name" | "sector" | "subSectors" | "tier" | "maturity"
+  | "id" | "slug" | "name" | "domain" | "logoUrl" | "sector" | "subSectors" | "tier" | "maturity"
   | "overallScore" | "checkoutMethods" | "capabilities" | "hasDeals"
   | "axsRating" | "ratingCount" | "updatedAt"
 > & { successRate: string | null };
@@ -42,6 +42,8 @@ const LITE_COLUMNS = {
   id: brandIndex.id,
   slug: brandIndex.slug,
   name: brandIndex.name,
+  domain: brandIndex.domain,
+  logoUrl: brandIndex.logoUrl,
   sector: brandIndex.sector,
   subSectors: brandIndex.subSectors,
   tier: brandIndex.tier,

@@ -240,7 +240,11 @@ export async function POST(request: NextRequest) {
     let agentResult;
     try {
       agentResult = await agenticScan(domain, input.homepageHtml);
-    } catch {
+      if (agentResult?.error) {
+        console.error(`[scan] agentic scan degraded for ${domain}: ${agentResult.error}`);
+      }
+    } catch (err) {
+      console.error(`[scan] agentic scan failed for ${domain}:`, err instanceof Error ? err.message : err);
       agentResult = null;
     }
 

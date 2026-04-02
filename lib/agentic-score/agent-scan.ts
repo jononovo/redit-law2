@@ -7,7 +7,7 @@ import type { PageFetch, AgenticScanResult, EvidenceCitation, SignalKey } from "
 import type { VendorSector } from "@/lib/procurement-skills/taxonomy/sectors";
 import type { BrandTier } from "@/lib/procurement-skills/taxonomy/tiers";
 
-const MODEL = "claude-sonnet-4-6-20260320";
+const MODEL = "claude-sonnet-4-20250514";
 const MAX_PAGES = 8;
 const MAX_TURNS = 20;
 const MAX_HTML_PER_PAGE = 120_000;
