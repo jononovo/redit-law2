@@ -1,0 +1,58 @@
+pillar,pillar_label,pillar_max,signal,signal_label,signal_max,criterion_id,points,evidence_key,source,group,override,excluded_by,condition
+clarity,Clarity,40,json_ld,JSON-LD / Structured Data,20,jld_present,6,jsonLdPresent,detect,,,,JSON-LD script blocks found on page
+clarity,Clarity,40,json_ld,JSON-LD / Structured Data,20,jld_product,5,jsonLdHasProduct,detect,,,,Product schema type detected in JSON-LD
+clarity,Clarity,40,json_ld,JSON-LD / Structured Data,20,jld_offer,3,jsonLdHasOffer,detect,,,,Offer / pricing data in JSON-LD
+clarity,Clarity,40,json_ld,JSON-LD / Structured Data,20,jld_organization,2,jsonLdHasOrg,detect,,,,Organization or LocalBusiness schema detected
+clarity,Clarity,40,json_ld,JSON-LD / Structured Data,20,jld_breadcrumb,1,jsonLdHasBreadcrumb,detect,,,,BreadcrumbList schema detected
+clarity,Clarity,40,json_ld,JSON-LD / Structured Data,20,jld_website,1,jsonLdHasWebSite,detect,,,,WebSite schema detected
+clarity,Clarity,40,json_ld,JSON-LD / Structured Data,20,jld_og_commerce,2,ogCommerceTags,detect,,,,"Open Graph commerce meta tags (og:product, og:price) found"
+clarity,Clarity,40,product_feed,Product Feed / Sitemap,10,pf_sitemap_present,3,sitemapPresent,detect,,,,sitemap.xml found and accessible
+clarity,Clarity,40,product_feed,Product Feed / Sitemap,10,pf_valid_xml,2,sitemapValidXml,detect,,,,Sitemap has valid XML structure (urlset or sitemapindex)
+clarity,Clarity,40,product_feed,Product Feed / Sitemap,10,pf_product_urls,3,sitemapHasProducts,detect,,,,"Product page URLs detected in sitemap (/products/, /p/, /shop/, /catalog)"
+clarity,Clarity,40,product_feed,Product Feed / Sitemap,10,pf_sitemap_index,1,sitemapIsIndex,detect,,,,Multi-sitemap index found (sitemapindex element)
+clarity,Clarity,40,product_feed,Product Feed / Sitemap,10,pf_robots_reference,1,robotsHasSitemap,detect,,,,Sitemap URL referenced in robots.txt
+clarity,Clarity,40,clean_html,Clean HTML / Semantic Markup,10,ch_semantic_strong,4,semanticTagsStrong,detect,ch_semantic,,,"4+ semantic HTML5 landmark elements (header, nav, main, article, section, aside, footer)"
+clarity,Clarity,40,clean_html,Clean HTML / Semantic Markup,10,ch_semantic_partial,2,semanticTagsPartial,detect,ch_semantic,,,2-3 semantic HTML5 landmark elements
+clarity,Clarity,40,clean_html,Clean HTML / Semantic Markup,10,ch_headings_good,2,headingHierarchy,detect,ch_headings,,,H1 present with 3+ total headings (good hierarchy)
+clarity,Clarity,40,clean_html,Clean HTML / Semantic Markup,10,ch_headings_partial,1,headingsPresent,detect,ch_headings,,,At least one heading tag present
+clarity,Clarity,40,clean_html,Clean HTML / Semantic Markup,10,ch_aria_good,2,ariaMarkupStrong,detect,ch_aria,,,5+ ARIA attributes (roles + aria-labels)
+clarity,Clarity,40,clean_html,Clean HTML / Semantic Markup,10,ch_aria_partial,1,ariaMarkupPartial,detect,ch_aria,,,1-4 ARIA attributes present
+clarity,Clarity,40,clean_html,Clean HTML / Semantic Markup,10,ch_alt_good,2,imgAltTextStrong,detect,ch_alt,,,80%+ of images have meaningful alt text
+clarity,Clarity,40,clean_html,Clean HTML / Semantic Markup,10,ch_alt_partial,1,imgAltTextPartial,detect,ch_alt,,,50-79% of images have alt text
+speed,Speed,25,search_api,Search API / MCP,10,sa_mcp,4,mcpEndpoint,either,,,,"MCP endpoint, .well-known/mcp.json, or AI plugin manifest detected"
+speed,Speed,25,search_api,Search API / MCP,10,sa_api,3,publicApi,either,,,,"Versioned API (/api/v*), OpenAPI/Swagger docs, or GraphQL endpoint detected"
+speed,Speed,25,search_api,Search API / MCP,10,sa_protocol,3,agenticProtocol,either,,,,"Agentic commerce protocol detected (x402, ACP, A2A)"
+speed,Speed,25,site_search,Internal Site Search,10,ss_search_form,4,searchFormPresent,detect,,,,Search form or search input field detected on homepage
+speed,Speed,25,site_search,Internal Site Search,10,ss_search_action,2,searchActionUrl,detect,,,,Search form has a parseable action URL (e.g. /search?q=)
+speed,Speed,25,site_search,Internal Site Search,10,ss_opensearch,2,opensearchPresent,detect,ss_search_meta,,,OpenSearch description XML linked
+speed,Speed,25,site_search,Internal Site Search,10,ss_search_link,1,searchLinkRel,detect,ss_search_meta,,,Search link relation (rel=search) present
+speed,Speed,25,site_search,Internal Site Search,10,ss_autocomplete,2,searchAutocomplete,detect,,,,"Autocomplete, autosuggest, or typeahead capability detected"
+speed,Speed,25,page_load,Page Load Performance,5,pl_excellent,5,pageLoadExcellent,detect,pl_time,,,"Page load time ≤ 1,000ms"
+speed,Speed,25,page_load,Page Load Performance,5,pl_good,4,pageLoadGood,detect,pl_time,,,"Page load time 1,001–1,500ms"
+speed,Speed,25,page_load,Page Load Performance,5,pl_ok,3,pageLoadOk,detect,pl_time,,,"Page load time 1,501–2,000ms"
+speed,Speed,25,page_load,Page Load Performance,5,pl_slow,2,pageLoadSlow,detect,pl_time,,,"Page load time 2,001–3,000ms"
+speed,Speed,25,page_load,Page Load Performance,5,pl_very_slow,1,pageLoadVerySlow,detect,pl_time,,,"Page load time 3,001–5,000ms"
+reliability,Reliability,35,access_auth,Access & Authentication,10,aa_guest_checkout,5,guestCheckout,either,,,,Guest checkout available (no account required to purchase)
+reliability,Reliability,35,access_auth,Access & Authentication,10,aa_checkout_links,2,checkoutLinks,detect,,,,Direct checkout or cart links found on homepage
+reliability,Reliability,35,access_auth,Access & Authentication,10,aa_shopping_actions,2,shoppingActions,detect,,,guestCheckout,Add-to-cart or buy-now actions visible on homepage
+reliability,Reliability,35,access_auth,Access & Authentication,10,aa_guest_inferred,1,guestInferred,detect,,,guestCheckout,Both sign-in and cart options present (guest checkout likely)
+reliability,Reliability,35,order_management,Order Management,10,om_programmatic,10,programmaticCheckout,either,,yes,,MCP or agentic commerce protocol enables programmatic ordering
+reliability,Reliability,35,order_management,Order Management,10,om_variants,3,variantSelectors,either,,,,"Product variant selectors found (size, color, options)"
+reliability,Reliability,35,order_management,Order Management,10,om_cart_action,2,addToCartAction,either,,,,Add-to-cart or buy-now button/action detected
+reliability,Reliability,35,order_management,Order Management,10,om_cart_url,2,predictableCartUrl,detect,,,,Predictable cart/basket URL structure (/cart or /basket)
+reliability,Reliability,35,order_management,Order Management,10,om_quantity,1,quantityInput,either,,,,Quantity input field detected on product or cart page
+reliability,Reliability,35,order_management,Order Management,10,om_address,2,addressSection,either,,,,Shipping/delivery address form section found
+reliability,Reliability,35,checkout_flow,Checkout Flow,10,cf_programmatic,10,programmaticCheckout,either,,yes,,MCP or agentic commerce protocol enables programmatic checkout
+reliability,Reliability,35,checkout_flow,Checkout Flow,10,cf_discount,2,discountField,either,,,,"Promo code, coupon, or discount field available"
+reliability,Reliability,35,checkout_flow,Checkout Flow,10,cf_payment_methods,3,paymentMethodsLabeled,either,cf_payment,,,"Payment methods clearly labeled (Visa, PayPal, Apple Pay, etc.)"
+reliability,Reliability,35,checkout_flow,Checkout Flow,10,cf_payment_icons,2,paymentIcons,detect,cf_payment,,,Payment method icons/images present
+reliability,Reliability,35,checkout_flow,Checkout Flow,10,cf_shipping,3,shippingOptions,either,,,,Shipping or delivery options described with methods/timeframes
+reliability,Reliability,35,checkout_flow,Checkout Flow,10,cf_loyalty,2,loyaltyProgram,either,,,,"Loyalty, rewards, or membership program mentioned"
+reliability,Reliability,35,bot_tolerance,Bot Tolerance,5,bt_no_robots,2,noRobotsTxt,detect,bt_robots,,,No robots.txt found (no explicit blocking)
+reliability,Reliability,35,bot_tolerance,Bot Tolerance,5,bt_allows_crawling,3,robotsAllowsCrawl,detect,bt_robots,,,robots.txt allows general crawling (User-agent: * without Disallow: /)
+reliability,Reliability,35,bot_tolerance,Bot Tolerance,5,bt_selective,2,robotsSelective,detect,bt_robots,,,robots.txt present with selective (partial) rules
+reliability,Reliability,35,bot_tolerance,Bot Tolerance,5,bt_blocks_ai,0,robotsBlocksAi,detect,bt_robots,,,AI/bot-specific user-agent blocks in robots.txt
+reliability,Reliability,35,bot_tolerance,Bot Tolerance,5,bt_blocks_all,0,robotsBlocksAll,detect,bt_robots,,,robots.txt disallows all crawling (Disallow: /)
+reliability,Reliability,35,bot_tolerance,Bot Tolerance,5,bt_crawl_delay,1,reasonableCrawlDelay,detect,,,,Crawl-delay ≤ 2 seconds
+reliability,Reliability,35,bot_tolerance,Bot Tolerance,5,bt_no_captcha,1,noCaptcha,detect,,,,No CAPTCHA or bot challenge detected on homepage
+reliability,Reliability,35,bot_tolerance,Bot Tolerance,5,bt_captcha_penalty,-2,captchaDetected,detect,,,,"CAPTCHA or bot challenge (reCAPTCHA, hCaptcha, Cloudflare) detected"
