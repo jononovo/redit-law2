@@ -79,24 +79,31 @@ metadata:
 
   # === Taxonomy ===
   sector: retail
-  sub_sectors:
-    - general-merchandise
-    - electronics
-    - home-goods
-    - books
-    - grocery
-  gpt_category_ids:
-    - 222    # Electronics
-    - 536    # Home & Garden
-    - 783    # Media
-    - 412    # Food, Beverages & Tobacco
   tier: value
+  categories:
+    - gpt_id: 222
+      name: Electronics
+      path: "Electronics"
+      depth: 0
+      primary: true
+    - gpt_id: 536
+      name: "Home & Garden"
+      path: "Home & Garden"
+      depth: 0
+    - gpt_id: 783
+      name: Media
+      path: Media
+      depth: 0
+    - gpt_id: 412
+      name: "Food, Beverages & Tobacco"
+      path: "Food, Beverages & Tobacco"
+      depth: 0
 
   # === ASX Score (scan-based, 0-100) ===
   asx_score: 82
-  asx_clarity: 34           # out of 40
-  asx_speed: 20             # out of 25
-  asx_reliability: 28       # out of 35
+  asx_clarity: 28            # out of 35
+  asx_discoverability: 24    # out of 30
+  asx_reliability: 30        # out of 35
   last_scanned: "2026-03-15"
   scan_tier: premium         # free | premium
 
@@ -119,6 +126,7 @@ metadata:
   # === Checkout ===
   auth_required: true
   guest_checkout: false
+  platform: custom               # shopify | woocommerce | magento | bigcommerce | custom
   checkout_steps: 4
   supported_payment_methods:
     - credit_card
@@ -144,6 +152,14 @@ metadata:
     - same_day
   free_shipping_threshold: 35.00
   ships_internationally: true
+
+  # === Returns & Refund Policy ===
+  returns_policy_url: "/gp/help/customer/display.html?nodeId=GKM69DUUYKQWKR7Y"
+  return_window: "30 days"
+  return_shipping_paid_by: varies        # customer | merchant | varies | unknown
+  refund_method: original_payment        # original_payment | store_credit | exchange_only | varies
+  policy_format: html                    # html | pdf | accordion | behind_login | not_found
+  policy_discoverable: true
 
   # === Loyalty ===
   loyalty_program: "Amazon Prime"
@@ -178,18 +194,22 @@ metadata:
 
 | Field | Type | Required | Description |
 |---|---|---|---|
-| `sector` | string | Yes | Sector slug (e.g., `retail`, `electronics`, `industrial`) |
-| `sub_sectors` | string[] | No | Category slugs within the sector |
-| `gpt_category_ids` | integer[] | No | Google Product Taxonomy numeric IDs this vendor covers |
+| `sector` | string | Yes | CreditClaw sector slug (e.g., `retail`, `electronics`, `industrial`) |
 | `tier` | string | No | Market positioning: `value`, `mid-range`, `premium`, `luxury`, `wholesale`, `marketplace` |
+| `categories` | object[] | Yes | UCP category mappings using Google Product Taxonomy |
+| `categories[].gpt_id` | integer | Yes | Google Product Taxonomy numeric ID |
+| `categories[].name` | string | Yes | Category display name (English) |
+| `categories[].path` | string | Yes | Full category path from root (e.g., `"Electronics > Computers > Laptops"`) |
+| `categories[].depth` | integer | Yes | Depth in taxonomy tree (0 = L1 root, 1 = L2, 2 = L3 max for merchants) |
+| `categories[].primary` | boolean | No | Whether this is the merchant's primary category (one per merchant) |
 
 ### ASX Score Fields (Scan-Based)
 
 | Field | Type | Required | Description |
 |---|---|---|---|
 | `asx_score` | integer | Yes | Overall ASX Score (0–100) |
-| `asx_clarity` | integer | No | Clarity pillar sub-score (0–40) |
-| `asx_speed` | integer | No | Speed pillar sub-score (0–25) |
+| `asx_clarity` | integer | No | Clarity pillar sub-score (0–35) |
+| `asx_discoverability` | integer | No | Discoverability pillar sub-score (0–30) |
 | `asx_reliability` | integer | No | Reliability pillar sub-score (0–35) |
 | `last_scanned` | date | No | ISO date of last scan |
 | `scan_tier` | string | No | `free` or `premium` |
@@ -225,6 +245,7 @@ metadata:
 | `checkout_steps` | integer | No | Number of steps in the checkout flow |
 | `supported_payment_methods` | string[] | No | List of accepted payment types (`credit_card`, `debit_card`, `paypal`, `apple_pay`, `google_pay`, `gift_card`, `crypto`, etc.) |
 | `agentic_payment_protocols` | string[] | No | Supported agentic payment protocols (`x402`, `acp`, `ap2`, `self_hosted_card`) |
+| `platform` | string | No | E-commerce platform: `shopify`, `woocommerce`, `magento`, `bigcommerce`, `custom` |
 | `po_number_supported` | boolean | No | Whether PO numbers can be submitted at checkout |
 | `tax_exempt_supported` | boolean | No | Whether tax exemption is available |
 | `business_account_available` | boolean | No | Whether business/B2B accounts are offered |
@@ -238,6 +259,17 @@ metadata:
 | `delivery_options` | string[] | No | Available shipping methods (`standard`, `express`, `same_day`, `pickup`, `freight`) |
 | `free_shipping_threshold` | number | No | Minimum order amount for free shipping |
 | `ships_internationally` | boolean | No | Whether international shipping is available |
+
+### Returns & Refund Policy Fields
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `returns_policy_url` | string | No | Relative or absolute URL to the returns/refund policy page |
+| `return_window` | string | No | Return window as stated by merchant (e.g., `"30 days"`, `"14 days"`, `"no returns"`) |
+| `return_shipping_paid_by` | string | No | Who pays return shipping: `customer`, `merchant`, `varies`, `unknown` |
+| `refund_method` | string | No | How refunds are issued: `original_payment`, `store_credit`, `exchange_only`, `varies` |
+| `policy_format` | string | No | Format of the policy page: `html`, `pdf`, `accordion`, `behind_login`, `not_found` |
+| `policy_discoverable` | boolean | No | Whether the policy is linked from the homepage or footer (can an agent find it without search?) |
 
 ### Loyalty Fields
 
@@ -341,24 +373,29 @@ Ratings are 1-5. This is optional but helps other agents find reliable vendors.
 
 ---
 
-## Future: `.well-known/agentic-commerce.json`
+## Machine-Readable Companion: `skill.json`
 
-> **STATUS: Placeholder — to be developed.**
+The structured metadata for each merchant is defined in a `skill.json` file. The SKILL.md frontmatter is derived from `skill.json` — they contain the same data, but `skill.json` is the machine-readable source of truth.
 
-In addition to the SKILL.md file (which is distributed via catalogs and CLIs), the metadata standard could define a machine-readable JSON manifest that merchants publish at a well-known URL on their own domain:
+The full `skill.json` schema is specified in `Shopy/skill-json-schema.md`. It covers: identity, taxonomy (UCP categories), scoring (ASX + AXS), API access, checkout, shipping, returns, loyalty, skill quality, and distribution.
+
+### Relationship between formats
+
+| Format | Purpose | Consumed by |
+|---|---|---|
+| `skill.json` | Machine-readable source of truth | Agent runtimes, APIs, CLIs, indexes |
+| SKILL.md frontmatter | Human-readable + machine-parseable | Agent runtimes that support skills.sh format |
+| `.well-known/agentic-commerce.json` | Self-hosted merchant discovery | Any agent checking a merchant's domain |
+
+### `.well-known/agentic-commerce.json`
+
+Merchants can publish their `skill.json` at a well-known URL on their domain:
 
 ```
 https://example.com/.well-known/agentic-commerce.json
 ```
 
-This would allow any agent to discover a merchant's capabilities by checking a single URL — similar to how `robots.txt` works for crawlers or `.well-known/openid-configuration` works for OAuth.
-
-The JSON manifest would contain the same fields as the SKILL.md frontmatter, without the markdown body.
-
-**Open questions:**
-- Should this be a W3C / IETF standard proposal, or established through adoption?
-- How does it relate to `robots.txt`, `llms.txt`, and SKILL.md?
-- What is the minimum viable field set?
+This allows any agent to discover a merchant's capabilities by checking a single URL — similar to how `robots.txt` works for crawlers or `.well-known/openid-configuration` works for OAuth. The `.well-known` manifest uses the same schema as `skill.json`.
 
 ---
 
@@ -379,13 +416,13 @@ The ASX Score tells you how ready a store *should be* based on its technical imp
 Both the ASX Score and AXS Rating are organized around three pillars that map to the natural flow of an agent-initiated purchase:
 
 ```
-   Clarity              →         Speed                →        Reliability
+   Clarity              →      Discoverability           →        Reliability
    ─────────────────          ──────────────────           ─────────────────────
    Can the agent              Can the agent               Does the end-to-end
-   FIND the store             DRILL IN quickly            experience actually
-   and UNDERSTAND             to specific products,       WORK when you try
-   what's available?          variants, stock,            to complete a real
-                              and delivery?               purchase?
+   FIND the store             DISCOVER products,          experience actually
+   and UNDERSTAND             search, filter,             WORK when you try
+   what's available?          and navigate                to complete a real
+                              programmatically?           purchase?
 ```
 
 ### Pillar 1: Clarity (Discovery & Metadata Quality)
@@ -401,9 +438,9 @@ Both the ASX Score and AXS Rating are organized around three pillars that map to
 - Are loyalty programs described — including whether agent-initiated purchases earn points?
 - Is the checkout page structure predictable and well-organized?
 
-### Pillar 2: Speed (Selection & Programmatic Access)
+### Pillar 2: Discoverability (Search & Programmatic Access)
 
-**The question:** Once the agent has found the store, can it quickly and programmatically drill into specifics? Not just "find sneakers" — but "find these sneakers in size 9.5, in brown, check if that exact variant is in stock, and confirm delivery within a week."
+**The question:** Once the agent has found the store, can it discover and navigate products programmatically? Not just "find sneakers" — but "find these sneakers in size 9.5, in brown, check if that exact variant is in stock, and confirm delivery within a week."
 
 **What it covers:**
 - Is there a functional product search (site search, API, MCP, CLI)?
@@ -412,6 +449,7 @@ Both the ASX Score and AXS Rating are organized around three pillars that map to
 - Can the agent select specific product variants (size, color, configuration) programmatically?
 - Can the agent check real-time stock for a specific variant?
 - Can the agent get a delivery estimate for a specific address or region?
+- Are product pages well-structured with clear information hierarchy?
 - How many steps/calls does it take to go from search → specific variant → stock check → delivery estimate?
 
 ### Pillar 3: Reliability (Lived Experience)
@@ -433,7 +471,7 @@ Both the ASX Score and AXS Rating are organized around three pillars that map to
 | | Free Scan (Tier 1) | Premium Scan (Tier 2) | Crowd-Sourced Rating |
 |---|---|---|---|
 | **Clarity** | Full measurement — metadata, sitemap, page structure | Validation — does metadata match reality? | N/A |
-| **Speed** | Capability detection — does the feature exist? | Functional testing — does it actually work? How fast? | N/A |
+| **Discoverability** | Capability detection — does the feature exist? | Functional testing — does it actually work? How fast? | N/A |
 | **Reliability** | Proxy signals — bot-friendly? guest checkout? | Flow testing — walk checkout, report issues | Real-world results — success rates, failure modes |
 
 ---
@@ -442,21 +480,22 @@ Both the ASX Score and AXS Rating are organized around three pillars that map to
 
 ### Signal Breakdown
 
-#### Clarity Signals (40 points) — "Can agents find your products?"
+#### Clarity Signals (35 points) — "Can agents find your products?"
 
 | Signal | Max Points | What We Check |
 |---|---|---|
-| **JSON-LD / Structured Data** | 20 | JSON-LD Product schema, Open Graph product tags, Schema.org markup, meta descriptions with product attributes. Sub-signals include: shipping options described in metadata, payment methods described, loyalty program metadata present. |
+| **JSON-LD / Structured Data** | 15 | JSON-LD Product schema, Open Graph product tags, Schema.org markup, meta descriptions with product attributes. Sub-signals include: shipping options described in metadata, payment methods described, loyalty program metadata present. |
 | **Product Feed / Sitemap** | 10 | sitemap.xml exists, is valid XML, lists product URLs (not just pages), is linked from robots.txt |
 | **Clean HTML / Semantic Markup** | 10 | Well-structured DOM using semantic HTML5 elements, reasonable tag nesting depth, accessible landmarks, enabling reliable content extraction even without structured data |
 
-#### Speed Signals (25 points) — "Can agents search and navigate quickly?"
+#### Discoverability Signals (30 points) — "Can agents search and navigate products?"
 
 | Signal | Max Points | What We Check |
 |---|---|---|
 | **Search API / MCP** | 10 | Programmatic search API detected, MCP endpoint, OpenAPI/Swagger docs, x402/ACP/A2A protocol support |
 | **Internal Site Search** | 10 | On-site search form present, search URL template discoverable, returns relevant structured results |
 | **Page Load Performance** | 5 | Homepage load time under thresholds (< 1s = full marks, < 2s = partial, > 3s = zero). Fast load is critical for headless agent browsing. |
+| **Product Page Quality** | 5 | Product pages have clear information hierarchy, prices are visible without interaction, variant selectors are well-labeled, images have alt text, and key product details are extractable without JavaScript execution |
 
 #### Reliability Signals (35 points) — "Can agents complete a purchase?"
 
@@ -476,8 +515,8 @@ Both the ASX Score and AXS Rating are organized around three pillars that map to
 | Signal | Pillar | What It Would Check |
 |---|---|---|
 | Variant discoverability in structured data | Clarity | Does the product page expose variant data (sizes, colors) in JSON-LD or Schema.org format? |
-| Stock API availability | Speed | Is there a way to check stock programmatically without visiting each product page? |
-| Delivery estimate API | Speed | Can the agent get a delivery timeframe without starting checkout? |
+| Stock API availability | Discoverability | Is there a way to check stock programmatically without visiting each product page? |
+| Delivery estimate API | Discoverability | Can the agent get a delivery timeframe without starting checkout? |
 | SKILL.md availability | Reliability | Does the site publish a SKILL.md file that tells arriving agents how to interact with the store? |
 
 ### Score Labels
@@ -496,14 +535,20 @@ Each signal in the breakdown includes a score, maximum, and human-readable detai
 
 ```typescript
 interface ASXScoreBreakdown {
-  structuredData:        { score: number; max: 20; details: string };
+  // Clarity (35 pts)
+  structuredData:        { score: number; max: 15; details: string };
   sitemapQuality:        { score: number; max: 10; details: string };
-  searchFunctionality:   { score: number; max: 15; details: string };
-  checkoutAccessibility: { score: number; max: 15; details: string };
-  apiAvailability:       { score: number; max: 15; details: string };
-  botFriendliness:       { score: number; max: 10; details: string };
-  mobileResponsive:      { score: number; max: 5;  details: string };
-  mcpUcpSupport:         { score: number; max: 10; details: string };
+  cleanHtml:             { score: number; max: 10; details: string };
+  // Discoverability (30 pts)
+  searchApi:             { score: number; max: 10; details: string };
+  internalSearch:        { score: number; max: 10; details: string };
+  pageLoadPerformance:   { score: number; max: 5;  details: string };
+  productPageQuality:    { score: number; max: 5;  details: string };
+  // Reliability (35 pts)
+  accessAuth:            { score: number; max: 10; details: string };
+  orderManagement:       { score: number; max: 10; details: string };
+  checkoutFlow:          { score: number; max: 10; details: string };
+  botTolerance:          { score: number; max: 5;  details: string };
 }
 ```
 
@@ -537,7 +582,7 @@ The AXS Rating answers: "How well does this store actually perform when agents i
 
 | Dimension | Pillar | What It Measures |
 |---|---|---|
-| `search_accuracy` (1–5) | Speed | How accurately catalog search returns relevant products |
+| `search_accuracy` (1–5) | Discoverability | How accurately catalog search returns relevant products |
 | `stock_reliability` (1–5) | Reliability | Whether in-stock items are actually available at checkout |
 | `checkout_completion` (1–5) | Reliability | How reliably checkout completes without errors |
 
@@ -652,7 +697,7 @@ Over time, comments on a brand become a changelog of real-world issues. A mercha
 | **Scale** | 0–100 | 1.0–5.0 |
 | **Updated** | Per scan (on demand) | Continuously (periodic aggregation) |
 | **Measures** | Technical implementation quality | Real-world performance |
-| **Pillars covered** | Clarity (full), Speed (capability detection), Reliability (proxy signals) | Speed (search accuracy), Reliability (stock, checkout) |
+| **Pillars covered** | Clarity (full), Discoverability (capability detection), Reliability (proxy signals) | Discoverability (search accuracy), Reliability (stock, checkout) |
 | **Data source** | Crawl + probes + LLM analysis | Agent and human feedback after purchases |
 | **Minimum data** | One scan | 5+ weighted feedback events |
 
@@ -664,11 +709,11 @@ A store can have a high ASX Score (great technical setup) but a low AXS Rating (
 
 1. **Standards body engagement.** Should these standards be proposed to a formal body (W3C, IETF, schema.org community group)? Or established as de facto standards through adoption first?
 
-2. **`.well-known/agentic-commerce.json` timing.** When should the merchant-published manifest be developed? After scan data validates the field set? Or as a parallel workstream?
+2. **`.well-known/agentic-commerce.json` adoption.** The schema is defined (same as `skill.json`). When should merchants be encouraged to self-host it? After sufficient scan data validates the field set?
 
-3. **Score signal weights.** The current weights (Clarity: 40, Speed: 25, Reliability: 35) are initial proposals. Should they be validated against real scan data before publishing?
+3. **Score signal weights.** The current weights (Clarity: 35, Discoverability: 30, Reliability: 35) are v1.1 values. Should they be validated against real scan data before publishing as a standard?
 
-4. **Expansion signals.** The "potential expansion" signals (variant discoverability, stock API, delivery estimate API, separate shipping/payment/loyalty metadata scoring) — should any of these be included in v1?
+4. **Expansion signals.** The remaining "potential expansion" signals (variant discoverability in structured data, stock API, delivery estimate API) — should any be promoted to scored signals in a future version? Product Page Quality was promoted in v1.1.
 
 5. **AXS Rating dimension expansion.** Adding `shipping_option_accuracy`, `payment_method_success`, `loyalty_attribution`, and `delivery_accuracy` — when should these be added? They require agents to report more granular data.
 
