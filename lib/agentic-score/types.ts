@@ -62,8 +62,16 @@ export interface PageFetch {
   loadTimeMs: number;
 }
 
+export interface EvidenceCitation {
+  key: string;
+  value: boolean | number | string | null;
+  sourceUrl: string;
+  snippet: string;
+}
+
 export interface AgenticScanResult {
   evidence: Record<string, boolean | number | string | null>;
+  citations: EvidenceCitation[];
   findings: Record<string, unknown>;
   pagesFetched: PageFetch[];
   turnCount: number;

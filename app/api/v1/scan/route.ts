@@ -245,6 +245,7 @@ export async function POST(request: NextRequest) {
     }
 
     const agentEvidence = agentResult?.evidence ?? {};
+    const agentCitations = agentResult?.citations ?? [];
     const agentFindings = agentResult?.findings ?? {};
     const hasAgentEvidence = agentResult !== null && Object.keys(agentEvidence).length > 0;
     const enhanced = hasAgentEvidence;
@@ -316,6 +317,7 @@ export async function POST(request: NextRequest) {
       scannedAt: now.toISOString(),
       breakdown: scoreResult.breakdown,
       recommendations: scoreResult.recommendations,
+      citations: agentCitations,
       skillMdUrl: skillMd ? `/brands/${slug}/skill` : null,
     });
   } catch (error) {

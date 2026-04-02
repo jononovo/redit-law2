@@ -3,7 +3,7 @@ import { lookup } from "dns/promises";
 import type { EvidenceMap } from "./rubric";
 import { SCORING_RUBRIC } from "./rubric";
 import { rubricToPromptText } from "./scoring-engine";
-import type { PageFetch, AgenticScanResult } from "./types";
+import type { PageFetch, AgenticScanResult, EvidenceCitation } from "./types";
 import type { VendorSector } from "@/lib/procurement-skills/taxonomy/sectors";
 import type { BrandTier } from "@/lib/procurement-skills/taxonomy/tiers";
 
@@ -172,7 +172,7 @@ const TOOLS: Anthropic.Tool[] = [
   },
   {
     name: "record_evidence",
-    description: "Record one or more evidence keys from the scoring rubric. Each key maps to a criterion in the rubric. Set to true/false/number/string based on what you observed. Only use evidence keys defined in the rubric.",
+    description: "Record one or more evidence keys from the scoring rubric. Each key maps to a criterion in the rubric. Set to true/false/number/string based on what you observed. Only use evidence keys defined in the rubric. Always include a source_url and a short snippet showing where you found the evidence.",
     input_schema: {
       type: "object" as const,
       properties: {
@@ -181,8 +181,16 @@ const TOOLS: Anthropic.Tool[] = [
           description: "Map of evidence key → value (boolean, number, or string). Keys must match the rubric evidence keys.",
           additionalProperties: true,
         },
+        source_url: {
+          type: "string",
+          description: "The URL of the page where you found this evidence (e.g. https://example.com/checkout).",
+        },
+        snippet: {
+          type: "string",
+          description: "A short excerpt (1-2 sentences or an HTML tag) from the page that proves the evidence. Keep it under 200 characters.",
+        },
       },
-      required: ["evidence"],
+      required: ["evidence", "source_url", "snippet"],
     },
   },
   {
@@ -240,7 +248,7 @@ ${rubricText}
 
 1. You have already been given the homepage HTML. Analyze it first for evidence.
 2. Use fetch_page to visit additional pages (product pages, checkout, search, cart, etc.) to gather more evidence. Visit at most ${MAX_PAGES} pages total.
-3. For each piece of evidence you find, use record_evidence to set the corresponding rubric evidence key.
+3. For each piece of evidence you find, use record_evidence to set the corresponding rubric evidence key. Always include source_url (the page you found it on) and snippet (a short excerpt proving the evidence — an HTML tag, button text, or 1-sentence quote, under 200 chars).
 4. Use record_findings to capture structured vendor info for SKILL.md generation (name, sector, capabilities, tips, etc.).
 5. Call complete_scan when done.
 
@@ -261,6 +269,7 @@ export async function agenticScan(
   if (!apiKey) {
     return {
       evidence: {},
+      citations: [],
       findings: {},
       pagesFetched: [],
       turnCount: 0,
@@ -273,6 +282,7 @@ export async function agenticScan(
   const startTime = Date.now();
   const anthropic = new Anthropic({ apiKey });
   const evidence: EvidenceMap = {};
+  const citations: EvidenceCitation[] = [];
   const findings: Record<string, unknown> = {};
   const pagesFetched: PageFetch[] = [];
   let turnCount = 0;
@@ -351,6 +361,8 @@ export async function agenticScan(
 
             case "record_evidence": {
               const ev = toolUse.input.evidence as Record<string, unknown>;
+              const sourceUrl = (toolUse.input.source_url as string) ?? `https://${domain}`;
+              const snippet = ((toolUse.input.snippet as string) ?? "").slice(0, 200);
               const accepted: string[] = [];
               const rejected: string[] = [];
               for (const [key, value] of Object.entries(ev)) {
@@ -362,6 +374,7 @@ export async function agenticScan(
                 if (coerced !== null) {
                   evidence[key] = coerced;
                   accepted.push(key);
+                  citations.push({ key, value: coerced, sourceUrl, snippet });
                 }
               }
               result = `Recorded ${accepted.length} evidence keys: ${accepted.join(", ")}`;
@@ -416,6 +429,7 @@ export async function agenticScan(
   } catch (err) {
     return {
       evidence,
+      citations,
       findings,
       pagesFetched,
       turnCount,
@@ -427,6 +441,7 @@ export async function agenticScan(
 
   return {
     evidence,
+    citations,
     findings,
     pagesFetched,
     turnCount,

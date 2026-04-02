@@ -17,4 +17,5 @@ export type {
   SignalKey,
   PageFetch,
   AgenticScanResult,
+  EvidenceCitation,
 } from "./types";
