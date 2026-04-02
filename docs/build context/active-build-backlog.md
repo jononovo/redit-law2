@@ -37,6 +37,7 @@ For reference — these are done and archived:
 - `skill.json` schema defined (`Shopy/skill-json-schema.md`)
 - Step 1: Catalog Scale Readiness (1A URL-based filters, 1B generateStaticParams, 1C lean catalog query)
 - GIN indexes + partial boolean indexes on `brand_index` (migration 0007 — `sub_sectors`, `tags`, `carries_brands`, `capabilities`, `checkout_methods`, `payment_methods_accepted`, `supported_countries`, `search_vector` GIN; `has_mcp`, `has_api`, `has_deals`, `ordering=guest`, `tax_exempt`, `po_number`, `claimed_by` partial; plus `search_vector` trigger)
+- Step 2: Multitenant System (2A types+configs, 2B middleware, 2C layout metadata/theming, 2D TenantProvider, 2E nav/footer de-hardcode, 2F landing extraction, 2G API helper, 2H signupTenant column, 2I shopy config skeleton)
 
 ---
 
