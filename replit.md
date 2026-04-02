@@ -313,7 +313,7 @@ Sole source of truth for all brand data across all surfaces (bots, humans, expor
 **ASX Score Engine** (`lib/agentic-score/`):
 Self-contained scoring module that evaluates how well a merchant's website supports AI shopping agents.
 Architecture: Single central rubric → regex detectors + agentic scan → merged evidence → deterministic scoring.
-- `rubric.ts` — pure data: `SCORING_RUBRIC` with 57 criteria, 10 signals, 3 pillars. Types: `RubricCriterion`, `EvidenceMap`, etc. Source of truth for all scoring.
+- `rubric.ts` — pure data: `SCORING_RUBRIC` v1.1 with 61 criteria, 11 signals, 3 pillars. Types: `RubricCriterion`, `EvidenceMap`, etc. Source of truth for all scoring.
 - `scoring-engine.ts` — `computeScoreFromRubric(rubric, evidence)`: deterministic scorer. Also exports `rubricToPromptText()`, `rubricToCsv()`, and recommendation generation.
 - `detectors.ts` — `detectAll(html, sitemap, robots, loadTime)`: 10 regex-based evidence extractors producing `EvidenceMap` from homepage HTML, sitemap, robots.txt.
 - `compute.ts` — thin wrapper: `computeASXScore(input)` calls `detectAll` → `computeScoreFromRubric`.
@@ -321,7 +321,9 @@ Architecture: Single central rubric → regex detectors + agentic scan → merge
 - `fetch.ts` — parallel fetcher: `fetchScanInputs(domain)` fetches homepage + sitemap.xml + robots.txt with SSRF protection. Firecrawl JS rendering when `FIRECRAWL_API_KEY` set. Also exports `normalizeDomain()` and `domainToSlug()`.
 - `extract-meta.ts` — `extractMeta(html, domain)`: extracts `<title>` and `<meta description>` from HTML with domain-based fallbacks
 - `types.ts` — all type definitions including `PageFetch`, `AgenticScanResult`, `SignalKey`, etc.
-- 3 pillars: Clarity (40pts max) + Speed (25pts max) + Reliability (35pts max) = 100pts
+- 3 pillars: Clarity (35pts max) + Discoverability (30pts max) + Reliability (35pts max) = 100pts
+- Discoverability (renamed from Speed in v1.1) includes Product Page Quality signal (5pts, agent-only)
+- Brand page has backward compat: reads stored `speed` key as `discoverability` for pre-v1.1 data
 - Labels: Poor (0-20), Needs Work (21-40), Fair (41-60), Good (61-80), Excellent (81-100)
 - Output writes to `brand_index` via `overallScore`, `scoreBreakdown` (jsonb), `recommendations` (jsonb), `skillMd` (text)
 

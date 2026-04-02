@@ -17,7 +17,7 @@ export type ScoreLabel = "Poor" | "Needs Work" | "Fair" | "Good" | "Excellent";
 
 export interface ASXScoreBreakdown {
   clarity: PillarScore;
-  speed: PillarScore;
+  discoverability: PillarScore;
   reliability: PillarScore;
 }
 
@@ -50,6 +50,7 @@ export type SignalKey =
   | "search_api"
   | "site_search"
   | "page_load"
+  | "product_page"
   | "access_auth"
   | "order_management"
   | "checkout_flow"
@@ -67,7 +68,7 @@ export interface EvidenceCitation {
   value: boolean | number | string | null;
   sourceUrl: string;
   snippet: string;
-  pillar: "clarity" | "speed" | "reliability";
+  pillar: "clarity" | "discoverability" | "reliability";
   signal: SignalKey;
   signalLabel: string;
   criterion: string;

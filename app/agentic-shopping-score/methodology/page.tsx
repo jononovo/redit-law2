@@ -11,11 +11,11 @@ const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || "https://creditclaw.com";
 export const metadata: Metadata = {
   title: "Scoring Methodology | AI Shopping Score | CreditClaw",
   description:
-    "See exactly how we calculate the Agent Shopping Experience Score — 57 criteria across 10 signals in 3 pillars: Clarity, Speed, and Reliability.",
+    "See exactly how we calculate the Agent Shopping Experience Score — 61 criteria across 11 signals in 3 pillars: Clarity, Discoverability, and Reliability.",
   openGraph: {
     title: "Scoring Methodology | AI Shopping Score | CreditClaw",
     description:
-      "See exactly how we calculate the Agent Shopping Experience Score — 57 criteria across Clarity, Speed, and Reliability.",
+      "See exactly how we calculate the Agent Shopping Experience Score — 61 criteria across Clarity, Discoverability, and Reliability.",
     type: "website",
     url: `${BASE_URL}/agentic-shopping-score/methodology`,
   },
@@ -42,7 +42,7 @@ const PILLAR_CONFIG: Record<
     border: "border-blue-200",
     badge: "bg-blue-100 text-blue-700",
   },
-  speed: {
+  discoverability: {
     icon: Zap,
     gradient: "from-amber-500 to-orange-500",
     accent: "text-amber-600",

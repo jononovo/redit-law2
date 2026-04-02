@@ -72,9 +72,10 @@ const SIGNAL_META: Record<string, { icon: React.ReactNode; pillar: string }> = {
   json_ld: { icon: <FileJson className="w-4 h-4" />, pillar: "Clarity" },
   product_feed: { icon: <BarChart3 className="w-4 h-4" />, pillar: "Clarity" },
   clean_html: { icon: <Code className="w-4 h-4" />, pillar: "Clarity" },
-  search_api: { icon: <Zap className="w-4 h-4" />, pillar: "Speed" },
-  site_search: { icon: <Search className="w-4 h-4" />, pillar: "Speed" },
-  page_load: { icon: <Clock className="w-4 h-4" />, pillar: "Speed" },
+  search_api: { icon: <Zap className="w-4 h-4" />, pillar: "Discoverability" },
+  site_search: { icon: <Search className="w-4 h-4" />, pillar: "Discoverability" },
+  page_load: { icon: <Clock className="w-4 h-4" />, pillar: "Discoverability" },
+  product_page: { icon: <BarChart3 className="w-4 h-4" />, pillar: "Discoverability" },
   access_auth: { icon: <UserCheck className="w-4 h-4" />, pillar: "Reliability" },
   order_management: { icon: <ClipboardList className="w-4 h-4" />, pillar: "Reliability" },
   checkout_flow: { icon: <Workflow className="w-4 h-4" />, pillar: "Reliability" },
@@ -83,7 +84,7 @@ const SIGNAL_META: Record<string, { icon: React.ReactNode; pillar: string }> = {
 
 const PILLAR_CONFIG = {
   clarity: { label: "Clarity", subtitle: "Can agents understand your catalog?", color: "blue" as const, icon: <Layers className="w-5 h-5" /> },
-  speed: { label: "Speed", subtitle: "Can agents find products quickly?", color: "green" as const, icon: <Zap className="w-5 h-5" /> },
+  discoverability: { label: "Discoverability", subtitle: "Can agents find and evaluate products?", color: "green" as const, icon: <Zap className="w-5 h-5" /> },
   reliability: { label: "Reliability", subtitle: "Can agents complete a purchase?", color: "purple" as const, icon: <Shield className="w-5 h-5" /> },
 };
 
@@ -119,7 +120,14 @@ export default async function BrandPage({ params }: { params: Promise<{ slug: st
   const score = brand.overallScore ?? 0;
   const label = hasScore ? getScoreLabel(score) : null;
   const scoreColor = getScoreColor(brand.overallScore);
-  const breakdown = brand.scoreBreakdown as ASXScoreBreakdown | null;
+  const rawBreakdown = brand.scoreBreakdown as (ASXScoreBreakdown & { speed?: PillarScore }) | null;
+  const breakdown: ASXScoreBreakdown | null = rawBreakdown
+    ? {
+        clarity: rawBreakdown.clarity,
+        discoverability: rawBreakdown.discoverability ?? rawBreakdown.speed ?? { score: 0, max: 30, signals: [] },
+        reliability: rawBreakdown.reliability,
+      }
+    : null;
   const recommendations = (brand.recommendations as ASXRecommendation[] | null) ?? [];
   const lastScanned = brand.lastScannedAt ? new Date(brand.lastScannedAt) : null;
 

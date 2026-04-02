@@ -15,7 +15,7 @@ const FETCH_TIMEOUT_MS = 12_000;
 const AGENT_TIMEOUT_MS = 90_000;
 
 interface EvidenceKeyMeta {
-  pillar: "clarity" | "speed" | "reliability";
+  pillar: "clarity" | "discoverability" | "reliability";
   signal: SignalKey;
   signalLabel: string;
   criterion: string;
