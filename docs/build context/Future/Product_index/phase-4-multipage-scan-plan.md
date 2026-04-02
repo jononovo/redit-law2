@@ -1,288 +1,424 @@
-# Phase 4: Multi-Page Crawling + Brand Data Enrichment
+# Phase 4: Agentic Multi-Page Scan
 
 ## Objective
 
-Upgrade the ASX scan pipeline from single-page (homepage only) to multi-page crawling. 
-One scan produces everything — score, SKILL.md, vendor profile — eliminating the need 
-for a separate skill builder pass. Also merge existing curated `brandData` into the 
-SKILL.md so brands that already have detailed data produce richer agent instructions.
+Replace the static single-page Claude analysis with an agentic scan — one Claude 
+conversation where Claude drives the exploration of a website using tool_use. Claude 
+decides what pages to visit, fetches them via tools, and progressively builds up 
+findings. Also merge existing curated `brandData` into SKILL.md generation.
 
 ---
 
-## Part 1: Multi-Page Crawling
+## Architecture: Agentic Scan
 
-### Current state
+### Current state (static pipeline)
 
-`fetchScanInputs()` fetches three things in parallel:
-1. Homepage HTML (via Firecrawl → raw fetch fallback)
-2. `/sitemap.xml` (raw fetch, 8s timeout)
-3. `/robots.txt` (raw fetch, 8s timeout)
+```
+fetchScanInputs(domain)          → homepage + sitemap + robots
+  ↓
+computeASXScore(input)           → regex-only scoring on homepage
+  ↓
+analyzeScanWithClaude(html)      → one Claude call, homepage only, flat prompt
+  ↓
+enhanceScores(base, findings)    → boost scores from Claude findings
+  ↓
+buildVendorSkillDraft(findings)  → construct VendorSkill from Claude output
+  ↓
+generateVendorSkill(draft)       → render SKILL.md
+  ↓
+upsertBrandIndex(...)            → persist everything
+```
 
-All signal scoring and Claude analysis happens against the homepage HTML only. Product 
-pages, cart, checkout, and search pages are never seen. This means:
-- `json_ld` signal scores 0 for most sites (JSON-LD Product markup lives on product pages)
-- Checkout flow details are guessed from homepage hints (footer links, nav text)
-- Product variant structure is invisible
-- Search functionality is inferred from `<form>` elements, not verified
+Problems:
+- Claude only sees the homepage — misses product pages, cart, search
+- Page discovery uses hardcoded regex URL patterns
+- All pages dumped into one prompt (overwhelms Claude, no progressive learning)
+- No intelligence about WHICH pages matter for THIS specific store
 
-### Proposed state
+### Proposed state (agentic pipeline)
 
-`fetchScanInputs()` returns an expanded `ScoreInput` with additional page content:
+```
+fetchScanInputs(domain)          → homepage + sitemap + robots (unchanged)
+  ↓
+computeASXScore(input)           → regex-only scoring on homepage (unchanged)
+  ↓
+agenticScan(input)               → Claude agent explores the site:
+  │                                  1. Reads homepage, identifies store type
+  │                                  2. Calls fetch_page() to visit a product page
+  │                                  3. Reads product page, discovers cart/search URLs
+  │                                  4. Calls fetch_page() for cart and search
+  │                                  5. Analyzes everything, records findings
+  │                                  Returns: AgenticScanResult (findings + fetched pages)
+  ↓
+enhanceScores(base, findings)    → boost scores from Claude findings (unchanged)
+  ↓
+boostFromPages(base, pages)      → NEW: boost signal scores from additional page HTML
+  ↓
+buildVendorSkillDraft(...)       → construct VendorSkill (now also merges brandData)
+  ↓
+generateVendorSkill(draft)       → render SKILL.md (unchanged)
+  ↓
+upsertBrandIndex(...)            → persist everything
+```
+
+---
+
+## Part 1: SDK Upgrade + Agent Infrastructure
+
+### Upgrade Anthropic SDK
+
+Current: `@anthropic-ai/sdk` v0.37.0
+Target: Latest available (v0.82.0+)
+
+```bash
+npm install @anthropic-ai/sdk@latest
+```
+
+### Model selection
+
+Use the latest Claude Sonnet model available. Current code uses `claude-sonnet-4-20250514`.
+At build time, verify latest model identifier and update. The agentic scan benefits from
+the strongest available reasoning model since it needs to make autonomous decisions about
+site navigation.
+
+### Files to modify
+
+| File | Change |
+|---|---|
+| `package.json` | Upgrade `@anthropic-ai/sdk` to latest |
+| `lib/agentic-score/llm.ts` | Update model constant if newer model available |
+
+---
+
+## Part 2: Agentic Scan Engine
+
+### New file: `lib/agentic-score/agent-scan.ts`
+
+This is the core new module. It runs a single Claude conversation with tool_use where 
+Claude autonomously explores the website.
+
+### Tools Claude gets
+
+**1. `fetch_page`**
+```typescript
+{
+  name: "fetch_page",
+  description: "Fetch a page from this website. Returns the HTML content. Use this to visit product pages, cart, search results, or any other page you need to analyze.",
+  input_schema: {
+    type: "object",
+    properties: {
+      url: { 
+        type: "string", 
+        description: "Full URL to fetch (must be on the same domain being scanned)" 
+      },
+      page_type: { 
+        type: "string", 
+        enum: ["product", "cart", "search", "category", "checkout", "other"],
+        description: "What type of page this is"
+      },
+      reason: { 
+        type: "string", 
+        description: "Why you want to visit this page — what you expect to learn" 
+      }
+    },
+    required: ["url", "page_type", "reason"]
+  }
+}
+```
+
+Server-side implementation:
+- Validate URL is on the same domain (prevent cross-site crawling)
+- Run SSRF validation (`resolveAndValidate()`)
+- Fetch via Firecrawl (JS rendering) with 15s timeout
+- Strip `<script>`, `<style>`, comments
+- Return first 20,000 characters of stripped HTML
+- Track page count against budget
+
+**2. `record_findings`**
+```typescript
+{
+  name: "record_findings",
+  description: "Save structured findings about this store. Call this whenever you've learned something new. You can call it multiple times — findings are merged.",
+  input_schema: {
+    type: "object",
+    properties: {
+      name: { type: "string" },
+      sector: { type: "string", enum: [sector list] },
+      subSectors: { type: "array", items: { type: "string" } },
+      tier: { type: "string", enum: [tier list] },
+      searchUrlTemplate: { type: "string" },
+      searchPattern: { type: "string" },
+      productIdFormat: { type: "string" },
+      guestCheckout: { type: "boolean" },
+      taxExemptField: { type: "boolean" },
+      poNumberField: { type: "boolean" },
+      freeShippingThreshold: { type: ["number", "null"] },
+      estimatedDeliveryDays: { type: "string" },
+      businessShipping: { type: "boolean" },
+      cartUrl: { type: "string" },
+      checkoutProviders: { type: "array", items: { type: "string" } },
+      paymentMethods: { type: "array", items: { type: "string" } },
+      capabilities: { type: "array", items: { type: "string" } },
+      hasApi: { type: "boolean" },
+      hasMcp: { type: "boolean" },
+      jsonLdTypes: { type: "array", items: { type: "string" } },
+      variantSelectors: { type: "array", items: { type: "string" } },
+      priceFormat: { type: "string" },
+      tips: { type: "array", items: { type: "string" } }
+    }
+  }
+}
+```
+
+Server-side implementation:
+- Deep-merge incoming findings with accumulated findings
+- Booleans: OR-merge (false → true upgrades, never downgrades)
+- Arrays: set-union (never removes items)
+- Strings: last-write-wins (Claude refines as it learns more)
+
+**3. `complete_scan`**
+```typescript
+{
+  name: "complete_scan",
+  description: "Call this when you have finished exploring the site and recorded all findings.",
+  input_schema: {
+    type: "object",
+    properties: {
+      summary: { 
+        type: "string", 
+        description: "Brief summary of what you found and how an agent should shop here" 
+      },
+      confidence: { 
+        type: "string", 
+        enum: ["high", "medium", "low"],
+        description: "How confident you are in the findings" 
+      }
+    },
+    required: ["summary", "confidence"]
+  }
+}
+```
+
+Server-side implementation:
+- Set a flag to break the agent loop
+- Store summary + confidence in result
+
+### System prompt
+
+```
+You are a site analyst for CreditClaw, an AI procurement platform. Your job is to 
+explore an e-commerce website and understand how an AI shopping agent would interact 
+with it.
+
+You will be given the homepage HTML of a store. Explore the site to understand three 
+things:
+
+1. PRODUCT DISCOVERY — How would an agent find and identify products?
+2. PRODUCT STRUCTURE — How are products displayed? What variants, pricing, IDs exist?
+3. CHECKOUT FLOW — How would an agent complete a purchase?
+
+You have tools to fetch additional pages. Use them strategically:
+
+- Start by analyzing the homepage. Identify the store, its sector, and find links to 
+  product pages, cart, and search.
+- Fetch a product page to understand product structure (variants, pricing, add-to-cart).
+- From the product page, identify the cart URL and search pattern.
+- Fetch the cart page to understand checkout flow (guest checkout, payment methods, 
+  tax exemption, PO numbers).
+- Fetch a search results page to verify the search pattern works and understand result 
+  structure.
+
+Call record_findings whenever you learn something new. Don't wait until the end — 
+save findings progressively so nothing is lost if the scan is interrupted.
+
+Call complete_scan when you've gathered enough information or run out of useful pages 
+to visit.
+
+You are analyzing: {domain}
+```
+
+### Initial user message
+
+```
+Here is the homepage of {domain}:
+
+{stripped homepage HTML, up to 25,000 chars}
+
+{if sitemap exists:}
+Here is the sitemap.xml (may contain product URLs):
+{sitemap content, up to 10,000 chars}
+
+{if robots.txt exists:}
+Here is robots.txt:
+{robots.txt content, up to 5,000 chars}
+
+Explore this site. Start by analyzing what you see on the homepage, then use 
+fetch_page to visit the most important pages for understanding how an agent would 
+shop here.
+```
+
+### Agent loop
 
 ```typescript
-export interface ScoreInput {
-  domain: string;
-  homepageHtml: string;
-  sitemapContent: string | null;
-  robotsTxtContent: string | null;
-  pageLoadTimeMs: number | null;
-  // NEW — additional pages for deeper analysis
-  additionalPages: PageFetch[];
+async function agenticScan(input: ScoreInput): Promise<AgenticScanResult> {
+  const anthropic = new Anthropic({ apiKey });
+  const tools = [fetchPageTool, recordFindingsTool, completeScanTool];
+  const messages = [{ role: "user", content: buildInitialMessage(input) }];
+  
+  const findings: LLMScanFindings = {};
+  const fetchedPages: PageFetch[] = [];
+  let scanComplete = false;
+  let toolCallCount = 0;
+  
+  const MAX_TOOL_CALLS = 6;
+  const SCAN_TIMEOUT_MS = 90_000;
+  const scanStart = Date.now();
+  
+  while (!scanComplete && toolCallCount < MAX_TOOL_CALLS) {
+    if (Date.now() - scanStart > SCAN_TIMEOUT_MS) break;
+    
+    const response = await anthropic.messages.create({
+      model: MODEL,
+      max_tokens: 4096,
+      system: SYSTEM_PROMPT,
+      tools,
+      messages,
+    });
+    
+    // Add assistant response to conversation
+    messages.push({ role: "assistant", content: response.content });
+    
+    if (response.stop_reason === "end_turn") break;
+    
+    if (response.stop_reason === "tool_use") {
+      const toolResults = [];
+      
+      for (const block of response.content) {
+        if (block.type !== "tool_use") continue;
+        toolCallCount++;
+        
+        let result: string;
+        switch (block.name) {
+          case "fetch_page":
+            result = await handleFetchPage(block.input, input.domain, fetchedPages);
+            break;
+          case "record_findings":
+            result = handleRecordFindings(block.input, findings);
+            break;
+          case "complete_scan":
+            result = handleCompleteScan(block.input);
+            scanComplete = true;
+            break;
+        }
+        
+        toolResults.push({
+          type: "tool_result",
+          tool_use_id: block.id,
+          content: result,
+        });
+      }
+      
+      messages.push({ role: "user", content: toolResults });
+    }
+  }
+  
+  return { findings, fetchedPages, complete: scanComplete };
+}
+```
+
+### Return type
+
+```typescript
+interface AgenticScanResult {
+  findings: LLMScanFindings;      // All accumulated findings
+  fetchedPages: PageFetch[];       // Pages Claude fetched (for signal boosting)
+  complete: boolean;               // Whether Claude called complete_scan
+  summary?: string;                // Claude's summary of the store
+  confidence?: "high" | "medium" | "low";
 }
 
-export interface PageFetch {
+interface PageFetch {
   url: string;
-  pageType: "product" | "cart" | "search" | "category";
-  html: string;
+  pageType: "product" | "cart" | "search" | "category" | "checkout" | "other";
+  html: string;                    // Stripped HTML (for signal scoring)
   statusCode: number;
 }
 ```
 
-### Page discovery strategy (executed in `fetch.ts`)
+### Guardrails
 
-After fetching homepage + sitemap + robots, discover and fetch up to 4 additional pages:
+| Guardrail | Value | Rationale |
+|---|---|---|
+| Max `fetch_page` calls | 5 | Homepage + product + cart + search + 1 spare |
+| Max total tool calls | 6 | 5 fetches + 1 complete_scan (record_findings doesn't count) |
+| Scan timeout | 90 seconds | Firecrawl pages ~5-10s each, Claude reasoning ~2-3s each step |
+| Max HTML per page | 20,000 chars | Enough for meaningful analysis, keeps token budget manageable |
+| Domain lock | Same domain only | `fetch_page` rejects any URL not on the target domain |
+| SSRF protection | resolveAndValidate() | Every `fetch_page` URL goes through SSRF check |
 
-**Step 1: Extract candidate URLs (no network calls)**
+### Token budget estimate
 
-From the sitemap XML, extract product page URLs using patterns:
-- URLs containing `/p/`, `/product/`, `/products/`, `/dp/`, `/item/`, `/ip/`
-- URLs that look like deep paths (3+ segments, not category-level)
-- Pick 2 candidates, prefer diverse URL patterns
+- System prompt: ~500 tokens
+- Initial message (homepage + sitemap + robots): ~10,000 tokens
+- Per tool round-trip (Claude reasoning + tool call + result): ~8,000 tokens
+- Typical scan (3-4 page fetches): ~35,000-45,000 tokens total
+- Cost: ~$0.06-0.10 per scan (higher than static, but much richer output)
 
-From the homepage HTML, extract candidate URLs as fallback:
-- Parse `<a href="...">` links on the same domain
-- Match product URL patterns (same as above)
-- Also look for cart/checkout links: `/cart`, `/bag`, `/basket`, `/checkout`
-- Pick 2 product candidates + 1 cart candidate
+### Graceful degradation
 
-**Step 2: Build the fetch list**
+If the agentic scan fails for any reason (API error, timeout, budget exceeded):
+- Return whatever findings were accumulated via `record_findings` so far
+- Return whatever pages were fetched (for signal boosting)
+- The pipeline continues with partial data — same as current behavior when Claude 
+  fails entirely (regex-only scores persist)
 
-Priority order (stop at 4 total):
-1. 2 product pages (from sitemap if available, homepage links as fallback)
-2. 1 cart page (`/cart` or detected cart link)
-3. 1 search results page (`/s/test` or `/search?q=test` — use `searchUrlTemplate` from 
-   homepage if detectable, otherwise try common patterns)
-
-**Step 3: Fetch additional pages in parallel**
-
-- Product pages: Firecrawl (JS rendering matters for product pages) → raw fetch fallback
-- Cart page: raw fetch (usually server-rendered, may return empty cart or redirect)
-- Search page: raw fetch (need to see search results structure)
-- All fetches: 10s timeout, SSRF validation, non-blocking (use `Promise.allSettled`)
-- Each page HTML trimmed to 100,000 characters
-
-**Step 4: Return enriched ScoreInput**
-
-`additionalPages` array contains only successful fetches. Failed fetches are silently 
-dropped — the pipeline works with whatever pages it gets.
-
-### Timing impact
-
-Current: ~2-8s (1 Firecrawl + 2 raw fetches in parallel)
-Proposed: ~5-12s (1 Firecrawl + 2 raw + up to 4 more fetches, mostly parallel)
-
-Firecrawl calls are the bottleneck. With 3 Firecrawl calls (homepage + 2 product pages), 
-they can run concurrently. Total Firecrawl time should be similar to 1 call since they 
-run in parallel on Firecrawl's infrastructure.
-
-### Files to modify
+### Files to create/modify
 
 | File | Change |
 |---|---|
-| `lib/agentic-score/types.ts` | Add `PageFetch` interface, add `additionalPages` to `ScoreInput` |
-| `lib/agentic-score/fetch.ts` | Add page discovery logic (sitemap parsing, link extraction), fetch additional pages, return enriched `ScoreInput` |
-
-### Backward compatibility
-
-- `computeASXScore()` currently only reads `homepageHtml`, `sitemapContent`, `robotsTxtContent`, `pageLoadTimeMs` — it will continue to work unchanged
-- Signal functions that currently only look at homepage will be updated to also check `additionalPages` for relevant markup (see "Signal improvements" below)
-- Claude analysis will receive all pages instead of just homepage
+| `lib/agentic-score/agent-scan.ts` | **NEW** — agentic scan engine with tool definitions, agent loop, tool handlers |
+| `lib/agentic-score/llm.ts` | Keep for backward compatibility, but scan route will call `agenticScan()` instead |
+| `lib/agentic-score/types.ts` | Add `PageFetch`, `AgenticScanResult` interfaces |
+| `app/api/v1/scan/route.ts` | Replace `analyzeScanWithClaude()` call with `agenticScan()` call |
 
 ---
 
-## Part 2: Signal Improvements from Multi-Page Data
+## Part 3: Signal Boosting from Agent-Fetched Pages
 
-With product pages and cart available, several signals can score much more accurately:
+### Approach: additive enhancement layer (no signal refactor)
 
-### `json_ld` (max 20pts, currently scores 0 for most sites)
-- Check product pages for `<script type="application/ld+json">` with `@type: "Product"`
-- This is the single biggest scoring improvement — most sites have JSON-LD on product 
-  pages but not on the homepage
+All 10 existing signal functions remain untouched. They continue scoring on homepage HTML 
+only. A new function `boostFromAgentPages()` takes the base score result + the pages 
+Claude fetched and applies floor-based boosts.
 
-### `clean_html` (max 10pts)
-- Check product pages for semantic markup: `<main>`, `<article>`, proper heading hierarchy
-- Product pages tend to have better semantic structure than homepages
+This follows the same pattern as `enhanceScores()` — additive, never lowers scores.
 
-### `order_management` (max 10pts)
-- Check product pages for variant selectors, add-to-cart forms, quantity inputs
-- Check cart page for cart management (remove item, update quantity)
+### New file: `lib/agentic-score/boost-pages.ts`
 
-### `checkout_flow` (max 10pts)
-- Check cart page for checkout link, payment method indicators
-- Check if cart page reveals guest checkout option
+```typescript
+export function boostFromAgentPages(
+  baseResult: ASXScoreResult,
+  pages: PageFetch[],
+): ASXScoreResult
+```
 
-### `access_auth` (max 10pts)
-- Check cart page: does it redirect to login? → requires auth
-- Check cart page: does it load directly? → guest-friendly
+### Boost rules by signal
 
-### `site_search` (max 10pts)
-- Check search results page: does it return structured results?
-- Verify the search URL pattern actually works
+| Signal | Page type | What to check | Boost logic |
+|---|---|---|---|
+| `json_ld` (max 20) | product | `<script type="application/ld+json">` with Product type | If product page has Product JSON-LD, boost to floor of 12. If has Offer too, floor of 16. |
+| `clean_html` (max 10) | product | Semantic markup: `<main>`, `<article>`, headings | If product page has better semantic structure, boost to floor of 6 |
+| `order_management` (max 10) | product, cart | Add-to-cart form, quantity input, variant selectors | If product page has add-to-cart + variants, floor of 5. If cart page has item management, floor of 7. |
+| `checkout_flow` (max 10) | cart | Checkout button, payment indicators, guest checkout | If cart page reveals checkout flow, floor of 5. If guest checkout visible, floor of 7. |
+| `access_auth` (max 10) | cart | Does cart load without redirect to login? | If cart page loads directly (200, no login form), floor of 7. |
+| `site_search` (max 10) | search | Does search page return results? | If search page has product results, floor of 7. |
+| `bot_tolerance` (max 10) | any | Did Firecrawl succeed on all pages? | If 3+ pages fetched successfully, floor of 5. |
 
-### Files to modify
+### Files to create
 
 | File | Change |
 |---|---|
-| `lib/agentic-score/signals/clarity.ts` | `scoreJsonLd` and `scoreCleanHtml` also check `additionalPages` |
-| `lib/agentic-score/signals/speed.ts` | `scoreSiteSearch` verifies search URL works via search page |
-| `lib/agentic-score/signals/reliability.ts` | `scoreAccessAuth`, `scoreOrderManagement`, `scoreCheckoutFlow` check cart + product pages |
-| `lib/agentic-score/compute.ts` | Pass full `ScoreInput` (including `additionalPages`) to signal functions |
-
-### Signal function signature change
-
-Currently all signal functions take individual fields:
-```typescript
-scoreJsonLd(homepageHtml: string): SignalScore
-```
-
-Proposed: they take the full `ScoreInput`:
-```typescript
-scoreJsonLd(input: ScoreInput): SignalScore
-```
-
-This is a clean refactor since `ScoreInput` already contains all fields they currently 
-receive individually. The `compute.ts` caller just passes `input` instead of 
-destructured fields.
-
----
-
-## Part 3: Unified Claude Analysis (Multi-Page)
-
-### Current state
-
-`analyzeScanWithClaude()` receives only `homepageHtml` and strips it to 30,000 chars.
-The prompt says "analyze this vendor's homepage."
-
-### Proposed state
-
-`analyzeScanWithClaude()` receives the full `ScoreInput` (homepage + additional pages).
-Pages are formatted using the labeled separator pattern already proven in `builder/llm.ts`:
-
-```
---- Page 1: Homepage (https://homedepot.com) ---
-Title: The Home Depot
-[stripped HTML, up to 15,000 chars]
-
-=== NEXT PAGE ===
-
---- Page 2: Product Page (https://homedepot.com/p/dewalt-drill/12345) ---
-Title: DEWALT 20V MAX Drill
-[stripped HTML, up to 15,000 chars]
-
-=== NEXT PAGE ===
-
---- Page 3: Cart Page (https://homedepot.com/cart) ---
-Title: Shopping Cart
-[stripped HTML, up to 15,000 chars]
-
-=== NEXT PAGE ===
-
---- Page 4: Search Results (https://homedepot.com/s/drill) ---
-Title: Search Results for "drill"
-[stripped HTML, up to 15,000 chars]
-```
-
-### Prompt restructuring
-
-Current prompt is a flat list of fields. New prompt organized around the three agent 
-workflows:
-
-```
-You are analyzing an e-commerce website for CreditClaw, an AI procurement platform.
-You are given HTML from multiple pages of the same site. Analyze them to determine how 
-an AI shopping agent would interact with this store.
-
-Focus on three workflows:
-
-1. PRODUCT DISCOVERY
-   How would an agent find products on this site?
-   - searchUrlTemplate: URL pattern for search (use {q} as placeholder)
-   - searchPattern: Description of how search works
-   - productIdFormat: How products are identified (SKU, Item Number, ASIN, etc.)
-   - hasApi: Does the site expose a public product API?
-   - hasMcp: Does the site support MCP protocol?
-   - jsonLdTypes: What Schema.org types are present? (Product, Offer, BreadcrumbList, etc.)
-
-2. PRODUCT UNDERSTANDING
-   How are products structured on this site?
-   - variantSelectors: What options exist? (size, color, quantity, etc.)
-   - priceFormat: How is pricing displayed? (currency, sale/original, bulk tiers)
-   - productIdFormat: Format of the main product identifier
-   - imagePattern: How are product images structured?
-
-3. CHECKOUT FLOW
-   How would an agent complete a purchase?
-   - guestCheckout: boolean
-   - taxExemptField: boolean
-   - poNumberField: boolean
-   - checkoutProviders: Payment processors (stripe, shopify_payments, paypal, etc.)
-   - paymentMethods: Accepted methods (credit_card, purchase_order, wire, etc.)
-   - cartUrl: Direct URL to cart page
-   - freeShippingThreshold: number|null
-   - estimatedDeliveryDays: string
-   - businessShipping: boolean
-
-Also extract:
-   - name: Store name
-   - sector: One of: [list]
-   - subSectors: More specific categories
-   - tier: One of: [list]
-   - capabilities: From: [list]
-   - tips: 3-5 practical tips for an AI agent shopping here
-
-Return ONLY valid JSON.
-```
-
-### New LLMScanFindings fields
-
-```typescript
-export interface LLMScanFindings {
-  // existing fields...
-  
-  // NEW from multi-page analysis
-  jsonLdTypes?: string[];        // Schema.org types found on product pages
-  variantSelectors?: string[];   // e.g., ["size", "color", "quantity"]
-  priceFormat?: string;          // e.g., "USD with sale/original pricing"
-  cartUrl?: string;              // Direct cart URL
-  imagePattern?: string;         // How product images are structured
-}
-```
-
-### Token budget
-
-- Homepage: ~15,000 chars stripped
-- Product pages: ~15,000 chars each × 2 = 30,000
-- Cart page: ~10,000 chars (usually simpler)
-- Search page: ~10,000 chars
-- Total input: ~65,000 chars ≈ ~16,000 tokens
-- Output: ~2,000 tokens
-- Total per scan: ~18,000 tokens ≈ $0.03-0.05 per scan
-
-### Files to modify
-
-| File | Change |
-|---|---|
-| `lib/agentic-score/llm.ts` | Accept `ScoreInput` instead of just `homepageHtml`. Format multi-page content. Update prompt to workflow-focused structure. Add new fields to `LLMScanFindings`. |
+| `lib/agentic-score/boost-pages.ts` | **NEW** — additive score boosting from agent-fetched pages |
 
 ---
 
@@ -290,145 +426,132 @@ export interface LLMScanFindings {
 
 ### Current state
 
-`buildVendorSkillDraft()` in the scan route constructs a `VendorSkill` from Claude 
-findings only. For brands that already have rich curated data in `brandData` JSONB 
-(e.g., Staples with checkout config, taxonomy, deals, search URLs), that data is 
-completely ignored.
+`buildVendorSkillDraft()` constructs a `VendorSkill` from Claude findings only. Curated 
+`brandData` in the DB is ignored.
 
-### Proposed state
+### Proposed change
 
-`buildVendorSkillDraft()` merges three sources in priority order:
+`buildVendorSkillDraft()` accepts an optional `brandData` parameter and merges three 
+sources in priority order:
 
 1. **Existing `brandData`** (highest priority — human-curated)
-2. **Claude findings** (fills gaps not covered by curated data)
+2. **Agent findings** (fills gaps not covered by curated data)
 3. **Hardcoded defaults** (last resort)
 
-### Merge rules (per field)
-
-For each field in `VendorSkill`:
+### Merge rules
 
 | Field | Source priority |
 |---|---|
-| `slug` | scan route (always) |
-| `name` | brandData > Claude > extractMeta > capitalize(domain) |
-| `url` | existing.url > `https://${domain}` |
-| `sector` | existing (if not "uncategorized") > Claude > "uncategorized" |
-| `checkoutMethods` | brandData.checkoutMethods > ["browser_automation"] |
-| `capabilities` | set-union(brandData.capabilities, Claude.capabilities) |
-| `maturity` | existing.maturity > "draft" |
-| `methodConfig` | brandData.methodConfig > Claude-derived default |
-| `search.pattern` | brandData.search.pattern > Claude.searchPattern > default |
-| `search.urlTemplate` | brandData.search.urlTemplate > Claude.searchUrlTemplate |
-| `search.productIdFormat` | brandData.search.productIdFormat > Claude.productIdFormat |
-| `checkout.*` | brandData.checkout.* > Claude.* > false |
-| `shipping.*` | brandData.shipping.* > Claude.* > defaults |
-| `tips` | brandData.tips > Claude.tips > generic defaults |
-| `taxonomy` | brandData.taxonomy (sector/subSectors/tier from existing) |
-| `searchDiscovery` | brandData.searchDiscovery (if present) |
-| `buying` | brandData.buying (if present) |
-| `deals` | brandData.deals (if present) |
-
-### How brandData is structured
-
-The `brandData` JSONB column stores the full `VendorSkill`-shaped object for curated 
-brands. Example from Staples:
-
-```json
-{
-  "name": "Staples",
-  "slug": "staples",
-  "url": "https://www.staples.com",
-  "search": {
-    "pattern": "Search on staples.com by product name or SKU...",
-    "urlTemplate": "https://www.staples.com/search?query={q}",
-    "productIdFormat": "SKU / Item number"
-  },
-  "checkout": {
-    "guestCheckout": true,
-    "poNumberField": true,
-    "taxExemptField": true
-  },
-  "shipping": {
-    "estimatedDays": "1-5 business days",
-    "freeThreshold": 49.99,
-    "businessShipping": true
-  },
-  "checkoutMethods": ["self_hosted_card"],
-  "capabilities": ["price_lookup", "stock_check", ...],
-  "tips": ["Guest checkout available but business accounts get better pricing", ...],
-  "taxonomy": { "sector": "office", "subSectors": [...], "tier": "mid_range" },
-  "buying": { ... },
-  "deals": { ... },
-  "searchDiscovery": { ... }
-}
-```
-
-When this data exists, the generated SKILL.md should be rich and actionable — not a 
-skeleton with defaults.
-
-### Implementation
-
-Modify `buildVendorSkillDraft()` to accept an optional `brandData` parameter:
-
-```typescript
-function buildVendorSkillDraft(
-  slug: string,
-  domain: string,
-  name: string,
-  sector: string,
-  findings: Record<string, unknown>,
-  brandData?: Record<string, unknown>,  // NEW
-): VendorSkill
-```
-
-Inside, each field uses the merge priority: `brandData.field ?? findings.field ?? default`.
+| `name` | brandData > findings > extractMeta > domain |
+| `sector` | existing (if not "uncategorized") > findings > "uncategorized" |
+| `checkoutMethods` | brandData > ["browser_automation"] |
+| `capabilities` | set-union(brandData, findings) |
+| `search.*` | brandData > findings > defaults |
+| `checkout.*` | brandData > findings > false |
+| `shipping.*` | brandData > findings > defaults |
+| `tips` | brandData > findings > generic |
+| `taxonomy` | brandData (if present) |
+| `buying` | brandData (if present) |
+| `deals` | brandData (if present) |
 
 ### Files to modify
 
 | File | Change |
 |---|---|
-| `app/api/v1/scan/route.ts` | Pass `existing?.brandData` to `buildVendorSkillDraft()`. Also persist enriched brandData back (merge Claude findings into existing brandData for future scans). |
+| `app/api/v1/scan/route.ts` | Pass `existing?.brandData` to `buildVendorSkillDraft()` |
+
+---
+
+## Updated Pipeline Flow in scan/route.ts
+
+```typescript
+// 1. Fetch homepage + sitemap + robots (unchanged)
+const input = await fetchScanInputs(domain);
+
+// 2. Regex-only base scoring on homepage (unchanged)
+const baseScoreResult = computeASXScore(input);
+
+// 3. Agentic scan — Claude explores the site (NEW)
+let agentResult: AgenticScanResult = { findings: {}, fetchedPages: [], complete: false };
+try {
+  agentResult = await agenticScan(input);
+} catch {
+  // Falls back to regex-only scores
+}
+
+// 4. Enhance scores from Claude findings (unchanged, same function)
+const enhancedResult = enhanceScores(baseScoreResult, agentResult.findings);
+
+// 5. Boost scores from pages Claude fetched (NEW)
+const finalResult = boostFromAgentPages(enhancedResult, agentResult.fetchedPages);
+
+// 6. Build VendorSkill draft (updated to merge brandData)
+const draft = buildVendorSkillDraft(slug, domain, name, sector, 
+  agentResult.findings, existing?.brandData);
+
+// 7. Generate SKILL.md (unchanged)
+const skillMd = generateVendorSkill(draft);
+
+// 8. Persist (unchanged)
+await storage.upsertBrandIndex({ ... });
+```
 
 ---
 
 ## Execution Order
 
-These four parts have dependencies:
-
 ```
-Part 1 (Multi-page fetch)
+Part 1: SDK upgrade + model update
   ↓
-Part 2 (Signal improvements)  ←  depends on new ScoreInput shape
+Part 2: Agentic scan engine (agent-scan.ts)  ← core new module
   ↓
-Part 3 (Unified Claude)       ←  depends on new ScoreInput shape
+Part 3: Signal boosting from fetched pages (boost-pages.ts)
   ↓
-Part 4 (Brand data enrichment) ← independent, but benefits from richer Claude output
+Part 4: Brand data enrichment in buildVendorSkillDraft()
+  ↓
+Integration: Wire everything together in scan/route.ts
 ```
 
-Parts 2 and 3 can be done in parallel after Part 1. Part 4 is independent and can be 
-done at any point.
+Parts 3 and 4 are independent of each other and can be done in parallel after Part 2.
 
-### Recommended build sequence
+---
 
-1. **Part 1** — Expand `ScoreInput`, add page discovery + fetching to `fetch.ts`
-2. **Part 3** — Update Claude prompt to multi-page format (biggest quality jump)
-3. **Part 2** — Update signal functions to check additional pages
-4. **Part 4** — Merge brandData into SKILL.md generation
-
-### Risk assessment
+## Risk Assessment
 
 | Risk | Mitigation |
 |---|---|
-| Firecrawl rate limits (3 calls/scan vs 1) | Firecrawl free tier is 500 pages/month. At 5 pages/scan, that's 100 scans/month. For higher volume, raw fetch fallback still works. |
-| Scan takes too long (>15s) | Set hard timeout at 12s for additional page fetches. Pipeline continues with whatever pages succeeded. |
-| Claude token cost increases ~3x | Still ~$0.03-0.05/scan. Acceptable for the quality improvement. |
-| Signal function refactor breaks existing scores | Backward compatible: new `ScoreInput.additionalPages` defaults to `[]`, existing logic runs unchanged on homepage, additional pages only add points (floor principle). |
-| Cart/checkout pages require login | Expected behavior. A redirect to `/login` is itself useful signal for `access_auth`. Empty/redirect responses are scored as "auth required." |
+| Claude makes bad decisions (visits wrong pages) | Guardrails: max 5 fetches, domain lock, 90s timeout. Even with bad choices, `record_findings` progressively saves what it learns — partial data is still useful. |
+| Agent loop takes too long | 90s hard timeout. Most scans complete in 30-50s (3-4 Firecrawl fetches at ~8s each + Claude reasoning). |
+| Firecrawl rate limits (5 calls/scan) | 500 pages/month ÷ 5 = 100 scans/month on free tier. Quality over quantity. Upgrade Firecrawl plan when volume justifies it. |
+| Token cost ~$0.06-0.10/scan | 2-3x current cost. Acceptable for quality improvement — each scan replaces what used to be two separate pipelines (scan + skill builder). |
+| SDK upgrade breaks existing code | `analyzeScanWithClaude()` in `llm.ts` remains unchanged. New agentic scan is a separate module. Switch in `route.ts` is isolated to one call site. |
+| Claude doesn't call `complete_scan` | Loop exits on `end_turn` stop_reason OR max tool calls. Accumulated findings are still returned. |
 
-### What we do NOT change
+---
+
+## What We Do NOT Change
 
 - `analyzeVendor()` in `lib/procurement-skills/builder/` — untouched
-- `generateVendorSkill()` in `lib/procurement-skills/generator.ts` — untouched
-- `computeASXScore()` internal logic — only its signal functions get richer input
+- `generateVendorSkill()` in `lib/procurement-skills/generator.ts` — untouched  
+- `computeASXScore()` and all signal functions — untouched
+- `enhanceScores()` in `enhance.ts` — untouched
+- `fetchScanInputs()` in `fetch.ts` — untouched (still fetches homepage + sitemap + robots)
 - AXS Rating system — untouched
 - Existing signal max point values — same 100-point scale
+
+---
+
+## New Files Summary
+
+| File | Purpose |
+|---|---|
+| `lib/agentic-score/agent-scan.ts` | Agentic scan engine: tools, agent loop, handlers |
+| `lib/agentic-score/boost-pages.ts` | Signal boosting from agent-fetched pages |
+
+## Modified Files Summary
+
+| File | Change |
+|---|---|
+| `package.json` | Upgrade `@anthropic-ai/sdk` to latest |
+| `lib/agentic-score/types.ts` | Add `PageFetch`, `AgenticScanResult` |
+| `app/api/v1/scan/route.ts` | Replace `analyzeScanWithClaude()` with `agenticScan()`, add `boostFromAgentPages()`, pass `brandData` to `buildVendorSkillDraft()` |
