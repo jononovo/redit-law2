@@ -517,27 +517,152 @@ None of these require changing the core architecture. Just update `options`.
 
 ## What We Do NOT Change
 
-- `analyzeVendor()` in `lib/procurement-skills/builder/` — untouched
 - `generateVendorSkill()` in `lib/procurement-skills/generator.ts` — untouched  
 - `computeASXScore()` and all signal functions — untouched
 - `enhanceScores()` in `enhance.ts` — untouched
 - `fetchScanInputs()` in `fetch.ts` — untouched (still fetches homepage + sitemap + robots)
 - AXS Rating system — untouched
 - Existing signal max point values — same 100-point scale
+- `lib/procurement-skills/taxonomy/` — sector, tier, and type definitions stay
+- `lib/procurement-skills/types.ts` — VendorSkill type stays (used by generator)
 
 ---
 
-## New Files Summary
+## Part 5: Legacy Cleanup
+
+The agentic scan unifies what was previously two separate pipelines. This section 
+captures everything that becomes redundant and should be removed.
+
+### 5a. Remove `analyzeScanWithClaude()` (replaced by `agenticScan()`)
+
+| File | Action |
+|---|---|
+| `lib/agentic-score/llm.ts` | **DELETE** — entire file. `analyzeScanWithClaude()` is directly replaced by `agenticScan()` in `agent-scan.ts`. |
+| `lib/agentic-score/index.ts` | Remove `export { analyzeScanWithClaude } from "./llm"` and `export type { LLMScanFindings } from "./llm"`. Add exports for `agenticScan` and its types from `agent-scan.ts`. |
+| `app/api/v1/scan/route.ts` | Remove `import { analyzeScanWithClaude }`. Already covered in Part 2 (replace with `agenticScan()`). |
+
+The `LLMScanFindings` interface moves to `agent-scan.ts` (or `types.ts`) since 
+`enhance.ts` still references it.
+
+### 5b. Remove the legacy Skill Builder pipeline
+
+The entire `lib/procurement-skills/builder/` directory was the original skill builder — 
+a separate multi-step analysis pipeline (fetch pages → LLM checkout analysis → probes).
+The agentic scan now does everything it did, better. It has exactly two callers:
+
+| Caller | File | What it does |
+|---|---|---|
+| Skill analyze endpoint | `app/api/v1/skills/analyze/route.ts` | Takes a URL, runs `analyzeVendor()`, creates a skill draft |
+| Skill submissions endpoint | `app/api/v1/skills/submissions/route.ts` | Community submission — runs `analyzeVendor()`, creates a draft |
+
+**Migration:** Both endpoints should be rewritten to call `agenticScan()` instead. The 
+agentic scan returns richer findings that can populate the same skill draft fields. The 
+`buildVendorSkillDraft()` function in `scan/route.ts` already does this translation — 
+extract it into a shared utility so both the scan endpoint and the submissions endpoint 
+can use it.
+
+After migration:
+
+| File | Action |
+|---|---|
+| `lib/procurement-skills/builder/analyze.ts` | **DELETE** — `analyzeVendor()` has zero callers |
+| `lib/procurement-skills/builder/llm.ts` | **DELETE** — `analyzeCheckoutFlow()` was only called by `analyze.ts` |
+| `lib/procurement-skills/builder/fetch.ts` | **DELETE** — duplicate of `agentic-score/fetch.ts` (which has Firecrawl + SSRF) |
+| `lib/procurement-skills/builder/probes.ts` | **DELETE** — x402/ACP/API probes. The agentic scan detects APIs and capabilities via Claude analysis. If specific probe logic is still valuable, it can be added as a tool the agent can call. |
+| `lib/procurement-skills/builder/types.ts` | **DELETE** — `BuilderOutput`, `AnalysisEvidence`, etc. No longer needed. |
+
+**Result:** The entire `lib/procurement-skills/builder/` directory is removed.
+
+### 5c. Clean up schema references
+
+| File | Action |
+|---|---|
+| `shared/schema.ts` | Remove `analyzeVendorSchema` (line ~971) — only used by the deleted `skills/analyze/route.ts` endpoint. The submissions endpoint uses `submitVendorSchema` which stays. |
+
+### 5d. Archive superseded plan documents
+
+These documents describe architectures that no longer exist. Move to 
+`docs/archive/` to keep history without creating confusion:
+
+| File | Why it's superseded |
+|---|---|
+| `docs/260217_procurement-skills-technical-plan-v3.md` | Original 3-layer procurement architecture. Builder pipeline is being removed. |
+| `docs/build context/Future/Product_index/agentic-shopping-score-build-plan.md` | Phase 1-2 build plan. Contains "DO NOT modify analyzeVendor()" warnings that are now wrong. Completed work. |
+| `docs/build context/Future/Product_index/phase-3-scan-api-technical-plan.md` | Phase 3 plan. Completed. References the static `analyzeScanWithClaude()` pipeline. |
+
+The Phase 4 plan (this document) becomes the single source of truth for the scan 
+architecture.
+
+### 5e. Update replit.md
+
+`replit.md` documents the old pipeline flow:
+```
+Pipeline: normalizeDomain → cache check → fetchScanInputs → computeASXScore → 
+analyzeScanWithClaude → enhanceScores → buildVendorSkillDraft → ...
+```
+
+Update to reflect:
+```
+Pipeline: normalizeDomain → cache check → fetchScanInputs → computeASXScore → 
+agenticScan (Claude Agent SDK) → enhanceScores → boostFromAgentPages → 
+buildVendorSkillDraft → ...
+```
+
+Also remove references to `analyzeScanWithClaude` and the builder pipeline.
+
+### 5f. What stays in `lib/procurement-skills/`
+
+After cleanup, the `lib/procurement-skills/` directory retains:
+
+```
+lib/procurement-skills/
+├── generator.ts          ← generateVendorSkill() — renders SKILL.md (untouched)
+├── types.ts              ← VendorSkill, VendorCapability types (untouched)
+├── taxonomy/
+│   ├── sectors.ts        ← VendorSector type + sector list (untouched)
+│   └── tiers.ts          ← BrandTier type + tier list (untouched)
+└── (builder/ DELETED)
+```
+
+---
+
+## File Change Summary
+
+### New files
 
 | File | Purpose |
 |---|---|
 | `lib/agentic-score/agent-scan.ts` | Agentic scan engine: tool definitions, MCP server, Agent SDK query() |
 | `lib/agentic-score/boost-pages.ts` | Signal boosting from agent-fetched pages |
 
-## Modified Files Summary
+### Modified files
 
 | File | Change |
 |---|---|
 | `package.json` | Add `@anthropic-ai/claude-agent-sdk`; `@anthropic-ai/sdk` already at v0.82.0 |
 | `lib/agentic-score/types.ts` | Add `PageFetch`, `AgenticScanResult` |
-| `app/api/v1/scan/route.ts` | Replace `analyzeScanWithClaude()` with `agenticScan()`, add `boostFromAgentPages()`, pass `brandData` to `buildVendorSkillDraft()` |
+| `lib/agentic-score/index.ts` | Remove old exports, add `agenticScan` + types |
+| `app/api/v1/scan/route.ts` | Replace `analyzeScanWithClaude()` with `agenticScan()`, add `boostFromAgentPages()`, pass `brandData` |
+| `app/api/v1/skills/analyze/route.ts` | Rewrite to use `agenticScan()` instead of `analyzeVendor()` |
+| `app/api/v1/skills/submissions/route.ts` | Rewrite to use `agenticScan()` instead of `analyzeVendor()` |
+| `shared/schema.ts` | Remove `analyzeVendorSchema` |
+| `replit.md` | Update pipeline documentation |
+
+### Deleted files
+
+| File | Reason |
+|---|---|
+| `lib/agentic-score/llm.ts` | Replaced by `agent-scan.ts` |
+| `lib/procurement-skills/builder/analyze.ts` | Zero callers after migration |
+| `lib/procurement-skills/builder/llm.ts` | Zero callers after migration |
+| `lib/procurement-skills/builder/fetch.ts` | Duplicate of `agentic-score/fetch.ts` |
+| `lib/procurement-skills/builder/probes.ts` | Capabilities detected by agent now |
+| `lib/procurement-skills/builder/types.ts` | Types no longer needed |
+
+### Archived docs
+
+| File | Destination |
+|---|---|
+| `docs/260217_procurement-skills-technical-plan-v3.md` | `docs/archive/` |
+| `docs/build context/Future/Product_index/agentic-shopping-score-build-plan.md` | `docs/archive/` |
+| `docs/build context/Future/Product_index/phase-3-scan-api-technical-plan.md` | `docs/archive/` |
