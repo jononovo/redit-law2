@@ -30,7 +30,7 @@ These plans have been fully implemented and are archived for reference:
 |---|---|
 | `multitenant-system-nextjs-implementation-plan.md` | **Multitenant infrastructure plan.** Complete implementation plan for serving multiple brands (creditclaw.com and shopy.sh) from a single Next.js deployment. Covers: middleware-based tenant resolution from domain, static tenant configs (`public/tenants/`), `generateMetadata()` per tenant, HSL theme injection, route-level separation, Firebase Auth scoping, and testing strategy. 727 lines, highly detailed. |
 | `shopy-cli-technical-plan.md` | **shopy CLI + registry API plan.** Technical plan for building the `npx shopy add amazon` CLI tool. Covers the three most complex pieces: (1) public registry API (`/api/v1/registry/`) — unauthenticated endpoints for search, download, and version manifests built on top of existing `brand_index` data, (2) the npm package itself — CLI architecture, config management, local manifest tracking, command implementations, (3) npm publishing — name registration, CI automation, versioning strategy, and whether to use a separate repo (recommended) or monorepo. |
-| `remaining-build-tasks.md` | **Catalog & SEO polish tasks.** Five outstanding tasks from previously completed phases: (1) URL-based filter state on `/skills`, (2) `generateStaticParams` for brand detail pages, (3) sub-sector landing pages, (4) sitemap splitting, (5) JSONB extraction for performance. Each task includes priority, implementation details, files to modify, and dependencies. |
+| `completed/remaining-build-tasks.md` | **ARCHIVED.** Catalog & SEO polish tasks — absorbed into `docs/build context/active-build-backlog.md`. |
 
 ### Vision Documents (future — no detailed build plans yet)
 

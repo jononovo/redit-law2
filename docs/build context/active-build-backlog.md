@@ -34,7 +34,7 @@ These are independent of the shopy.sh work and can be done now.
 
 **Priority:** Medium
 **Status:** Not started
-**Source:** `remaining-build-tasks.md` Task 1
+**Source:** `completed/remaining-build-tasks.md` Task 1
 
 The catalog page (`/skills`) ignores `searchParams` server-side. Filters are client-only via `catalog-client.tsx`, so crawlers see the unfiltered view and filtered URLs aren't shareable.
 
@@ -53,7 +53,7 @@ The catalog page (`/skills`) ignores `searchParams` server-side. Filters are cli
 
 **Priority:** Low
 **Status:** Not started
-**Source:** `remaining-build-tasks.md` Task 2
+**Source:** `completed/remaining-build-tasks.md` Task 2
 
 Add `generateStaticParams()` to `app/skills/[vendor]/page.tsx` for verified/official brands so they're pre-rendered at build time.
 
@@ -65,7 +65,7 @@ Add `generateStaticParams()` to `app/skills/[vendor]/page.tsx` for verified/offi
 
 **Priority:** Low — wait until catalog has 50+ brands
 **Status:** Needs re-planning (old plan used freeform `sub_sectors`, now replaced by UCP categories)
-**Source:** `remaining-build-tasks.md` Task 3 (outdated — needs rewrite for UCP)
+**Source:** `completed/remaining-build-tasks.md` Task 3 (outdated — needs rewrite for UCP)
 
 The old plan was `/c/[sector]/[subSector]` using freeform `sub_sectors` strings. Now that taxonomy uses the structured UCP `categories` array with GPT IDs, this needs a fresh approach:
 - Category pages driven by GPT IDs, not freeform slugs
@@ -81,7 +81,7 @@ The old plan was `/c/[sector]/[subSector]` using freeform `sub_sectors` strings.
 
 **Priority:** Low — wait until 1,000+ URLs
 **Status:** Not started
-**Source:** `remaining-build-tasks.md` Task 4
+**Source:** `completed/remaining-build-tasks.md` Task 4
 **Depends on:** 1C (so sitemaps include category page URLs from the start)
 
 Replace single `sitemap()` in `app/sitemap.ts` with `generateSitemaps()` — one sitemap per sector.
@@ -94,7 +94,7 @@ Replace single `sitemap()` in `app/sitemap.ts` with `generateSitemaps()` — one
 
 **Priority:** Low — only matters at 1,000+ brands
 **Status:** Not started
-**Source:** `remaining-build-tasks.md` Task 5
+**Source:** `completed/remaining-build-tasks.md` Task 5
 
 Extract fields that catalog cards need (description, capabilities, checkout methods, tier) into top-level columns on `brand_index` so the catalog query doesn't need JSONB.
 
