@@ -1,18 +1,24 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
+import { useTenant } from "@/lib/tenants/tenant-context";
 
 export function Footer() {
+  const tenant = useTenant();
+  const year = new Date().getFullYear();
+
   return (
     <footer className="bg-neutral-900 text-white pt-16 pb-8">
       <div className="container mx-auto px-6">
         <div className="grid md:grid-cols-5 gap-12 mb-12">
           <div className="md:col-span-1">
             <Link href="/" className="flex items-center gap-2 mb-4" data-testid="footer-logo-link">
-              <Image src="/assets/images/logo-claw-chip.png" alt="CreditClaw Logo" width={32} height={32} className="object-contain" />
-              <span className="font-bold text-lg tracking-tight">CreditClaw</span>
+              <Image src={tenant.branding.logo} alt={`${tenant.branding.name} Logo`} width={32} height={32} className="object-contain" />
+              <span className="font-bold text-lg tracking-tight">{tenant.branding.name}</span>
             </Link>
             <p className="text-sm text-neutral-400 font-medium leading-relaxed">
-              Prepaid spending controls for AI agents. Your card, your rules, your bot&apos;s wallet.
+              {tenant.branding.tagline}
             </p>
           </div>
 
@@ -58,7 +64,7 @@ export function Footer() {
         </div>
 
         <div className="pt-8 border-t border-white/10 flex flex-col md:flex-row justify-between items-center text-sm text-neutral-500 font-medium gap-4">
-          <span>&copy; 2026 CreditClaw Inc. All rights reserved.</span>
+          <span>&copy; {year} {tenant.branding.name}. All rights reserved.</span>
           <div className="flex gap-6">
             <Link href="/privacy" className="hover:text-white transition-colors" data-testid="footer-link-privacy">Privacy Policy</Link>
             <Link href="/terms" className="hover:text-white transition-colors" data-testid="footer-link-terms">Terms of Service</Link>

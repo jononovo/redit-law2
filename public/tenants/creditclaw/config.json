@@ -1,0 +1,40 @@
+{
+  "id": "creditclaw",
+  "domains": ["creditclaw.com", "www.creditclaw.com"],
+
+  "branding": {
+    "name": "CreditClaw",
+    "tagline": "Pocket money for your bots!",
+    "logo": "/assets/images/logo-claw-chip.png",
+    "logoEmoji": "🦞",
+    "favicon": "/favicon.ico",
+    "supportEmail": "support@creditclaw.com",
+    "mascot": "/assets/images/hero-claw.png"
+  },
+
+  "meta": {
+    "title": "CreditClaw - Give your bot a card",
+    "description": "The fun, safe way to give your OpenClaw bot an allowance. Self-hosted cards, wallets, and spending guardrails for AI agents.",
+    "ogImage": "/assets/og/og-image.png",
+    "twitterImage": "/assets/og/og-twitter.png",
+    "url": "https://creditclaw.com"
+  },
+
+  "theme": {
+    "primaryColor": "10 85% 55%",
+    "primaryForeground": "0 0% 100%",
+    "accentColor": "260 90% 65%",
+    "secondaryColor": "200 95% 60%"
+  },
+
+  "routes": {
+    "guestLanding": "/creditclaw",
+    "authLanding": "/overview"
+  },
+
+  "features": {},
+
+  "tracking": {
+    "gaId": "G-EGT42NKHLB"
+  }
+}

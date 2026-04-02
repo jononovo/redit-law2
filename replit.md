@@ -690,6 +690,20 @@ Two layers of testing:
   - `tests/guardrails/evaluate.test.ts` — guardrail evaluation for both USDC rails (`evaluateGuardrails`) and card rails (`evaluateCardGuardrails`), covering per-tx limits, daily/monthly budgets, approval thresholds (18 tests)
 - **Manual integration tests** (`docs/testing.md`): curl-based test suite covering bot registration, wallet ops, purchases, guardrails, checkout pages, x402 endpoints. Sections 1-12 cover core API, Section 13 covers checkout & x402, Section 14 references the automated tests.
 
+### Multitenant Architecture
+The app supports multiple tenants (CreditClaw, shopy.sh) via hostname-based routing:
+- **Tenant configs**: `public/tenants/{tenantId}/config.json` — branding, meta, theme, routes, features, tracking
+- **Types**: `lib/tenants/types.ts` — `TenantConfig` interface
+- **Config loader**: `lib/tenants/config.ts` — `getTenantConfig()`, `resolveTenantId()` with caching
+- **Middleware**: `middleware.ts` — resolves hostname → tenantId, sets `x-tenant-id` header + `tenant-id` cookie
+- **Server helper**: `lib/tenants/get-request-tenant.ts` — `getRequestTenant()` reads from headers in server components/API routes
+- **Client context**: `lib/tenants/tenant-context.tsx` — `TenantProvider` + `useTenant()` hook for client components
+- **Layout**: `app/layout.tsx` injects tenant theme CSS vars + wraps children in `TenantProvider`
+- **Landing pages**: `components/landings/creditclaw-landing.tsx` — extracted from former `app/page.tsx`; `app/page.tsx` now dynamically loads per tenant
+- **Nav/Footer**: Both use `useTenant()` for logo, name, tagline, routes
+- **owners.signup_tenant**: Tracks which tenant a user signed up from (migration 0011)
+- To test locally as a different tenant: set `TENANT_OVERRIDE=shopy` env var
+
 ### Database Schema Workflow
 Schema changes flow through Drizzle ORM and are auto-synced to production on deploy:
 1. Edit `shared/schema.ts` — add/modify tables, columns, indexes, constraints
