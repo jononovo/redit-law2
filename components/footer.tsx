@@ -29,8 +29,8 @@ export function Footer() {
   return (
     <footer className="bg-neutral-900 text-white pt-16 pb-8">
       <div className="container mx-auto px-6">
-        <div className={`grid gap-12 mb-12`} style={{ gridTemplateColumns: `1fr repeat(${Math.min(columns.length + 1, 4)}, auto)` }}>
-          <div>
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-12 mb-12">
+          <div className="col-span-2 md:col-span-1">
             <Link href="/" className="flex items-center gap-2 mb-4" data-testid="footer-logo-link">
               <Image src={tenant.branding.logo} alt={`${tenant.branding.name} Logo`} width={32} height={32} className="object-contain" />
               <span className="font-bold text-lg tracking-tight">{tenant.branding.name}</span>

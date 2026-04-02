@@ -1,6 +1,6 @@
 # Multitenant System — Internal Developer Guide
 
-> Last updated: 2026-04-02 · Covers: Step 2 implementation
+> Last updated: 2026-04-02 · Covers: Step 2 implementation + tenant component reorganization
 
 ## Overview
 
@@ -14,7 +14,7 @@ There is **no data isolation**. All tenants share the same database. Tenant is a
 
 ```
 Request → middleware.ts (Edge)
-            ↓ resolves hostname → tenantId
+            ↓ resolves hostname → tenantId (also checks ?tenant= param and cookie)
             ↓ sets x-tenant-id header + tenant-id cookie
           app/layout.tsx (Server)
             ↓ reads x-tenant-id from headers
@@ -30,14 +30,56 @@ Request → middleware.ts (Edge)
 | File | Runtime | Purpose |
 |------|---------|---------|
 | `middleware.ts` | Edge | Hostname → tenant ID resolution, header/cookie injection |
-| `lib/tenants/types.ts` | Any | `TenantConfig` interface |
+| `lib/tenants/types.ts` | Any | `TenantConfig` interface (includes `navigation` for footer config) |
 | `lib/tenants/config.ts` | Node (server only) | `getTenantConfig()` — reads + caches `config.json` from disk |
 | `lib/tenants/tenant-context.tsx` | Client | `TenantProvider` + `useTenant()` hook |
 | `lib/tenants/get-request-tenant.ts` | Server (RSC/API) | `getRequestTenant()` — reads `x-tenant-id` from request headers |
-| `public/tenants/{id}/config.json` | Static | Per-tenant branding, meta, theme, routes, features, tracking |
+| `public/tenants/{id}/config.json` | Static | Per-tenant branding, meta, theme, routes, features, navigation, tracking |
 | `app/layout.tsx` | Server | Reads tenant, generates metadata, injects theme vars |
-| `app/page.tsx` | Server | Dynamically loads the correct landing component per tenant |
-| `components/landings/creditclaw-landing.tsx` | Client | Extracted CreditClaw landing page |
+| `app/page.tsx` | Server | Tenant router — dynamically loads landing component per tenant |
+| `app/how-it-works/page.tsx` | Server | Tenant router — dynamically loads how-it-works component per tenant |
+| `components/tenants/{id}/` | Client | Per-tenant components (landing, how-it-works, etc.) |
+| `components/footer.tsx` | Client | Shared footer — reads columns/socials from `tenant.navigation.footer` in config.json |
+| `components/nav.tsx` | Client | Shared nav — uses `useTenant()` for branding and routes |
+
+### Per-tenant component folders
+
+```
+components/tenants/
+  creditclaw/
+    landing.tsx          ← CreditClaw homepage
+    how-it-works.tsx     ← CreditClaw "how it works" page
+  shopy/
+    landing.tsx          ← shopy.sh homepage (minimal: domain scanner + skills table)
+    how-it-works.tsx     ← shopy.sh "how it works" page (terminal demo, scoreboard, features)
+```
+
+### Config-driven footer
+
+The footer reads its link columns and social links from `tenant.navigation.footer` in `config.json`. Each tenant defines its own footer structure:
+
+```json
+{
+  "navigation": {
+    "footer": {
+      "columns": [
+        {
+          "title": "Product",
+          "links": [
+            { "label": "Score Scanner", "href": "/agentic-shopping-score" },
+            { "label": "Skill Catalog", "href": "/skills" }
+          ]
+        }
+      ],
+      "socials": [
+        { "label": "Twitter", "href": "https://x.com/shopysh" }
+      ]
+    }
+  }
+}
+```
+
+If no `navigation` block exists, the footer falls back to a minimal default with Product links only.
 
 ---
 
@@ -59,6 +101,7 @@ Copy `public/tenants/creditclaw/config.json` as a starting point and update all 
 - `routes.guestLanding` — key used by `app/page.tsx` to load the right landing component
 - `routes.authLanding` — where authenticated users redirect to (usually `/overview`)
 - `features` — feature flag object (keys are checked by components)
+- `navigation.footer` — columns and social links for the footer
 
 ### 2. Register the domain in middleware
 
@@ -74,18 +117,27 @@ const TENANT_DOMAINS: [string, string[]][] = [
 
 If you skip this, the new tenant will silently resolve as `creditclaw` (the default).
 
-### 3. Create the landing component
+### 3. Create tenant components
 
-Add a file in `components/landings/{tenant-id}-landing.tsx`, then register it in `app/page.tsx`:
+Add a folder in `components/tenants/{tenant-id}/` with at minimum a `landing.tsx`. Then register it in `app/page.tsx`:
 
 ```typescript
 const landingComponents: Record<string, () => Promise<{ default: React.ComponentType }>> = {
-  "/creditclaw": () => import("@/components/landings/creditclaw-landing"),
-  "/new-tenant": () => import("@/components/landings/new-tenant-landing"),
+  "/creditclaw": () => import("@/components/tenants/creditclaw/landing"),
+  "/new-tenant": () => import("@/components/tenants/new-tenant/landing"),
 };
 ```
 
 The key must match `routes.guestLanding` in the tenant's `config.json`.
+
+For the how-it-works page, add `how-it-works.tsx` in the same folder and register it in `app/how-it-works/page.tsx`:
+
+```typescript
+const howItWorksComponents: Record<string, () => Promise<{ default: React.ComponentType }>> = {
+  creditclaw: () => import("@/components/tenants/creditclaw/how-it-works"),
+  "new-tenant": () => import("@/components/tenants/new-tenant/how-it-works"),
+};
+```
 
 ### 4. Add images
 
@@ -99,13 +151,13 @@ Reference them in `config.json` as `/tenants/{tenant-id}/images/filename.png`.
 
 ### 5. Local testing
 
-Set the `TENANT_OVERRIDE` environment variable:
+Add `?tenant=new-tenant` to any URL in the browser. This sets a cookie so subsequent page loads stay on that tenant.
+
+Or set the `TENANT_OVERRIDE` environment variable (takes precedence over hostname resolution):
 
 ```
 TENANT_OVERRIDE=new-tenant
 ```
-
-This bypasses hostname resolution entirely and forces that tenant ID for all requests.
 
 ---
 
@@ -141,9 +193,9 @@ Both `owners.signup_tenant` and `bots.signup_tenant` record which tenant the ent
 
 **Possible future fix:** A TypeScript enum or const map of valid feature keys, with the config loader validating against it.
 
-### Nav and footer links are partially hardcoded
+### Tenant router pages must register every tenant
 
-The nav and footer use `useTenant()` for branding (logo, name, tagline, auth routes), but the actual page links (Score Scanner, Shopping Skills, AXS, footer product/dashboard/resource links) are still CreditClaw-specific. If a tenant shouldn't show certain links, you'd currently need to conditionally render based on `tenant.id` or add a `nav` section to `TenantConfig`.
+Both `app/page.tsx` and `app/how-it-works/page.tsx` have hardcoded component maps. When adding a new tenant, you must update both files. If you forget, the new tenant will fall back to the CreditClaw version.
 
 ---
 
@@ -151,8 +203,7 @@ The nav and footer use `useTenant()` for branding (logo, name, tagline, auth rou
 
 ### Near-term
 
-- **Shopy landing page** — `components/landings/shopy-landing.tsx` needs to be built (currently falls back to CreditClaw landing)
-- **Tenant-aware nav links** — add a `navigation` section to `TenantConfig` with arrays of nav items per tenant, so different tenants show different menus
+- **Tenant-aware nav links** — add a `navigation.nav` section to `TenantConfig` so different tenants show different menu items
 - **Build-time domain map generation** — eliminate the middleware/config drift risk
 
 ### Medium-term
