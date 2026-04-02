@@ -12,6 +12,14 @@ The ASX Score Scanner and brand catalog are the primary growth engines. **Expect
 
 ---
 
+## Architecture Note: `skill.json` and Data Flow
+
+`skill.json` is a **machine-readable metadata format** served alongside SKILL.md for each merchant. It is *derived from* `brand_index` database columns — the database is the source of truth, not the file. The `skill.json` serializer reads flat columns and JSONB data from `brand_index` and assembles the structured output. Some `skill.json` fields (returns, platform, apiTier, loyalty enrichment, UCP categories) require new `brand_index` columns or related tables that don't exist yet — these will be added incrementally as the scan and taxonomy systems evolve.
+
+**Schema spec:** `docs/build context/Future/Product_index/Shopy/skill-json-schema.md`
+
+---
+
 ## What's Already Complete
 
 For reference — these are done and archived:
@@ -27,62 +35,46 @@ For reference — these are done and archived:
 - Brand Detail Page SSR (`/skills/[vendor]`)
 - `agentic-commerce-standard.md` updated to v1.1 (Discoverability pillar, UCP taxonomy, returns, platform, skill.json)
 - `skill.json` schema defined (`Shopy/skill-json-schema.md`)
+- Step 1: Catalog Scale Readiness (1A URL-based filters, 1B generateStaticParams, 1C lean catalog query)
 
 ---
 
 ## Build Sequence
 
-### Step 1: Catalog Scale Readiness
+### Step 1D: GIN Indexes for Array Columns
 
-Three independent tasks to prepare the catalog for thousands of brands.
-
-#### 1A. URL-Based Filter State on `/skills`
-
-**Priority:** Medium
+**Priority:** High — required before scale; array containment queries degrade rapidly without GIN indexes
 **Status:** Not started
+**Depends on:** Nothing (independent, can run anytime)
 
-The catalog page ignores `searchParams` server-side. Filters are client-only, so crawlers always see the default view and filtered URLs can't be shared or bookmarked.
+The `brand_index` table has multiple `text[]` array columns that are filtered with `ANY()` containment checks, but only B-tree indexes exist today (on `sector`, `tier`, `maturity`, `overallScore`). At tens of thousands of rows, queries filtering on capabilities, checkout methods, carries_brands, etc. will slow down significantly.
 
-**What's needed:**
-- `app/skills/page.tsx` reads `searchParams`, passes filters to `storage.searchBrands()` server-side
-- `catalog-client.tsx` accepts initial server data + uses `router.replace()` for filter changes
-- `generateMetadata()` reflects current filters (e.g., "Office AI Procurement Skills")
-- Sector filters use `/c/[sector]` routes, NOT `?sector=` on `/skills`
-- `/skills` handles: `?q=`, `?checkout=`, `?tier=`, `?capability=`, `?maturity=`
+**What's needed — add GIN indexes via migration:**
 
-**Code context:** `app/api/internal/brands/search/route.ts` already maps URL params to `BrandSearchFilters` — same logic works server-side. The server component currently fetches a hardcoded default (limit 50, sorted by score, public maturities only).
-
-**Files:** `app/skills/page.tsx`, `app/skills/catalog-client.tsx`
-
----
-
-#### 1B. `generateStaticParams` for Brand Detail Pages
-
-**Priority:** High — with thousands of brands, on-demand SSR for every page view is wasteful
-**Status:** Not started
-
-Add `generateStaticParams()` to `app/skills/[vendor]/page.tsx` so verified/official brand pages are pre-rendered at build time. At thousands of brands, this means the most-visited pages serve instantly without hitting the database.
-
-**Files:** `app/skills/[vendor]/page.tsx`
-
----
-
-#### 1C. Lean Catalog Query (drop `brandData` from lite select)
-
-**Priority:** High — at 2,000+ brands this is 100-200 KB of unnecessary data per catalog page load
-**Status:** Not started
-
-The `LITE_COLUMNS` object in `searchBrands({ lite: true })` pulls the full `brandData` JSONB blob (~2-4 KB per brand). Catalog cards only use **one field** from it: `feedbackStats.successRate`. The brand detail page uses the full blob, but it queries with `lite: false` so it's unaffected.
-
-**Fix (no migration needed):** Replace `brandData: brandIndex.brandData` in `LITE_COLUMNS` with a Drizzle SQL expression that extracts just the one value:
-```ts
-successRate: sql<number>`(${brandIndex.brandData}->'feedbackStats'->>'successRate')::numeric`.as('success_rate')
+```sql
+CREATE INDEX brand_index_capabilities_gin ON brand_index USING gin (capabilities);
+CREATE INDEX brand_index_checkout_methods_gin ON brand_index USING gin (checkout_methods);
+CREATE INDEX brand_index_carries_brands_gin ON brand_index USING gin (carries_brands);
+CREATE INDEX brand_index_sub_sectors_gin ON brand_index USING gin (sub_sectors);
+CREATE INDEX brand_index_tags_gin ON brand_index USING gin (tags);
+CREATE INDEX brand_index_payment_methods_gin ON brand_index USING gin (payment_methods_accepted);
+CREATE INDEX brand_index_creditclaw_supports_gin ON brand_index USING gin (creditclaw_supports);
+CREATE INDEX brand_index_supported_countries_gin ON brand_index USING gin (supported_countries);
+CREATE INDEX brand_index_delivery_options_gin ON brand_index USING gin (delivery_options);
 ```
-Then update `vendor-card.tsx` and `catalog-client.tsx` to read `brand.successRate` instead of `(brand.brandData as VendorSkill).feedbackStats?.successRate`.
 
-No new column, no migration, no schema change — just a smarter query that returns a number instead of a multi-KB JSON blob.
+Also add partial indexes for boolean filters (only index `true` rows — much smaller):
 
-**Files:** `server/storage/brand-index.ts` (LITE_COLUMNS), `app/skills/vendor-card.tsx`, `app/skills/catalog-client.tsx`
+```sql
+CREATE INDEX brand_index_has_mcp_idx ON brand_index (has_mcp) WHERE has_mcp = true;
+CREATE INDEX brand_index_has_api_idx ON brand_index (has_api) WHERE has_api = true;
+CREATE INDEX brand_index_has_deals_idx ON brand_index (has_deals) WHERE has_deals = true;
+CREATE INDEX brand_index_tax_exempt_idx ON brand_index (tax_exempt_supported) WHERE tax_exempt_supported = true;
+CREATE INDEX brand_index_po_number_idx ON brand_index (po_number_supported) WHERE po_number_supported = true;
+```
+
+**Source:** `brand-index-implementation-plan-v3.md` (Indexes section)
+**Files:** New migration file
 
 ---
 
@@ -114,7 +106,7 @@ Build the shopy.sh-specific pages:
 
 ---
 
-### Step 4: Registry API + shopy CLI
+### Step 4: Registry API + shopy CLI + Master Skill
 
 **Priority:** Medium (after shopy.sh pages)
 **Status:** Plan complete (3 phases), not started
@@ -122,8 +114,12 @@ Build the shopy.sh-specific pages:
 **Depends on:** Step 3
 
 - Phase 1: Public registry API (`/api/v1/registry/`) — search, download, version manifests
+  - Includes `GET /api/v1/registry/{vendor}/skill.json` — serializes `brand_index` data into the `skill.json` format
 - Phase 2: npm package — `npx shopy add amazon`, config management, local manifests
 - Phase 3: `update`, `init`/`remove` commands, GitHub Actions CI
+- **Master Skill (PROCUREMENT.md):** A meta-document (stored as a special `brand_index` row with slug `_creditclaw_index` or served from a dedicated endpoint) that teaches agents how to use the search/registry API — available parameters, how to combine filters, how maturity levels work, how brand relationships work (searching for "Nike" returns Nike HQ + retailers carrying Nike), example queries for common scenarios, and how to read the SKILL.md once a brand is selected. Ships alongside the registry API since it only makes sense once agents have a programmatic way to query the index.
+
+**Source for master skill concept:** `brand-index-implementation-plan-v3.md` (Phase 4)
 
 ---
 
@@ -191,17 +187,14 @@ Full product catalog crawl, LLM-powered enrichment, Google Product Taxonomy mapp
 ## Dependency Map
 
 ```
-Step 1 (Catalog Scale Readiness) ←── independent, can start now
-  1A URL-based filters ─── no deps
-  1B generateStaticParams ── no deps
-  1C lean catalog query ──── no deps
-  (all three are independent of each other)
+Step 1D (GIN Indexes) ←── independent, can run anytime
+  (small migration, no code changes needed)
 
 Step 2 (Multitenant) ←── independent, can start now
   ↓
 Step 3 (shopy.sh Pages) ←── depends on Step 2
   ↓
-Step 4 (Registry API + CLI) ←── depends on Step 3
+Step 4 (Registry API + CLI + Master Skill) ←── depends on Step 3
 
 Step 5 (Premium Scan) ←── independent of Steps 2-4, can start now
 
@@ -210,6 +203,7 @@ Step 6 (UCP Taxonomy + Category Pages) ←── independent, can start now
 Step 7 (Tier 3 Product Index) ←── depends on Step 6
 ```
 
-Steps 1, 2, 5, and 6 can all run in parallel.
+Steps 1D, 2, 5, and 6 can all run in parallel.
 Category landing pages are under Step 6 (depends on UCP tables).
+Master Skill ships with Step 4 (registry API).
 Sitemap splitting is parked until 1,000+ URLs.
