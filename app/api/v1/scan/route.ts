@@ -138,7 +138,7 @@ function buildVendorSkillDraft(
     ],
     version: "1.0.0",
     lastVerified: new Date().toISOString().split("T")[0],
-    generatedBy: "agentic_scanner",
+    generatedBy: "skill_builder",
   };
 }
 
