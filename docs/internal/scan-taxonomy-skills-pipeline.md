@@ -270,9 +270,9 @@ The skill.json route at `/brands/{slug}/skill-json` assembles the machine-readab
     "sector": "apparel-accessories",
     "tier": "premium",
     "productCategories": [
-      "Apparel & Accessories > Clothing > Activewear, Outerwear, Pants, Shirts & Tops",
-      "Apparel & Accessories > Clothing Accessories > Gloves & Mittens, Hats",
-      "Apparel & Accessories > Shoes"
+      "5322 - Apparel & Accessories > Clothing > Activewear",
+      "203 - Apparel & Accessories > Clothing > Outerwear",
+      "187 - Apparel & Accessories > Shoes"
     ],
     "categories": [
       {
@@ -300,7 +300,7 @@ The skill.json route at `/brands/{slug}/skill-json` assembles the machine-readab
 ```
 
 Two representations of the same data:
-- `productCategories` — grouped human-readable strings. Categories sharing the same L2 parent are comma-separated (e.g., `"Electronics > Audio > Headphones, Speakers"`) to avoid repeating the path prefix.
+- `productCategories` — one string per category in Google Product Taxonomy format: `"{id} - {full path}"`. Each category individually addressable by numeric ID.
 - `categories` — structured objects with IDs for programmatic use
 
 ### Other skill.json blocks

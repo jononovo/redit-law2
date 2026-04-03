@@ -104,9 +104,13 @@ The taxonomy block in `skill.json` includes both human-readable strings and stru
     "sector": "apparel-accessories",
     "tier": "premium",
     "productCategories": [
-      "Apparel & Accessories > Clothing > Activewear, Outerwear, Pants, Shirts & Tops",
-      "Apparel & Accessories > Clothing Accessories > Gloves & Mittens, Hats",
-      "Apparel & Accessories > Shoes"
+      "5322 - Apparel & Accessories > Clothing > Activewear",
+      "203 - Apparel & Accessories > Clothing > Outerwear",
+      "204 - Apparel & Accessories > Clothing > Pants",
+      "212 - Apparel & Accessories > Clothing > Shirts & Tops",
+      "170 - Apparel & Accessories > Clothing Accessories > Gloves & Mittens",
+      "173 - Apparel & Accessories > Clothing Accessories > Hats",
+      "187 - Apparel & Accessories > Shoes"
     ],
     "categories": [
       {
@@ -133,7 +137,7 @@ The taxonomy block in `skill.json` includes both human-readable strings and stru
 }
 ```
 
-- `productCategories` — grouped human-readable strings. Categories sharing the same parent are comma-separated to avoid repeating the path prefix.
+- `productCategories` — one string per category in Google Product Taxonomy format: `"{id} - {full path}"`. Each category is individually addressable by its numeric ID.
 - `categories` — structured objects with IDs for programmatic use and cross-referencing with the Google Product Taxonomy
 
 ## Market tiers

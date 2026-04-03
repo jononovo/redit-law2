@@ -26,8 +26,9 @@ metadata:
 ```yaml
 metadata:
   product_categories:
-    - "Arts & Entertainment > Musical Instruments > Guitars, Drums & Percussion"
-    - "Arts & Entertainment > Musical Instrument Accessories > Instrument Cables, Picks"
+    - "505 - Arts & Entertainment > Musical Instruments > Guitars"
+    - "506 - Arts & Entertainment > Musical Instruments > Drums & Percussion"
+    - "510 - Arts & Entertainment > Musical Instrument Accessories > Instrument Cables"
   categories:
     - id: 505
       name: Guitars
@@ -46,7 +47,7 @@ metadata:
 
 | Field | Type | Description |
 |---|---|---|
-| `product_categories` | string[] | Human-readable grouped category strings. Categories sharing a parent are comma-separated (e.g., `"Electronics > Audio > Headphones, Speakers"`) |
+| `product_categories` | string[] | Category strings in Google Product Taxonomy format: `"{id} - {full path}"`. One entry per category. |
 | `categories` | object[] | Structured category mappings using Google Product Taxonomy IDs |
 | `categories[].id` | integer | Taxonomy ID — Google Product Taxonomy number for Google categories, 100001+ for custom sectors |
 | `categories[].name` | string | Category display name |

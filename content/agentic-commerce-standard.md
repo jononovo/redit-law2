@@ -81,8 +81,11 @@ metadata:
   sector: electronics
   tier: mid_range
   product_categories:
-    - "Electronics > Audio > Headphones, Speakers, DJ & Specialty Audio"
-    - "Electronics > Computers > Laptops, Desktop Computers"
+    - "543 - Electronics > Audio > Headphones"
+    - "544 - Electronics > Audio > Speakers"
+    - "4921 - Electronics > Audio > DJ & Specialty Audio"
+    - "328 - Electronics > Computers > Laptops"
+    - "325 - Electronics > Computers > Desktop Computers"
   categories:
     - id: 543
       name: Headphones
@@ -203,7 +206,7 @@ metadata:
 |---|---|---|---|
 | `sector` | string | Yes | Sector slug — one of 27 values derived from Google Product Taxonomy roots plus custom sectors (e.g., `electronics`, `business-industrial`, `food-services`). See the [Taxonomy & Sectors](/docs/shopy/taxonomy/sectors) documentation for the full list. |
 | `tier` | string | No | Market positioning: `commodity`, `budget`, `value`, `mid_range`, `premium`, `luxury`, `ultra_luxury` |
-| `product_categories` | string[] | No | Human-readable grouped category strings. Categories sharing a parent are comma-separated (e.g., `"Electronics > Audio > Headphones, Speakers"`) |
+| `product_categories` | string[] | No | Category strings in Google Product Taxonomy format: `"{id} - {full path}"` (e.g., `"543 - Electronics > Audio > Headphones"`) |
 | `categories` | object[] | Yes | Structured product category mappings using Google Product Taxonomy IDs |
 | `categories[].id` | integer | Yes | Taxonomy numeric ID — Google Product Taxonomy ID for Google categories, 100001+ for custom sectors |
 | `categories[].name` | string | Yes | Category display name (English) |

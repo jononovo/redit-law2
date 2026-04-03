@@ -113,32 +113,7 @@ function extractPillarMax(breakdown: Record<string, unknown> | null, pillar: str
 function buildProductCategoryStrings(
   categories: { id: number; name: string; path: string; depth: number; primary?: boolean }[],
 ): string[] {
-  if (!categories.length) return [];
-
-  const grouped = new Map<string, string[]>();
-  for (const c of categories) {
-    const parts = c.path.split(" > ");
-    let groupKey: string;
-    let leafName: string;
-    if (parts.length >= 3) {
-      groupKey = parts.slice(0, 2).join(" > ");
-      leafName = parts.slice(2).join(" > ");
-    } else if (parts.length === 2) {
-      groupKey = parts[0];
-      leafName = parts[1];
-    } else {
-      groupKey = parts[0];
-      leafName = c.name;
-    }
-    if (!grouped.has(groupKey)) grouped.set(groupKey, []);
-    grouped.get(groupKey)!.push(leafName);
-  }
-
-  const result: string[] = [];
-  for (const [parent, leaves] of grouped) {
-    result.push(`${parent} > ${leaves.join(", ")}`);
-  }
-  return result;
+  return categories.map((c) => `${c.id} - ${c.path}`);
 }
 
 export function buildSkillJson(brand: BrandRecord): SkillJson {
