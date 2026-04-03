@@ -4,9 +4,6 @@ import type { EvidenceMap } from "./rubric";
 import { SCORING_RUBRIC } from "./rubric";
 import { rubricToPromptText } from "./scoring-engine";
 import type { PageFetch, AgenticScanResult, EvidenceCitation, SignalKey } from "./types";
-import type { VendorSector } from "@/lib/procurement-skills/taxonomy/sectors";
-import type { BrandTier } from "@/lib/procurement-skills/taxonomy/tiers";
-
 const MODEL = "claude-sonnet-4-6";
 const MAX_PAGES = 8;
 const MAX_TURNS = 20;
@@ -52,22 +49,6 @@ function coerceEvidenceValue(value: unknown): boolean | number | string | null {
 const BLOCKED_HOSTS = [
   "localhost", "127.0.0.1", "0.0.0.0", "::1",
   "metadata.google.internal", "169.254.169.254",
-];
-
-const VALID_SECTORS: VendorSector[] = [
-  "retail", "office", "fashion", "health", "beauty", "saas", "home",
-  "construction", "automotive", "electronics", "food", "sports",
-  "industrial", "specialty", "luxury", "travel", "entertainment",
-  "education", "pets", "garden",
-];
-
-const VALID_TIERS: BrandTier[] = [
-  "ultra_luxury", "luxury", "premium", "mid_range", "value", "budget", "commodity",
-];
-
-const VALID_CAPABILITIES = [
-  "price_lookup", "stock_check", "programmatic_checkout", "business_invoicing",
-  "bulk_pricing", "tax_exemption", "account_creation", "order_tracking", "returns", "po_numbers",
 ];
 
 function isIpPrivate(ip: string): boolean {
@@ -209,14 +190,10 @@ const TOOLS: Anthropic.Tool[] = [
   },
   {
     name: "record_findings",
-    description: "Record structured findings about the vendor for SKILL.md generation. Include vendor name, sector, capabilities, checkout details, tips, etc.",
+    description: "Record technical findings about the vendor's checkout and shopping experience. Brand identity (name, sector, category) is handled separately — focus on what you observe on the pages.",
     input_schema: {
       type: "object" as const,
       properties: {
-        name: { type: "string", description: "Vendor/store name" },
-        sector: { type: "string", description: `One of: ${VALID_SECTORS.join(", ")}` },
-        subSectors: { type: "array", items: { type: "string" }, description: "Specific categories" },
-        tier: { type: "string", description: `One of: ${VALID_TIERS.join(", ")}` },
         guestCheckout: { type: "boolean" },
         taxExemptField: { type: "boolean" },
         poNumberField: { type: "boolean" },
@@ -226,14 +203,13 @@ const TOOLS: Anthropic.Tool[] = [
         freeShippingThreshold: { type: "number" },
         estimatedDeliveryDays: { type: "string" },
         businessShipping: { type: "boolean" },
-        capabilities: { type: "array", items: { type: "string" }, description: `From: ${VALID_CAPABILITIES.join(", ")}` },
         tips: { type: "array", items: { type: "string" }, description: "3-5 practical tips for AI shopping" },
         checkoutProviders: { type: "array", items: { type: "string" } },
         paymentMethods: { type: "array", items: { type: "string" } },
         hasApi: { type: "boolean" },
         hasMcp: { type: "boolean" },
       },
-      required: ["name"],
+      required: [],
     },
   },
   {
@@ -255,6 +231,8 @@ function buildSystemPrompt(domain: string): string {
 
 Your job is to evaluate how well this website supports AI agent-based shopping by gathering evidence for the scoring rubric below.
 
+Brand identification (name, sector, category) is handled separately by another system. Focus exclusively on the technical page audit.
+
 ## SCORING RUBRIC
 ${rubricText}
 
@@ -263,11 +241,12 @@ ${rubricText}
 1. You have already been given the homepage HTML. Analyze it first for evidence.
 2. Use fetch_page to visit additional pages (product pages, checkout, search, cart, etc.) to gather more evidence. Visit at most ${MAX_PAGES} pages total.
 3. For each piece of evidence you find, use record_evidence to set the corresponding rubric evidence key. Always include source_url (the page you found it on) and snippet (a short excerpt proving the evidence — an HTML tag, button text, or 1-sentence quote, under 200 chars).
-4. Use record_findings to capture structured vendor info for SKILL.md generation (name, sector, capabilities, tips, etc.).
+4. Use record_findings to capture technical details about the checkout and shopping experience (guest checkout, search URL template, shipping, payment methods, tips, etc.).
 5. Call complete_scan when done.
 
 ## RULES
 - Only fetch pages on ${domain} (subdomains allowed).
+- Do NOT try to identify the brand name, sector, or category — that is handled externally.
 - Focus on evidence keys marked with 🔍 (agent-only) or 🔍? (agent can confirm/override) — these are your highest-value contributions since regex detectors handle the rest.
 - Be efficient: if you can determine evidence from the homepage, don't fetch extra pages unnecessarily.
 - Set evidence values accurately: true/false for boolean checks, numbers for counts.
@@ -414,15 +393,6 @@ export async function agenticScan(
                 if (value !== undefined && value !== null) {
                   findings[key] = value;
                 }
-              }
-              if (typeof input.sector === "string" && !VALID_SECTORS.includes(input.sector as VendorSector)) {
-                findings.sector = "specialty";
-              }
-              if (typeof input.tier === "string" && !VALID_TIERS.includes(input.tier as BrandTier)) {
-                delete findings.tier;
-              }
-              if (Array.isArray(input.capabilities)) {
-                findings.capabilities = (input.capabilities as string[]).filter(c => VALID_CAPABILITIES.includes(c));
               }
               result = `Recorded findings: ${Object.keys(input).join(", ")}`;
               break;

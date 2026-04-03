@@ -322,7 +322,8 @@ Architecture: Single central rubric → regex detectors + agentic scan → merge
 - `compute.ts` — thin wrapper: `computeASXScore(input)` calls `detectAll` → `computeScoreFromRubric`.
 - `agent-scan.ts` — `agenticScan(domain, homepageHtml)`: agentic multi-page scanner using Anthropic SDK with tool use. 4 tools: `fetch_page`, `record_evidence`, `record_findings`, `complete_scan`. Domain-locked SSRF protection with per-redirect-hop validation, page budget (8), timeout (90s), Firecrawl integration. Returns `AgenticScanResult` with evidence, citations, findings, pages fetched. Evidence keys validated against rubric; string "true"/"false" coerced to booleans. Evidence citations include `sourceUrl` and `snippet` for each recorded key. Graceful degradation if API key missing or errors (partial evidence still used).
 - `fetch.ts` — parallel fetcher: `fetchScanInputs(domain)` fetches homepage + sitemap.xml + robots.txt with SSRF protection. Firecrawl JS rendering when `FIRECRAWL_API_KEY` set. Also exports `normalizeDomain()` and `domainToSlug()`.
-- `extract-meta.ts` — `extractMeta(html, domain)`: extracts `<title>` and `<meta description>` from HTML with domain-based fallbacks
+- `classify-brand.ts` — `classifyBrand(domain)`: calls Perplexity Sonar API to resolve brand name, sector, tier, capabilities, description from web search. Returns `BrandClassification | null`. Used as primary source for entity metadata in scan pipeline.
+- `scan-utils.ts` — shared helpers: `buildVendorSkillDraft()`, `mergeEvidence()`, `mergeArrayField()`, `toValidSector()`, `toValidCapabilities()`, `domainToLabel()`, `VALID_SECTORS`, `VALID_CAPABILITIES`. Single source of truth used by both `route.ts` and `process-next.ts`.
 - `types.ts` — all type definitions including `PageFetch`, `AgenticScanResult`, `SignalKey`, etc.
 - 3 pillars: Clarity (35pts max) + Discoverability (30pts max) + Reliability (35pts max) = 100pts
 - Discoverability (renamed from Speed in v1.1) includes Product Page Quality signal (5pts, agent-only)
@@ -333,8 +334,10 @@ Architecture: Single central rubric → regex detectors + agentic scan → merge
 **Scan API** (`app/api/v1/scan/route.ts`):
 Public endpoint for the ASX Score Scanner — CreditClaw's lead gen tool. No auth required.
 - `POST /api/v1/scan` — accepts `{ domain: string }`, returns score + breakdown + recommendations + citations + `skillMdUrl` + `enhanced` flag
-- Pipeline: normalizeDomain → cache check (30-day window) → fetchScanInputs → detectAll (regex) → agenticScan (multi-page Claude analysis) → mergeEvidence (agent evidence upgrades detector evidence, never downgrades) → computeScoreFromRubric → buildVendorSkillDraft → generateVendorSkill (SKILL.md) → upsertBrandIndex → response
+- Pipeline: normalizeDomain → cache check (30-day window) → classifyBrand (Perplexity, parallel) + fetchScanInputs (parallel) → detectAll (regex) → agenticScan (multi-page Claude technical audit only) → mergeEvidence → computeScoreFromRubric → buildVendorSkillDraft → generateVendorSkill (SKILL.md) → upsertBrandIndex → response
+- Entity metadata resolution: Perplexity Sonar → existing DB → domain-derived label. Claude agent does NOT do brand identification.
 - Agentic scan is optional: if ANTHROPIC_API_KEY missing or agent errors, regex-only scores and default SKILL.md are used
+- Perplexity classification is optional: if PERPLEXITY_API_KEY missing or API errors, falls back to existing DB values or domain-derived defaults
 - Rate limiting: in-memory, 5 requests/min per IP (via x-forwarded-for)
 - Error responses: 400 (invalid domain), 422 (unreachable), 429 (rate limit), 500 (internal)
 - Taxonomy guard: existing non-"uncategorized" sector is never overwritten by agent classification

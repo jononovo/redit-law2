@@ -1,19 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { storage } from "@/server/storage";
-import {
-  normalizeDomain,
-  domainToSlug,
-  fetchScanInputs,
-  extractMeta,
-} from "@/lib/agentic-score";
+import { normalizeDomain, domainToSlug, fetchScanInputs } from "@/lib/agentic-score";
 import { detectAll } from "@/lib/agentic-score/detectors";
 import { SCORING_RUBRIC } from "@/lib/agentic-score/rubric";
 import { computeScoreFromRubric } from "@/lib/agentic-score/scoring-engine";
 import { agenticScan } from "@/lib/agentic-score/agent-scan";
+import { classifyBrand } from "@/lib/agentic-score/classify-brand";
+import {
+  buildVendorSkillDraft,
+  mergeEvidence,
+  mergeArrayField,
+  domainToLabel,
+} from "@/lib/agentic-score/scan-utils";
 import { generateVendorSkill } from "@/lib/procurement-skills/generator";
-import type { VendorSkill, VendorCapability } from "@/lib/procurement-skills/types";
-import type { VendorSector } from "@/lib/procurement-skills/taxonomy/sectors";
+import type { VendorSkill } from "@/lib/procurement-skills/types";
 import type { ScoreLabel } from "@/lib/agentic-score";
 import type { EvidenceMap } from "@/lib/agentic-score/rubric";
 
@@ -54,106 +55,12 @@ function checkRateLimit(ip: string): boolean {
   return true;
 }
 
-function mergeArrayField(
-  existing: string[] | null | undefined,
-  incoming: string[] | undefined,
-): string[] {
-  const base = existing ?? [];
-  if (!incoming || incoming.length === 0) return base;
-  return [...new Set([...base, ...incoming])];
-}
-
 function getClientIp(request: NextRequest): string {
   return (
     request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
     request.headers.get("x-real-ip") ||
     "unknown"
   );
-}
-
-const VALID_SECTORS: VendorSector[] = [
-  "retail", "office", "fashion", "health", "beauty", "saas", "home",
-  "construction", "automotive", "electronics", "food", "sports",
-  "industrial", "specialty", "luxury", "travel", "entertainment",
-  "education", "pets", "garden",
-];
-
-const VALID_CAPABILITIES: VendorCapability[] = [
-  "price_lookup", "stock_check", "programmatic_checkout", "business_invoicing",
-  "bulk_pricing", "tax_exemption", "account_creation", "order_tracking", "returns", "po_numbers",
-];
-
-function toValidSector(s: string): VendorSector {
-  return VALID_SECTORS.includes(s as VendorSector) ? (s as VendorSector) : "specialty";
-}
-
-function toValidCapabilities(caps: unknown): VendorCapability[] {
-  if (!Array.isArray(caps)) return [];
-  return caps.filter((c): c is VendorCapability =>
-    typeof c === "string" && VALID_CAPABILITIES.includes(c as VendorCapability)
-  );
-}
-
-function buildVendorSkillDraft(
-  slug: string,
-  domain: string,
-  name: string,
-  sector: string,
-  findings: Record<string, unknown>,
-): VendorSkill {
-  return {
-    slug,
-    name,
-    url: `https://${domain}`,
-    sector: toValidSector(sector),
-    checkoutMethods: ["browser_automation"],
-    capabilities: toValidCapabilities(findings.capabilities),
-    maturity: "draft",
-    methodConfig: {
-      browser_automation: {
-        requiresAuth: !(findings.guestCheckout ?? false),
-        notes: findings.guestCheckout
-          ? "Guest checkout available"
-          : "Account may be required",
-      },
-    },
-    search: {
-      pattern: (findings.searchPattern as string) ?? `Search on ${name}`,
-      urlTemplate: findings.searchUrlTemplate as string | undefined,
-      productIdFormat: findings.productIdFormat as string | undefined,
-    },
-    checkout: {
-      guestCheckout: (findings.guestCheckout as boolean) ?? false,
-      taxExemptField: (findings.taxExemptField as boolean) ?? false,
-      poNumberField: (findings.poNumberField as boolean) ?? false,
-    },
-    shipping: {
-      freeThreshold: (findings.freeShippingThreshold as number | undefined) ?? undefined,
-      estimatedDays: (findings.estimatedDeliveryDays as string) ?? "Varies",
-      businessShipping: (findings.businessShipping as boolean) ?? false,
-    },
-    tips: Array.isArray(findings.tips) ? findings.tips as string[] : [
-      `Visit https://${domain} to browse products`,
-      "Use the site search to find specific items",
-    ],
-    version: "1.0.0",
-    lastVerified: new Date().toISOString().split("T")[0],
-    generatedBy: "agentic_scanner",
-  };
-}
-
-function mergeEvidence(detectorEvidence: EvidenceMap, agentEvidence: EvidenceMap): EvidenceMap {
-  const merged = { ...detectorEvidence };
-  for (const [key, value] of Object.entries(agentEvidence)) {
-    if (value === null || value === undefined) continue;
-    const existing = merged[key];
-    if (existing === null || existing === undefined || existing === false) {
-      merged[key] = value;
-    } else if (typeof value === "boolean" && value === true) {
-      merged[key] = true;
-    }
-  }
-  return merged;
 }
 
 export async function POST(request: NextRequest) {
@@ -227,6 +134,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const classification = await classifyBrand(domain).catch(() => null);
+
     const detectorEvidence = detectAll(
       input.homepageHtml || "",
       input.sitemapContent ?? null,
@@ -234,7 +143,6 @@ export async function POST(request: NextRequest) {
       input.pageLoadTimeMs ?? null,
     );
 
-    const meta = extractMeta(input.homepageHtml, domain);
     const slug = existing?.slug ?? domainToSlug(domain);
 
     let agentResult;
@@ -260,22 +168,35 @@ export async function POST(request: NextRequest) {
 
     const scoreResult = computeScoreFromRubric(SCORING_RUBRIC, finalEvidence);
 
-    const resolvedName = existing?.name ?? (agentFindings.name as string | undefined) ?? meta.name;
+    const resolvedName = classification?.name
+      ?? existing?.name
+      ?? domainToLabel(domain);
 
-    const resolvedSector = existing?.sector && existing.sector !== "uncategorized"
-      ? existing.sector
-      : (agentFindings.sector as string | undefined) ?? "uncategorized";
+    const resolvedSector = classification?.sector
+      ?? (existing?.sector && existing.sector !== "uncategorized" ? existing.sector : null)
+      ?? "uncategorized";
 
-    const resolvedSubSectors = existing?.subSectors && existing.subSectors.length > 0
-      ? existing.subSectors
-      : Array.isArray(agentFindings.subSectors) ? agentFindings.subSectors as string[] : [];
+    const resolvedSubSectors = classification?.subCategories
+      ?? (existing?.subSectors && existing.subSectors.length > 0 ? existing.subSectors : []);
 
-    const resolvedTier = existing?.tier ?? (agentFindings.tier as string | undefined) ?? null;
+    const resolvedTier = classification?.tier
+      ?? existing?.tier
+      ?? null;
+
+    const resolvedDescription = classification?.description
+      ?? existing?.description
+      ?? `${resolvedName} at ${domain}`;
+
+    const enrichedFindings: Record<string, unknown> = {
+      ...agentFindings,
+      capabilities: classification?.capabilities ?? [],
+      guestCheckout: agentFindings.guestCheckout ?? classification?.guestCheckout ?? false,
+    };
 
     let skillMd: string | null = null;
     let draft: VendorSkill | null = null;
     try {
-      draft = buildVendorSkillDraft(slug, domain, resolvedName, resolvedSector, agentFindings);
+      draft = buildVendorSkillDraft(slug, domain, resolvedName, resolvedSector, enrichedFindings);
       skillMd = generateVendorSkill(draft);
     } catch {
       // SKILL.md generation failed; non-critical
@@ -288,7 +209,7 @@ export async function POST(request: NextRequest) {
       name: resolvedName,
       domain,
       url: existing?.url ?? `https://${domain}`,
-      description: existing?.description ?? meta.description,
+      description: resolvedDescription,
       sector: resolvedSector,
       subSectors: resolvedSubSectors,
       tier: resolvedTier,
@@ -306,7 +227,7 @@ export async function POST(request: NextRequest) {
       checkoutMethods: draft?.checkoutMethods ?? existing?.checkoutMethods ?? [],
       capabilities: mergeArrayField(
         existing?.capabilities,
-        draft?.capabilities?.map(c => c as string) ?? agentFindings.capabilities as string[] | undefined,
+        classification?.capabilities?.map(c => c as string),
       ),
       hasApi: (existing?.hasApi || (agentFindings.hasApi as boolean | undefined)) ?? false,
       hasMcp: (existing?.hasMcp || (agentFindings.hasMcp as boolean | undefined)) ?? false,
