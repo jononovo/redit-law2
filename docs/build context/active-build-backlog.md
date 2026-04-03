@@ -2,7 +2,7 @@
 
 Everything that's outstanding, in build sequence order. Each item has a priority, status, dependencies, and reference to its source plan (if one exists).
 
-Last updated: 2026-04-02
+Last updated: 2026-04-03
 
 ---
 
@@ -14,7 +14,7 @@ The ASX Score Scanner and brand catalog are the primary growth engines. **Expect
 
 ## Architecture Note: `skill.json` and Data Flow
 
-`skill.json` is a **machine-readable metadata format** served alongside SKILL.md for each merchant. It is *derived from* `brand_index` database columns — the database is the source of truth, not the file. The `skill.json` serializer reads flat columns and JSONB data from `brand_index` and assembles the structured output. Some `skill.json` fields (returns, platform, apiTier, loyalty enrichment, UCP categories) require new `brand_index` columns or related tables that don't exist yet — these will be added incrementally as the scan and taxonomy systems evolve.
+`skill.json` is a **machine-readable metadata format** served alongside SKILL.md for each merchant. It is *derived from* `brand_index` database columns — the database is the source of truth, not the file. The `skill.json` serializer reads flat columns and JSONB data from `brand_index` and assembles the structured output. Taxonomy data (product categories) is now sourced from `product_categories` + `brand_categories` tables and included in skill.json output. Some `skill.json` fields (returns, platform, loyalty enrichment) require new `brand_index` columns that don't exist yet — these will be added incrementally as the scan system evolves.
 
 **Schema spec:** `docs/build context/Future/Product_index/Shopy/skill-json-schema.md`
 
@@ -39,6 +39,7 @@ For reference — these are done and archived:
 - GIN indexes + partial boolean indexes on `brand_index` (migration 0007 — `sub_sectors`, `tags`, `carries_brands`, `capabilities`, `checkout_methods`, `payment_methods_accepted`, `supported_countries`, `search_vector` GIN; `has_mcp`, `has_api`, `has_deals`, `ordering=guest`, `tax_exempt`, `po_number`, `claimed_by` partial; plus `search_vector` trigger)
 - Step 2: Multitenant System (2A types+configs, 2B middleware, 2C layout metadata/theming, 2D TenantProvider, 2E nav/footer de-hardcode, 2F landing extraction, 2G API helper, 2H signupTenant column, 2I shopy config skeleton)
 - Step 3: shopy.sh Pages (landing, how-it-works, ASX scanner, skills catalog, AXS explainer, docs, tenant config, middleware routing)
+- Step 6: Google Product Taxonomy Implementation (see details below)
 
 ---
 
@@ -122,29 +123,30 @@ Paid, end-user triggered via paywall. Webhook-triggered external browser agents 
 
 ---
 
-### Step 6: Google Product Taxonomy Implementation
+### Step 6: Google Product Taxonomy Implementation ✅
 
 **Priority:** Medium — prerequisite for Tier 3 and category pages
-**Status:** Research complete, ready to build
+**Status:** Complete
 **Source:** `Shopy/2-merchant-taxonomy-schema-note.md`, `Shopy/3. product-index-taxonomy-plan.md`, `Shopy/progressive-disclosure-taxonomy-research.md`
 
-**Key decisions (from April 3, 2026 session):**
-- **Hybrid sector list: all 21 Google roots + our own additions.** New sector list has 27 entries: all 21 Google Product Taxonomy roots (kept as-is), plus 4 custom sectors (Food Services, Travel, Education, Events), plus 2 special entries (Luxury as a tier-driven filter view, Specialty as fallback). "Retail" removed (it's a channel, not a category).
-- **Luxury is NOT a sector assignment.** It's a filter view — the `/c/luxury` page queries brands where `tier` is `ultra_luxury` or `luxury`. It appears in navigation alongside real sectors but isn't assigned during scan.
-- **Rename "UCP Categories" to "Product Categories."** Google's UCP is a separate transaction protocol. Tables/fields use `product_categories` and `brand_categories`.
-- **Simplified skill.json format.** Use Google's own format: `"productCategories": ["141 - Cameras & Optics", "223 - Electronics > Audio"]`. One array of self-describing strings.
-- **No backward compatibility / no backfill.** Old brands keep stale values until rescanned. No migration.
-- **Sector-scoped sub-classification.** For sectors that map to a Google root, only consider L2-L3 categories under that root (~50-150 instead of 5,600). For custom sectors (Food Services, Travel, Education, Events), skip sub-classification.
+Completed in two sessions (April 3, 2026):
 
-**Build scope:**
-- Create `product_categories` table (import Google Product Taxonomy — 5,595 categories)
-- Create `brand_categories` junction table (brand_id → category_id, `is_primary` flag)
-- Replace `VendorSector` type system with new 27-entry list (touches 14 code files)
-- Update Perplexity classifier to constrain sector to 25 assignable values
-- Wire category selection into scan pipeline
-- Update `skill.json` serializer to output `productCategories` array
-- Update catalog UI, sector landing pages, sitemap, vendor cards
-- Build `/c/luxury` as tier-driven query page
+**Session 1 — Sector overhaul + schema + scan wiring:**
+- [x] 27-entry hybrid sector system (21 Google Product Taxonomy roots + food-services, travel, education, events, luxury, specialty)
+- [x] `product_categories` table seeded with 5,595 Google taxonomy entries
+- [x] `brand_categories` junction table with unique constraint on (brand_id, category_id)
+- [x] All UI, vendor files, scan fallbacks, sitemap updated for new sector slugs
+- [x] `/c/luxury` built as tier-driven filter (queries `ultra_luxury` + `luxury` tiers)
+- [x] Perplexity classifier constrained to 26 assignable sectors (luxury excluded)
+- [x] `skill.json` outputs `taxonomy.productCategories` (strings) + `taxonomy.categories` (objects)
+
+**Session 2 — Schema simplification + Perplexity category classifier:**
+- [x] Eliminated `gptId` duplication — `product_categories.id` IS the taxonomy ID directly (no mapping layer)
+- [x] Added 43 custom categories for 5 non-Google sectors (IDs 100001+): food-services, travel, education, events, luxury, specialty
+- [x] `SECTOR_ROOT_IDS` maps all 27 sectors to root category IDs
+- [x] Replaced fuzzy string-matching resolver with Perplexity second-pass call — sends compact L2 category menu (2-25 entries per sector), gets structured IDs back
+- [x] Dramatic quality improvement (e.g. Grainger: "Dental Tools" → Manufacturing, Heavy Machinery, Work Safety, Industrial Storage, Material Handling, Automation Control, Janitorial)
+- [x] Total: 5,638 product categories (5,595 Google + 43 custom)
 
 ---
 
@@ -188,13 +190,14 @@ Step 4B (Brand Versioning) ←── independent, should land before Step 5
 
 Step 5 (Premium Scan) ←── independent of Steps 2-4, can start now
 
-Step 6 (UCP Taxonomy + Category Pages) ←── independent, can start now
+Step 6 (Google Product Taxonomy) ←── ✅ COMPLETE
   ↓
-Step 7 (Tier 3 Product Index) ←── depends on Step 6
+Step 7 (Tier 3 Product Index) ←── depends on Step 6 (now unblocked)
 ```
 
-Steps 2, 4B, 5, and 6 can all run in parallel.
-Category landing pages are under Step 6 (depends on UCP tables).
+Steps 2, 4B, and 5 can all run in parallel.
+Step 6 is complete — taxonomy tables, category resolution, and sector system are all in place.
+Step 7 (Tier 3 Product Index) is now unblocked by Step 6 completion.
 Master Skill ships with Step 4 (registry API).
 Brand Versioning (4B) should ideally land before Step 5 (premium scan comparison needs version history).
 Sitemap splitting is parked until 1,000+ URLs.
