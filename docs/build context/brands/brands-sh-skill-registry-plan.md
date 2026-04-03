@@ -25,17 +25,34 @@ ClawHub is the skill registry for OpenClaw (the "npm for AI agents"). Key UI pat
 
 ## Scope
 
-### Task 1: Fix `/skills/[vendor]` crash — 5 of 6 brands are broken
+### Task 1: Fix scanner pipeline — `brandData` is never saved
 
-**File:** `app/skills/[vendor]/page.tsx`
+**Files:** `app/api/v1/scan/route.ts` (line 297), `lib/scan-queue/process-next.ts` (line 227)
 
-**Problem (verified):** 5 of 6 brands return HTTP 500 on `/skills/[slug]`. Only `home-depot` works.
+**Problem (verified by running a fresh scan):** The scanner builds a full `VendorSkill` object via `buildVendorSkillDraft()` — with name, url, sector, checkoutMethods, capabilities, search config, checkout flags, shipping, tips — but **never saves it to `brandData`**. Both the scan API route and the queue processor do:
 
-The crash is `TypeError: Cannot read properties of undefined (reading '0')` at line 232 (`vendor.name[0]`).
+```tsx
+const draft = buildVendorSkillDraft(slug, domain, resolvedName, resolvedSector, agentFindings);
+skillMd = generateVendorSkill(draft);  // draft used only for SKILL.md text
+// ...
+brandData: existing?.brandData ?? {},  // draft is thrown away!
+```
 
-**Root cause:** The page casts `brand.brandData` to `VendorSkill` at line 156, then accesses `vendor.name`, `vendor.url`, `vendor.sector`, `vendor.search`, `vendor.checkout`, etc. throughout. But 5 of 6 brands have `brandData: {}` (empty object), so every `vendor.*` property is undefined.
+This means every scan produces a SKILL.md file but stores `brandData: {}`. The structured data powering the `/skills/[vendor]` detail page is never populated.
 
-**Verified DB state:**
+**Verified by scanning staples.com in dev:**
+
+| Field | Result |
+|---|---|
+| overallScore | 36 |
+| skillMd | 1975 chars (populated) |
+| brandData | `{}` (empty — bug) |
+| capabilities | `[]` (empty — bug) |
+| checkoutMethods | `[]` (empty — bug) |
+
+The `draft` object had all this data — it just wasn't saved.
+
+**Verified DB state for existing brands:**
 
 | Brand | brandData | skillMd | /skills/[slug] |
 |---|---|---|---|
@@ -45,10 +62,40 @@ The crash is `TypeError: Cannot read properties of undefined (reading '0')` at l
 | rei | 0 keys (empty `{}`) | 1935 chars | 500 |
 | target | 0 keys (empty `{}`) | 1967 chars | 500 |
 | zappos | 0 keys (empty `{}`) | 1967 chars | 500 |
+| staples | 0 keys (empty `{}`) | 1975 chars | 500 (new scan) |
 
-All 6 brands have `skillMd` content (the rendered SKILL.md). The structured `brandData` JSON was only persisted for home-depot.
+Home Depot's `brandData` was likely populated manually or by an earlier version of the scanner.
 
-**Fix:** Throughout the page, fall back to `brand.*` top-level fields when `vendor.*` (brandData) properties are missing:
+**Fix:** Save the draft to `brandData` and extract `checkoutMethods` from it. In both files, change the upsert block:
+
+```tsx
+let skillMd: string | null = null;
+let draft: VendorSkill | null = null;  // <-- keep reference
+try {
+  draft = buildVendorSkillDraft(slug, domain, resolvedName, resolvedSector, agentFindings);
+  skillMd = generateVendorSkill(draft);
+} catch {
+  // non-critical
+}
+
+// In the upsert:
+brandData: draft ?? existing?.brandData ?? {},
+checkoutMethods: draft?.checkoutMethods ?? existing?.checkoutMethods ?? [],
+```
+
+**Note:** This touches the scan route and queue processor files. The `generateVendorSkill` function and `buildVendorSkillDraft` function themselves are NOT modified — only how their output is used.
+
+**Acceptance:** After re-scanning staples.com, `brandData` has 15+ keys, `checkoutMethods` is populated, and `/skills/staples` returns 200.
+
+---
+
+### Task 2: Add null guards to `/skills/[vendor]` detail page
+
+**File:** `app/skills/[vendor]/page.tsx`
+
+Even after fixing the scanner, existing brands with empty `brandData` will still crash until re-scanned. The detail page needs defensive coding so it never 500s regardless of data state.
+
+**Fix:** Fall back to `brand.*` top-level fields when `vendor.*` (brandData) properties are missing:
 
 ```tsx
 const vendorName = vendor?.name ?? brand.name;
@@ -58,11 +105,11 @@ const vendorSector = vendor?.sector ?? brand.sector;
 
 Conditionally render sections (checkout methods, search discovery, buying config) only when their source data exists. The page should always render — showing the SKILL.md content and whatever top-level data exists, even when `brandData` is empty.
 
-**Acceptance:** All 6 `/skills/[slug]` URLs return 200. Brands with empty `brandData` show a clean page with the SKILL.md content, name, domain, and whatever capabilities/maturity data exists at the `brand.*` level.
+**Acceptance:** All `/skills/[slug]` URLs return 200. Brands with empty `brandData` show a clean page with the SKILL.md content, name, domain, and whatever capabilities/maturity data exists at the `brand.*` level.
 
 ---
 
-### Task 2: Redesign the brands.sh landing page (main work)
+### Task 3: Redesign the brands.sh landing page (main work)
 
 **File:** `components/tenants/brands/landing.tsx`
 
@@ -133,7 +180,7 @@ Follow the established shopy/brands dark design system:
 
 ---
 
-### Task 3: Update BrandRow type and remove score-centric components (5 min)
+### Task 4: Update BrandRow type and remove score-centric components (5 min)
 
 **File:** `components/tenants/brands/landing.tsx`
 
@@ -148,8 +195,10 @@ Follow the established shopy/brands dark design system:
 
 | File | Change |
 |---|---|
+| `app/api/v1/scan/route.ts` | Save `draft` to `brandData` instead of `{}` |
+| `lib/scan-queue/process-next.ts` | Same fix — save `draft` to `brandData` |
+| `app/skills/[vendor]/page.tsx` | Null guards on `vendor.*` access for graceful degradation |
 | `components/tenants/brands/landing.tsx` | Full redesign — skill registry layout |
-| `app/skills/[vendor]/page.tsx` | Null guards on `vendor.*` access |
 
 ## Files NOT Changed
 
@@ -158,8 +207,7 @@ Follow the established shopy/brands dark design system:
 | `app/api/v1/brands/route.ts` | API already returns capabilities, checkoutMethods, maturity |
 | `components/tenants/shopy/landing.tsx` | Shopy stays score-oriented — different tenant |
 | `app/brands/[slug]/page.tsx` | This is the shopy score detail page — unrelated |
-| `lib/procurement-skills/generator.ts` | DO NOT MODIFY — scanner/generator logic |
-| `lib/scan-queue/process-next.ts` | DO NOT MODIFY — scan queue processor |
+| `lib/procurement-skills/generator.ts` | DO NOT MODIFY — skill generation logic itself is correct |
 | `shared/schema.ts` | No schema changes needed |
 
 ## Out of Scope (Future)
