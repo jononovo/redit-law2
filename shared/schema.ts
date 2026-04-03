@@ -1001,7 +1001,7 @@ export const insertBrandLoginAccountSchema = z.object({
   encryptedCredentials: z.string().optional().nullable(),
   encryptionMethod: z.string().max(50).optional().nullable(),
   status: z.string().default("active"),
-  metadata: z.record(z.any()).optional().nullable(),
+  metadata: z.record(z.string(), z.any()).optional().nullable(),
 });
 
 export const orders = pgTable("orders", {
@@ -1062,7 +1062,7 @@ export const insertOrderSchema = z.object({
   status: z.string().default("pending"),
   vendor: z.string().optional().nullable(),
   vendorId: z.number().int().optional().nullable(),
-  vendorDetails: z.record(z.any()).optional().nullable(),
+  vendorDetails: z.record(z.string(), z.any()).optional().nullable(),
   productName: z.string().optional().nullable(),
   productImageUrl: z.string().optional().nullable(),
   productUrl: z.string().optional().nullable(),
@@ -1075,9 +1075,9 @@ export const insertOrderSchema = z.object({
   shippingPriceCents: z.number().int().optional().nullable(),
   shippingType: z.string().optional().nullable(),
   shippingNote: z.string().optional().nullable(),
-  shippingAddress: z.record(z.any()).optional().nullable(),
-  trackingInfo: z.record(z.any()).optional().nullable(),
-  metadata: z.record(z.any()).optional().nullable(),
+  shippingAddress: z.record(z.string(), z.any()).optional().nullable(),
+  trackingInfo: z.record(z.string(), z.any()).optional().nullable(),
+  metadata: z.record(z.string(), z.any()).optional().nullable(),
 });
 
 export const sellerProfiles = pgTable("seller_profiles", {
@@ -1343,7 +1343,7 @@ export type InsertBotPendingMessage = typeof botPendingMessages.$inferInsert;
 export const insertBotPendingMessageSchema = z.object({
   botId: z.string().min(1),
   eventType: z.string().min(1),
-  payload: z.record(z.unknown()),
+  payload: z.record(z.string(), z.unknown()),
   expiresAt: z.date(),
 });
 
