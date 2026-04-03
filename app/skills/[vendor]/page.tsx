@@ -578,14 +578,14 @@ export default async function VendorDetailPage({ params }: Props) {
                   </div>
                 )}
 
-                {vendor?.tips?.length > 0 && (
+                {(vendor?.tips?.length ?? 0) > 0 && (
                   <div className="bg-amber-50 rounded-2xl border border-amber-100 p-6 mb-8">
                     <h3 className="font-bold text-neutral-900 mb-3 flex items-center gap-2">
                       <Info className="w-4 h-4 text-amber-500" />
                       Tips & Notes
                     </h3>
                     <ul className="space-y-2">
-                      {vendor.tips.map((tip, i) => (
+                      {(vendor?.tips ?? []).map((tip, i) => (
                         <li key={i} className="flex items-start gap-2 text-sm text-neutral-700 font-medium">
                           <span className="text-amber-500 mt-0.5">-</span>
                           {tip}
