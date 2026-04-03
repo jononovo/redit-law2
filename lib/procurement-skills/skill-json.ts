@@ -13,6 +13,7 @@ export interface SkillJson {
   taxonomy: {
     sector: string;
     tier: string | null;
+    productCategories: string[];
     categories: {
       gptId: number;
       name: string;
@@ -156,6 +157,7 @@ export function buildSkillJson(brand: BrandRecord): SkillJson {
     taxonomy: {
       sector: brand.sector ?? "specialty",
       tier: brand.tier ?? null,
+      productCategories: categories.map((c) => `${c.gptId} - ${c.path}`),
       categories,
     },
 

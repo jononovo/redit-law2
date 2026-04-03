@@ -203,9 +203,7 @@ export async function POST(request: NextRequest) {
         resolvedSector as VendorSector,
         resolvedSubSectors,
       );
-      if (resolved.length > 0) {
-        await storage.setBrandCategories(upserted.id, resolved);
-      }
+      await storage.setBrandCategories(upserted.id, resolved);
     } catch (catErr) {
       console.warn("[scan] category resolution failed (non-critical):", catErr instanceof Error ? catErr.message : catErr);
     }
