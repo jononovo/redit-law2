@@ -338,7 +338,7 @@ export async function agenticScan(
       messages.push({ role: "assistant", content: response.content });
 
       const toolUseBlocks = response.content.filter(
-        (b): b is Anthropic.ContentBlockParam & { type: "tool_use"; id: string; name: string; input: Record<string, unknown> } =>
+        (b): b is Extract<(typeof response.content)[number], { type: "tool_use" }> =>
           b.type === "tool_use"
       );
 
