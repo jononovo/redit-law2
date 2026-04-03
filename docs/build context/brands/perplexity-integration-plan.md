@@ -13,13 +13,14 @@ Perplexity Sonar is search-grounded — it already knows what every brand is. Te
 
 ## Solution
 
-Add a Perplexity Sonar pre-step for brand metadata. Strip entity classification duties from Claude. Extract duplicated logic into a shared module. Net result: cleaner code, fewer lines, better data.
+Add a Perplexity Sonar pre-step for brand metadata. Strip entity classification duties from Claude entirely. Delete the HTML meta parser. Extract duplicated logic into a shared module. Net result: cleaner code, fewer lines, better data.
 
 ## Architecture
 
 ```
 CURRENT:
   domain → fetchScanInputs (Firecrawl)
+         → extractMeta (HTML title tag — produces garbage)
          → detectAll (regex)
          → agenticScan (Claude does EVERYTHING including brand ID)
          → duplicated helper functions in route.ts AND process-next.ts
@@ -34,6 +35,43 @@ NEW:
          → shared helper functions from scan-utils.ts
          → upsert
 ```
+
+## Data Flow — Resolution Chains
+
+### Name
+```
+existing DB name → Perplexity name → domain-derived label
+```
+Claude's name guess is NOT in this chain. It produced "burger", "Previous Slide", "reCAPTCHA". Domain-derived (`patagonia.com` → `"Patagonia"`) is a better last resort than Claude's HTML guesses.
+
+### Sector
+```
+existing DB sector (if not "uncategorized") → Perplexity sector → "uncategorized"
+```
+Claude's sector guess is NOT in this chain. It defaulted everything to "specialty".
+
+### Tier / SubSectors
+```
+existing DB → Perplexity → null / []
+```
+
+### Description
+```
+existing DB → Perplexity description → "{resolvedName} at {domain}"
+```
+NOTE: `description` is `.notNull()` in the schema, so we always need a value. The inline fallback handles the case where Perplexity fails.
+
+### Capabilities
+```
+mergeArrayField(existing DB, Perplexity capabilities)
+```
+Agent findings for capabilities are removed. Perplexity returns accurate capabilities because we pass our exact enum values in the prompt.
+
+### Technical Fields (guestCheckout, searchUrlTemplate, tips, etc.)
+```
+agent findings (Claude) — these are what Claude is good at
+```
+Claude keeps full ownership of page-level technical analysis.
 
 ## File Changes
 
@@ -102,39 +140,59 @@ Keep these (Claude finds them from page analysis):
 - `VALID_SECTORS` array — no longer needed without sector in record_findings
 - `VALID_TIERS` array — same
 - `VALID_CAPABILITIES` array — same
-- Associated validation logic in the record_findings handler (lines 418-425)
+- Remove dead validation code in `record_findings` handler (lines 418-425) that validated sector/tier/capabilities
 
 ### MODIFY: `app/api/v1/scan/route.ts`
 
 1. **Import** `classifyBrand` from classify-brand.ts
 2. **Import** shared functions from scan-utils.ts
 3. **Delete** local copies of `buildVendorSkillDraft`, `mergeEvidence`, `mergeArrayField`, `toValidSector`, `toValidCapabilities`, `VALID_SECTORS`, `VALID_CAPABILITIES`
-4. **Parallelize** Perplexity + Firecrawl:
+4. **Delete** `extractMeta` import and `const meta = extractMeta(...)` call
+5. **Parallelize** Perplexity + Firecrawl:
    ```ts
    const [classification, input] = await Promise.all([
      classifyBrand(domain).catch(() => null),
      fetchScanInputs(domain),
    ]);
    ```
-5. **Update resolution priority** for name/sector/tier/subSectors:
-   `existing DB → Perplexity → agent findings → domain-derived label`
-6. **Merge Perplexity capabilities** into the capabilities field
-7. **Remove** `extractMeta` import and usage
+6. **Update resolution chains** — use exact chains from "Data Flow" section above. Do NOT reference `agentFindings.name`, `.sector`, `.subSectors`, `.tier`, `.capabilities` in resolution. Those fields stay in the agent findings object (Claude might still send them) but the route ignores them for entity metadata.
+7. **Merge Perplexity capabilities into `buildVendorSkillDraft` input**:
+   ```ts
+   const enrichedFindings = {
+     ...agentFindings,
+     capabilities: classification?.capabilities ?? [],
+     guestCheckout: agentFindings.guestCheckout ?? classification?.guestCheckout ?? false,
+   };
+   draft = buildVendorSkillDraft(slug, domain, resolvedName, resolvedSector, enrichedFindings);
+   ```
 
 ### MODIFY: `lib/scan-queue/process-next.ts`
 
 Mirror the exact same changes as route.ts:
 - Import from classify-brand.ts and scan-utils.ts
 - Delete local duplicated functions
+- Delete `extractMeta` import and usage
 - Add parallel classifyBrand call
-- Same resolution priority
-- Remove `extractMeta` import and usage
+- Same resolution chains
+- Same enrichedFindings merge
 
 ### DELETE: `lib/agentic-score/extract-meta.ts`
 
 HTML title-tag parsing that produces garbage ("burger", "Previous Slide", "reCAPTCHA"). This is an AI analysis feature — if AI classification fails, a `<title>` tag isn't going to save it. Delete the file, remove the export from `lib/agentic-score/index.ts`.
 
-If both Perplexity and Claude fail to provide a name, the fallback is a simple domain-derived label (`patagonia.com` → `"Patagonia"`) done inline — one line, not a separate module.
+### MODIFY: `lib/agentic-score/index.ts`
+
+Remove the `export { extractMeta } from "./extract-meta";` line.
+
+## Verified: No Other Breakage
+
+- `extractMeta` is only imported in `route.ts`, `process-next.ts`, and re-exported from `index.ts`. No other consumers.
+- `agentFindings.hasApi` and `agentFindings.hasMcp` are still used in the upsert — those stay in the record_findings tool. ✓
+- `description` has `.notNull()` constraint — covered by inline fallback. ✓
+- `buildVendorSkillDraft` receives name/sector as separate params (not from findings) — unaffected. ✓
+- `buildVendorSkillDraft` reads `findings.capabilities` — covered by enrichedFindings merge. ✓
+- Scoring rubric, evidence detectors, scoring engine — completely untouched. ✓
+- brands.sh landing page, skill detail page — no changes needed. ✓
 
 ## Net Code Impact
 
@@ -143,9 +201,10 @@ If both Perplexity and Claude fail to provide a name, the fallback is a simple d
 | `classify-brand.ts` | — | ~60 lines (new) |
 | `scan-utils.ts` | — | ~70 lines (new, extracted) |
 | `extract-meta.ts` | 28 lines | **DELETED** |
-| `route.ts` | 337 lines | ~260 lines (removed ~80 lines of duplicated helpers + extractMeta usage, added ~15 lines of Perplexity integration) |
-| `process-next.ts` | 356 lines | ~280 lines (same cleanup) |
-| `agent-scan.ts` | 476 lines | ~440 lines (removed entity fields from tool, removed unused enums) |
+| `index.ts` | export line | removed 1 line |
+| `route.ts` | 337 lines | ~260 lines |
+| `process-next.ts` | 356 lines | ~280 lines |
+| `agent-scan.ts` | 476 lines | ~435 lines |
 
 Estimated net: **~130 lines of shared/new code replace ~230 lines of duplicated/deleted code.** Net reduction of ~100 lines.
 
@@ -153,9 +212,11 @@ Estimated net: **~130 lines of shared/new code replace ~230 lines of duplicated/
 
 If Perplexity is down or `PERPLEXITY_API_KEY` is missing:
 - `classifyBrand()` returns `null`
-- Resolution chain falls through to agent findings → domain-derived label
-- No HTML meta fallback — if AI can't classify a brand, a `<title>` tag won't help
-- Scan still completes with scoring (the technical audit is unaffected)
+- Name falls back to domain-derived label (`patagonia.com` → `"Patagonia"`)
+- Sector falls back to `"uncategorized"`
+- Capabilities stay empty
+- Description falls back to `"{name} at {domain}"`
+- Scoring still completes normally (technical audit is independent)
 - Console warning: `[scan] Perplexity classification failed for {domain}: {error}`
 
 ## Testing
@@ -167,4 +228,4 @@ Re-scan 4 problem domains and verify:
 4. **bestbuy.com** → name: "Best Buy", sector: "electronics"
 
 Verify capabilities populated, descriptions meaningful, tiers assigned.
-Also verify a scan works with `PERPLEXITY_API_KEY` unset (graceful fallback).
+Also verify a scan works with `PERPLEXITY_API_KEY` unset (graceful fallback to domain-derived name + uncategorized sector).
