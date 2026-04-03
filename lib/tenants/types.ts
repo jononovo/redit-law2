@@ -35,7 +35,13 @@ export interface TenantConfig {
   features: Record<string, boolean>;
 
   navigation?: {
+    header?: {
+      variant?: "light" | "dark";
+      showLogo?: boolean;
+      links?: { label: string; href: string }[];
+    };
     footer: {
+      showLogo?: boolean;
       columns: {
         title: string;
         links: { label: string; href: string; external?: boolean }[];

@@ -3,7 +3,7 @@ import fs from "fs";
 import path from "path";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, FileText } from "lucide-react";
-import { sections, findPage, getAllPagesFlat, getAudienceFromSlug } from "@/docs/content/sections";
+import { sections, findPage, getAllPagesFlat, getAudienceFromSlug, getTenantFromSlug } from "@/docs/content/sections";
 import { DocRenderer } from "./doc-renderer";
 import { CopyMarkdownButton } from "./copy-markdown-button";
 
@@ -35,7 +35,8 @@ export default async function DocPage({ params }: Props) {
 
   const { section, page, pageIndex } = found;
   const audience = getAudienceFromSlug(slug);
-  const allPages = getAllPagesFlat(audience);
+  const tenant = getTenantFromSlug(slug);
+  const allPages = getAllPagesFlat(audience, tenant);
 
   const currentIndex = allPages.findIndex(
     (p) => p.path === `/docs/${section.slug}/${page.slug}`

@@ -63,7 +63,7 @@ export function BrandClaimButton({ slug }: { slug: string }) {
 
   if (claimState === "verified") {
     return (
-      <Link href="/skill-builder/submit">
+      <Link href="/overview">
         <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 text-xs border cursor-pointer hover:bg-emerald-200/60 transition-colors" data-testid="badge-claim-verified">
           <CheckCircle2 className="w-3 h-3 mr-1" /> Claimed
         </Badge>
@@ -73,7 +73,7 @@ export function BrandClaimButton({ slug }: { slug: string }) {
 
   if (claimState === "pending") {
     return (
-      <Link href="/skill-builder/submit">
+      <Link href="/overview">
         <Badge className="bg-amber-100 text-amber-700 border-amber-200 text-xs border cursor-pointer hover:bg-amber-200/60 transition-colors" data-testid="badge-claim-pending">
           <Clock className="w-3 h-3 mr-1" /> Claim Pending
         </Badge>

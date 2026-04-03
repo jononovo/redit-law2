@@ -34,7 +34,7 @@ export const POST = withBotApi("/api/v1/bot/check/rail4/test", async (request, {
     body = preflightSchema.parse(await request.json());
   } catch (err) {
     return NextResponse.json(
-      { error: "invalid_request", message: err instanceof z.ZodError ? err.errors : "Invalid request body" },
+      { error: "invalid_request", message: err instanceof z.ZodError ? err.issues : "Invalid request body" },
       { status: 400 },
     );
   }

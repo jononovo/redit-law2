@@ -5,6 +5,7 @@ const DEFAULT_TENANT = "creditclaw";
 const TENANT_DOMAINS: [string, string[]][] = [
   ["creditclaw", ["creditclaw.com"]],
   ["shopy", ["shopy.sh"]],
+  ["brands", ["brands.sh"]],
 ];
 
 function resolveTenantId(hostname: string): string {

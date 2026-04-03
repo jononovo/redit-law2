@@ -106,7 +106,7 @@ export interface VendorSkill {
 
   version: string;
   lastVerified: string;
-  generatedBy: "skill_builder" | "manual";
+  generatedBy: "skill_builder" | "agentic_scanner" | "manual";
   feedbackStats?: {
     successRate: number;
     lastFailure?: string;

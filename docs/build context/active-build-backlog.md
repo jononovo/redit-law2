@@ -58,16 +58,24 @@ One codebase serves both creditclaw.com and shopy.sh.
 ### Step 3: shopy.sh Pages
 
 **Priority:** High (after multitenant)
-**Status:** Brand identity doc complete, no build plan yet
-**Source:** `Shopy/shopy-sh-brand-identity.md`
+**Status:** ~70% complete — core pages built, 3 pages remaining
+**Source:** `Shopy/shopy-sh-brand-identity.md`, `Future/step-3-remaining-shopy-pages-plan.md`
 **Depends on:** Step 2
 
-Build the shopy.sh-specific pages:
-- `/` — shopy.sh landing page
-- `/standard` — the authoritative agentic commerce standard (render `agentic-commerce-standard.md`)
-- `/guide` — non-technical explainer for merchants
-- `/catalog` — developer-focused brand catalog
-- `/leaderboard` — top vendors by ASX Score and AXS Rating
+**Complete:**
+- [x] `/` — shopy.sh landing page (`components/tenants/shopy/landing.tsx`, registered in `app/page.tsx`)
+- [x] `/how-it-works` — tenant-aware with full redesign (`components/tenants/shopy/how-it-works.tsx`)
+- [x] `/agentic-shopping-score` — ASX Score Scanner (shared, works for all tenants)
+- [x] `/skills` — brand catalog (shared, works for all tenants)
+- [x] `/axs` — AXS Rating explainer page (`app/axs/page.tsx`)
+- [x] `/docs` — documentation pages (shared)
+- [x] Tenant config — nav, footer, theme, feature flags
+- [x] Middleware routing — shopy.sh domain registered
+
+**Remaining:**
+- [ ] `/standard` — render the agentic commerce standard (`agentic-commerce-standard.md`) as a formatted page
+- [ ] `/guide` — non-technical merchant explainer (plain-language walkthrough with diagrams)
+- [ ] `/leaderboard` — top vendors ranked by ASX Score and AXS Rating
 
 ---
 
@@ -85,6 +93,17 @@ Build the shopy.sh-specific pages:
 - **Master Skill (PROCUREMENT.md):** A meta-document (stored as a special `brand_index` row with slug `_creditclaw_index` or served from a dedicated endpoint) that teaches agents how to use the search/registry API — available parameters, how to combine filters, how maturity levels work, how brand relationships work (searching for "Nike" returns Nike HQ + retailers carrying Nike), example queries for common scenarios, and how to read the SKILL.md once a brand is selected. Ships alongside the registry API since it only makes sense once agents have a programmatic way to query the index.
 
 **Source for master skill concept:** `brand-index-implementation-plan-v3.md` (Phase 4)
+
+---
+
+### Step 4B: Brand Versioning
+
+**Priority:** Medium — needed before re-scan workflows and registry version API
+**Status:** Technical plan complete, not started
+**Source:** `Future/brand-versioning-technical-plan.md`
+**Depends on:** None (can be built independently, but should land before Step 5)
+
+Two new tables: `brand_versions` (append-only score history + brand_index snapshot per scan) and `brand_version_files` (arbitrary file tree per version — SKILL.md, skill.json, future files/folders). Enables score trending, regression detection, rollback, diff views, and versioned package downloads via the registry API. Designed to separate hot-path score queries from cold-path file content.
 
 ---
 
@@ -158,6 +177,9 @@ Step 3 (shopy.sh Pages) ←── depends on Step 2
   ↓
 Step 4 (Registry API + CLI + Master Skill) ←── depends on Step 3
 
+Step 4B (Brand Versioning) ←── independent, should land before Step 5
+  ↑ feeds into Step 4 (version manifests) and Step 5 (premium vs free comparison)
+
 Step 5 (Premium Scan) ←── independent of Steps 2-4, can start now
 
 Step 6 (UCP Taxonomy + Category Pages) ←── independent, can start now
@@ -165,7 +187,8 @@ Step 6 (UCP Taxonomy + Category Pages) ←── independent, can start now
 Step 7 (Tier 3 Product Index) ←── depends on Step 6
 ```
 
-Steps 2, 5, and 6 can all run in parallel.
+Steps 2, 4B, 5, and 6 can all run in parallel.
 Category landing pages are under Step 6 (depends on UCP tables).
 Master Skill ships with Step 4 (registry API).
+Brand Versioning (4B) should ideally land before Step 5 (premium scan comparison needs version history).
 Sitemap splitting is parked until 1,000+ URLs.

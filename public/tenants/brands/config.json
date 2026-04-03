@@ -38,7 +38,15 @@
   },
 
   "navigation": {
+    "header": {
+      "variant": "dark",
+      "showLogo": false,
+      "links": [
+        { "label": "Skills", "href": "/skills" }
+      ]
+    },
     "footer": {
+      "showLogo": false,
       "columns": [
         {
           "title": "Catalog",

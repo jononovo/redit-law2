@@ -12,8 +12,6 @@ import {
   Shield,
   Wallet,
   ShoppingCart,
-  Sparkles,
-  Send,
   Lock,
   Store,
   ShoppingBag,
@@ -58,8 +56,6 @@ const mainNavItems: NavItem[] = [
 ];
 
 const procurementNavItems: NavItem[] = [
-  { icon: Sparkles, label: "My Skills", href: "/skill-builder/submit" },
-  { icon: Send, label: "Skill Builder", href: "/skill-builder/review" },
   { icon: Store, label: "Supplier Hub", href: "/skills", external: true },
 ];
 

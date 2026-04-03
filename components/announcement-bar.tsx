@@ -10,7 +10,7 @@ export function AnnouncementBar() {
 
   return (
     <div className="bg-neutral-800 text-white text-xs font-medium py-2 text-center relative w-full z-[60]">
-      <span>In Private Beta | Claude & OpenClaw Plugins launching  27 Mar, '26</span>
+      <span>In Private Beta | Claude & OpenClaw Plugins launching 6 April, '26</span>
       <button
         onClick={() => setVisible(false)}
         className="absolute right-4 top-1/2 -translate-y-1/2 text-white/60 hover:text-white transition-colors"

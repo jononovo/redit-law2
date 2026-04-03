@@ -7,7 +7,7 @@ import type { PageFetch, AgenticScanResult, EvidenceCitation, SignalKey } from "
 import type { VendorSector } from "@/lib/procurement-skills/taxonomy/sectors";
 import type { BrandTier } from "@/lib/procurement-skills/taxonomy/tiers";
 
-const MODEL = "claude-sonnet-4-6-20260320";
+const MODEL = "claude-sonnet-4-6";
 const MAX_PAGES = 8;
 const MAX_TURNS = 20;
 const MAX_HTML_PER_PAGE = 120_000;
@@ -338,7 +338,7 @@ export async function agenticScan(
       messages.push({ role: "assistant", content: response.content });
 
       const toolUseBlocks = response.content.filter(
-        (b): b is Anthropic.ContentBlockParam & { type: "tool_use"; id: string; name: string; input: Record<string, unknown> } =>
+        (b): b is Extract<(typeof response.content)[number], { type: "tool_use" }> =>
           b.type === "tool_use"
       );
 
@@ -347,6 +347,7 @@ export async function agenticScan(
       const toolResults: Anthropic.ToolResultBlockParam[] = [];
 
       for (const toolUse of toolUseBlocks) {
+        const input = toolUse.input as Record<string, unknown>;
         let result: string;
 
         try {
@@ -356,7 +357,7 @@ export async function agenticScan(
                 result = `Page budget exhausted (${MAX_PAGES} pages). Use the data you have.`;
                 break;
               }
-              const url = toolUse.input.url as string;
+              const url = input.url as string;
               const fetched = await agentFetchPage(url, domain);
               const stripped = fetched.html
                 .replace(/<script[\s\S]*?<\/script>/gi, "")
@@ -374,9 +375,9 @@ export async function agenticScan(
             }
 
             case "record_evidence": {
-              const ev = toolUse.input.evidence as Record<string, unknown>;
-              const sourceUrl = (toolUse.input.source_url as string) ?? `https://${domain}`;
-              const snippet = ((toolUse.input.snippet as string) ?? "").slice(0, 200);
+              const ev = input.evidence as Record<string, unknown>;
+              const sourceUrl = (input.source_url as string) ?? `https://${domain}`;
+              const snippet = ((input.snippet as string) ?? "").slice(0, 200);
               const accepted: string[] = [];
               const rejected: string[] = [];
               for (const [key, value] of Object.entries(ev)) {
@@ -409,7 +410,6 @@ export async function agenticScan(
             }
 
             case "record_findings": {
-              const input = toolUse.input as Record<string, unknown>;
               for (const [key, value] of Object.entries(input)) {
                 if (value !== undefined && value !== null) {
                   findings[key] = value;
