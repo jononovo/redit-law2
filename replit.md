@@ -341,9 +341,9 @@ Public endpoint for the ASX Score Scanner — CreditClaw's lead gen tool. No aut
 - Capability persistence: boolean fields (`hasApi`, `hasMcp`) use OR-merge (false→true upgrade), arrays use set-union merge
 - Storage: `getBrandByDomain(domain)` added to IStorage interface and brand-index.ts
 
-**Scan Queue** (`lib/scan-queue/`, `app/admin/scan-queue/`, `app/api/admin/scan-queue/`):
+**Scan Queue** (`lib/scan-queue/`, `app/admin123/scan-queue/`, `app/api/admin/scan-queue/`):
 Admin-only batch scanning system for programmatically scanning multiple domains. Writes directly to the connected database (production writes to production, dev writes to dev — no migration needed).
-- **Admin page**: `/admin/scan-queue` — paste domains (one per line), add to queue, track progress. Requires admin session (user must have `admin` flag).
+- **Admin page**: `/admin123/scan-queue` — paste domains (one per line), add to queue, track progress. Requires admin session (user must have `admin` flag).
 - **Auto-scan**: Toggle enables automatic scanning every 17 minutes. Countdown timer shows next scan. Processes one domain per interval.
 - **Queue table**: `scan_queue` (id, domain, status, priority, error, resultSlug, resultScore, timestamps). Status flow: pending → scanning → completed/failed.
 - **Atomic claim**: Uses `FOR UPDATE SKIP LOCKED` to prevent race conditions if multiple workers try to process simultaneously.
