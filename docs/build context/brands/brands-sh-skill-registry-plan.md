@@ -25,21 +25,40 @@ ClawHub is the skill registry for OpenClaw (the "npm for AI agents"). Key UI pat
 
 ## Scope
 
-### Task 1: Fix `/skills/[vendor]` crash (5 min)
+### Task 1: Fix `/skills/[vendor]` crash — 5 of 6 brands are broken
 
 **File:** `app/skills/[vendor]/page.tsx`
 
-**Problem:** Line 232 — `vendor.name[0]` crashes when `brandData` is empty/null (cast as `VendorSkill` but has no properties). Scanned brands have proper `brandData`, but any legacy brand with empty data will crash the page.
+**Problem (verified):** 5 of 6 brands return HTTP 500 on `/skills/[slug]`. Only `home-depot` works.
 
-**Fix:** Add a null guard:
+The crash is `TypeError: Cannot read properties of undefined (reading '0')` at line 232 (`vendor.name[0]`).
+
+**Root cause:** The page casts `brand.brandData` to `VendorSkill` at line 156, then accesses `vendor.name`, `vendor.url`, `vendor.sector`, `vendor.search`, `vendor.checkout`, etc. throughout. But 5 of 6 brands have `brandData: {}` (empty object), so every `vendor.*` property is undefined.
+
+**Verified DB state:**
+
+| Brand | brandData | skillMd | /skills/[slug] |
+|---|---|---|---|
+| home-depot | 20 keys, name="Home Depot" | 2677 chars | 200 |
+| bombas | 0 keys (empty `{}`) | 2409 chars | 500 |
+| allbirds | 0 keys (empty `{}`) | 1985 chars | 500 |
+| rei | 0 keys (empty `{}`) | 1935 chars | 500 |
+| target | 0 keys (empty `{}`) | 1967 chars | 500 |
+| zappos | 0 keys (empty `{}`) | 1967 chars | 500 |
+
+All 6 brands have `skillMd` content (the rendered SKILL.md). The structured `brandData` JSON was only persisted for home-depot.
+
+**Fix:** Throughout the page, fall back to `brand.*` top-level fields when `vendor.*` (brandData) properties are missing:
+
 ```tsx
-// Line 232 area — the logo fallback letter
-{(vendor?.name?.[0] ?? brand.name?.[0] ?? "?")}
+const vendorName = vendor?.name ?? brand.name;
+const vendorUrl = vendor?.url ?? `https://${brand.domain}`;
+const vendorSector = vendor?.sector ?? brand.sector;
 ```
 
-Also guard `vendor.url`, `vendor.sector`, `vendor.search`, `vendor.checkout`, and any other `vendor.*` access that assumes brandData is populated. The page should degrade gracefully — show what data exists, skip sections that don't have data.
+Conditionally render sections (checkout methods, search discovery, buying config) only when their source data exists. The page should always render — showing the SKILL.md content and whatever top-level data exists, even when `brandData` is empty.
 
-**Acceptance:** Visiting `/skills/bombas` (or any scanned brand) renders without crashing. Visiting a brand with empty `brandData` shows a degraded but functional page instead of a 500.
+**Acceptance:** All 6 `/skills/[slug]` URLs return 200. Brands with empty `brandData` show a clean page with the SKILL.md content, name, domain, and whatever capabilities/maturity data exists at the `brand.*` level.
 
 ---
 
