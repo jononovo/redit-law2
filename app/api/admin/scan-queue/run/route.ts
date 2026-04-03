@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth/session";
 import { processNextInQueue } from "@/lib/scan-queue/process-next";
+import { getSchedulerStatus } from "@/lib/scan-queue/scheduler";
 
 async function requireAdmin() {
   const user = await getCurrentUser();
@@ -13,6 +14,14 @@ export async function POST(_request: NextRequest) {
   const admin = await requireAdmin();
   if (!admin) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  }
+
+  const schedulerStatus = getSchedulerStatus();
+  if (schedulerStatus.running || schedulerStatus.tickInProgress) {
+    return NextResponse.json(
+      { error: "scheduler_active", message: "Stop the scheduler before running manual scans" },
+      { status: 409 },
+    );
   }
 
   try {

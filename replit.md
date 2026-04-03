@@ -347,14 +347,22 @@ Public endpoint for the ASX Score Scanner — CreditClaw's lead gen tool. No aut
 **Scan Queue** (`lib/scan-queue/`, `app/admin123/scan-queue/`, `app/api/admin/scan-queue/`):
 Admin-only batch scanning system for programmatically scanning multiple domains. Writes directly to the connected database (production writes to production, dev writes to dev — no migration needed).
 - **Admin page**: `/admin123/scan-queue` — paste domains (one per line), add to queue, track progress. Requires admin session (user must have `admin` flag).
-- **Auto-scan**: Toggle enables automatic scanning every 17 minutes. Countdown timer shows next scan. Processes one domain per interval.
+- **Server-side scheduler** (`lib/scan-queue/scheduler.ts`): In-process `setInterval` that processes one domain every 17 minutes. Controlled via admin page start/stop button. Rules:
+  - Auto-stops after 3 days of runtime
+  - Pauses during quiet hours (UTC 00:00–12:00)
+  - Stops when the queue is empty
+  - Does NOT auto-start on server boot — must be manually started via admin page
+  - Manual "Scan Next" is disabled while the scheduler is active (prevents overlapping scans)
+  - Uses generation counter to handle tick/stop race conditions safely
 - **Queue table**: `scan_queue` (id, domain, status, priority, error, resultSlug, resultScore, timestamps). Status flow: pending → scanning → completed/failed.
 - **Atomic claim**: Uses `FOR UPDATE SKIP LOCKED` to prevent race conditions if multiple workers try to process simultaneously.
 - **Stale recovery**: Entries stuck in `scanning` for >30 minutes are automatically reset to `pending`.
 - **API endpoints** (all require admin session):
   - `GET /api/admin/scan-queue` — list queue with stats
   - `POST /api/admin/scan-queue` — add domains (`{ domains: string[] }`) or actions (`{ action: "clear_completed" | "retry_failed" | "remove", id?: number }`)
-  - `POST /api/admin/scan-queue/run` — trigger next scan
+  - `POST /api/admin/scan-queue/run` — trigger next scan (blocked while scheduler is active)
+  - `GET /api/admin/scan-queue/scheduler` — get scheduler status
+  - `POST /api/admin/scan-queue/scheduler` — start/stop scheduler (`{ action: "start" | "stop" }`)
 - **Processing**: Reuses full scanner pipeline (fetchScanInputs → detectAll → agenticScan → computeScoreFromRubric → generateVendorSkill → upsertBrandIndex). Same code path as `/api/v1/scan`.
 
 **SKILL.md Serving** (`app/brands/[slug]/skill/route.ts`):
