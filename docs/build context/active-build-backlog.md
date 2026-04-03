@@ -122,18 +122,29 @@ Paid, end-user triggered via paywall. Webhook-triggered external browser agents 
 
 ---
 
-### Step 6: UCP Taxonomy Implementation
+### Step 6: Google Product Taxonomy Implementation
 
 **Priority:** Medium — prerequisite for Tier 3 and category pages
-**Status:** Schema designed, not implemented in code
-**Source:** `Shopy/2-merchant-taxonomy-schema-note.md`, `Shopy/3. product-index-taxonomy-plan.md`, `Shopy/skill-json-schema.md`
+**Status:** Research complete, ready to build
+**Source:** `Shopy/2-merchant-taxonomy-schema-note.md`, `Shopy/3. product-index-taxonomy-plan.md`, `Shopy/progressive-disclosure-taxonomy-research.md`
 
-- Create `ucp_categories` table (import Google Product Taxonomy — 5,595 categories)
-- Create `brand_categories` junction table
-- Migrate existing freeform `sub_sectors` to GPT ID mappings
-- Agent scan auto-detects UCP categories during scoring
-- Category-based navigation and filtering
-- **Category Landing Pages** (moved from Step 1 — depends on UCP tables): Build `/c/[sector]/[category-slug]` pages driven by GPT IDs. Requires `ucp_categories` and `brand_categories` tables to exist. Old plan (`completed/remaining-build-tasks.md` Task 3) used freeform `sub_sectors` — needs full rewrite for UCP model.
+**Key decisions (from April 3, 2026 session):**
+- **Replace custom sectors with Google's 21 root categories.** Our 21 custom sectors (retail, fashion, electronics, etc.) are nearly 1:1 with Google's 21 root categories. Instead of maintaining a custom list + mapping layer, use Google's roots directly as the top-level routing. This eliminates the `VendorSector` type, `SECTOR_LABELS`, `VALID_SECTORS`, and the sector→Google root mapping.
+- **Rename "UCP Categories" to "Product Categories."** Google's Universal Commerce Protocol (UCP) is a separate transaction protocol — our internal "UCP" naming causes confusion. Tables/fields use `product_categories` and `brand_categories`.
+- **Simplified skill.json format.** Instead of verbose objects with `gptId`, `name`, `path`, `depth`, `primary`, use Google's own format: `"productCategories": ["141 - Cameras & Optics", "223 - Electronics > Audio"]`. One array of self-describing strings matching the canonical taxonomy file format.
+- **No backward compatibility / no backfill.** Old brands keep their freeform `sub_sectors` until rescanned. New scans get proper Google taxonomy IDs. No migration of existing data.
+- **Sector-scoped category selection during scan.** When Perplexity classifies a brand into a root category (e.g., Electronics), the category matching step only considers L2-L3 categories under that root (~50-150 instead of 5,600).
+
+**Build scope:**
+- Create `product_categories` table (import Google Product Taxonomy — 5,595 categories with `gpt_id`, `name`, `slug`, `parent_id`, `depth`, `path`)
+- Create `brand_categories` junction table (brand_id → category_id, `is_primary` flag)
+- Replace `VendorSector` type system + `SECTOR_LABELS` + `VALID_SECTORS` with Google root categories (touches 14 code files)
+- Update Perplexity classifier to constrain sector to Google root names
+- Wire category selection into scan pipeline (new scans get `brand_categories` rows)
+- Update `skill.json` serializer to output `productCategories` array
+- Update catalog UI, sector landing pages (`/c/[sector]`), sitemap, vendor cards
+- Update `skill-json-schema.md` to reflect simplified format
+- **Category Landing Pages**: Build `/c/[root]/[category-slug]` pages driven by Google taxonomy IDs
 
 ---
 
