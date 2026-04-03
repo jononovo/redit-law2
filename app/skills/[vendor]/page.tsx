@@ -333,7 +333,7 @@ export default async function VendorDetailPage({ params }: Props) {
                     </h3>
                     <div className="space-y-3">
                       {(vendor?.checkoutMethods ?? brand.checkoutMethods ?? []).map((method, i) => {
-                        const config = vendor?.methodConfig?.[method];
+                        const config = vendor?.methodConfig?.[method as keyof typeof vendor.methodConfig];
                         return (
                           <div key={method} className="flex items-start gap-3">
                             <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${CHECKOUT_METHOD_COLORS[method]}`}>
