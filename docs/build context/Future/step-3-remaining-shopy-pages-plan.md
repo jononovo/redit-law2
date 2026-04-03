@@ -6,6 +6,32 @@
 
 ---
 
+## Shopy Brand Design System (Reference)
+
+Before building, every page must follow the established shopy.sh visual language. The canonical reference is `components/tenants/shopy/how-it-works.tsx`.
+
+| Pattern | Implementation | Anti-pattern (CreditClaw) |
+|---|---|---|
+| **Corners** | Sharp — no `rounded-xl`, `rounded-2xl`, `rounded-lg` on cards/containers | `rounded-2xl` on cards |
+| **Shadows** | None — completely flat | `shadow-sm`, `shadow-xl` |
+| **Section labels** | `text-sm font-mono text-neutral-400 tracking-wide` uppercase | Colored badge pills, gradient text |
+| **Grid cards** | `gap-px bg-neutral-200` for 1px dividers | `gap-6` with shadows |
+| **List items** | `→` arrows (`font-mono text-xs`) | Bullets, checkmarks |
+| **Dark sections** | `bg-neutral-950`, green accent only in terminal | `bg-gradient-to-r`, multi-color accents |
+| **Container** | `max-w-4xl mx-auto` | `max-w-3xl` or `max-w-5xl` |
+| **Section dividers** | `border-t border-neutral-200` with `py-20` | Background color bands |
+| **Cards** | `border border-neutral-200 p-8` | `rounded-2xl border-neutral-100 shadow-sm` |
+| **Dark cards** | `border border-neutral-900 bg-neutral-950 p-8` | Gradient backgrounds |
+| **CTAs** | Text links: `text-sm font-semibold text-neutral-900 hover:underline underline-offset-4` | Colored buttons with shadow |
+| **Heading style** | `text-3xl md:text-4xl font-extrabold tracking-tight text-neutral-900` | Gradient `bg-clip-text` headings |
+| **Body text** | `text-sm text-neutral-500 leading-relaxed font-medium` | `text-neutral-600` without `font-medium` |
+| **Color accents** | Green ONLY in terminal/code context (`text-green-400`) | Multi-color: amber, purple, blue accents |
+| **Score badges** | From landing: `inline-flex items-center px-2 py-0.5 rounded text-xs font-bold` with score-based bg | Colored pills with icons |
+
+**Critical:** Do NOT reuse components from `app/skills/vendor-card.tsx` or `app/skills/catalog-client.tsx` — those use CreditClaw styling (`rounded-2xl`, `shadow-xl`, colored accents). Instead, extend the patterns from the shopy landing table and how-it-works sections.
+
+---
+
 ## Overview
 
 Step 3 is ~70% complete. The core shopy.sh pages — landing, how-it-works, score scanner, catalog, AXS explainer, and docs — are all built and working. Three pages remain:
@@ -29,35 +55,39 @@ A rendered version of `docs/build context/Future/Product_index/agentic-commerce-
 This is a spec document, not a marketing page. Think MDN Web Docs or the OpenAPI specification page — clean, scannable, with a persistent table of contents sidebar for navigation.
 
 - **Layout:** Two-column on desktop — sticky sidebar nav (left), markdown content (right). Single column on mobile with a collapsible TOC.
-- **Visual style:** Follows the shopy.sh mono aesthetic (black/white, no rounded corners, green terminal accent). The content itself uses the existing `@tailwindcss/typography` prose classes already set up in the docs system.
-- **Tables, code blocks, and diagrams** in the markdown should render correctly — the existing `react-markdown` + `remark-gfm` + `@tailwindcss/typography` stack handles this.
-- **Non-dev callout card** at the top: _"Not a developer? Here's what this means for your brand →"_ linking to `/guide`. This is specified in the brand identity doc as an inline contextual card pattern.
+- **Visual style:** Follows the shopy.sh mono aesthetic — all sharp corners, no shadows, font-mono for code and section labels.
+- **Prose styling:** Override `@tailwindcss/typography` defaults to match shopy brand:
+  - Code blocks: `bg-neutral-950 text-neutral-300 font-mono` — sharp corners, no rounded
+  - Inline code: `bg-neutral-100 text-neutral-800 font-mono px-1.5 py-0.5` — sharp corners
+  - Tables: `border border-neutral-200` — sharp corners, 1px borders, no row zebra-striping with color
+  - Headings: `font-extrabold tracking-tight text-neutral-900`
+  - Links: `text-neutral-900 underline underline-offset-4 hover:decoration-neutral-900`
+  - Blockquotes: `border-l-2 border-neutral-300 text-neutral-500` — no colored left border
+- **Non-dev callout card** at the top: _"Not a developer? Here's what this means for your brand →"_ linking to `/guide`. Uses the exact card pattern from how-it-works.tsx: `border border-neutral-200 p-8` with `BookOpen` icon. No rounded corners.
 
 ### Implementation approach
 
-**Option A — Static import + MDX/react-markdown rendering:**  
-Copy the markdown file to a location the app can import (e.g., `content/standard.md` or read it at build time via `fs.readFileSync` in a server component). Render with `react-markdown` + `remark-gfm`. Generate the sidebar TOC by parsing `##` headings from the markdown.
+**Static import + react-markdown rendering.** All dependencies are already installed:
+- `react-markdown@10.1.0`
+- `remark-gfm@4.0.1`
+- `rehype-raw@7.0.0`
 
-This is the simplest approach and matches how the existing `/docs` pages work — server-rendered markdown with prose styling.
-
-**Option B — Hardcoded React page:**  
-Convert the markdown content into a custom React page with styled sections, icons, and interactive elements. More control over presentation but high maintenance cost for a 720-line spec doc that will evolve.
-
-**Recommendation:** Option A. The standard is a living document that will be updated as the spec evolves. Markdown-first means edits are text changes, not component refactors. The `/docs` system already proves this pattern works.
+Copy the markdown file to `content/agentic-commerce-standard.md` and read it at build time in a server component via `fs.readFileSync`. Render with `react-markdown` + `remark-gfm`. Generate the sidebar TOC by parsing `##` headings from the markdown source.
 
 ### Files to create/modify
 
 | File | Action |
 |---|---|
 | `app/standard/page.tsx` | New — server component, reads markdown, renders with TOC sidebar |
-| `content/agentic-commerce-standard.md` | New — copy from `docs/build context/Future/Product_index/` to app-accessible location |
-| `public/tenants/shopy/config.json` | Add `/standard` to nav links |
+| `content/agentic-commerce-standard.md` | New — copy from `docs/build context/Future/Product_index/` |
+| `public/tenants/shopy/config.json` | Update footer "SKILL.md Standard" link from `/docs` to `/standard` |
 
 ### Key details
 
-- **Tenant-awareness:** The standard is shopy.sh's identity document but should be accessible from all tenants (CreditClaw links to it too). Use `generateMetadata()` with tenant-aware titles — "Agentic Commerce Standard | shopy.sh" vs "Agentic Commerce Standard | CreditClaw".
-- **SEO:** This is a high-value SEO page. Full server-side rendering, canonical URL at `https://shopy.sh/standard`, structured metadata, and `generateMetadata()` with the document title and description.
-- **Anchor links:** Each `##` heading gets an auto-generated `id` for deep linking (e.g., `/standard#asx-score`). The sidebar TOC links to these anchors.
+- **Tenant-awareness:** The standard is shopy.sh's identity document but accessible from all tenants. Use `generateMetadata()` with the tenant config for title — "Agentic Commerce Standard | shopy.sh" on shopy, "Agentic Commerce Standard | CreditClaw" on CC.
+- **SEO:** Full SSR, canonical URL at `shopy.sh/standard`, structured metadata.
+- **Anchor links:** Each `##` heading gets an auto-generated `id` for deep linking (e.g., `/standard#asx-score`). The sidebar TOC uses these anchors.
+- **No dark mode on this page** — the spec document should be clean white background with high-contrast text for readability. Keep the shopy aesthetic (sharp, mono) but stay on the light-background track.
 
 ---
 
@@ -65,42 +95,42 @@ Convert the markdown content into a custom React page with styled sections, icon
 
 ### What it is
 
-A plain-language walkthrough for brand owners, marketing managers, and e-commerce professionals who aren't developers. The brand identity doc specifies exactly what this page covers:
+A plain-language walkthrough for brand owners, marketing managers, and e-commerce professionals who aren't developers. The brand identity doc specifies the six sections:
 
-1. **What is agentic commerce?** — 2-3 sentences + a simple diagram: customer → AI agent → your store
+1. **What is agentic commerce?** — 2-3 sentences + a flow diagram: customer → AI agent → your store
 2. **Why does this matter for your brand?** — "If AI agents can't find your products, they'll shop somewhere else"
 3. **What is an ASX Score?** — "A score from 0-100 that tells you how easy it is for AI agents to shop at your store"
-4. **How do I check my score?** — Inline score checker or link to the scanner
-5. **How do I improve my score?** — Simple checklist (no code)
+4. **How do I check my score?** — Inline domain input that navigates to `/agentic-shopping-score?domain={value}`
+5. **How do I improve my score?** — Plain-language checklist (no code, no jargon)
 6. **What happens next?** — Listed in catalog → agents discover → agents shop → sales grow
 
 ### Design direction
 
-This is NOT a spec page — it's the opposite. Think Stripe's "What is Stripe?" page or Shopify's merchant onboarding explainers. Visual, step-by-step, with diagrams and illustrations.
+This is NOT a spec page — it's an onboarding explainer. But it must still follow the shopy aesthetic (flat, sharp, mono). The visual warmth comes from clear copywriting and generous whitespace, not from colored accents or rounded corners.
 
-- **Layout:** Single-column, full-width sections, generous whitespace. Each section is a self-contained block with a heading, short text, and a visual element (diagram, icon grid, or illustration).
-- **Visual style:** Still follows the shopy.sh clean/mono aesthetic, but warmer and more approachable than the technical pages. Use the existing component patterns from `how-it-works.tsx` — section labels, step numbers, card grids.
-- **Inline scanner:** Section 4 ("How do I check my score?") should include a domain input field that links to `/agentic-shopping-score?domain={input}` or embeds a simplified version of the scanner form.
-- **Improvement checklist:** Section 5 should be a visual checklist — checkmarks, green/amber/red indicators, plain-language descriptions. No code, no technical jargon. "Make sure your products have clear names and prices" not "Implement JSON-LD Product schema markup".
-- **CTA at bottom:** "Ready to get started? Check your score →" linking to the scanner.
+- **Layout:** Single-column, full-width sections separated by `border-t border-neutral-200` with `py-20` spacing. Each section has an uppercase `font-mono` label, a bold heading, body text, and a visual element.
+- **Flow diagram (section 1):** Three boxes connected by arrows, built in HTML/CSS: `border border-neutral-200 p-6` boxes (sharp corners) with `→` arrows between them. Text labels inside: "Your Customer", "AI Agent", "Your Store". Dark variant for the AI Agent box (`bg-neutral-950 text-white`). NOT an SVG or image.
+- **Improvement checklist (section 5):** Uses the `→` list-item pattern from how-it-works.tsx. Each item is plain language: "Make sure your products have clear names and prices" not "Implement JSON-LD Product schema markup". Use the grid card pattern (`gap-px bg-neutral-200`) for the checklist items.
+- **Inline scanner (section 4):** Reuse the exact form pattern from the how-it-works hero — `Input` with `h-12 bg-neutral-50 border-neutral-200 font-medium` and `Button` with `bg-neutral-900 text-white font-bold`. Links to `/agentic-shopping-score?domain={value}`.
+- **CTA (bottom):** Dark section `bg-neutral-950 text-white py-24` with domain scan form — same as how-it-works CTA section.
 
 ### Implementation approach
 
-A custom React server component with hardcoded sections. Unlike the standard page, this is a designed marketing page, not a rendered document. The content is specific and visual enough that markdown rendering wouldn't capture the intended UX.
+Custom React server component. Unlike the standard page, this is a designed page with specific layout and interactive elements (form inputs), not a rendered document. Markdown rendering would not capture the intended UX.
 
 ### Files to create/modify
 
 | File | Action |
 |---|---|
-| `app/guide/page.tsx` | New — server component with `generateMetadata()` |
-| `components/tenants/shopy/guide.tsx` | New — the actual guide content component (tenant-specific styling) |
-| `public/tenants/shopy/config.json` | Add `/guide` to nav links |
+| `app/guide/page.tsx` | New — server component with `generateMetadata()`, renders the guide |
+| `public/tenants/shopy/config.json` | Add `/guide` to footer under new "Resources" column |
 
 ### Key details
 
-- **Tenant-awareness:** This page is primarily a shopy.sh page. On CreditClaw, the equivalent content lives on the how-it-works page. The guide should use shopy branding but be accessible from both tenants.
-- **Diagrams:** The "customer → AI agent → your store" flow diagram from the brand identity doc. Can be built with simple CSS/HTML boxes and arrows (no need for an image or SVG — keep it in code for easy iteration). Reference the visual pattern used in how-it-works.tsx step flow.
-- **Scanner integration:** The inline domain input in section 4 should prepopulate the scanner page. A simple form that navigates to `/agentic-shopping-score?domain={value}` — the scanner page already accepts URL parameters.
+- **No separate component file needed.** The guide is a self-contained page — no tenant-specific variants. The same flat/mono aesthetic works across all tenants since it's a shopy-originated document.
+- **Section numbering:** Use the `font-mono text-xs text-neutral-400` step number pattern from how-it-works (`01`, `02`, `03`... `06`).
+- **Icons:** Use lucide icons at `w-5 h-5 text-neutral-900` with `strokeWidth={1.5}` — same as how-it-works.
+- **Link to standard:** Include a subtle link at the bottom: "Read the full technical specification →" linking to `/standard`.
 
 ---
 
@@ -108,79 +138,112 @@ A custom React server component with hardcoded sections. Unlike the standard pag
 
 ### What it is
 
-A ranked list of the top-performing vendors by ASX Score and AXS Rating. This is the competitive element — merchants want to see where they rank, and developers want to know which stores are most agent-ready.
+A ranked list of the top-performing vendors by ASX Score and AXS Rating. Merchants see where they rank, developers see which stores are most agent-ready.
 
 ### Design direction
 
-Think Product Hunt's leaderboard or Lighthouse score comparisons. Data-dense but clean.
+A data table following the exact pattern from the shopy landing page's skill catalog table — column headers, row links, score badges. NOT card-based (no VendorCards).
 
-- **Layout:** Full-width table/list with rank, brand name, domain, sector, ASX Score, AXS Rating, and a visual score bar. Sortable columns. Two views: "By ASX Score" (default) and "By AXS Rating".
-- **Visual style:** The shopy.sh mono aesthetic — no rounded corners, clean typography, data-forward. Score values should be prominent with color-coded badges matching the existing scanner result colors (90+ green, 70-89 amber, below 70 red/gray).
-- **Filters:** Sector filter (dropdown or pill buttons). Optional: minimum score threshold, minimum rating count.
-- **Pagination:** Show top 50 by default. "Load more" or pagination for the full list.
-- **Brand links:** Each row links to the brand detail page at `/skills/{slug}`.
-- **Score delta (future):** When brand versioning lands (Step 4B), show trending arrows (↑↓) next to scores indicating change since last scan.
+- **Layout:** Full-width data table inside a `border border-neutral-200` container (sharp corners). Column headers in a `bg-neutral-50 border-b border-neutral-200` row with `text-xs font-bold text-neutral-400 uppercase tracking-wider`. Data rows in `divide-y divide-neutral-100` with hover `hover:bg-neutral-50`.
+- **Columns:** Rank (#), Brand (name + domain), Sector, ASX Score, AXS Rating. On mobile, collapse to Rank, Brand, Score.
+- **Score display:** Reuse the `ScoreBadge` component pattern from the shopy landing — `inline-flex items-center px-2 py-0.5 rounded text-xs font-bold` with score-based colors (green-50/green-700 for 80+, yellow-50/yellow-700 for 60+, orange-50/orange-700 for 40+, red-50/red-700 below 40).
+- **Tab switching:** Two tabs at the top — "By ASX Score" (default) and "By AXS Rating". Tabs use the shopy flat style: active tab `border-b-2 border-neutral-900 font-bold text-neutral-900`, inactive `text-neutral-400 hover:text-neutral-600`.
+- **Sector filter:** Row of flat pill buttons above the table: `border border-neutral-200 px-3 py-1.5 text-xs font-medium` (sharp corners), active state `bg-neutral-900 text-white border-neutral-900`.
+- **Brand links:** Each row links to `/skills/{slug}` — same as landing page.
+- **Empty state / sparse state:** With ~14 brands, show all of them. Below the table, show a CTA: _"Is your brand missing? Check your ASX Score →"_ linking to `/agentic-shopping-score`. Uses the non-dev callout card pattern from how-it-works.
+
+### Data source
+
+All data comes from the existing `brand_index` table. No new tables or API endpoints needed.
+
+The `storage.searchBrands()` method already supports:
+- `sortBy: "overallScore" | "axsRating"` 
+- `sortDir: "asc" | "desc"`
+- `sector` filter
+- `minScore` / `minAxsRating` filters
+- `limit` and `offset` for pagination
+- `lite: true` for lean column set
 
 ### Implementation approach
 
 **Server component with client-side interactivity:**
-- Server-side: Fetch the initial top 50 brands sorted by `overallScore DESC` via `storage.searchBrands()`. The storage layer already supports score-based sorting and pagination.
-- Client-side: A `"use client"` component handles tab switching (ASX Score / AXS Rating), sector filtering, and pagination via the internal brand search API.
-
-This mirrors the existing catalog page architecture — `app/skills/page.tsx` (server component, initial fetch) → `app/skills/catalog-client.tsx` (client component, filtering/pagination). Use the same pattern.
-
-### Data source
-
-All data comes from the existing `brand_index` table. No new tables or API endpoints needed. The `storage.searchBrands()` method already supports:
-- `sortBy: "overallScore" | "axsRating"` 
-- `sortDir: "asc" | "desc"`
-- `sector` filter
-- `minScore` filter
-- `minAxsRating` filter
-- `limit` and `offset` for pagination
-- `lite: true` for lean column set (name, slug, domain, logoUrl, sector, tier, score, rating)
+- Server-side: `app/leaderboard/page.tsx` — server component, fetches initial top 50 sorted by `overallScore DESC` via internal fetch to `/api/v1/brands?sortBy=overallScore&sortDir=desc&limit=50&lite=true`. Passes data as props.
+- Client-side: `app/leaderboard/leaderboard-client.tsx` — `"use client"` component for tab switching, sector filtering, and sorting. Fetches updated data via the existing brands API when filters change.
 
 ### Files to create/modify
 
 | File | Action |
 |---|---|
 | `app/leaderboard/page.tsx` | New — server component with `generateMetadata()`, initial data fetch |
-| `app/leaderboard/leaderboard-client.tsx` | New — client component for tab switching, filtering, pagination |
-| `public/tenants/shopy/config.json` | Add `/leaderboard` to nav links |
+| `app/leaderboard/leaderboard-client.tsx` | New — client component for interactivity |
+| `public/tenants/shopy/config.json` | Add "Leaderboard" to header nav links |
 
 ### Key details
 
-- **Empty state:** With only ~14 seeded brands currently, the leaderboard may look sparse. Show all brands regardless of count. The page becomes more compelling as the catalog grows. Consider showing a "Submit your store for scanning" CTA if < 50 brands.
-- **Score badges:** Reuse the score display pattern from the existing vendor cards in the catalog — the `VendorCard` component in `app/skills/vendor-card.tsx` already has score badges.
-- **SEO:** High-value page for search. "Top AI-ready stores", "Most agent-friendly e-commerce brands". Full SSR with `generateMetadata()`.
-- **Canonical URL:** `https://shopy.sh/leaderboard` — this is a shopy.sh identity page but accessible from all tenants.
-- **AXS Rating tab:** Only show brands that have `ratingCount >= 3` (or similar threshold) in the AXS Rating view. Brands without enough feedback should be excluded from the rating tab to avoid misleading data.
+- **SEO:** "Top AI-ready stores", "Most agent-friendly e-commerce brands". Full SSR with `generateMetadata()`.
+- **AXS Rating tab:** Only show brands with `ratingCount >= 3` in the rating view. Brands without enough feedback show `—` in the rating column.
+- **Rank numbers:** `text-sm font-mono text-neutral-400` in the first column — mono font matches the shopy aesthetic.
+- **Section structure:** Matches the landing page — uppercase section label above, then the main heading, then the table. No hero section needed — the table IS the page.
 
 ---
 
 ## Build Order
 
-These three pages are independent of each other. They can be built in any order or in parallel.
+These three pages are independent. Recommended sequence:
 
-**Recommended sequence:**
-1. **Standard** — smallest scope, highest SEO value, and referenced by other pages (the guide links to it)
-2. **Leaderboard** — uses existing data and patterns, compelling showcase of the catalog
+1. **Standard** — smallest scope, highest SEO value, referenced by other pages (the guide links to it)
+2. **Leaderboard** — uses existing data and landing page patterns, compelling catalog showcase
 3. **Guide** — most design work, benefits from having the standard and leaderboard to link to
 
 ---
 
 ## Nav Config Updates
 
-After all three pages are built, update `public/tenants/shopy/config.json` header links to include the new pages. Suggested nav:
+After all three pages are built, update `public/tenants/shopy/config.json`:
 
+**Header links:**
 ```json
 "links": [
   { "label": "Standard", "href": "/standard" },
   { "label": "Score Scanner", "href": "/agentic-shopping-score" },
-  { "label": "Catalog", "href": "/skills" },
+  { "label": "Shopping Skills", "href": "/skills" },
   { "label": "Leaderboard", "href": "/leaderboard" },
   { "label": "AXS", "href": "/axs" }
 ]
 ```
 
-The `/guide` page doesn't need a primary nav link — it's reached via contextual callout cards on the standard and how-it-works pages. It can go in the footer under a "For Merchants" column.
+**Footer — add "Resources" column with guide link:**
+```json
+{
+  "title": "Resources",
+  "links": [
+    { "label": "Merchant Guide", "href": "/guide" },
+    { "label": "How It Works", "href": "/how-it-works" },
+    { "label": "AXS Scoring", "href": "/axs" }
+  ]
+}
+```
+
+**Footer — update "Developers" column standard link:**
+```json
+{ "label": "SKILL.md Standard", "href": "/standard" }
+```
+
+---
+
+## Validation Checklist
+
+Before marking each page complete, verify:
+
+- [ ] **No rounded corners** on cards/containers (only `rounded` on tiny badges, `rounded-full` on dots)
+- [ ] **No shadows** anywhere on the page
+- [ ] **Section labels** use `text-sm font-mono text-neutral-400 tracking-wide` uppercase
+- [ ] **Container** is `max-w-4xl mx-auto`
+- [ ] **Section dividers** use `border-t border-neutral-200` with `py-20`
+- [ ] **Card pattern** is `border border-neutral-200 p-8` (no rounded, no shadow)
+- [ ] **Text hierarchy** matches: extrabold headings, neutral-500 body text with font-medium
+- [ ] **Color accents** are neutral-only (green only in terminal/code contexts)
+- [ ] **CTAs** are text links with `hover:underline underline-offset-4`, not colored buttons
+- [ ] **All interactive elements** have `data-testid` attributes
+- [ ] **`generateMetadata()`** returns tenant-aware title and description
+- [ ] **Page renders correctly** on both shopy.sh and creditclaw.com domains
