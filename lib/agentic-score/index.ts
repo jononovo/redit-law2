@@ -1,6 +1,5 @@
 export { computeASXScore } from "./compute";
 export { fetchScanInputs, normalizeDomain, domainToSlug } from "./fetch";
-export { extractMeta } from "./extract-meta";
 export { agenticScan } from "./agent-scan";
 export { computeScoreFromRubric, rubricToCsv, rubricToPromptText } from "./scoring-engine";
 export { detectAll } from "./detectors";
