@@ -1537,15 +1537,13 @@ export type InsertScanQueueEntry = typeof scanQueue.$inferInsert;
 
 export const productCategories = pgTable("product_categories", {
   id: serial("id").primaryKey(),
-  gptId: integer("gpt_id").notNull().unique(),
   name: text("name").notNull(),
   slug: text("slug").notNull(),
-  parentGptId: integer("parent_gpt_id"),
+  parentId: integer("parent_id"),
   depth: integer("depth").notNull().default(1),
   path: text("path").notNull(),
 }, (table) => [
-  index("product_categories_gpt_id_idx").on(table.gptId),
-  index("product_categories_parent_idx").on(table.parentGptId),
+  index("product_categories_parent_idx").on(table.parentId),
   index("product_categories_depth_idx").on(table.depth),
   index("product_categories_slug_idx").on(table.slug),
 ]);

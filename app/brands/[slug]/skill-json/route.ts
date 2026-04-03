@@ -32,7 +32,7 @@ export async function GET(
       );
     }
 
-    let categoryObjects: { gptId: number; name: string; path: string; depth: number; primary: boolean }[] = [];
+    let categoryObjects: { id: number; name: string; path: string; depth: number; primary: boolean }[] = [];
     try {
       categoryObjects = await storage.getBrandCategoryObjects(brand.id);
     } catch {

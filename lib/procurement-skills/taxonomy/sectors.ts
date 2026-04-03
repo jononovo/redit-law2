@@ -57,7 +57,7 @@ export const SECTOR_LABELS: Record<VendorSector, string> = {
   "specialty": "Specialty",
 };
 
-export const GOOGLE_ROOT_IDS: Partial<Record<VendorSector, number>> = {
+export const SECTOR_ROOT_IDS: Record<VendorSector, number> = {
   "animals-pet-supplies": 1,
   "apparel-accessories": 166,
   "arts-entertainment": 8,
@@ -79,6 +79,12 @@ export const GOOGLE_ROOT_IDS: Partial<Record<VendorSector, number>> = {
   "sporting-goods": 990,
   "toys-games": 1239,
   "vehicles-parts": 888,
+  "food-services": 100001,
+  "travel": 100010,
+  "education": 100020,
+  "events": 100030,
+  "luxury": 100040,
+  "specialty": 100050,
 };
 
 export const ASSIGNABLE_SECTORS: VendorSector[] = [
@@ -116,6 +122,14 @@ export function isSectorLuxuryFilter(sector: string): boolean {
   return sector === "luxury";
 }
 
+export const GOOGLE_ROOT_IDS = Object.fromEntries(
+  Object.entries(SECTOR_ROOT_IDS).filter(([, id]) => id < 100000),
+) as Partial<Record<VendorSector, number>>;
+
 export function hasGoogleRoot(sector: VendorSector): boolean {
   return sector in GOOGLE_ROOT_IDS;
+}
+
+export function hasSectorRoot(sector: VendorSector): boolean {
+  return sector in SECTOR_ROOT_IDS;
 }

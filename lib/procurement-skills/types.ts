@@ -23,10 +23,12 @@ export {
   PAYMENT_METHOD_LABELS,
   BRAND_TYPE_LABELS,
   ASSIGNABLE_SECTORS,
+  SECTOR_ROOT_IDS,
   GOOGLE_ROOT_IDS,
   LUXURY_TIERS,
   isSectorLuxuryFilter,
   hasGoogleRoot,
+  hasSectorRoot,
 } from "./taxonomy";
 
 import type { VendorSector } from "./taxonomy/sectors";

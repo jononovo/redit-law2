@@ -4,7 +4,7 @@ import { eq, desc, asc } from "drizzle-orm";
 import type { IStorage } from "./types";
 
 export interface CategoryObject {
-  gptId: number;
+  id: number;
   name: string;
   path: string;
   depth: number;
@@ -37,7 +37,7 @@ export const brandCategoryMethods: BrandCategoryMethods = {
   async getBrandCategoryObjects(brandId: number): Promise<CategoryObject[]> {
     const rows = await db
       .select({
-        gptId: productCategories.gptId,
+        id: productCategories.id,
         name: productCategories.name,
         path: productCategories.path,
         depth: productCategories.depth,
@@ -46,10 +46,10 @@ export const brandCategoryMethods: BrandCategoryMethods = {
       .from(brandCategories)
       .innerJoin(productCategories, eq(brandCategories.categoryId, productCategories.id))
       .where(eq(brandCategories.brandId, brandId))
-      .orderBy(desc(brandCategories.isPrimary), asc(productCategories.gptId));
+      .orderBy(desc(brandCategories.isPrimary), asc(productCategories.id));
 
     return rows.map((r) => ({
-      gptId: r.gptId,
+      id: r.id,
       name: r.name,
       path: r.path,
       depth: r.depth,

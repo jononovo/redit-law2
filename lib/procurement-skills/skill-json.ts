@@ -15,7 +15,7 @@ export interface SkillJson {
     tier: string | null;
     productCategories: string[];
     categories: {
-      gptId: number;
+      id: number;
       name: string;
       path: string;
       depth: number;
@@ -95,7 +95,7 @@ interface BrandRecord {
   hasApi: boolean | null;
   brandData: Record<string, unknown> | null;
   productCategoryStrings?: string[];
-  categoryObjects?: { gptId: number; name: string; path: string; depth: number; primary: boolean }[];
+  categoryObjects?: { id: number; name: string; path: string; depth: number; primary: boolean }[];
 }
 
 function extractPillarScore(breakdown: Record<string, unknown> | null, pillar: string): number {
@@ -135,7 +135,7 @@ export function buildSkillJson(brand: BrandRecord): SkillJson {
     : new Date().toISOString().split("T")[0];
 
   const categories = (brand.categoryObjects ?? []).map((c) => ({
-    gptId: c.gptId,
+    id: c.id,
     name: c.name,
     path: c.path,
     depth: c.depth,
@@ -157,7 +157,7 @@ export function buildSkillJson(brand: BrandRecord): SkillJson {
     taxonomy: {
       sector: brand.sector ?? "specialty",
       tier: brand.tier ?? null,
-      productCategories: categories.map((c) => `${c.gptId} - ${c.path}`),
+      productCategories: categories.map((c) => `${c.id} - ${c.path}`),
       categories,
     },
 

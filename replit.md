@@ -254,7 +254,7 @@ A `/skills/` module provides a curated library of vendor shopping skills. **Modu
 
 **Taxonomy** (`lib/procurement-skills/taxonomy/`):
 Each concern has its own file with type definition + label map. Barrel-exported via `index.ts`.
-- `sectors.ts` — `VendorSector` type + `SECTOR_LABELS` (20 sectors: retail, office, fashion, health, home, electronics, industrial, etc.)
+- `sectors.ts` — `VendorSector` type + `SECTOR_LABELS` (27 sectors: 21 Google Product Taxonomy roots + food-services, travel, education, events, luxury, specialty). `SECTOR_ROOT_IDS` maps every sector to its root category ID (Google IDs < 100000, custom IDs ≥ 100001). `GOOGLE_ROOT_IDS` (derived) covers only the 21 Google-mapped sectors. `hasSectorRoot()` and `hasGoogleRoot()` helpers. `ASSIGNABLE_SECTORS` excludes luxury (tier-filter only).
 - `tiers.ts` — `BrandTier` type + `BRAND_TIER_LABELS` (7 tiers: ultra_luxury, luxury, premium, mid_range, value, budget, commodity). Deprecated `VendorTier` and `TIER_LABELS` aliases are re-exported for backward compatibility.
 - `brand-types.ts` — `BrandType` type + `BRAND_TYPE_LABELS` (5 types: brand, retailer, marketplace, chain, independent)
 - `checkout-methods.ts` — `CheckoutMethod` type + `CHECKOUT_METHOD_LABELS` + `CHECKOUT_METHOD_COLORS`
@@ -275,6 +275,12 @@ Each vendor is its own file exporting a single `VendorSkill` object. Barrel-expo
 
 **Generator** (`lib/procurement-skills/generator.ts`):
 Converts `VendorSkill` objects into `SKILL.md` markdown with frontmatter, taxonomy, discovery, buying, and deals sections.
+
+**Category Resolution** (`lib/agentic-score/resolve-categories.ts`):
+After the initial scan classifies a brand's sector, a second Perplexity call resolves the brand into specific product categories from our taxonomy. Queries `product_categories` for L2 categories under the sector root, sends them to Perplexity as a compact menu, and gets back structured category IDs. Results are persisted in `brand_categories` junction table and appear in skill.json output. Non-critical — failures result in empty categories, never a broken scan.
+
+**Product Categories DB** (`product_categories` table, seeded by `scripts/seed-google-taxonomy.ts`):
+5,638 entries: 5,595 from Google Product Taxonomy + 43 custom categories for non-Google sectors (food-services, travel, education, events, luxury, specialty). The `id` column IS the taxonomy ID (Google taxonomy numbers for Google categories, 100001+ for custom sectors). No separate `gptId` — unified single identifier.
 
 **Package exports** (`lib/procurement-skills/package/`):
 - `skill-json.ts` — JSON package format including taxonomy/searchDiscovery/buying/deals blocks

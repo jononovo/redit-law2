@@ -1,47 +1,49 @@
 import { db } from "@/server/db";
 import { productCategories } from "@/shared/schema";
-import { or, eq, like, and, lte } from "drizzle-orm";
-import { hasGoogleRoot, GOOGLE_ROOT_IDS, SECTOR_LABELS } from "@/lib/procurement-skills/taxonomy/sectors";
+import { eq, lte, like, and, or } from "drizzle-orm";
+import { SECTOR_ROOT_IDS, SECTOR_LABELS } from "@/lib/procurement-skills/taxonomy/sectors";
 import type { VendorSector } from "@/lib/procurement-skills/taxonomy/sectors";
 
 export interface ResolvedCategory {
   categoryId: number;
-  gptId: number;
   isPrimary: boolean;
 }
 
-const MAX_MATCHES = 15;
-const MAX_MERCHANT_DEPTH = 3;
+const PERPLEXITY_TIMEOUT_MS = 20_000;
+const MAX_CATEGORIES = 10;
 
-function normalize(s: string): string {
-  return s.toLowerCase().replace(/[^a-z0-9\s]/g, "").trim();
-}
-
-function scoreMatch(candidateName: string, input: string): number {
-  const cn = normalize(candidateName);
-  const inp = normalize(input);
-  if (cn === inp) return 100;
-  if (cn === inp + "s" || cn + "s" === inp) return 95;
-  if (cn.startsWith(inp + " ") || cn.endsWith(" " + inp)) return 80;
-  if (cn.includes(inp) && inp.length >= 4) return 60;
-  if (inp.includes(cn) && cn.length >= 4) return 40;
-  return 0;
-}
+const CATEGORY_SCHEMA = {
+  type: "object" as const,
+  properties: {
+    categoryIds: {
+      type: "array",
+      items: { type: "number" },
+      description: "IDs of matching categories from the provided list (max 10)",
+    },
+    primaryCategoryId: {
+      type: "number",
+      description: "The single most representative category ID for this brand",
+    },
+  },
+  required: ["categoryIds", "primaryCategoryId"],
+};
 
 export async function resolveProductCategories(
+  domain: string,
   sector: VendorSector,
-  subCategories: string[],
 ): Promise<ResolvedCategory[]> {
-  if (!hasGoogleRoot(sector)) return [];
-  if (!subCategories.length) return [];
+  const rootId = SECTOR_ROOT_IDS[sector];
+  if (rootId === undefined) return [];
 
   const rootName = SECTOR_LABELS[sector];
   if (!rootName) return [];
 
-  const candidates = await db
+  const apiKey = process.env.PERPLEXITY_API_KEY;
+  if (!apiKey) return [];
+
+  const subtree = await db
     .select({
       id: productCategories.id,
-      gptId: productCategories.gptId,
       name: productCategories.name,
       path: productCategories.path,
       depth: productCategories.depth,
@@ -50,43 +52,90 @@ export async function resolveProductCategories(
     .where(
       and(
         or(
-          eq(productCategories.path, rootName),
+          eq(productCategories.id, rootId),
           like(productCategories.path, `${rootName} > %`),
         ),
-        lte(productCategories.depth, MAX_MERCHANT_DEPTH),
+        lte(productCategories.depth, 2),
       ),
     );
 
-  if (!candidates.length) return [];
+  const l2Categories = subtree.filter((c) => c.depth === 2);
+  if (!l2Categories.length) return [];
 
-  const matched: ResolvedCategory[] = [];
-  const usedCategoryIds = new Set<number>();
+  const validIds = new Set(l2Categories.map((c) => c.id));
 
-  for (const sub of subCategories) {
-    if (matched.length >= MAX_MATCHES) break;
+  const categoryMenu = l2Categories
+    .map((c) => `${c.id} - ${c.name}`)
+    .join("\n");
 
-    let bestScore = 0;
-    let bestCandidate: (typeof candidates)[0] | null = null;
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), PERPLEXITY_TIMEOUT_MS);
 
-    for (const c of candidates) {
-      if (usedCategoryIds.has(c.id)) continue;
-
-      const s = scoreMatch(c.name, sub);
-      if (s > bestScore || (s === bestScore && bestCandidate && c.depth < bestCandidate.depth)) {
-        bestScore = s;
-        bestCandidate = c;
-      }
-    }
-
-    if (bestCandidate && bestScore >= 40) {
-      usedCategoryIds.add(bestCandidate.id);
-      matched.push({
-        categoryId: bestCandidate.id,
-        gptId: bestCandidate.gptId,
-        isPrimary: matched.length === 0,
+    let res: Response;
+    try {
+      res = await fetch("https://api.perplexity.ai/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        signal: controller.signal,
+        body: JSON.stringify({
+          model: "sonar",
+          messages: [
+            {
+              role: "system",
+              content:
+                "You are a product taxonomy classifier. Given a brand/website and a list of product categories, select which categories the brand sells in. Be accurate and comprehensive.",
+            },
+            {
+              role: "user",
+              content: `The e-commerce website ${domain} operates in the "${rootName}" sector.\n\nHere are the available subcategories:\n${categoryMenu}\n\nWhich of these subcategories does ${domain} sell products in? Select all that apply (up to ${MAX_CATEGORIES}). Return the category IDs and identify which single category is most representative of their business.`,
+            },
+          ],
+          response_format: {
+            type: "json_schema",
+            json_schema: {
+              name: "category_classification",
+              schema: CATEGORY_SCHEMA,
+            },
+          },
+          max_tokens: 300,
+          temperature: 0.1,
+        }),
       });
+    } finally {
+      clearTimeout(timer);
     }
-  }
 
-  return matched;
+    if (!res.ok) {
+      console.warn(`[categories] Perplexity call failed for ${domain}: HTTP ${res.status}`);
+      return [];
+    }
+
+    const data = await res.json();
+    const content = data.choices?.[0]?.message?.content;
+    if (!content) return [];
+
+    const parsed = JSON.parse(content);
+
+    const categoryIds: number[] = Array.isArray(parsed.categoryIds)
+      ? parsed.categoryIds.filter((id: unknown) => typeof id === "number" && validIds.has(id as number)).slice(0, MAX_CATEGORIES)
+      : [];
+
+    if (!categoryIds.length) return [];
+
+    const primaryId = typeof parsed.primaryCategoryId === "number" && validIds.has(parsed.primaryCategoryId)
+      ? parsed.primaryCategoryId
+      : categoryIds[0];
+
+    return categoryIds.map((id) => ({
+      categoryId: id,
+      isPrimary: id === primaryId,
+    }));
+  } catch (err) {
+    console.warn(`[categories] Resolution failed for ${domain}:`, err instanceof Error ? err.message : err);
+    return [];
+  }
 }

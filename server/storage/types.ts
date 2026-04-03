@@ -328,7 +328,7 @@ export interface IStorage {
   getAllBrandFacets(): Promise<{ sectors: string[]; tiers: string[] }>;
 
   setBrandCategories(brandId: number, categories: { categoryId: number; isPrimary: boolean }[]): Promise<void>;
-  getBrandCategoryObjects(brandId: number): Promise<{ gptId: number; name: string; path: string; depth: number; primary: boolean }[]>;
+  getBrandCategoryObjects(brandId: number): Promise<{ id: number; name: string; path: string; depth: number; primary: boolean }[]>;
 
   createBrandFeedback(data: InsertBrandFeedback): Promise<BrandFeedback>;
   getBrandFeedback(brandSlug: string, limit?: number): Promise<BrandFeedback[]>;

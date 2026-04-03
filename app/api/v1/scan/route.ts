@@ -200,8 +200,8 @@ export async function POST(request: NextRequest) {
 
     try {
       const resolved = await resolveProductCategories(
+        domain,
         resolvedSector as VendorSector,
-        resolvedSubSectors,
       );
       await storage.setBrandCategories(upserted.id, resolved);
     } catch (catErr) {
