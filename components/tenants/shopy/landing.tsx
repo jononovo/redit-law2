@@ -137,7 +137,7 @@ export default function ShopyLanding() {
                     {scoredBrands.map((brand) => (
                       <Link
                         key={brand.slug}
-                        href={`/agentic-shopping-score?domain=${encodeURIComponent(brand.domain)}`}
+                        href={`/skills/${brand.slug}`}
                         className="grid grid-cols-1 md:grid-cols-[1fr_120px_100px] gap-2 md:gap-4 px-5 py-4 hover:bg-neutral-50 transition-colors items-center group"
                         data-testid={`row-score-${brand.slug}`}
                       >
