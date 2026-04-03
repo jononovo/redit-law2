@@ -161,6 +161,7 @@ export async function POST(request: NextRequest) {
         slug, domain, resolvedName, resolvedSector,
         audit, classification?.capabilities ?? [],
       );
+      draft.asxScore = scoreResult.overallScore;
       skillMd = generateVendorSkill(draft);
     } catch {
       // SKILL.md generation failed; non-critical

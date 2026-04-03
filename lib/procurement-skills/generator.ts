@@ -1,9 +1,9 @@
-import { VendorSkill, CHECKOUT_METHOD_LABELS, CAPABILITY_LABELS, SECTOR_LABELS, BRAND_TIER_LABELS, ORDERING_PERMISSION_LABELS, PAYMENT_METHOD_LABELS, computeAgentFriendliness } from "./types";
+import { VendorSkill, CHECKOUT_METHOD_LABELS, CAPABILITY_LABELS, SECTOR_LABELS, BRAND_TIER_LABELS, ORDERING_PERMISSION_LABELS, PAYMENT_METHOD_LABELS } from "./types";
 
 export function generateVendorSkill(vendor: VendorSkill): string {
   const primaryMethod = vendor.checkoutMethods[0];
   const primaryConfig = primaryMethod ? vendor.methodConfig[primaryMethod] : undefined;
-  const friendliness = computeAgentFriendliness(vendor);
+  const asxScore = vendor.asxScore ?? 0;
 
   const methodsList = vendor.checkoutMethods
     .map(m => {
@@ -126,7 +126,7 @@ description: "Shop ${vendor.name} using CreditClaw payment rails"
 homepage: https://creditclaw.com/skills/${vendor.slug}
 requires: [creditclaw]
 maturity: ${vendor.maturity}
-asx_score: ${friendliness * 20}/100
+asx_score: ${asxScore}/100
 last_verified: ${vendor.lastVerified}
 ${vendor.taxonomy ? `sector: ${vendor.taxonomy.sector}
 tier: ${vendor.taxonomy.tier}
@@ -142,7 +142,7 @@ ${vendor.deals ? `current_deals: ${vendor.deals.currentDeals}` : ""}
 
 **Store URL:** ${vendor.url}
 **Sector:** ${vendor.sector}
-**ASX Score:** ${friendliness * 20}/100
+**ASX Score:** ${asxScore}/100
 **Capabilities:** ${capsList}
 ${vendor.feedbackStats ? `**Success Rate:** ${Math.round(vendor.feedbackStats.successRate * 100)}%` : ""}
 

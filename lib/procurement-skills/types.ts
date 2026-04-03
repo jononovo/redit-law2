@@ -104,6 +104,8 @@ export interface VendorSkill {
 
   tips: string[];
 
+  asxScore?: number;
+
   version: string;
   lastVerified: string;
   generatedBy: "skill_builder" | "agentic_scanner" | "manual";
