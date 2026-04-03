@@ -54,3 +54,32 @@ export type SignalKey =
   | "order_management"
   | "checkout_flow"
   | "bot_tolerance";
+
+export interface PageFetch {
+  url: string;
+  html: string;
+  statusCode: number;
+  loadTimeMs: number;
+}
+
+export interface EvidenceCitation {
+  key: string;
+  value: boolean | number | string | null;
+  sourceUrl: string;
+  snippet: string;
+  pillar: "clarity" | "speed" | "reliability";
+  signal: SignalKey;
+  signalLabel: string;
+  criterion: string;
+}
+
+export interface AgenticScanResult {
+  evidence: Record<string, boolean | number | string | null>;
+  citations: EvidenceCitation[];
+  findings: Record<string, unknown>;
+  pagesFetched: PageFetch[];
+  turnCount: number;
+  model: string;
+  durationMs: number;
+  error?: string;
+}
