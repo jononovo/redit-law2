@@ -104,29 +104,3 @@ export function ScanProgress({ status, currentStage, errorMessage }: ScanProgres
   );
 }
 
-export function useScanProgress() {
-  const totalStages = SCAN_STAGES.length;
-  const scanDurationStages = totalStages - 1;
-
-  function startStageTimer(
-    setStage: (fn: (prev: number) => number) => void,
-    intervalMs = 900,
-  ) {
-    let tick = 0;
-    const timer = setInterval(() => {
-      tick++;
-      if (tick < scanDurationStages) {
-        setStage(() => tick);
-      } else {
-        clearInterval(timer);
-      }
-    }, intervalMs);
-    return timer;
-  }
-
-  function finishAllStages(setStage: (n: number) => void) {
-    setStage(totalStages - 1);
-  }
-
-  return { startStageTimer, finishAllStages, totalStages };
-}

@@ -1,9 +1,11 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Loader2, RotateCw, Search } from "lucide-react";
+import { ScanProgress } from "@/components/scan-progress";
+import { useDomainScan } from "@/hooks/use-domain-scan";
 
 interface BrandScanTriggerProps {
   domain: string;
@@ -13,46 +15,24 @@ interface BrandScanTriggerProps {
 
 export function BrandScanTrigger({ domain, slug, variant = "primary" }: BrandScanTriggerProps) {
   const router = useRouter();
-  const [scanning, setScanning] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const scan = useDomainScan({ initialDomain: domain });
 
-  const handleScan = useCallback(async () => {
-    setScanning(true);
-    setError(null);
-
-    try {
-      const res = await fetch("/api/v1/scan", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ domain }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        setError(data.message || "Scan failed. Please try again.");
-        setScanning(false);
-        return;
-      }
-
-      setScanning(false);
+  useEffect(() => {
+    if (scan.status === "done") {
       router.refresh();
-    } catch {
-      setError("Could not connect to the scanner. Please try again.");
-      setScanning(false);
     }
-  }, [domain, router]);
+  }, [scan.status, router]);
 
   if (variant === "secondary") {
     return (
       <div>
         <button
-          onClick={handleScan}
-          disabled={scanning}
+          onClick={() => scan.triggerScan(domain)}
+          disabled={scan.status === "scanning"}
           className="inline-flex items-center justify-center gap-2 h-10 px-5 rounded-xl border border-neutral-200 bg-white text-sm font-semibold text-neutral-600 hover:bg-neutral-50 transition-colors disabled:opacity-50"
           data-testid="button-rescan"
         >
-          {scanning ? (
+          {scan.status === "scanning" ? (
             <>
               <Loader2 className="w-3.5 h-3.5 animate-spin" />
               Re-scanning...
@@ -64,7 +44,11 @@ export function BrandScanTrigger({ domain, slug, variant = "primary" }: BrandSca
             </>
           )}
         </button>
-        {error && <p className="text-xs text-red-500 mt-1">{error}</p>}
+        <ScanProgress
+          status={scan.status}
+          currentStage={scan.currentStage}
+          errorMessage={scan.errorMsg}
+        />
       </div>
     );
   }
@@ -72,12 +56,12 @@ export function BrandScanTrigger({ domain, slug, variant = "primary" }: BrandSca
   return (
     <div>
       <Button
-        onClick={handleScan}
-        disabled={scanning}
+        onClick={() => scan.triggerScan(domain)}
+        disabled={scan.status === "scanning"}
         className="rounded-xl h-12 px-8 bg-primary text-white hover:bg-primary/90 font-bold shadow-lg shadow-primary/20 text-base disabled:opacity-50"
         data-testid="button-scan-brand"
       >
-        {scanning ? (
+        {scan.status === "scanning" ? (
           <>
             <Loader2 className="w-4 h-4 animate-spin mr-2" />
             Scanning {domain}...
@@ -89,7 +73,11 @@ export function BrandScanTrigger({ domain, slug, variant = "primary" }: BrandSca
           </>
         )}
       </Button>
-      {error && <p className="text-xs text-red-500 mt-2">{error}</p>}
+      <ScanProgress
+        status={scan.status}
+        currentStage={scan.currentStage}
+        errorMessage={scan.errorMsg}
+      />
     </div>
   );
 }

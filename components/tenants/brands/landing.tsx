@@ -10,6 +10,8 @@ import { useState, useEffect, useMemo } from "react";
 import { ArrowRight, ChevronRight, Terminal, Loader2 } from "lucide-react";
 import { CAPABILITY_LABELS } from "@/lib/procurement-skills/taxonomy/capabilities";
 import { CHECKOUT_METHOD_LABELS } from "@/lib/procurement-skills/taxonomy/checkout-methods";
+import { ScanProgress } from "@/components/scan-progress";
+import { useDomainScan } from "@/hooks/use-domain-scan";
 
 type BrandRow = {
   slug: string;
@@ -71,13 +73,9 @@ function CheckoutLabel({ methods }: { methods: string[] | null }) {
   );
 }
 
-type ScanState = "idle" | "scanning" | "error";
-
 export default function BrandsLanding() {
   const router = useRouter();
-  const [domain, setDomain] = useState("");
-  const [scanState, setScanState] = useState<ScanState>("idle");
-  const [errorMsg, setErrorMsg] = useState("");
+  const scan = useDomainScan();
   const [brands, setBrands] = useState<BrandRow[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -91,48 +89,21 @@ export default function BrandsLanding() {
       .catch(() => setLoading(false));
   }, []);
 
+  useEffect(() => {
+    if (scan.status === "done" && scan.result) {
+      router.push(`/skills/${scan.result.slug}`);
+    }
+  }, [scan.status, scan.result, router]);
+
   const sectorCount = useMemo(() => new Set(brands.map((b) => b.sector)).size, [brands]);
 
-  async function handleCreateSkill() {
-    const trimmed = domain.trim();
-    if (!trimmed || trimmed.length < 3 || !trimmed.includes(".")) {
-      setErrorMsg("Enter a valid domain (e.g. allbirds.com)");
-      setScanState("error");
-      return;
-    }
-
-    setScanState("scanning");
-    setErrorMsg("");
-
-    try {
-      const res = await fetch("/api/v1/scan", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ domain: trimmed }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        setErrorMsg(data.message || "Something went wrong. Try again.");
-        setScanState("error");
-        return;
-      }
-
-      router.push(`/skills/${data.slug}`);
-    } catch {
-      setErrorMsg("Network error. Check your connection and try again.");
-      setScanState("error");
-    }
-  }
-
   function handleKeyDown(e: React.KeyboardEvent) {
-    if (e.key === "Enter" && scanState !== "scanning") {
-      handleCreateSkill();
+    if (e.key === "Enter" && scan.status !== "scanning") {
+      scan.triggerScan();
     }
   }
 
-  const isScanning = scanState === "scanning";
+  const isScanning = scan.status === "scanning";
 
   return (
     <div className="min-h-screen bg-neutral-950 text-neutral-100 font-sans">
@@ -155,10 +126,10 @@ export default function BrandsLanding() {
                   type="text"
                   placeholder="Enter a domain (e.g. allbirds.com)"
                   aria-label="Enter a domain to create a shopping skill"
-                  value={domain}
+                  value={scan.domain}
                   onChange={(e) => {
-                    setDomain(e.target.value);
-                    if (scanState === "error") setScanState("idle");
+                    scan.setDomain(e.target.value);
+                    if (scan.status === "error") scan.reset();
                   }}
                   onKeyDown={handleKeyDown}
                   disabled={isScanning}
@@ -166,7 +137,7 @@ export default function BrandsLanding() {
                   data-testid="input-create-skill"
                 />
                 <button
-                  onClick={handleCreateSkill}
+                  onClick={() => scan.triggerScan()}
                   disabled={isScanning}
                   className="h-14 px-6 bg-white text-neutral-950 font-bold text-sm tracking-wide uppercase border border-white hover:bg-neutral-200 transition-colors disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-2 whitespace-nowrap"
                   data-testid="button-create-skill"
@@ -184,14 +155,14 @@ export default function BrandsLanding() {
                   )}
                 </button>
               </div>
-              {scanState === "error" && errorMsg && (
-                <p className="mt-2 text-sm font-mono text-red-400" data-testid="text-scan-error">
-                  {errorMsg}
-                </p>
-              )}
+              <ScanProgress
+                status={scan.status}
+                currentStage={scan.currentStage}
+                errorMessage={scan.errorMsg}
+              />
             </div>
 
-            {!loading && (
+            {!loading && scan.status === "idle" && (
               <div className="max-w-2xl mx-auto flex items-center justify-center gap-4 text-sm font-mono text-neutral-500 tracking-wide mb-10" data-testid="stats-bar">
                 <span>{brands.length} skills indexed</span>
                 <span className="text-neutral-700">·</span>
