@@ -1,14 +1,24 @@
 import { lookup } from "dns/promises";
-import type { ScoreInput } from "./types";
+import type { ScoreInput, PageContent } from "./types";
+
+// ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
 
 const FETCH_TIMEOUT = 15000;
-const MAX_HTML_LENGTH = 200000;
+const PROBE_TIMEOUT = 10000;
+const MAX_RAW_HTML_LENGTH = 200000;
+const MAX_STRIPPED_HTML_LENGTH = 50000;
 const MAX_REDIRECTS = 5;
 
 const BLOCKED_HOSTS = [
   "localhost", "127.0.0.1", "0.0.0.0", "::1",
   "metadata.google.internal", "169.254.169.254",
 ];
+
+// ---------------------------------------------------------------------------
+// SSRF protection (single source of truth)
+// ---------------------------------------------------------------------------
 
 function isIpPrivate(ip: string): boolean {
   if (ip === "127.0.0.1" || ip === "0.0.0.0" || ip === "::1" || ip === "::") return true;
@@ -43,14 +53,54 @@ async function resolveAndValidate(url: string): Promise<boolean> {
   }
 }
 
-async function safeFetch(url: string, timeoutMs: number = FETCH_TIMEOUT, depth: number = 0): Promise<Response> {
+// ---------------------------------------------------------------------------
+// HTML processing
+// ---------------------------------------------------------------------------
+
+function stripScriptsAndStyles(html: string): string {
+  return html
+    .replace(/<script[\s\S]*?<\/script>/gi, "")
+    .replace(/<style[\s\S]*?<\/style>/gi, "")
+    .replace(/<noscript[\s\S]*?<\/noscript>/gi, "")
+    .replace(/<!--[\s\S]*?-->/g, "")
+    .replace(/<svg[\s\S]*?<\/svg>/gi, "")
+    .replace(/\s{2,}/g, " ");
+}
+
+// ---------------------------------------------------------------------------
+// Domain normalization
+// ---------------------------------------------------------------------------
+
+export function normalizeDomain(input: string): string {
+  if (!input || typeof input !== "string") {
+    throw new Error("Domain is required");
+  }
+  let domain = input.trim().toLowerCase();
+  domain = domain.replace(/^https?:\/\//, "");
+  domain = domain.replace(/\/.*$/, "");
+  domain = domain.replace(/^www\./, "");
+  if (!domain || domain.length < 3 || !domain.includes(".")) {
+    throw new Error(`Invalid domain: ${input}`);
+  }
+  return domain;
+}
+
+// ---------------------------------------------------------------------------
+// Core fetch with SSRF protection and redirect handling
+// ---------------------------------------------------------------------------
+
+async function safeFetch(
+  url: string,
+  timeoutMs: number = FETCH_TIMEOUT,
+  depth: number = 0,
+): Promise<Response> {
   if (depth > MAX_REDIRECTS) {
     throw new Error(`Too many redirects (>${MAX_REDIRECTS})`);
   }
 
   const safe = await resolveAndValidate(url);
   if (!safe) {
-    throw new Error(`Unsafe URL after redirect: ${url}`);
+    throw new Error(`Unsafe URL: ${url}`);
   }
 
   const controller = new AbortController();
@@ -78,19 +128,9 @@ async function safeFetch(url: string, timeoutMs: number = FETCH_TIMEOUT, depth: 
   }
 }
 
-function normalizeDomain(input: string): string {
-  if (!input || typeof input !== "string") {
-    throw new Error("Domain is required");
-  }
-  let domain = input.trim().toLowerCase();
-  domain = domain.replace(/^https?:\/\//, "");
-  domain = domain.replace(/\/.*$/, "");
-  domain = domain.replace(/^www\./, "");
-  if (!domain || domain.length < 3 || !domain.includes(".")) {
-    throw new Error(`Invalid domain: ${input}`);
-  }
-  return domain;
-}
+// ---------------------------------------------------------------------------
+// fetchScanInputs — raw HTML (scripts intact) for ASX score signals
+// ---------------------------------------------------------------------------
 
 export async function fetchScanInputs(rawDomain: string): Promise<ScoreInput> {
   const domain = normalizeDomain(rawDomain);
@@ -102,13 +142,13 @@ export async function fetchScanInputs(rawDomain: string): Promise<ScoreInput> {
     safeFetch(baseUrl).then(async (res) => {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const text = await res.text();
-      return text.slice(0, MAX_HTML_LENGTH);
+      return text.slice(0, MAX_RAW_HTML_LENGTH);
     }),
     safeFetch(`${baseUrl}/sitemap.xml`, 8000).then(async (res) => {
       if (!res.ok) return null;
       const text = await res.text();
       if (!text.includes("<") || text.length < 50) return null;
-      return text.slice(0, MAX_HTML_LENGTH);
+      return text.slice(0, MAX_RAW_HTML_LENGTH);
     }),
     safeFetch(`${baseUrl}/robots.txt`, 8000).then(async (res) => {
       if (!res.ok) return null;
@@ -131,4 +171,87 @@ export async function fetchScanInputs(rawDomain: string): Promise<ScoreInput> {
     robotsTxtContent: robotsResult.status === "fulfilled" ? robotsResult.value : null,
     pageLoadTimeMs,
   };
+}
+
+// ---------------------------------------------------------------------------
+// fetchPage — stripped HTML for LLM analysis (lower token cost)
+// ---------------------------------------------------------------------------
+
+export async function fetchPage(url: string): Promise<PageContent | null> {
+  const safe = await resolveAndValidate(url);
+  if (!safe) return null;
+
+  try {
+    const res = await safeFetch(url, PROBE_TIMEOUT);
+
+    let html = await res.text();
+    const titleMatch = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+    html = stripScriptsAndStyles(html);
+
+    if (html.length > MAX_STRIPPED_HTML_LENGTH) {
+      html = html.substring(0, MAX_STRIPPED_HTML_LENGTH) + "\n[TRUNCATED]";
+    }
+
+    return {
+      url,
+      html,
+      title: titleMatch?.[1]?.trim(),
+      statusCode: res.status,
+    };
+  } catch {
+    return null;
+  }
+}
+
+export async function fetchPages(urls: string[]): Promise<PageContent[]> {
+  const results = await Promise.allSettled(
+    urls.map(url => fetchPage(url))
+  );
+
+  return results
+    .filter((r): r is PromiseFulfilledResult<PageContent | null> => r.status === "fulfilled")
+    .map(r => r.value)
+    .filter((p): p is PageContent => p !== null && p.statusCode < 400);
+}
+
+// ---------------------------------------------------------------------------
+// probeUrl — HEAD request for protocol/feature detection
+// ---------------------------------------------------------------------------
+
+export async function probeUrl(url: string): Promise<{ status: number; headers: Record<string, string> } | null> {
+  const safe = await resolveAndValidate(url);
+  if (!safe) return null;
+
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), PROBE_TIMEOUT);
+
+    const response = await fetch(url, {
+      method: "HEAD",
+      signal: controller.signal,
+      redirect: "manual",
+    });
+
+    clearTimeout(timeout);
+
+    if (response.status >= 300 && response.status < 400) {
+      const location = response.headers.get("location");
+      if (location) {
+        const redirectUrl = new URL(location, url).toString();
+        const redirectSafe = await resolveAndValidate(redirectUrl);
+        if (!redirectSafe) return null;
+        return probeUrl(redirectUrl);
+      }
+      return null;
+    }
+
+    const headers: Record<string, string> = {};
+    response.headers.forEach((value, key) => {
+      headers[key] = value;
+    });
+
+    return { status: response.status, headers };
+  } catch {
+    return null;
+  }
 }

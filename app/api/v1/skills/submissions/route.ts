@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth/session";
-import { analyzeVendor } from "@/lib/procurement-skills/builder/analyze";
+import { analyzeVendor } from "@/lib/agentic-score";
 import { storage } from "@/server/storage";
 import { submitVendorSchema } from "@/shared/schema";
 
