@@ -254,6 +254,11 @@ export const brandIndexMethods: BrandIndexMethods = {
     const sectors = [...new Set(rows.map(r => r.sector))].filter(s => validSectorSlugs.has(s));
     const tiers = [...new Set(rows.map(r => r.tier).filter((t): t is string => t !== null))];
 
+    const hasLuxuryBrands = tiers.includes("luxury") || tiers.includes("ultra_luxury");
+    if (hasLuxuryBrands && !sectors.includes("luxury")) {
+      sectors.push("luxury");
+    }
+
     facetCache = { sectors, tiers };
     facetCacheExpiry = now + FACET_CACHE_TTL_MS;
 
