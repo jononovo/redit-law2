@@ -1,8 +1,8 @@
 import type { SignalKey } from "./types";
 
-export const RUBRIC_VERSION = "1.1.0";
+export const RUBRIC_VERSION = "2.0.0";
 
-export type EvidenceSource = "detect" | "agent" | "either";
+export type EvidenceSource = "detect" | "agent" | "either" | "audit";
 
 export interface RubricCriterion {
   id: string;
@@ -51,13 +51,13 @@ export const SCORING_RUBRIC: ScoringRubric = {
           label: "JSON-LD / Structured Data",
           max: 15,
           criteria: [
-            { id: "jld_present",      points: 4, evidence: "jsonLdPresent",       source: "detect",  condition: "JSON-LD script blocks found on page" },
-            { id: "jld_product",      points: 4, evidence: "jsonLdHasProduct",    source: "detect",  condition: "Product schema type detected in JSON-LD" },
-            { id: "jld_offer",        points: 2, evidence: "jsonLdHasOffer",      source: "detect",  condition: "Offer / pricing data in JSON-LD" },
-            { id: "jld_organization", points: 1, evidence: "jsonLdHasOrg",        source: "detect",  condition: "Organization or LocalBusiness schema detected" },
-            { id: "jld_breadcrumb",   points: 1, evidence: "jsonLdHasBreadcrumb", source: "detect",  condition: "BreadcrumbList schema detected" },
-            { id: "jld_website",      points: 1, evidence: "jsonLdHasWebSite",    source: "detect",  condition: "WebSite schema detected" },
-            { id: "jld_og_commerce",  points: 2, evidence: "ogCommerceTags",      source: "detect",  condition: "Open Graph commerce meta tags (og:product, og:price) found" },
+            { id: "jld_present",      points: 4, evidence: "jsonLdPresent",       source: "audit", condition: "JSON-LD structured data present on the site" },
+            { id: "jld_product",      points: 4, evidence: "jsonLdHasProduct",    source: "audit", condition: "Product schema type used in JSON-LD" },
+            { id: "jld_offer",        points: 2, evidence: "jsonLdHasOffer",      source: "audit", condition: "Offer / pricing data in JSON-LD" },
+            { id: "jld_organization", points: 1, evidence: "jsonLdHasOrg",        source: "audit", condition: "Organization or LocalBusiness schema present" },
+            { id: "jld_breadcrumb",   points: 1, evidence: "jsonLdHasBreadcrumb", source: "audit", condition: "BreadcrumbList schema present" },
+            { id: "jld_website",      points: 1, evidence: "jsonLdHasWebSite",    source: "audit", condition: "WebSite schema present" },
+            { id: "jld_og_commerce",  points: 2, evidence: "ogCommerceTags",      source: "audit", condition: "Open Graph commerce meta tags (og:product, og:price) present" },
           ],
         },
         {
@@ -65,26 +65,22 @@ export const SCORING_RUBRIC: ScoringRubric = {
           label: "Product Feed / Sitemap",
           max: 10,
           criteria: [
-            { id: "pf_sitemap_present",  points: 3, evidence: "sitemapPresent",      source: "detect", condition: "sitemap.xml found and accessible" },
-            { id: "pf_valid_xml",        points: 2, evidence: "sitemapValidXml",     source: "detect", condition: "Sitemap has valid XML structure (urlset or sitemapindex)" },
-            { id: "pf_product_urls",     points: 3, evidence: "sitemapHasProducts", source: "detect", condition: "Product page URLs detected in sitemap (/products/, /p/, /shop/, /catalog)" },
-            { id: "pf_sitemap_index",    points: 1, evidence: "sitemapIsIndex",      source: "detect", condition: "Multi-sitemap index found (sitemapindex element)" },
-            { id: "pf_robots_reference", points: 1, evidence: "robotsHasSitemap",   source: "detect", condition: "Sitemap URL referenced in robots.txt" },
+            { id: "pf_sitemap_present",  points: 3, evidence: "sitemapPresent",     source: "audit", condition: "sitemap.xml is available" },
+            { id: "pf_valid_xml",        points: 2, evidence: "sitemapValidXml",    source: "audit", condition: "Sitemap has valid XML structure" },
+            { id: "pf_product_urls",     points: 3, evidence: "sitemapHasProducts", source: "audit", condition: "Product page URLs present in sitemap" },
+            { id: "pf_sitemap_index",    points: 1, evidence: "sitemapIsIndex",     source: "audit", condition: "Multi-sitemap index found" },
+            { id: "pf_robots_reference", points: 1, evidence: "robotsHasSitemap",  source: "audit", condition: "Sitemap URL referenced in robots.txt" },
           ],
         },
         {
           id: "clean_html",
-          label: "Clean HTML / Semantic Markup",
+          label: "Agent Metadata",
           max: 10,
           criteria: [
-            { id: "ch_semantic_strong",  points: 4, evidence: "semanticTagsStrong",  source: "detect", condition: "4+ semantic HTML5 landmark elements (header, nav, main, article, section, aside, footer)", group: "ch_semantic" },
-            { id: "ch_semantic_partial", points: 2, evidence: "semanticTagsPartial", source: "detect", condition: "2-3 semantic HTML5 landmark elements", group: "ch_semantic" },
-            { id: "ch_headings_good",    points: 2, evidence: "headingHierarchy",    source: "detect", condition: "H1 present with 3+ total headings (good hierarchy)", group: "ch_headings" },
-            { id: "ch_headings_partial", points: 1, evidence: "headingsPresent",     source: "detect", condition: "At least one heading tag present", group: "ch_headings" },
-            { id: "ch_aria_good",        points: 2, evidence: "ariaMarkupStrong",    source: "detect", condition: "5+ ARIA attributes (roles + aria-labels)", group: "ch_aria" },
-            { id: "ch_aria_partial",     points: 1, evidence: "ariaMarkupPartial",   source: "detect", condition: "1-4 ARIA attributes present", group: "ch_aria" },
-            { id: "ch_alt_good",         points: 2, evidence: "imgAltTextStrong",    source: "detect", condition: "80%+ of images have meaningful alt text", group: "ch_alt" },
-            { id: "ch_alt_partial",      points: 1, evidence: "imgAltTextPartial",   source: "detect", condition: "50-79% of images have alt text", group: "ch_alt" },
+            { id: "am_llm_txt",       points: 3, evidence: "hasLlmTxt",        source: "audit", condition: "llms.txt or llms-full.txt file available for AI agent instructions" },
+            { id: "am_ai_plugin",     points: 3, evidence: "hasAiPlugin",      source: "audit", condition: "AI plugin manifest (.well-known/ai-plugin.json) published" },
+            { id: "am_openapi_docs",  points: 2, evidence: "hasOpenApiDocs",   source: "audit", condition: "OpenAPI/Swagger API documentation available" },
+            { id: "am_agent_meta",    points: 2, evidence: "hasAgentMeta",     source: "audit", condition: "Agent-specific metadata (robots meta tags for AI, structured agent instructions)" },
           ],
         },
       ],
@@ -100,9 +96,9 @@ export const SCORING_RUBRIC: ScoringRubric = {
           label: "Search API / MCP",
           max: 10,
           criteria: [
-            { id: "sa_mcp",      points: 4, evidence: "mcpEndpoint",      source: "either", condition: "MCP endpoint, .well-known/mcp.json, or AI plugin manifest detected" },
-            { id: "sa_api",      points: 3, evidence: "publicApi",        source: "either", condition: "Versioned API (/api/v*), OpenAPI/Swagger docs, or GraphQL endpoint detected" },
-            { id: "sa_protocol", points: 3, evidence: "agenticProtocol",  source: "either", condition: "Agentic commerce protocol detected (x402, ACP, A2A)" },
+            { id: "sa_mcp",      points: 4, evidence: "mcpEndpoint",      source: "audit", condition: "MCP endpoint or .well-known/mcp.json available" },
+            { id: "sa_api",      points: 3, evidence: "publicApi",        source: "audit", condition: "Public API for product data or ordering available" },
+            { id: "sa_protocol", points: 3, evidence: "agenticProtocol",  source: "audit", condition: "Agentic commerce protocol detected (x402, ACP, A2A)" },
           ],
         },
         {
@@ -110,11 +106,9 @@ export const SCORING_RUBRIC: ScoringRubric = {
           label: "Internal Site Search",
           max: 10,
           criteria: [
-            { id: "ss_search_form",   points: 4, evidence: "searchFormPresent",    source: "detect",  condition: "Search form or search input field detected on homepage" },
-            { id: "ss_search_action",  points: 2, evidence: "searchActionUrl",     source: "detect",  condition: "Search form has a parseable action URL (e.g. /search?q=)" },
-            { id: "ss_opensearch",     points: 2, evidence: "opensearchPresent",   source: "detect",  condition: "OpenSearch description XML linked", group: "ss_search_meta" },
-            { id: "ss_search_link",    points: 1, evidence: "searchLinkRel",       source: "detect",  condition: "Search link relation (rel=search) present", group: "ss_search_meta" },
-            { id: "ss_autocomplete",   points: 2, evidence: "searchAutocomplete",  source: "detect",  condition: "Autocomplete, autosuggest, or typeahead capability detected" },
+            { id: "ss_search_present",   points: 4, evidence: "searchPresent",       source: "audit", condition: "Site search functionality available" },
+            { id: "ss_search_url",       points: 3, evidence: "searchUrlPattern",    source: "audit", condition: "Predictable search URL pattern (e.g. /search?q={query})" },
+            { id: "ss_autocomplete",     points: 3, evidence: "searchAutocomplete",  source: "audit", condition: "Search autocomplete or typeahead available" },
           ],
         },
         {
@@ -122,11 +116,9 @@ export const SCORING_RUBRIC: ScoringRubric = {
           label: "Page Load Performance",
           max: 5,
           criteria: [
-            { id: "pl_excellent", points: 5, evidence: "pageLoadExcellent", source: "detect", condition: "Page load time ≤ 1,000ms",  group: "pl_time" },
-            { id: "pl_good",      points: 4, evidence: "pageLoadGood",      source: "detect", condition: "Page load time 1,001–1,500ms", group: "pl_time" },
-            { id: "pl_ok",        points: 3, evidence: "pageLoadOk",        source: "detect", condition: "Page load time 1,501–2,000ms", group: "pl_time" },
-            { id: "pl_slow",      points: 2, evidence: "pageLoadSlow",      source: "detect", condition: "Page load time 2,001–3,000ms", group: "pl_time" },
-            { id: "pl_very_slow", points: 1, evidence: "pageLoadVerySlow",  source: "detect", condition: "Page load time 3,001–5,000ms", group: "pl_time" },
+            { id: "pl_fast",     points: 5, evidence: "pageLoadFast",     source: "audit", condition: "Site known for fast page loads (under 2 seconds)", group: "pl_speed" },
+            { id: "pl_moderate", points: 3, evidence: "pageLoadModerate", source: "audit", condition: "Site has moderate page load times (2-4 seconds)", group: "pl_speed" },
+            { id: "pl_slow",     points: 1, evidence: "pageLoadSlow",     source: "audit", condition: "Site known for slow page loads (over 4 seconds)", group: "pl_speed" },
           ],
         },
         {
@@ -134,10 +126,10 @@ export const SCORING_RUBRIC: ScoringRubric = {
           label: "Product Page Quality",
           max: 5,
           criteria: [
-            { id: "pp_structured_pricing", points: 2, evidence: "productPricingStructured", source: "agent", condition: "Machine-readable pricing on product page (JSON-LD Offer, microdata, or clearly tagged price element)" },
-            { id: "pp_variant_selectors",  points: 1, evidence: "productVariantStandard",   source: "agent", condition: "Product variants use standard form elements (select, radio, labeled buttons)" },
-            { id: "pp_add_to_cart",        points: 1, evidence: "productAddToCartClear",    source: "agent", condition: "Clear, single-action add-to-cart button (not hidden behind modals or multi-step wizards)" },
-            { id: "pp_product_url_id",     points: 1, evidence: "productIdInUrl",           source: "agent", condition: "Product identifier visible in URL (enables direct agent navigation)" },
+            { id: "pp_structured_pricing", points: 2, evidence: "productPricingStructured", source: "audit", condition: "Machine-readable pricing on product pages" },
+            { id: "pp_variant_selectors",  points: 1, evidence: "productVariantStandard",   source: "audit", condition: "Product variants use standard selectors (size, color, options)" },
+            { id: "pp_add_to_cart",        points: 1, evidence: "productAddToCartClear",    source: "audit", condition: "Clear, single-action add-to-cart button" },
+            { id: "pp_product_url_id",     points: 1, evidence: "productIdInUrl",           source: "audit", condition: "Product identifier visible in URL for direct navigation" },
           ],
         },
       ],
@@ -153,10 +145,10 @@ export const SCORING_RUBRIC: ScoringRubric = {
           label: "Access & Authentication",
           max: 10,
           criteria: [
-            { id: "aa_guest_checkout",   points: 5, evidence: "guestCheckout",    source: "either", condition: "Guest checkout available (no account required to purchase)" },
-            { id: "aa_checkout_links",   points: 2, evidence: "checkoutLinks",    source: "detect",  condition: "Direct checkout or cart links found on homepage" },
-            { id: "aa_shopping_actions", points: 2, evidence: "shoppingActions",  source: "detect",  condition: "Add-to-cart or buy-now actions visible on homepage", excludedBy: "guestCheckout" },
-            { id: "aa_guest_inferred",   points: 1, evidence: "guestInferred",    source: "detect",  condition: "Both sign-in and cart options present (guest checkout likely)", excludedBy: "guestCheckout" },
+            { id: "aa_guest_checkout",   points: 5, evidence: "guestCheckout",    source: "audit", condition: "Guest checkout available (no account required)" },
+            { id: "aa_checkout_links",   points: 2, evidence: "checkoutAccessible", source: "audit", condition: "Checkout flow accessible without login walls" },
+            { id: "aa_shopping_actions", points: 2, evidence: "shoppingActions",  source: "audit", condition: "Add-to-cart or buy-now actions available without account", excludedBy: "guestCheckout" },
+            { id: "aa_account_optional", points: 1, evidence: "accountOptional",  source: "audit", condition: "Account creation is optional during checkout", excludedBy: "guestCheckout" },
           ],
         },
         {
@@ -164,12 +156,12 @@ export const SCORING_RUBRIC: ScoringRubric = {
           label: "Order Management",
           max: 10,
           criteria: [
-            { id: "om_programmatic", points: 10, evidence: "programmaticCheckout", source: "either",  condition: "MCP or agentic commerce protocol enables programmatic ordering", override: true },
-            { id: "om_variants",     points: 3,  evidence: "variantSelectors",     source: "either",  condition: "Product variant selectors found (size, color, options)" },
-            { id: "om_cart_action",  points: 2,  evidence: "addToCartAction",      source: "either",  condition: "Add-to-cart or buy-now button/action detected" },
-            { id: "om_cart_url",     points: 2,  evidence: "predictableCartUrl",   source: "detect",  condition: "Predictable cart/basket URL structure (/cart or /basket)" },
-            { id: "om_quantity",     points: 1,  evidence: "quantityInput",        source: "either",  condition: "Quantity input field detected on product or cart page" },
-            { id: "om_address",      points: 2,  evidence: "addressSection",       source: "either",  condition: "Shipping/delivery address form section found" },
+            { id: "om_programmatic", points: 10, evidence: "programmaticCheckout", source: "audit", condition: "MCP or agentic protocol enables programmatic ordering", override: true },
+            { id: "om_variants",     points: 3,  evidence: "variantSelectors",     source: "audit", condition: "Product variant selection available (size, color, options)" },
+            { id: "om_cart_action",  points: 2,  evidence: "addToCartAction",      source: "audit", condition: "Add-to-cart or buy-now action available" },
+            { id: "om_cart_url",     points: 2,  evidence: "predictableCartUrl",   source: "audit", condition: "Predictable cart URL structure (/cart or /basket)" },
+            { id: "om_quantity",     points: 1,  evidence: "quantityInput",        source: "audit", condition: "Quantity selection available on product or cart page" },
+            { id: "om_address",      points: 2,  evidence: "addressSection",       source: "audit", condition: "Shipping/delivery address form available at checkout" },
           ],
         },
         {
@@ -177,12 +169,11 @@ export const SCORING_RUBRIC: ScoringRubric = {
           label: "Checkout Flow",
           max: 10,
           criteria: [
-            { id: "cf_programmatic",     points: 10, evidence: "programmaticCheckout", source: "either",  condition: "MCP or agentic commerce protocol enables programmatic checkout", override: true },
-            { id: "cf_discount",         points: 2,  evidence: "discountField",        source: "either",  condition: "Promo code, coupon, or discount field available" },
-            { id: "cf_payment_methods",  points: 3,  evidence: "paymentMethodsLabeled", source: "either", condition: "Payment methods clearly labeled (Visa, PayPal, Apple Pay, etc.)", group: "cf_payment" },
-            { id: "cf_payment_icons",    points: 2,  evidence: "paymentIcons",          source: "detect", condition: "Payment method icons/images present", group: "cf_payment" },
-            { id: "cf_shipping",         points: 3,  evidence: "shippingOptions",       source: "either",  condition: "Shipping or delivery options described with methods/timeframes" },
-            { id: "cf_loyalty",          points: 2,  evidence: "loyaltyProgram",        source: "either",  condition: "Loyalty, rewards, or membership program mentioned" },
+            { id: "cf_programmatic",     points: 10, evidence: "programmaticCheckout", source: "audit", condition: "MCP or agentic protocol enables programmatic checkout", override: true },
+            { id: "cf_discount",         points: 2,  evidence: "discountField",        source: "audit", condition: "Promo code, coupon, or discount field available" },
+            { id: "cf_payment_methods",  points: 3,  evidence: "paymentMethodsKnown",  source: "audit", condition: "Payment methods clearly documented (Visa, PayPal, Apple Pay, etc.)" },
+            { id: "cf_shipping",         points: 3,  evidence: "shippingOptions",       source: "audit", condition: "Shipping options available with estimated timeframes" },
+            { id: "cf_loyalty",          points: 2,  evidence: "loyaltyProgram",        source: "audit", condition: "Loyalty, rewards, or membership program available" },
           ],
         },
         {
@@ -190,14 +181,11 @@ export const SCORING_RUBRIC: ScoringRubric = {
           label: "Bot Tolerance",
           max: 5,
           criteria: [
-            { id: "bt_no_robots",       points: 2, evidence: "noRobotsTxt",        source: "detect", condition: "No robots.txt found (no explicit blocking)",       group: "bt_robots" },
-            { id: "bt_allows_crawling", points: 3, evidence: "robotsAllowsCrawl",  source: "detect", condition: "robots.txt allows general crawling (User-agent: * without Disallow: /)", group: "bt_robots" },
-            { id: "bt_selective",       points: 2, evidence: "robotsSelective",    source: "detect", condition: "robots.txt present with selective (partial) rules",  group: "bt_robots" },
-            { id: "bt_blocks_ai",       points: 0, evidence: "robotsBlocksAi",     source: "detect", condition: "AI/bot-specific user-agent blocks in robots.txt",   group: "bt_robots" },
-            { id: "bt_blocks_all",      points: 0, evidence: "robotsBlocksAll",    source: "detect", condition: "robots.txt disallows all crawling (Disallow: /)",   group: "bt_robots" },
-            { id: "bt_crawl_delay",     points: 1, evidence: "reasonableCrawlDelay", source: "detect", condition: "Crawl-delay ≤ 2 seconds" },
-            { id: "bt_no_captcha",      points: 1, evidence: "noCaptcha",          source: "detect", condition: "No CAPTCHA or bot challenge detected on homepage" },
-            { id: "bt_captcha_penalty", points: -2, evidence: "captchaDetected",   source: "detect", condition: "CAPTCHA or bot challenge (reCAPTCHA, hCaptcha, Cloudflare) detected" },
+            { id: "bt_allows_crawling", points: 3, evidence: "robotsAllowsCrawl",  source: "audit", condition: "robots.txt allows general crawling", group: "bt_robots" },
+            { id: "bt_selective",       points: 2, evidence: "robotsSelective",    source: "audit", condition: "robots.txt present with selective rules (not fully open, not fully blocked)", group: "bt_robots" },
+            { id: "bt_blocks_ai",       points: 0, evidence: "robotsBlocksAi",     source: "audit", condition: "AI/bot-specific blocks in robots.txt", group: "bt_robots" },
+            { id: "bt_blocks_all",      points: 0, evidence: "robotsBlocksAll",    source: "audit", condition: "robots.txt disallows all crawling", group: "bt_robots" },
+            { id: "bt_no_captcha",      points: 2, evidence: "noCaptchaBarrier",   source: "audit", condition: "No aggressive CAPTCHA or bot challenge on main pages" },
           ],
         },
       ],

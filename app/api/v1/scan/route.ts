@@ -1,22 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { storage } from "@/server/storage";
-import { normalizeDomain, domainToSlug, fetchScanInputs } from "@/lib/agentic-score";
-import { detectAll } from "@/lib/agentic-score/detectors";
+import { normalizeDomain, domainToSlug } from "@/lib/agentic-score";
 import { SCORING_RUBRIC } from "@/lib/agentic-score/rubric";
 import { computeScoreFromRubric } from "@/lib/agentic-score/scoring-engine";
-import { agenticScan } from "@/lib/agentic-score/agent-scan";
+import { auditSite, auditToEvidence } from "@/lib/agentic-score/audit-site";
 import { classifyBrand } from "@/lib/agentic-score/classify-brand";
 import {
   buildVendorSkillDraft,
-  mergeEvidence,
   mergeArrayField,
   domainToLabel,
 } from "@/lib/agentic-score/scan-utils";
 import { generateVendorSkill } from "@/lib/procurement-skills/generator";
 import type { VendorSkill } from "@/lib/procurement-skills/types";
 import type { ScoreLabel } from "@/lib/agentic-score";
-import type { EvidenceMap } from "@/lib/agentic-score/rubric";
 
 const CACHE_WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
 const RATE_LIMIT_WINDOW_MS = 60 * 1000;
@@ -123,50 +120,15 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    let input;
-    try {
-      input = await fetchScanInputs(domain);
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Could not reach domain";
-      return NextResponse.json(
-        { error: "unreachable", message },
-        { status: 422 }
-      );
-    }
-
-    const classification = await classifyBrand(domain).catch(() => null);
-
-    const detectorEvidence = detectAll(
-      input.homepageHtml || "",
-      input.sitemapContent ?? null,
-      input.robotsTxtContent ?? null,
-      input.pageLoadTimeMs ?? null,
-    );
+    const [classification, audit] = await Promise.all([
+      classifyBrand(domain).catch(() => null),
+      auditSite(domain).catch(() => null),
+    ]);
 
     const slug = existing?.slug ?? domainToSlug(domain);
 
-    let agentResult;
-    try {
-      agentResult = await agenticScan(domain, input.homepageHtml);
-      if (agentResult?.error) {
-        console.error(`[scan] agentic scan degraded for ${domain}: ${agentResult.error}`);
-      }
-    } catch (err) {
-      console.error(`[scan] agentic scan failed for ${domain}:`, err instanceof Error ? err.message : err);
-      agentResult = null;
-    }
-
-    const agentEvidence = agentResult?.evidence ?? {};
-    const agentCitations = agentResult?.citations ?? [];
-    const agentFindings = agentResult?.findings ?? {};
-    const hasAgentEvidence = agentResult !== null && Object.keys(agentEvidence).length > 0;
-    const enhanced = hasAgentEvidence;
-
-    const finalEvidence = hasAgentEvidence
-      ? mergeEvidence(detectorEvidence, agentEvidence)
-      : detectorEvidence;
-
-    const scoreResult = computeScoreFromRubric(SCORING_RUBRIC, finalEvidence);
+    const evidence = audit ? auditToEvidence(audit) : {};
+    const scoreResult = computeScoreFromRubric(SCORING_RUBRIC, evidence);
 
     const resolvedName = classification?.name
       ?? existing?.name
@@ -187,16 +149,18 @@ export async function POST(request: NextRequest) {
       ?? existing?.description
       ?? `${resolvedName} at ${domain}`;
 
-    const enrichedFindings: Record<string, unknown> = {
-      ...agentFindings,
-      capabilities: classification?.capabilities ?? [],
-      guestCheckout: agentFindings.guestCheckout ?? classification?.guestCheckout ?? false,
-    };
+    const resolvedCapabilities = mergeArrayField(
+      existing?.capabilities,
+      classification?.capabilities?.map(c => c as string),
+    );
 
     let skillMd: string | null = null;
     let draft: VendorSkill | null = null;
     try {
-      draft = buildVendorSkillDraft(slug, domain, resolvedName, resolvedSector, enrichedFindings);
+      draft = buildVendorSkillDraft(
+        slug, domain, resolvedName, resolvedSector,
+        audit, classification?.capabilities ?? [],
+      );
       skillMd = generateVendorSkill(draft);
     } catch {
       // SKILL.md generation failed; non-critical
@@ -220,17 +184,14 @@ export async function POST(request: NextRequest) {
       overallScore: scoreResult.overallScore,
       scoreBreakdown: scoreResult.breakdown,
       recommendations: scoreResult.recommendations,
-      scanTier: enhanced ? "agentic" : "free",
+      scanTier: audit ? "perplexity" : "free",
       lastScannedAt: now,
       lastScannedBy: "public",
       skillMd: skillMd ?? existing?.skillMd ?? undefined,
       checkoutMethods: draft?.checkoutMethods ?? existing?.checkoutMethods ?? [],
-      capabilities: mergeArrayField(
-        existing?.capabilities,
-        classification?.capabilities?.map(c => c as string),
-      ),
-      hasApi: (existing?.hasApi || (agentFindings.hasApi as boolean | undefined)) ?? false,
-      hasMcp: (existing?.hasMcp || (agentFindings.hasMcp as boolean | undefined)) ?? false,
+      capabilities: resolvedCapabilities,
+      hasApi: audit?.hasApi ?? existing?.hasApi ?? false,
+      hasMcp: audit?.hasMcp ?? existing?.hasMcp ?? false,
     });
 
     return NextResponse.json({
@@ -240,11 +201,9 @@ export async function POST(request: NextRequest) {
       score: scoreResult.overallScore,
       label: scoreResult.label,
       cached: false,
-      enhanced,
       scannedAt: now.toISOString(),
       breakdown: scoreResult.breakdown,
       recommendations: scoreResult.recommendations,
-      citations: agentCitations,
       skillMdUrl: skillMd ? `/brands/${slug}/skill` : null,
     });
   } catch (error) {

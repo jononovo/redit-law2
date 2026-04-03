@@ -676,7 +676,8 @@ CreditClaw provides distinct API endpoints for each rail and for master guardrai
 - **SendGrid:** Transactional email services.
 - **shadcn/ui:** UI component library.
 - **React Query (@tanstack/react-query):** Server state management.
-- **Anthropic (@anthropic-ai/sdk):** LLM-powered vendor analysis for ASX Score Scanner.
+- **Anthropic (@anthropic-ai/sdk):** LLM-powered brand classification for ASX Score Scanner.
+- **Perplexity API:** Site audit and evidence gathering for ASX Score Scanner (via sonar-deep-research model).
 - **react-markdown + remark-gfm + @tailwindcss/typography:** Markdown rendering for documentation pages.
 
 ### Testing (`tests/`, `docs/testing.md`)
@@ -720,7 +721,7 @@ Private technical documentation covering implementation details, fragile areas, 
 - `README.md` — index of all internal doc pages
 - `multitenant-system.md` — hostname routing, tenant configs, theming, how to add tenants, fragile areas
 - `product-index.md` — brand catalog, LITE_COLUMNS, filtering, generateStaticParams, search_vector
-- `asx-scanner.md` — multi-page scan flow, rubric v1.1.0, 11 signals, SKILL.md generation, evidence system
+- `asx-scanner.md` — Perplexity-only pipeline, rubric v2.0.0, 11 signals (Agent Metadata replaces Clean HTML), SKILL.md generation, evidence system
 - `metadata-and-taxonomy.md` — Google Product Taxonomy, UCP, sectors, tiers, capabilities, skill.json
 
 ### Documentation System (`docs/content/`, `app/docs/`)
