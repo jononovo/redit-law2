@@ -4,15 +4,33 @@ import Image from "next/image";
 import Link from "next/link";
 import { useTenant } from "@/lib/tenants/tenant-context";
 
+const DEFAULT_COLUMNS = [
+  {
+    title: "Product",
+    links: [
+      { label: "How It Works", href: "/how-it-works" },
+      { label: "Vendor Skills", href: "/skills" },
+      { label: "Score Scanner", href: "/agentic-shopping-score" },
+    ],
+  },
+];
+
+const DEFAULT_SOCIALS = [
+  { label: "Twitter", href: "#" },
+];
+
 export function Footer() {
   const tenant = useTenant();
   const year = new Date().getFullYear();
 
+  const columns = tenant.navigation?.footer?.columns ?? DEFAULT_COLUMNS;
+  const socials = tenant.navigation?.footer?.socials ?? DEFAULT_SOCIALS;
+
   return (
     <footer className="bg-neutral-900 text-white pt-16 pb-8">
       <div className="container mx-auto px-6">
-        <div className="grid md:grid-cols-5 gap-12 mb-12">
-          <div className="md:col-span-1">
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-12 mb-12">
+          <div className="col-span-2 md:col-span-1">
             <Link href="/" className="flex items-center gap-2 mb-4" data-testid="footer-logo-link">
               <Image src={tenant.branding.logo} alt={`${tenant.branding.name} Logo`} width={32} height={32} className="object-contain" />
               <span className="font-bold text-lg tracking-tight">{tenant.branding.name}</span>
@@ -22,45 +40,57 @@ export function Footer() {
             </p>
           </div>
 
-          <div>
-            <h4 className="font-bold text-sm uppercase tracking-wider text-neutral-300 mb-4">Product</h4>
-            <ul className="space-y-3">
-              <li><Link href="/how-it-works" className="text-sm text-neutral-400 hover:text-white transition-colors font-medium" data-testid="footer-link-how-it-works">How It Works</Link></li>
-              <li><Link href="/allowance" className="text-sm text-neutral-400 hover:text-white transition-colors font-medium" data-testid="footer-link-allowance">Allowance</Link></li>
-              <li><Link href="/safety" className="text-sm text-neutral-400 hover:text-white transition-colors font-medium" data-testid="footer-link-safety">Safety</Link></li>
-              <li><Link href="/skills" className="text-sm text-neutral-400 hover:text-white transition-colors font-medium" data-testid="footer-link-skills">Vendor Skills</Link></li>
-              <li><Link href="/agentic-shopping-score" className="text-sm text-neutral-400 hover:text-white transition-colors font-medium" data-testid="footer-link-scanner">Score Scanner</Link></li>
-              <li><Link href="/onboarding" className="text-sm text-neutral-400 hover:text-white transition-colors font-medium" data-testid="footer-link-onboarding">Get Started</Link></li>
-            </ul>
-          </div>
+          {columns.map((col) => (
+            <div key={col.title}>
+              <h4 className="font-bold text-sm uppercase tracking-wider text-neutral-300 mb-4">{col.title}</h4>
+              <ul className="space-y-3">
+                {col.links.map((link) => (
+                  <li key={link.href + link.label}>
+                    {link.external ? (
+                      <a
+                        href={link.href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm text-neutral-400 hover:text-white transition-colors font-medium"
+                        data-testid={`footer-link-${link.label.toLowerCase().replace(/\s+/g, "-")}`}
+                      >
+                        {link.label}
+                      </a>
+                    ) : (
+                      <Link
+                        href={link.href}
+                        className="text-sm text-neutral-400 hover:text-white transition-colors font-medium"
+                        data-testid={`footer-link-${link.label.toLowerCase().replace(/\s+/g, "-")}`}
+                      >
+                        {link.label}
+                      </Link>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
 
-          <div>
-            <h4 className="font-bold text-sm uppercase tracking-wider text-neutral-300 mb-4">Dashboard</h4>
-            <ul className="space-y-3">
-              <li><Link href="/overview" className="text-sm text-neutral-400 hover:text-white transition-colors font-medium" data-testid="footer-link-overview">Overview</Link></li>
-              <li><Link href="/cards" className="text-sm text-neutral-400 hover:text-white transition-colors font-medium" data-testid="footer-link-cards">Cards</Link></li>
-              <li><Link href="/transactions" className="text-sm text-neutral-400 hover:text-white transition-colors font-medium" data-testid="footer-link-transactions">Transactions</Link></li>
-              <li><Link href="/settings" className="text-sm text-neutral-400 hover:text-white transition-colors font-medium" data-testid="footer-link-settings">Settings</Link></li>
-            </ul>
-          </div>
-
-          <div>
-            <h4 className="font-bold text-sm uppercase tracking-wider text-neutral-300 mb-4">Resources</h4>
-            <ul className="space-y-3">
-              <li><Link href="/docs" className="text-sm text-neutral-400 hover:text-white transition-colors font-medium" data-testid="footer-link-documentation">Documentation</Link></li>
-              <li><Link href="/docs/api/introduction" className="text-sm text-neutral-400 hover:text-white transition-colors font-medium" data-testid="footer-link-developer">Developer</Link></li>
-              <li><Link href="/newsroom" className="text-sm text-neutral-400 hover:text-white transition-colors font-medium" data-testid="footer-link-newsroom">Newsroom</Link></li>
-            </ul>
-          </div>
-
-          <div>
-            <h4 className="font-bold text-sm uppercase tracking-wider text-neutral-300 mb-4">Connect</h4>
-            <ul className="space-y-3">
-              <li><a href="https://x.com/creditclawapp" target="_blank" rel="noopener noreferrer" className="text-sm text-neutral-400 hover:text-white transition-colors font-medium" data-testid="footer-link-twitter">Twitter</a></li>
-              <li><a href="#" className="text-sm text-neutral-400 hover:text-white transition-colors font-medium" data-testid="footer-link-instagram">Instagram</a></li>
-              <li><a href="#" className="text-sm text-neutral-400 hover:text-white transition-colors font-medium" data-testid="footer-link-tiktok">TikTok</a></li>
-            </ul>
-          </div>
+          {socials.length > 0 && (
+            <div>
+              <h4 className="font-bold text-sm uppercase tracking-wider text-neutral-300 mb-4">Connect</h4>
+              <ul className="space-y-3">
+                {socials.map((s) => (
+                  <li key={s.href + s.label}>
+                    <a
+                      href={s.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm text-neutral-400 hover:text-white transition-colors font-medium"
+                      data-testid={`footer-link-${s.label.toLowerCase()}`}
+                    >
+                      {s.label}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
 
         <div className="pt-8 border-t border-white/10 flex flex-col md:flex-row justify-between items-center text-sm text-neutral-500 font-medium gap-4">

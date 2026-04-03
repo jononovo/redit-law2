@@ -73,6 +73,7 @@ export async function POST(request: NextRequest) {
     }
 
     const { bot_name, owner_email, description, callback_url, pairing_code, bot_type, local_port, webhook_path } = parsed.data;
+    const tenantId = request.headers.get("x-tenant-id") || "creditclaw";
 
     const isDuplicate = await storage.checkDuplicateRegistration(bot_name, owner_email);
     if (isDuplicate) {
@@ -129,6 +130,7 @@ export async function POST(request: NextRequest) {
           webhookFailCount: 0,
           ownerUid: pairingCodeRecord.ownerUid,
           claimedAt: new Date(),
+          signupTenant: tenantId,
           botType: effectiveBotType,
           tunnelId: tunnel?.dbFields.tunnelId || null,
           tunnelToken: tunnel?.dbFields.tunnelToken || null,
@@ -206,6 +208,7 @@ export async function POST(request: NextRequest) {
       webhookFailCount: 0,
       ownerUid: null,
       claimedAt: null,
+      signupTenant: tenantId,
       botType: effectiveBotType,
       tunnelId: tunnel?.dbFields.tunnelId || null,
       tunnelToken: tunnel?.dbFields.tunnelToken || null,

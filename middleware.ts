@@ -31,8 +31,14 @@ export function middleware(request: NextRequest) {
     request.headers.get("host") ||
     "";
 
+  const urlTenantParam = request.nextUrl.searchParams.get("tenant");
+  const cookieTenant = request.cookies.get("tenant-id")?.value;
+
   const tenantId =
-    process.env.TENANT_OVERRIDE || resolveTenantId(hostname);
+    urlTenantParam ||
+    process.env.TENANT_OVERRIDE ||
+    cookieTenant ||
+    resolveTenantId(hostname);
 
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set("x-tenant-id", tenantId);

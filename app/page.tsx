@@ -2,7 +2,8 @@ import { headers } from "next/headers";
 import { getTenantConfig } from "@/lib/tenants/config";
 
 const landingComponents: Record<string, () => Promise<{ default: React.ComponentType }>> = {
-  "/creditclaw": () => import("@/components/landings/creditclaw-landing"),
+  "/creditclaw": () => import("@/components/tenants/creditclaw/landing"),
+  "/shopy": () => import("@/components/tenants/shopy/landing"),
 };
 
 export default async function RootPage() {
@@ -13,7 +14,7 @@ export default async function RootPage() {
   const loader = landingComponents[tenant.routes.guestLanding];
   const LandingComponent = loader
     ? (await loader()).default
-    : (await import("@/components/landings/creditclaw-landing")).default;
+    : (await import("@/components/tenants/creditclaw/landing")).default;
 
   return <LandingComponent />;
 }

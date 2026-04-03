@@ -64,6 +64,8 @@ CRON_SECRET = "test_hmac_secret_for_checkout_confirmations_2026"
 NEXT_PUBLIC_APP_URL = "https://creditclaw.com"
 NEXT_PUBLIC_PRIVY_APP_ID = ""
 
+[userenv.development]
+
 [postMerge]
 path = "scripts/post-merge.sh"
 timeoutMs = 120000

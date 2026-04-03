@@ -699,10 +699,12 @@ The app supports multiple tenants (CreditClaw, shopy.sh) via hostname-based rout
 - **Server helper**: `lib/tenants/get-request-tenant.ts` — `getRequestTenant()` reads from headers in server components/API routes
 - **Client context**: `lib/tenants/tenant-context.tsx` — `TenantProvider` + `useTenant()` hook for client components
 - **Layout**: `app/layout.tsx` injects tenant theme CSS vars + wraps children in `TenantProvider`
-- **Landing pages**: `components/landings/creditclaw-landing.tsx` — extracted from former `app/page.tsx`; `app/page.tsx` now dynamically loads per tenant
-- **Nav/Footer**: Both use `useTenant()` for logo, name, tagline, routes
+- **Tenant components**: `components/tenants/{id}/` — per-tenant landing pages, how-it-works pages, etc.
+- **Nav**: Uses `useTenant()` for logo, name, tagline, routes
+- **Footer**: Config-driven via `tenant.navigation.footer` in config.json — each tenant defines its own columns and social links
+- **How It Works**: `app/how-it-works/page.tsx` is a tenant router (same pattern as landing page)
 - **owners.signup_tenant**: Tracks which tenant a user signed up from (migration 0011)
-- To test locally as a different tenant: set `TENANT_OVERRIDE=shopy` env var
+- To test locally as a different tenant: add `?tenant=shopy` to any URL, or set `TENANT_OVERRIDE=shopy` env var
 
 ### Database Schema Workflow
 Schema changes flow through Drizzle ORM and are auto-synced to production on deploy:

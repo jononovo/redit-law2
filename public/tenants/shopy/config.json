@@ -38,5 +38,32 @@
     "showLeaderboard": true,
     "showStandard": true,
     "showGuide": true
+  },
+
+  "navigation": {
+    "footer": {
+      "columns": [
+        {
+          "title": "Product",
+          "links": [
+            { "label": "Score Scanner", "href": "/agentic-shopping-score" },
+            { "label": "Skill Catalog", "href": "/skills" },
+            { "label": "How It Works", "href": "/how-it-works" }
+          ]
+        },
+        {
+          "title": "Developers",
+          "links": [
+            { "label": "CLI Reference", "href": "/docs" },
+            { "label": "API", "href": "/docs/api/introduction" },
+            { "label": "SKILL.md Standard", "href": "/docs" }
+          ]
+        }
+      ],
+      "socials": [
+        { "label": "Twitter", "href": "https://x.com/shopysh" },
+        { "label": "GitHub", "href": "https://github.com/shopysh" }
+      ]
+    }
   }
 }
