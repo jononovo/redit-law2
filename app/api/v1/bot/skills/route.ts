@@ -37,6 +37,10 @@ export async function GET(request: NextRequest) {
 
   const sectorValues = parseCSV(sector) ?? parseCSV(category);
 
+  const isLuxuryFilter = sectorValues?.length === 1 && sectorValues[0] === "luxury";
+  const effectiveSectors = isLuxuryFilter ? undefined : sectorValues;
+  const luxuryTiers = isLuxuryFilter ? ["ultra_luxury", "luxury"] : undefined;
+
   const validSortBy = sortParam === "rating" ? "rating"
     : sortParam === "name" ? "name"
     : sortParam === "created_at" ? "created_at"
@@ -44,8 +48,8 @@ export async function GET(request: NextRequest) {
 
   const brands = await storage.searchBrands({
     q: search ?? undefined,
-    sectors: sectorValues,
-    tiers: parseCSV(tierParam),
+    sectors: effectiveSectors,
+    tiers: luxuryTiers ?? parseCSV(tierParam),
     maturities: parseCSV(maturityParam),
     hasMcp: hasMcp === "true" ? true : undefined,
     hasApi: hasSearchApi === "true" ? true : undefined,

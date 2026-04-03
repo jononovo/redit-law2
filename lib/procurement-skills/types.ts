@@ -22,6 +22,11 @@ export {
   CHECKOUT_PROVIDER_LABELS,
   PAYMENT_METHOD_LABELS,
   BRAND_TYPE_LABELS,
+  ASSIGNABLE_SECTORS,
+  GOOGLE_ROOT_IDS,
+  LUXURY_TIERS,
+  isSectorLuxuryFilter,
+  hasGoogleRoot,
 } from "./taxonomy";
 
 import type { VendorSector } from "./taxonomy/sectors";

@@ -136,8 +136,8 @@ export async function POST(request: NextRequest) {
       ?? domainToLabel(domain);
 
     const resolvedSector = classification?.sector
-      ?? (existing?.sector && existing.sector !== "uncategorized" ? existing.sector : null)
-      ?? "uncategorized";
+      ?? (existing?.sector && existing.sector !== "uncategorized" && existing.sector !== "retail" ? existing.sector : null)
+      ?? "specialty";
 
     const resolvedSubSectors = classification?.subCategories
       ?? (existing?.subSectors && existing.subSectors.length > 0 ? existing.subSectors : []);

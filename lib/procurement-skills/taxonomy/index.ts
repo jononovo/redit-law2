@@ -1,4 +1,4 @@
-export { type VendorSector, SECTOR_LABELS } from "./sectors";
+export { type VendorSector, SECTOR_LABELS, ASSIGNABLE_SECTORS, GOOGLE_ROOT_IDS, LUXURY_TIERS, isSectorLuxuryFilter, hasGoogleRoot } from "./sectors";
 export { type BrandTier, type VendorTier, BRAND_TIER_LABELS, TIER_LABELS } from "./tiers";
 
 export { type CheckoutMethod, CHECKOUT_METHOD_LABELS, CHECKOUT_METHOD_COLORS } from "./checkout-methods";

@@ -1,7 +1,8 @@
 import type { VendorSector } from "@/lib/procurement-skills/taxonomy/sectors";
+import { ASSIGNABLE_SECTORS } from "@/lib/procurement-skills/taxonomy/sectors";
 import type { BrandTier } from "@/lib/procurement-skills/taxonomy/tiers";
 import type { VendorCapability } from "@/lib/procurement-skills/types";
-import { VALID_SECTORS, VALID_CAPABILITIES } from "./scan-utils";
+import { VALID_CAPABILITIES } from "./scan-utils";
 
 const PERPLEXITY_TIMEOUT_MS = 25_000;
 
@@ -25,7 +26,11 @@ const CLASSIFICATION_SCHEMA = {
   type: "object" as const,
   properties: {
     name: { type: "string", description: "Official brand/company name (clean, no Inc/LLC/Ltd suffix)" },
-    sector: { type: "string", enum: VALID_SECTORS, description: "Primary business sector" },
+    sector: {
+      type: "string",
+      enum: [...ASSIGNABLE_SECTORS],
+      description: "Primary business sector. Use Google Product Taxonomy roots where applicable (e.g. 'electronics', 'apparel-accessories', 'health-beauty'). Use 'food-services' for delivery/takeout/meal kits, 'travel' for booking/hospitality, 'education' for learning platforms, 'events' for ticketing/conferences. Use 'specialty' if no other sector fits.",
+    },
     tier: { type: "string", enum: VALID_TIERS, description: "Brand pricing tier" },
     subCategories: { type: "array", items: { type: "string" }, description: "Up to 5 product categories they sell" },
     capabilities: { type: "array", items: { type: "string", enum: VALID_CAPABILITIES }, description: "Supported e-commerce capabilities" },
@@ -98,7 +103,7 @@ export async function classifyBrand(domain: string): Promise<BrandClassification
 
     const parsed = JSON.parse(content);
 
-    const sector = VALID_SECTORS.includes(parsed.sector) ? parsed.sector : "specialty";
+    const sector = ASSIGNABLE_SECTORS.includes(parsed.sector) ? parsed.sector : "specialty";
     const tier = VALID_TIERS.includes(parsed.tier) ? parsed.tier : "mid_range";
     const capabilities = Array.isArray(parsed.capabilities)
       ? parsed.capabilities.filter((c: string) => VALID_CAPABILITIES.includes(c as VendorCapability))

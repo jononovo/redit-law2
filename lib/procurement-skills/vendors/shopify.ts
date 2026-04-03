@@ -4,7 +4,7 @@ export const shopify: VendorSkill = {
     slug: "shopify",
   name: "Shopify Stores",
   logoUrl: "/assets/images/vendors/shopify.svg",
-  sector: "retail",
+  sector: "software",
   url: "https://www.shopify.com",
   checkoutMethods: ["native_api", "self_hosted_card"],
   capabilities: ["price_lookup", "stock_check", "programmatic_checkout"],
@@ -39,7 +39,7 @@ export const shopify: VendorSkill = {
   generatedBy: "manual",
   feedbackStats: { successRate: 0.87 },
   taxonomy: {
-    sector: "retail",
+    sector: "software",
     subSectors: ["platform", "dtc brands", "independent stores"],
     tier: "mid_range",
     tags: ["platform", "shopify payments", "dtc"],

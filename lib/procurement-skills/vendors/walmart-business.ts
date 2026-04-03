@@ -4,7 +4,7 @@ export const walmart_business: VendorSkill = {
     slug: "walmart-business",
   name: "Walmart Business",
   logoUrl: "/assets/images/vendors/walmart-business.svg",
-  sector: "retail",
+  sector: "specialty",
   url: "https://business.walmart.com",
   checkoutMethods: ["self_hosted_card"],
   capabilities: ["price_lookup", "bulk_pricing", "tax_exemption", "po_numbers", "business_invoicing", "account_creation"],
@@ -33,7 +33,7 @@ export const walmart_business: VendorSkill = {
   lastVerified: "2026-02-08",
   generatedBy: "manual",
   taxonomy: {
-    sector: "office",
+    sector: "office-supplies",
     subSectors: ["business supplies", "bulk purchasing", "janitorial"],
     tier: "value",
     tags: ["b2b", "tax exempt", "business+"],

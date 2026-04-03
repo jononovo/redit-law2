@@ -13,7 +13,7 @@ export interface SkillJson {
   taxonomy: {
     sector: string;
     tier: string | null;
-    subCategories: string[];
+    productCategories: string[];
   };
   scoring: {
     asxScore: number;
@@ -87,6 +87,7 @@ interface BrandRecord {
   hasMcp: boolean | null;
   hasApi: boolean | null;
   brandData: Record<string, unknown> | null;
+  productCategoryStrings?: string[];
 }
 
 function extractPillarScore(breakdown: Record<string, unknown> | null, pillar: string): number {
@@ -125,6 +126,8 @@ export function buildSkillJson(brand: BrandRecord): SkillJson {
     ? new Date(brand.lastScannedAt).toISOString().split("T")[0]
     : new Date().toISOString().split("T")[0];
 
+  const productCategories = brand.productCategoryStrings ?? [];
+
   return {
     $schema: "https://shopy.sh/schemas/skill.json/v1",
     version: "1.0",
@@ -138,9 +141,9 @@ export function buildSkillJson(brand: BrandRecord): SkillJson {
     },
 
     taxonomy: {
-      sector: brand.sector ?? "uncategorized",
+      sector: brand.sector ?? "specialty",
       tier: brand.tier ?? null,
-      subCategories: brand.subSectors ?? [],
+      productCategories,
     },
 
     scoring: {

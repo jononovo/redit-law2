@@ -59,18 +59,18 @@ export const POST = withBotApi("/api/v1/bot/tasks/next", async (_request, { bot 
 
 function getCategoryForMerchant(slug: string): string {
   const categoryMap: Record<string, string> = {
-    "real-etsy-checkout": "marketplace",
-    "amazon-verified-merchant": "retail",
-    "official-paypal-purchase": "payments",
-    "stripe-direct-payments": "payments",
-    "cloudserve-pro": "saas",
-    "verified-google-services": "saas",
-    "spicythai-kitchen": "food",
-    "digitalocean-marketplace": "saas",
-    "authentic-shopify-store": "marketplace",
+    "real-etsy-checkout": "specialty",
+    "amazon-verified-merchant": "specialty",
+    "official-paypal-purchase": "software",
+    "stripe-direct-payments": "software",
+    "cloudserve-pro": "software",
+    "verified-google-services": "software",
+    "spicythai-kitchen": "food-services",
+    "digitalocean-marketplace": "software",
+    "authentic-shopify-store": "specialty",
     "norton-security-direct": "software",
     "adobe-creative-hub": "software",
-    "freshmart-grocery": "food",
+    "freshmart-grocery": "food-services",
   };
   return categoryMap[slug] || "other";
 }

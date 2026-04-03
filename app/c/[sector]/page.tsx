@@ -6,6 +6,7 @@ import { Footer } from "@/components/footer";
 import { storage } from "@/server/storage";
 import { VendorCard } from "@/app/skills/vendor-card";
 import { SECTOR_LABELS, VendorSector } from "@/lib/procurement-skills/types";
+import { isSectorLuxuryFilter, LUXURY_TIERS } from "@/lib/procurement-skills/taxonomy/sectors";
 import { ArrowLeft, ArrowRight, Layers } from "lucide-react";
 import type { Metadata } from "next";
 
@@ -14,6 +15,16 @@ const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || "https://creditclaw.com";
 const ALL_SECTORS = Object.keys(SECTOR_LABELS) as VendorSector[];
 
 const getSectorBrands = cache(async (sector: VendorSector) => {
+  if (isSectorLuxuryFilter(sector)) {
+    return storage.searchBrands({
+      tiers: [...LUXURY_TIERS],
+      maturities: ["verified", "official", "beta", "community"],
+      sortBy: "score",
+      sortDir: "desc",
+      limit: 200,
+      lite: true,
+    });
+  }
   return storage.searchBrands({
     sectors: [sector],
     maturities: ["verified", "official", "beta", "community"],
@@ -30,6 +41,13 @@ const getPopulatedSectors = cache(async () => {
   try {
     const results = await Promise.all(
       ALL_SECTORS.map(async (s) => {
+        if (isSectorLuxuryFilter(s)) {
+          const count = await storage.searchBrandsCount({
+            tiers: [...LUXURY_TIERS],
+            maturities: [...PUBLISHED_MATURITIES],
+          });
+          return count > 0 ? s : null;
+        }
         const count = await storage.searchBrandsCount({
           sectors: [s],
           maturities: [...PUBLISHED_MATURITIES],

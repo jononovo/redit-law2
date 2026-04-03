@@ -4,7 +4,7 @@ export const uline: VendorSkill = {
     slug: "uline",
   name: "Uline",
   logoUrl: "/assets/images/vendors/uline.svg",
-  sector: "industrial",
+  sector: "business-industrial",
   url: "https://www.uline.com",
   checkoutMethods: ["self_hosted_card"],
   capabilities: ["price_lookup", "stock_check", "bulk_pricing", "order_tracking", "business_invoicing", "po_numbers"],
@@ -34,7 +34,7 @@ export const uline: VendorSkill = {
   lastVerified: "2026-02-05",
   generatedBy: "manual",
   taxonomy: {
-    sector: "industrial",
+    sector: "business-industrial",
     subSectors: ["packaging", "shipping supplies", "janitorial", "warehouse equipment", "safety"],
     tier: "commodity",
     tags: ["fast shipping", "quantity breaks", "net 30", "13 warehouses"],

@@ -4,7 +4,7 @@ export const grainger: VendorSkill = {
     slug: "grainger",
   name: "Grainger",
   logoUrl: "/assets/images/vendors/grainger.svg",
-  sector: "industrial",
+  sector: "business-industrial",
   url: "https://www.grainger.com",
   checkoutMethods: ["self_hosted_card"],
   capabilities: ["price_lookup", "stock_check", "bulk_pricing", "tax_exemption", "po_numbers", "order_tracking", "business_invoicing", "account_creation"],
@@ -34,7 +34,7 @@ export const grainger: VendorSkill = {
   lastVerified: "2026-02-05",
   generatedBy: "manual",
   taxonomy: {
-    sector: "industrial",
+    sector: "business-industrial",
     subSectors: ["mro", "safety", "electrical", "plumbing", "hvac", "hand tools", "power tools"],
     tier: "premium",
     tags: ["mro leader", "contract pricing", "sds available", "same-day shipping"],
