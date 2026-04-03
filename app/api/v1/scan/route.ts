@@ -273,8 +273,9 @@ export async function POST(request: NextRequest) {
     const resolvedTier = existing?.tier ?? (agentFindings.tier as string | undefined) ?? null;
 
     let skillMd: string | null = null;
+    let draft: VendorSkill | null = null;
     try {
-      const draft = buildVendorSkillDraft(slug, domain, resolvedName, resolvedSector, agentFindings);
+      draft = buildVendorSkillDraft(slug, domain, resolvedName, resolvedSector, agentFindings);
       skillMd = generateVendorSkill(draft);
     } catch {
       // SKILL.md generation failed; non-critical
@@ -294,7 +295,7 @@ export async function POST(request: NextRequest) {
       submittedBy: existing?.submittedBy ?? "asx-scanner",
       submitterType: existing?.submitterType ?? "auto_scan",
       maturity: existing?.maturity ?? "draft",
-      brandData: existing?.brandData ?? {},
+      brandData: draft ?? existing?.brandData ?? {},
       overallScore: scoreResult.overallScore,
       scoreBreakdown: scoreResult.breakdown,
       recommendations: scoreResult.recommendations,
@@ -302,9 +303,10 @@ export async function POST(request: NextRequest) {
       lastScannedAt: now,
       lastScannedBy: "public",
       skillMd: skillMd ?? existing?.skillMd ?? undefined,
+      checkoutMethods: draft?.checkoutMethods ?? existing?.checkoutMethods ?? [],
       capabilities: mergeArrayField(
         existing?.capabilities,
-        agentFindings.capabilities as string[] | undefined,
+        draft?.capabilities?.map(c => c as string) ?? agentFindings.capabilities as string[] | undefined,
       ),
       hasApi: (existing?.hasApi || (agentFindings.hasApi as boolean | undefined)) ?? false,
       hasMcp: (existing?.hasMcp || (agentFindings.hasMcp as boolean | undefined)) ?? false,

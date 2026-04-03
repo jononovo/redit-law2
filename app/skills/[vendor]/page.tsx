@@ -153,17 +153,22 @@ export default async function VendorDetailPage({ params }: Props) {
   const brand = await getBrand(slug);
   if (!brand) notFound();
 
-  const vendor = brand.brandData as unknown as VendorSkill;
+  const rawVendor = brand.brandData as unknown as VendorSkill | null;
+  const hasVendorData = rawVendor && typeof rawVendor === "object" && "name" in rawVendor;
+  const vendor = hasVendorData ? rawVendor : null;
+  const vendorName = vendor?.name ?? brand.name;
+  const vendorUrl = vendor?.url ?? `https://${brand.domain}`;
+  const vendorSector = vendor?.sector ?? (brand.sector as VendorSector);
   const score = brand.overallScore;
   const maturity = MATURITY_CONFIG[brand.maturity as SkillMaturity] ?? MATURITY_CONFIG.draft;
-  const skillMd = brand.skillMd || generateVendorSkill(vendor);
+  const skillMd = brand.skillMd || (vendor ? generateVendorSkill(vendor) : null);
   const skillUrl = `https://creditclaw.com/api/v1/bot/skills/${brand.slug}`;
 
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "SoftwareApplication",
-    name: `${vendor.name} — AI Procurement Skill`,
-    description: brand.description || `Agent-ready procurement skill for ${vendor.name}.`,
+    name: `${vendorName} — AI Procurement Skill`,
+    description: brand.description || `Agent-ready procurement skill for ${vendorName}.`,
     url: `${BASE_URL}/skills/${brand.slug}`,
     applicationCategory: "BusinessApplication",
     operatingSystem: "Cloud",
@@ -229,12 +234,12 @@ export default async function VendorDetailPage({ params }: Props) {
               <div className="flex-1">
                 <div className="flex items-start gap-4 mb-6">
                   <div className="w-16 h-16 rounded-2xl bg-white border border-neutral-100 shadow-sm flex items-center justify-center text-2xl font-bold text-neutral-400">
-                    {vendor.name[0]}
+                    {vendorName[0]}
                   </div>
                   <div>
                     <div className="flex items-center gap-3 mb-1">
                       <h1 className="text-3xl md:text-4xl font-extrabold text-neutral-900">
-                        {vendor.name}
+                        {vendorName}
                       </h1>
                       <Badge className={`text-xs border ${maturity.className}`} data-testid="badge-maturity">
                         {maturity.label}
@@ -243,10 +248,10 @@ export default async function VendorDetailPage({ params }: Props) {
                     </div>
                     <div className="flex items-center gap-4 text-sm text-neutral-500">
                       <div className="flex items-center gap-1.5">
-                        {SECTOR_ICONS[vendor.sector] || <Layers className="w-5 h-5" />}
-                        <span className="font-medium">{SECTOR_LABELS[vendor.sector] || vendor.sector}</span>
+                        {SECTOR_ICONS[vendorSector] || <Layers className="w-5 h-5" />}
+                        <span className="font-medium">{SECTOR_LABELS[vendorSector] || vendorSector}</span>
                       </div>
-                      {vendor.taxonomy && (
+                      {vendor?.taxonomy && (
                         <>
                           <span className="text-neutral-300">·</span>
                           <div className="flex items-center gap-1.5">
@@ -258,19 +263,19 @@ export default async function VendorDetailPage({ params }: Props) {
                         </>
                       )}
                       <a
-                        href={vendor.url}
+                        href={vendorUrl}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="inline-flex items-center gap-1 text-primary font-semibold hover:underline"
                         data-testid="link-vendor-url"
                       >
-                        {vendor.url} <ExternalLink className="w-3 h-3" />
+                        {vendorUrl} <ExternalLink className="w-3 h-3" />
                       </a>
                     </div>
                   </div>
                 </div>
 
-                {vendor.taxonomy && vendor.taxonomy.subSectors.length > 0 && (
+                {vendor?.taxonomy && vendor.taxonomy.subSectors.length > 0 && (
                   <div className="flex flex-wrap gap-1.5 mb-4">
                     {vendor.taxonomy.subSectors.map(sub => (
                       <span
@@ -304,7 +309,7 @@ export default async function VendorDetailPage({ params }: Props) {
                       </div>
                     );
                   })()}
-                  {vendor.feedbackStats?.successRate != null && (
+                  {vendor?.feedbackStats?.successRate != null && (
                     <div className="flex items-center gap-1.5" data-testid="stat-success-rate">
                       <TrendingUp className="w-4 h-4 text-green-500" />
                       <span className="text-sm font-bold text-green-700">
@@ -312,7 +317,7 @@ export default async function VendorDetailPage({ params }: Props) {
                       </span>
                     </div>
                   )}
-                  {vendor.deals?.currentDeals && (
+                  {vendor?.deals?.currentDeals && (
                     <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-100">
                       <Tag className="w-3 h-3" />
                       Active Deals
@@ -327,8 +332,8 @@ export default async function VendorDetailPage({ params }: Props) {
                       Checkout Methods
                     </h3>
                     <div className="space-y-3">
-                      {(vendor.checkoutMethods ?? []).map((method, i) => {
-                        const config = vendor.methodConfig?.[method];
+                      {(vendor?.checkoutMethods ?? brand.checkoutMethods ?? []).map((method, i) => {
+                        const config = vendor?.methodConfig?.[method];
                         return (
                           <div key={method} className="flex items-start gap-3">
                             <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${CHECKOUT_METHOD_COLORS[method]}`}>
@@ -367,7 +372,7 @@ export default async function VendorDetailPage({ params }: Props) {
                     </h3>
                     <div className="grid grid-cols-2 gap-2">
                       {ALL_CAPABILITIES.map(cap => {
-                        const has = (vendor.capabilities ?? []).includes(cap);
+                        const has = (vendor?.capabilities ?? brand.capabilities ?? []).includes(cap);
                         return (
                           <div key={cap} className="flex items-center gap-2">
                             {has ? (
@@ -385,7 +390,7 @@ export default async function VendorDetailPage({ params }: Props) {
                   </div>
                 </div>
 
-                {vendor.searchDiscovery && (
+                {vendor?.searchDiscovery && (
                   <div className="bg-white rounded-2xl border border-neutral-100 p-6 mb-8">
                     <h3 className="font-bold text-neutral-900 mb-4 flex items-center gap-2">
                       <SearchIcon className="w-4 h-4 text-blue-500" />
@@ -420,7 +425,7 @@ export default async function VendorDetailPage({ params }: Props) {
                   </div>
                 )}
 
-                {vendor.buying && (
+                {vendor?.buying && (
                   <div className="bg-white rounded-2xl border border-neutral-100 p-6 mb-8">
                     <h3 className="font-bold text-neutral-900 mb-4 flex items-center gap-2">
                       <Wallet className="w-4 h-4 text-indigo-500" />
@@ -473,6 +478,7 @@ export default async function VendorDetailPage({ params }: Props) {
                   </div>
                 )}
 
+                {vendor?.search && (
                 <div className="grid sm:grid-cols-3 gap-4 mb-8">
                   <div className="bg-white rounded-2xl border border-neutral-100 p-5">
                     <h4 className="text-xs font-bold uppercase tracking-wider text-neutral-400 mb-2">Search</h4>
@@ -483,6 +489,7 @@ export default async function VendorDetailPage({ params }: Props) {
                       </p>
                     )}
                   </div>
+                  {vendor.checkout && (
                   <div className="bg-white rounded-2xl border border-neutral-100 p-5">
                     <h4 className="text-xs font-bold uppercase tracking-wider text-neutral-400 mb-2">Checkout</h4>
                     <div className="space-y-1.5 text-sm">
@@ -512,6 +519,8 @@ export default async function VendorDetailPage({ params }: Props) {
                       </div>
                     </div>
                   </div>
+                  )}
+                  {vendor.shipping && (
                   <div className="bg-white rounded-2xl border border-neutral-100 p-5">
                     <h4 className="text-xs font-bold uppercase tracking-wider text-neutral-400 mb-2">Shipping</h4>
                     <div className="space-y-1.5 text-sm text-neutral-700 font-medium">
@@ -527,9 +536,11 @@ export default async function VendorDetailPage({ params }: Props) {
                       )}
                     </div>
                   </div>
+                  )}
                 </div>
+                )}
 
-                {vendor.deals && (vendor.deals.currentDeals || vendor.deals.loyaltyProgram) && (
+                {vendor?.deals && (vendor.deals.currentDeals || vendor.deals.loyaltyProgram) && (
                   <div className="bg-emerald-50 rounded-2xl border border-emerald-100 p-6 mb-8">
                     <h3 className="font-bold text-neutral-900 mb-3 flex items-center gap-2">
                       <Tag className="w-4 h-4 text-emerald-500" />
@@ -566,7 +577,7 @@ export default async function VendorDetailPage({ params }: Props) {
                   </div>
                 )}
 
-                {vendor.tips?.length > 0 && (
+                {vendor?.tips?.length > 0 && (
                   <div className="bg-amber-50 rounded-2xl border border-amber-100 p-6 mb-8">
                     <h3 className="font-bold text-neutral-900 mb-3 flex items-center gap-2">
                       <Info className="w-4 h-4 text-amber-500" />
@@ -615,14 +626,14 @@ export default async function VendorDetailPage({ params }: Props) {
                   </div>
                 )}
 
-                <SkillPreviewPanel skillMd={skillMd} slug={brand.slug} />
+                {skillMd && <SkillPreviewPanel skillMd={skillMd} slug={brand.slug} />}
               </div>
 
               <aside className="lg:w-72 flex-shrink-0">
                 <div className="sticky top-24 space-y-4">
                   <CopySkillUrl url={skillUrl} />
 
-                  {vendor.taxonomy && (
+                  {vendor?.taxonomy && (
                     <div className="bg-white rounded-2xl border border-neutral-100 p-6 shadow-sm">
                       <h3 className="font-bold text-sm text-neutral-900 mb-4 flex items-center gap-2">
                         <Layers className="w-4 h-4 text-purple-500" />
@@ -674,15 +685,15 @@ export default async function VendorDetailPage({ params }: Props) {
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between">
                         <span className="text-neutral-500 font-medium">Version</span>
-                        <span className="font-semibold text-neutral-900">{vendor.version}</span>
+                        <span className="font-semibold text-neutral-900">{vendor?.version ?? "1.0.0"}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-neutral-500 font-medium">Last verified</span>
-                        <span className="font-semibold text-neutral-900">{vendor.lastVerified}</span>
+                        <span className="font-semibold text-neutral-900">{vendor?.lastVerified ?? (brand.lastScannedAt ? new Date(brand.lastScannedAt).toISOString().split("T")[0] : "—")}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-neutral-500 font-medium">Generated by</span>
-                        <span className="font-semibold text-neutral-900 capitalize">{vendor.generatedBy}</span>
+                        <span className="font-semibold text-neutral-900 capitalize">{vendor?.generatedBy ?? "scanner"}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-neutral-500 font-medium">Maturity</span>

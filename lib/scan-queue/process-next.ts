@@ -203,8 +203,9 @@ export async function processNextInQueue(): Promise<ProcessResult | null> {
     const resolvedTier = existing?.tier ?? (agentFindings.tier as string | undefined) ?? null;
 
     let skillMd: string | null = null;
+    let draft: VendorSkill | null = null;
     try {
-      const draft = buildVendorSkillDraft(slug, domain, resolvedName, resolvedSector, agentFindings);
+      draft = buildVendorSkillDraft(slug, domain, resolvedName, resolvedSector, agentFindings);
       skillMd = generateVendorSkill(draft);
     } catch {
       // non-critical
@@ -224,7 +225,7 @@ export async function processNextInQueue(): Promise<ProcessResult | null> {
       submittedBy: existing?.submittedBy ?? "scan-queue",
       submitterType: existing?.submitterType ?? "auto_scan",
       maturity: existing?.maturity ?? "draft",
-      brandData: existing?.brandData ?? {},
+      brandData: draft ?? existing?.brandData ?? {},
       overallScore: scoreResult.overallScore,
       scoreBreakdown: scoreResult.breakdown,
       recommendations: scoreResult.recommendations,
@@ -232,9 +233,10 @@ export async function processNextInQueue(): Promise<ProcessResult | null> {
       lastScannedAt: now,
       lastScannedBy: "scan-queue",
       skillMd: skillMd ?? existing?.skillMd ?? undefined,
+      checkoutMethods: draft?.checkoutMethods ?? existing?.checkoutMethods ?? [],
       capabilities: mergeArrayField(
         existing?.capabilities,
-        agentFindings.capabilities as string[] | undefined,
+        draft?.capabilities?.map(c => c as string) ?? agentFindings.capabilities as string[] | undefined,
       ),
       hasApi: (existing?.hasApi || (agentFindings.hasApi as boolean | undefined)) ?? false,
       hasMcp: (existing?.hasMcp || (agentFindings.hasMcp as boolean | undefined)) ?? false,

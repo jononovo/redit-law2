@@ -690,7 +690,9 @@ The app supports multiple tenants (CreditClaw, shopy.sh) via hostname-based rout
 - **Footer**: Config-driven via `tenant.navigation.footer` in config.json — each tenant defines its own columns and social links
 - **How It Works**: `app/how-it-works/page.tsx` is a tenant router (same pattern as landing page)
 - **owners.signup_tenant**: Tracks which tenant a user signed up from (migration 0011)
-- **Active tenants**: creditclaw (payments), shopy (ASX scoring/readiness), brands (skill catalog/discovery)
+- **Active tenants**: creditclaw (payments), shopy (ASX scoring/readiness), brands (skill catalog/registry)
+- **brands.sh skill detail page** (`app/skills/[vendor]/page.tsx`): Null-safe — gracefully renders when `brandData` is missing by falling back to `brand.*` fields. Sections like search/checkout/shipping/deals/tips only render when vendor data exists.
+- **brands.sh landing** (`components/tenants/brands/landing.tsx`): Skill-registry framing. Columns: Skill | Capabilities | Checkout | Maturity. Imports shared label maps from `lib/procurement-skills/taxonomy/`. No ScoreBadge (scores live on shopy.sh).
 - To test locally as a different tenant: add `?tenant=shopy` or `?tenant=brands` to any URL
 
 ### Database Schema Workflow
