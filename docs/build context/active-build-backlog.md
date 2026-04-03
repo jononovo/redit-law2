@@ -88,6 +88,17 @@ Build the shopy.sh-specific pages:
 
 ---
 
+### Step 4B: Brand Versioning
+
+**Priority:** Medium — needed before re-scan workflows and registry version API
+**Status:** Technical plan complete, not started
+**Source:** `Future/brand-versioning-technical-plan.md`
+**Depends on:** None (can be built independently, but should land before Step 5)
+
+Two new tables: `brand_versions` (append-only score history + brand_index snapshot per scan) and `brand_version_files` (arbitrary file tree per version — SKILL.md, skill.json, future files/folders). Enables score trending, regression detection, rollback, diff views, and versioned package downloads via the registry API. Designed to separate hot-path score queries from cold-path file content.
+
+---
+
 ### Step 5: Premium Scan (Tier 2)
 
 **Priority:** Medium-High — paid upgrade, revenue generating
@@ -158,6 +169,9 @@ Step 3 (shopy.sh Pages) ←── depends on Step 2
   ↓
 Step 4 (Registry API + CLI + Master Skill) ←── depends on Step 3
 
+Step 4B (Brand Versioning) ←── independent, should land before Step 5
+  ↑ feeds into Step 4 (version manifests) and Step 5 (premium vs free comparison)
+
 Step 5 (Premium Scan) ←── independent of Steps 2-4, can start now
 
 Step 6 (UCP Taxonomy + Category Pages) ←── independent, can start now
@@ -165,7 +179,8 @@ Step 6 (UCP Taxonomy + Category Pages) ←── independent, can start now
 Step 7 (Tier 3 Product Index) ←── depends on Step 6
 ```
 
-Steps 2, 5, and 6 can all run in parallel.
+Steps 2, 4B, 5, and 6 can all run in parallel.
 Category landing pages are under Step 6 (depends on UCP tables).
 Master Skill ships with Step 4 (registry API).
+Brand Versioning (4B) should ideally land before Step 5 (premium scan comparison needs version history).
 Sitemap splitting is parked until 1,000+ URLs.
