@@ -290,6 +290,10 @@ Human-facing catalog data source. Separate from the bot API — returns raw Bran
 - `GET /api/internal/brands/search` — paginated search with all filters (sector, tier, maturity, checkout, capability, etc.) + facets
 - `GET /api/internal/brands/[slug]` — single brand detail lookup
 
+## ASX Score Scanner & Brand Catalog (Product Index)
+
+CreditClaw's public-facing growth engine. The ASX (Agentic Shopping Experience) Score Scanner evaluates how well any merchant website supports AI shopping agents. Users submit a domain, the system fetches and analyzes the site (regex detectors + multi-page Claude agentic scan), scores it against an 11-signal rubric (100 points across Clarity, Discoverability, Reliability), generates a SKILL.md file, and upserts the result into the `brand_index` table. Every scan creates or updates a public brand profile page at `/skills/[vendor]` and adds the brand to the searchable catalog at `/skills`. The scanner is the primary lead gen tool — it runs without auth, and each scan grows the catalog. **Expect tens of thousands of scans and listed domains within the next few weeks.** All code touching the catalog, queries, or brand pages should be built for this scale.
+
 **Brand Index** (`brand_index` table, `server/storage/brand-index.ts`):
 Sole source of truth for all brand data across all surfaces (bots, humans, exports). Single denormalized PostgreSQL table with:
 - **Primary identifier**: `domain` (text, NOT NULL, UNIQUE) — canonical dedup key for scans, cache lookups, upserts. Conflict target for `upsertBrandIndex`.

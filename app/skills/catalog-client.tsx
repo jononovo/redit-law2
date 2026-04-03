@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { Nav } from "@/components/nav";
 import { Footer } from "@/components/footer";
@@ -36,10 +37,9 @@ import {
   VendorSector,
   BrandTier,
   SkillMaturity,
-  VendorSkill,
 } from "@/lib/procurement-skills/types";
 import type { BrandIndex } from "@/shared/schema";
-import { VendorCard, MATURITY_CONFIG, SECTOR_ICONS, CHECKOUT_ICONS, getScoreColor } from "@/app/skills/vendor-card";
+import { VendorCard, MATURITY_CONFIG, SECTOR_ICONS, CHECKOUT_ICONS, getScoreColor, getSuccessRate } from "@/app/skills/vendor-card";
 
 type FilterState = {
   search: string;
@@ -159,20 +159,31 @@ export interface CatalogClientProps {
   initialBrands: BrandIndex[];
   initialFacets: { sectors: string[]; tiers: string[] };
   initialTotal: number;
+  initialFilters?: {
+    search: string;
+    checkoutMethods: string[];
+    capabilities: string[];
+    maturity: string[];
+    sectors: string[];
+    tiers: string[];
+  };
 }
 
 export default function CatalogClient({
   initialBrands,
   initialFacets,
   initialTotal,
+  initialFilters,
 }: CatalogClientProps) {
+  const router = useRouter();
+  const pathname = usePathname();
   const [filters, setFilters] = useState<FilterState>({
-    search: "",
-    checkoutMethods: [],
-    capabilities: [],
-    maturity: [],
-    sectors: [],
-    tiers: [],
+    search: initialFilters?.search ?? "",
+    checkoutMethods: (initialFilters?.checkoutMethods ?? []) as CheckoutMethod[],
+    capabilities: (initialFilters?.capabilities ?? []) as VendorCapability[],
+    maturity: (initialFilters?.maturity ?? []) as SkillMaturity[],
+    sectors: (initialFilters?.sectors ?? []) as VendorSector[],
+    tiers: (initialFilters?.tiers ?? []) as BrandTier[],
   });
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [viewMode, setViewMode] = useState<"cards" | "table">("cards");
@@ -184,8 +195,9 @@ export default function CatalogClient({
   const [total, setTotal] = useState(initialTotal);
   const [page, setPage] = useState(0);
   const searchTimer = useRef<NodeJS.Timeout | null>(null);
-  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState(initialFilters?.search ?? "");
   const isInitialMount = useRef(true);
+  const hasUserInteracted = useRef(false);
 
   useEffect(() => {
     if (searchTimer.current) clearTimeout(searchTimer.current);
@@ -236,6 +248,20 @@ export default function CatalogClient({
     setPage(0);
   }, [filters.sectors, filters.tiers, filters.checkoutMethods, filters.capabilities, filters.maturity]);
 
+  useEffect(() => {
+    if (!hasUserInteracted.current) return;
+    const params = new URLSearchParams();
+    if (debouncedSearch) params.set("q", debouncedSearch);
+    if (filters.sectors.length) params.set("sector", filters.sectors.join(","));
+    if (filters.tiers.length) params.set("tier", filters.tiers.join(","));
+    if (filters.checkoutMethods.length) params.set("checkout", filters.checkoutMethods.join(","));
+    if (filters.capabilities.length) params.set("capability", filters.capabilities.join(","));
+    if (filters.maturity.length) params.set("maturity", filters.maturity.join(","));
+    if (page > 0) params.set("page", String(page + 1));
+    const qs = params.toString();
+    router.replace(`${pathname}${qs ? `?${qs}` : ""}`, { scroll: false });
+  }, [debouncedSearch, filters.sectors, filters.tiers, filters.checkoutMethods, filters.capabilities, filters.maturity, page, pathname, router]);
+
   const activeFilterCount =
     filters.checkoutMethods.length +
     filters.capabilities.length +
@@ -247,6 +273,7 @@ export default function CatalogClient({
     key: K,
     value: FilterState[K] extends (infer T)[] ? T : never
   ) => {
+    hasUserInteracted.current = true;
     setFilters(prev => {
       const arr = prev[key] as unknown[];
       const next = arr.includes(value)
@@ -257,6 +284,7 @@ export default function CatalogClient({
   };
 
   const clearFilters = () => {
+    hasUserInteracted.current = true;
     setFilters({ search: "", checkoutMethods: [], capabilities: [], maturity: [], sectors: [], tiers: [] });
     setPage(0);
   };
@@ -433,7 +461,7 @@ export default function CatalogClient({
                   placeholder="Search by vendor, sector, sub-sector, or tag..."
                   className="h-14 pl-12 pr-6 rounded-2xl bg-white border-2 border-neutral-100 shadow-lg shadow-neutral-900/5 text-base placeholder:text-neutral-400 focus-visible:ring-primary focus-visible:border-primary"
                   value={filters.search}
-                  onChange={e => setFilters(prev => ({ ...prev, search: e.target.value }))}
+                  onChange={e => { hasUserInteracted.current = true; setFilters(prev => ({ ...prev, search: e.target.value })); }}
                   data-testid="input-vendor-search"
                 />
               </div>
@@ -585,7 +613,7 @@ export default function CatalogClient({
                             {sortedBrands.map((brand) => {
                               const maturity = MATURITY_CONFIG[brand.maturity as SkillMaturity] ?? MATURITY_CONFIG.draft;
                               const checkoutMethods = (brand.checkoutMethods ?? []) as CheckoutMethod[];
-                              const vendor = brand.brandData as unknown as VendorSkill | null;
+                              const successRate = getSuccessRate(brand);
                               const scoreColor = getScoreColor(brand.overallScore);
                               return (
                                 <tr
@@ -628,10 +656,10 @@ export default function CatalogClient({
                                         {brand.overallScore != null ? brand.overallScore : "—"}
                                       </span>
                                       <span className="text-[10px] text-neutral-400">/ 100</span>
-                                      {vendor?.feedbackStats?.successRate != null && (
+                                      {successRate != null && (
                                         <span className="ml-1.5 text-[10px] font-semibold text-green-700 flex items-center gap-0.5">
                                           <TrendingUp className="w-2.5 h-2.5 text-green-500" />
-                                          {Math.round(vendor.feedbackStats.successRate * 100)}%
+                                          {Math.round(successRate * 100)}%
                                         </span>
                                       )}
                                     </div>
@@ -674,7 +702,7 @@ export default function CatalogClient({
                       <div className="flex justify-center mt-8">
                         <Button
                           variant="outline"
-                          onClick={() => setPage(p => p + 1)}
+                          onClick={() => { hasUserInteracted.current = true; setPage(p => p + 1); }}
                           disabled={loading}
                           className="rounded-2xl px-8 font-semibold"
                           data-testid="button-load-more"
@@ -742,7 +770,7 @@ export default function CatalogClient({
                       <div className="flex justify-center mt-8">
                         <Button
                           variant="outline"
-                          onClick={() => setPage(p => p + 1)}
+                          onClick={() => { hasUserInteracted.current = true; setPage(p => p + 1); }}
                           disabled={loading}
                           className="rounded-2xl px-8 font-semibold"
                           data-testid="button-load-more"

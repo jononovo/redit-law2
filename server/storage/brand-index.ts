@@ -35,8 +35,8 @@ export interface BrandSearchFilters {
 export type BrandCardRow = Pick<BrandIndex,
   | "id" | "slug" | "name" | "sector" | "subSectors" | "tier" | "maturity"
   | "overallScore" | "checkoutMethods" | "capabilities" | "hasDeals"
-  | "brandData" | "updatedAt"
->;
+  | "axsRating" | "ratingCount" | "updatedAt"
+> & { successRate: string | null };
 
 const LITE_COLUMNS = {
   id: brandIndex.id,
@@ -50,7 +50,7 @@ const LITE_COLUMNS = {
   checkoutMethods: brandIndex.checkoutMethods,
   capabilities: brandIndex.capabilities,
   hasDeals: brandIndex.hasDeals,
-  brandData: brandIndex.brandData,
+  successRate: sql<string>`(${brandIndex.brandData}->'feedbackStats'->>'successRate')`.as('success_rate'),
   axsRating: brandIndex.axsRating,
   ratingCount: brandIndex.ratingCount,
   updatedAt: brandIndex.updatedAt,
