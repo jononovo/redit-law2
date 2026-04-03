@@ -102,8 +102,8 @@ export function computeScoreFromRubric(
   }
 
   const breakdown: ASXScoreBreakdown = {
-    clarity: pillarResults["clarity"] ?? { score: 0, max: 40, signals: [] },
-    speed: pillarResults["speed"] ?? { score: 0, max: 25, signals: [] },
+    clarity: pillarResults["clarity"] ?? { score: 0, max: 35, signals: [] },
+    discoverability: pillarResults["discoverability"] ?? { score: 0, max: 30, signals: [] },
     reliability: pillarResults["reliability"] ?? { score: 0, max: 35, signals: [] },
   };
 
@@ -184,6 +184,12 @@ const RECOMMENDATION_TEMPLATES: Record<string, RecommendationTemplate> = {
     impact: "medium",
     title: "Reduce bot-blocking measures",
     description: "Review your robots.txt to allow AI agent crawling. Avoid aggressive CAPTCHAs on landing and product pages. Consider whitelisting known AI agent user-agents to enable automated shopping.",
+  },
+  product_page: {
+    signal: "product_page",
+    impact: "high",
+    title: "Improve product page agent-readability",
+    description: "Make product pages easy for AI agents to parse: include machine-readable pricing (JSON-LD Offer or clearly tagged price elements), use standard HTML form elements for variant selection (size, color), ensure add-to-cart is a single clear action, and include product identifiers in URLs for direct navigation.",
   },
 };
 

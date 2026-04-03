@@ -1,6 +1,6 @@
 import type { SignalKey } from "./types";
 
-export const RUBRIC_VERSION = "1.0.0";
+export const RUBRIC_VERSION = "1.1.0";
 
 export type EvidenceSource = "detect" | "agent" | "either";
 
@@ -23,7 +23,7 @@ export interface RubricSignal {
 }
 
 export interface RubricPillar {
-  id: "clarity" | "speed" | "reliability";
+  id: "clarity" | "discoverability" | "reliability";
   label: string;
   max: number;
   signals: RubricSignal[];
@@ -44,17 +44,17 @@ export const SCORING_RUBRIC: ScoringRubric = {
     {
       id: "clarity",
       label: "Clarity",
-      max: 40,
+      max: 35,
       signals: [
         {
           id: "json_ld",
           label: "JSON-LD / Structured Data",
-          max: 20,
+          max: 15,
           criteria: [
-            { id: "jld_present",      points: 6, evidence: "jsonLdPresent",       source: "detect",  condition: "JSON-LD script blocks found on page" },
-            { id: "jld_product",      points: 5, evidence: "jsonLdHasProduct",    source: "detect",  condition: "Product schema type detected in JSON-LD" },
-            { id: "jld_offer",        points: 3, evidence: "jsonLdHasOffer",      source: "detect",  condition: "Offer / pricing data in JSON-LD" },
-            { id: "jld_organization", points: 2, evidence: "jsonLdHasOrg",        source: "detect",  condition: "Organization or LocalBusiness schema detected" },
+            { id: "jld_present",      points: 4, evidence: "jsonLdPresent",       source: "detect",  condition: "JSON-LD script blocks found on page" },
+            { id: "jld_product",      points: 4, evidence: "jsonLdHasProduct",    source: "detect",  condition: "Product schema type detected in JSON-LD" },
+            { id: "jld_offer",        points: 2, evidence: "jsonLdHasOffer",      source: "detect",  condition: "Offer / pricing data in JSON-LD" },
+            { id: "jld_organization", points: 1, evidence: "jsonLdHasOrg",        source: "detect",  condition: "Organization or LocalBusiness schema detected" },
             { id: "jld_breadcrumb",   points: 1, evidence: "jsonLdHasBreadcrumb", source: "detect",  condition: "BreadcrumbList schema detected" },
             { id: "jld_website",      points: 1, evidence: "jsonLdHasWebSite",    source: "detect",  condition: "WebSite schema detected" },
             { id: "jld_og_commerce",  points: 2, evidence: "ogCommerceTags",      source: "detect",  condition: "Open Graph commerce meta tags (og:product, og:price) found" },
@@ -91,9 +91,9 @@ export const SCORING_RUBRIC: ScoringRubric = {
     },
 
     {
-      id: "speed",
-      label: "Speed",
-      max: 25,
+      id: "discoverability",
+      label: "Discoverability",
+      max: 30,
       signals: [
         {
           id: "search_api",
@@ -127,6 +127,17 @@ export const SCORING_RUBRIC: ScoringRubric = {
             { id: "pl_ok",        points: 3, evidence: "pageLoadOk",        source: "detect", condition: "Page load time 1,501–2,000ms", group: "pl_time" },
             { id: "pl_slow",      points: 2, evidence: "pageLoadSlow",      source: "detect", condition: "Page load time 2,001–3,000ms", group: "pl_time" },
             { id: "pl_very_slow", points: 1, evidence: "pageLoadVerySlow",  source: "detect", condition: "Page load time 3,001–5,000ms", group: "pl_time" },
+          ],
+        },
+        {
+          id: "product_page",
+          label: "Product Page Quality",
+          max: 5,
+          criteria: [
+            { id: "pp_structured_pricing", points: 2, evidence: "productPricingStructured", source: "agent", condition: "Machine-readable pricing on product page (JSON-LD Offer, microdata, or clearly tagged price element)" },
+            { id: "pp_variant_selectors",  points: 1, evidence: "productVariantStandard",   source: "agent", condition: "Product variants use standard form elements (select, radio, labeled buttons)" },
+            { id: "pp_add_to_cart",        points: 1, evidence: "productAddToCartClear",    source: "agent", condition: "Clear, single-action add-to-cart button (not hidden behind modals or multi-step wizards)" },
+            { id: "pp_product_url_id",     points: 1, evidence: "productIdInUrl",           source: "agent", condition: "Product identifier visible in URL (enables direct agent navigation)" },
           ],
         },
       ],

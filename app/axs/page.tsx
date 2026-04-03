@@ -35,15 +35,16 @@ export const metadata: Metadata = {
 };
 
 const CLARITY_SIGNALS = [
-  { label: "JSON-LD / Structured Data", description: "Product schema markup that AI agents can parse directly from the page without rendering", maxPoints: 20, icon: <FileJson className="w-4 h-4" /> },
+  { label: "JSON-LD / Structured Data", description: "Product schema markup that AI agents can parse directly from the page without rendering", maxPoints: 15, icon: <FileJson className="w-4 h-4" /> },
   { label: "Product Feed / Sitemap", description: "Structured sitemap with product URLs for bulk catalog discovery by AI agents", maxPoints: 10, icon: <BarChart3 className="w-4 h-4" /> },
   { label: "Clean HTML / Semantic Markup", description: "Well-structured DOM with semantic elements that enables reliable content extraction", maxPoints: 10, icon: <Code className="w-4 h-4" /> },
 ];
 
-const SPEED_SIGNALS = [
+const DISCOVERABILITY_SIGNALS = [
   { label: "Search API / MCP", description: "Programmatic API or MCP endpoint for direct product queries without browser rendering", maxPoints: 10, icon: <Zap className="w-4 h-4" /> },
   { label: "Internal Site Search", description: "On-site search that returns relevant results for product queries", maxPoints: 10, icon: <Search className="w-4 h-4" /> },
   { label: "Page Load Performance", description: "Fast initial load and time-to-interactive for headless agent browsing", maxPoints: 5, icon: <Clock className="w-4 h-4" /> },
+  { label: "Product Page Quality", description: "Machine-readable pricing, standard variant selectors, clear add-to-cart actions, and direct product URLs", maxPoints: 5, icon: <BarChart3 className="w-4 h-4" /> },
 ];
 
 const RELIABILITY_SIGNALS = [
@@ -93,7 +94,7 @@ export default function AXSPage() {
                 <h2 className="text-xl font-bold mb-2">ASX Score</h2>
                 <p className="text-sm text-neutral-500 mb-4">AI-powered analysis &middot; 0&ndash;100 scale</p>
                 <p className="text-neutral-600 text-sm leading-relaxed">
-                  An AI-powered score computed by scanning a brand's website for 10 key signals across three pillars: Clarity, Speed, and Reliability. This measures how well AI shopping agents can find products, search catalogs, and complete purchases.
+                  An AI-powered score computed by scanning a brand's website for 11 key signals across three pillars: Clarity, Discoverability, and Reliability. This measures how well AI shopping agents can find products, search catalogs, and complete purchases.
                 </p>
               </div>
 
@@ -133,10 +134,10 @@ export default function AXSPage() {
 
               <PillarSection
                 number="02"
-                title="Speed"
-                subtitle="Can the agent find products quickly?"
-                description="Evaluates how fast an AI agent can locate specific products. Brands with search APIs or MCP endpoints score highest because agents can query directly. Good internal search and fast page loads also contribute."
-                criteria={SPEED_SIGNALS}
+                title="Discoverability"
+                subtitle="Can the agent find and evaluate products?"
+                description="Evaluates how effectively an AI agent can locate and understand products. Brands with search APIs or MCP endpoints score highest because agents can query directly. Product page quality, internal search, and page load speed also contribute."
+                criteria={DISCOVERABILITY_SIGNALS}
                 color="green"
                 icon={<Zap className="w-6 h-6" />}
               />

@@ -69,7 +69,7 @@ export default function AgenticShoppingScorePage() {
                 style={{ animationDelay: "0.5s" }}
               >
                 <div className="text-center">
-                  <div className="text-2xl font-extrabold text-neutral-900" data-testid="stat-signals">10</div>
+                  <div className="text-2xl font-extrabold text-neutral-900" data-testid="stat-signals">11</div>
                   <div className="text-xs text-neutral-500 font-medium mt-1">Signals Analyzed</div>
                 </div>
                 <div className="text-center">
