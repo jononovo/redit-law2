@@ -5,9 +5,9 @@ import { Footer } from "@/components/footer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, ExternalLink } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 
 type BrandRow = {
   slug: string;
@@ -49,6 +49,14 @@ export default function ShopyLanding() {
       })
       .catch(() => setLoading(false));
   }, []);
+
+  const scoredBrands = useMemo(
+    () => brands
+      .filter((b) => b.overallScore !== null)
+      .sort((a, b) => (b.overallScore ?? 0) - (a.overallScore ?? 0))
+      .slice(0, 10),
+    [brands]
+  );
 
   const handleScan = (e: React.FormEvent) => {
     e.preventDefault();
