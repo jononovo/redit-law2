@@ -23,7 +23,7 @@ import { getTenantIdFromCookie } from "@/lib/tenants/tenant-context";
 
 const TENANT_BRANDING: Record<string, { name: string; logo: string; userLabel: string; devLabel: string }> = {
   creditclaw: { name: "CreditClaw", logo: "/assets/images/logo-claw-chip.png", userLabel: "User Guide", devLabel: "Developers" },
-  shopy: { name: "shopy.sh", logo: "/tenants/shopy/images/logo.png", userLabel: "For Merchants", devLabel: "For Developers" },
+  shopy: { name: "shopy.sh", logo: "/assets/images/logo-claw-chip.png", userLabel: "For Merchants", devLabel: "For Developers" },
   brands: { name: "brands.sh", logo: "/tenants/brands/images/logo.png", userLabel: "Guide", devLabel: "Developers" },
 };
 
