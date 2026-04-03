@@ -38,6 +38,7 @@ For reference — these are done and archived:
 - Step 1: Catalog Scale Readiness (1A URL-based filters, 1B generateStaticParams, 1C lean catalog query)
 - GIN indexes + partial boolean indexes on `brand_index` (migration 0007 — `sub_sectors`, `tags`, `carries_brands`, `capabilities`, `checkout_methods`, `payment_methods_accepted`, `supported_countries`, `search_vector` GIN; `has_mcp`, `has_api`, `has_deals`, `ordering=guest`, `tax_exempt`, `po_number`, `claimed_by` partial; plus `search_vector` trigger)
 - Step 2: Multitenant System (2A types+configs, 2B middleware, 2C layout metadata/theming, 2D TenantProvider, 2E nav/footer de-hardcode, 2F landing extraction, 2G API helper, 2H signupTenant column, 2I shopy config skeleton)
+- Step 3: shopy.sh Pages (landing, how-it-works, ASX scanner, skills catalog, AXS explainer, docs, tenant config, middleware routing)
 
 ---
 
@@ -55,14 +56,13 @@ One codebase serves both creditclaw.com and shopy.sh.
 
 ---
 
-### Step 3: shopy.sh Pages
+### Step 3: shopy.sh Pages ✅
 
 **Priority:** High (after multitenant)
-**Status:** ~70% complete — core pages built, 3 pages remaining
+**Status:** Complete
 **Source:** `Shopy/shopy-sh-brand-identity.md`, `Future/step-3-remaining-shopy-pages-plan.md`
 **Depends on:** Step 2
 
-**Complete:**
 - [x] `/` — shopy.sh landing page (`components/tenants/shopy/landing.tsx`, registered in `app/page.tsx`)
 - [x] `/how-it-works` — tenant-aware with full redesign (`components/tenants/shopy/how-it-works.tsx`)
 - [x] `/agentic-shopping-score` — ASX Score Scanner (shared, works for all tenants)
@@ -71,11 +71,6 @@ One codebase serves both creditclaw.com and shopy.sh.
 - [x] `/docs` — documentation pages (shared)
 - [x] Tenant config — nav, footer, theme, feature flags
 - [x] Middleware routing — shopy.sh domain registered
-
-**Remaining:**
-- [ ] `/standard` — render the agentic commerce standard (`agentic-commerce-standard.md`) as a formatted page
-- [ ] `/guide` — non-technical merchant explainer (plain-language walkthrough with diagrams)
-- [ ] `/leaderboard` — top vendors ranked by ASX Score and AXS Rating
 
 ---
 
