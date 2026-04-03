@@ -164,7 +164,7 @@ export default function ScanQueuePage() {
 
   async function handleAddDomains() {
     const domains = domainInput
-      .split("\n")
+      .split(/[\n,]+/)
       .map((d) => d.trim())
       .filter(Boolean);
     if (domains.length === 0) return;
@@ -252,7 +252,7 @@ export default function ScanQueuePage() {
           <textarea
             className="w-full bg-neutral-900 border border-neutral-700 text-neutral-200 p-3 font-mono text-sm resize-none focus:outline-none focus:border-neutral-500 placeholder-neutral-600"
             rows={5}
-            placeholder={"amazon.com\nwalmart.com\nshopify.com"}
+            placeholder={"amazon.com, walmart.com, shopify.com\nor one per line"}
             value={domainInput}
             onChange={(e) => setDomainInput(e.target.value)}
             data-testid="input-domains"
