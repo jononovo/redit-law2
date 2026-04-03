@@ -690,6 +690,20 @@ Two layers of testing:
   - `tests/guardrails/evaluate.test.ts` — guardrail evaluation for both USDC rails (`evaluateGuardrails`) and card rails (`evaluateCardGuardrails`), covering per-tx limits, daily/monthly budgets, approval thresholds (18 tests)
 - **Manual integration tests** (`docs/testing.md`): curl-based test suite covering bot registration, wallet ops, purchases, guardrails, checkout pages, x402 endpoints. Sections 1-12 cover core API, Section 13 covers checkout & x402, Section 14 references the automated tests.
 
+### Multitenant Architecture
+The app supports multiple tenants (CreditClaw, shopy.sh) via hostname-based routing:
+- **Tenant configs**: `public/tenants/{tenantId}/config.json` — branding, meta, theme, routes, features, tracking
+- **Types**: `lib/tenants/types.ts` — `TenantConfig` interface
+- **Config loader**: `lib/tenants/config.ts` — `getTenantConfig()`, `resolveTenantId()` with caching
+- **Middleware**: `middleware.ts` — resolves hostname → tenantId, sets `x-tenant-id` header + `tenant-id` cookie
+- **Server helper**: `lib/tenants/get-request-tenant.ts` — `getRequestTenant()` reads from headers in server components/API routes
+- **Client context**: `lib/tenants/tenant-context.tsx` — `TenantProvider` + `useTenant()` hook for client components
+- **Layout**: `app/layout.tsx` injects tenant theme CSS vars + wraps children in `TenantProvider`
+- **Landing pages**: `components/landings/creditclaw-landing.tsx` — extracted from former `app/page.tsx`; `app/page.tsx` now dynamically loads per tenant
+- **Nav/Footer**: Both use `useTenant()` for logo, name, tagline, routes
+- **owners.signup_tenant**: Tracks which tenant a user signed up from (migration 0011)
+- To test locally as a different tenant: set `TENANT_OVERRIDE=shopy` env var
+
 ### Database Schema Workflow
 Schema changes flow through Drizzle ORM and are auto-synced to production on deploy:
 1. Edit `shared/schema.ts` — add/modify tables, columns, indexes, constraints
@@ -698,6 +712,14 @@ Schema changes flow through Drizzle ORM and are auto-synced to production on dep
 4. **Never make manual SQL changes** to the database without updating `shared/schema.ts` to match. Manual DDL causes naming drift (PostgreSQL uses `_key` for unique constraints, Drizzle expects `_unique`) which blocks non-interactive deployments.
 5. Config: `drizzle.config.ts` points at `DATABASE_URL` with `pg` driver
 6. The `spending_permissions` table exists in both databases but is not tracked in the schema (legacy table)
+
+### Internal Developer Docs (`docs/internal/`)
+Private technical documentation covering implementation details, fragile areas, expansion plans, and operational guides. Not served publicly — for the engineering team only.
+- `README.md` — index of all internal doc pages
+- `multitenant-system.md` — hostname routing, tenant configs, theming, how to add tenants, fragile areas
+- `product-index.md` — brand catalog, LITE_COLUMNS, filtering, generateStaticParams, search_vector
+- `asx-scanner.md` — multi-page scan flow, rubric v1.1.0, 11 signals, SKILL.md generation, evidence system
+- `metadata-and-taxonomy.md` — Google Product Taxonomy, UCP, sectors, tiers, capabilities, skill.json
 
 ### Documentation System (`docs/content/`, `app/docs/`)
 Self-hosted documentation at `/docs` with sidebar navigation, audience toggle (User Guide / Developers), and markdown rendering.

@@ -17,9 +17,10 @@ export const ownerMethods: OwnerMethods = {
   async upsertOwner(uid: string, data: Partial<InsertOwner>): Promise<Owner> {
     const existing = await this.getOwnerByUid(uid);
     if (existing) {
+      const { signupTenant: _drop, ...updateData } = data;
       const [updated] = await db
         .update(owners)
-        .set({ ...data, updatedAt: new Date() })
+        .set({ ...updateData, updatedAt: new Date() })
         .where(eq(owners.uid, uid))
         .returning();
       return updated;

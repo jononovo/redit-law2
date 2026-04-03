@@ -6,17 +6,19 @@ import Image from "next/image";
 import { useAuth } from "@/lib/auth/auth-context";
 import { AuthDrawer } from "@/components/auth-drawer";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useTenant } from "@/lib/tenants/tenant-context";
 
 export function Nav() {
   const { user, loading } = useAuth();
+  const tenant = useTenant();
 
   return (
     <nav className="sticky top-0 w-full z-50 bg-white/80 backdrop-blur-md border-b border-neutral-100">
       <div className="container mx-auto px-6 h-20 flex items-center justify-between">
         <Link href="/" className="group cursor-pointer flex items-center gap-2">
-          <Image src="/assets/images/logo-claw-chip.png" alt="CreditClaw Logo" width={40} height={40} className="object-contain" />
+          <Image src={tenant.branding.logo} alt={`${tenant.branding.name} Logo`} width={40} height={40} className="object-contain" />
           <span className="font-sans font-bold text-xl tracking-tight text-neutral-900">
-            CreditClaw
+            {tenant.branding.name}
           </span>
         </Link>
 
@@ -30,7 +32,7 @@ export function Nav() {
           {loading ? (
             <div className="w-20 h-10" />
           ) : user ? (
-            <Link href="/overview" className="flex items-center gap-3">
+            <Link href={tenant.routes.authLanding} className="flex items-center gap-3">
               <Avatar className="w-9 h-9" data-testid="avatar-user">
                 <AvatarImage src={user.photoURL || undefined} alt={user.displayName || "User"} />
                 <AvatarFallback className="bg-primary/10 text-primary font-bold text-sm">
@@ -43,12 +45,12 @@ export function Nav() {
             </Link>
           ) : (
             <>
-              <AuthDrawer redirectTo="/overview">
+              <AuthDrawer redirectTo={tenant.routes.authLanding}>
                 <Button variant="ghost" className="hidden md:flex font-bold text-neutral-600 hover:bg-neutral-50 cursor-pointer" data-testid="button-login">
                   Log in
                 </Button>
               </AuthDrawer>
-              <AuthDrawer redirectTo="/overview">
+              <AuthDrawer redirectTo={tenant.routes.authLanding}>
                 <Button className="rounded-full h-10 px-6 bg-primary text-white hover:bg-primary/90 font-bold shadow-lg shadow-primary/20 cursor-pointer" data-testid="button-signup">
                   Sign Up
                 </Button>

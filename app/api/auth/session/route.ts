@@ -16,9 +16,12 @@ export async function POST(request: NextRequest) {
 
     const user = await adminAuth.getUser(decodedToken.uid);
 
+    const tenantId = request.headers.get("x-tenant-id") || "creditclaw";
+
     const owner = await storage.upsertOwner(user.uid, {
       email: user.email || "",
       displayName: user.displayName || null,
+      signupTenant: tenantId,
     });
 
     return NextResponse.json({

@@ -1,0 +1,42 @@
+{
+  "id": "shopy",
+  "domains": ["shopy.sh", "www.shopy.sh"],
+
+  "branding": {
+    "name": "shopy.sh",
+    "tagline": "Make your store shoppable by AI agents.",
+    "logo": "/tenants/shopy/images/logo.png",
+    "logoEmoji": "🛒",
+    "favicon": "",
+    "supportEmail": "hello@shopy.sh",
+    "mascot": ""
+  },
+
+  "meta": {
+    "title": "shopy.sh — The open standard for agentic commerce",
+    "description": "Make your store discoverable and shoppable by AI agents. Check your ASX Score, browse the catalog, install shopping skills.",
+    "ogImage": "/tenants/shopy/images/og-image.png",
+    "twitterImage": "/tenants/shopy/images/og-twitter.png",
+    "url": "https://shopy.sh"
+  },
+
+  "theme": {
+    "primaryColor": "0 0% 9%",
+    "primaryForeground": "0 0% 100%",
+    "accentColor": "0 0% 20%",
+    "secondaryColor": "0 0% 45%"
+  },
+
+  "routes": {
+    "guestLanding": "/shopy",
+    "authLanding": "/overview"
+  },
+
+  "features": {
+    "showScanner": false,
+    "showCatalog": true,
+    "showLeaderboard": true,
+    "showStandard": true,
+    "showGuide": true
+  }
+}
