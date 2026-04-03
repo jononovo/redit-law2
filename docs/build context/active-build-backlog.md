@@ -129,22 +129,22 @@ Paid, end-user triggered via paywall. Webhook-triggered external browser agents 
 **Source:** `Shopy/2-merchant-taxonomy-schema-note.md`, `Shopy/3. product-index-taxonomy-plan.md`, `Shopy/progressive-disclosure-taxonomy-research.md`
 
 **Key decisions (from April 3, 2026 session):**
-- **Replace custom sectors with Google's 21 root categories.** Our 21 custom sectors (retail, fashion, electronics, etc.) are nearly 1:1 with Google's 21 root categories. Instead of maintaining a custom list + mapping layer, use Google's roots directly as the top-level routing. This eliminates the `VendorSector` type, `SECTOR_LABELS`, `VALID_SECTORS`, and the sector→Google root mapping.
-- **Rename "UCP Categories" to "Product Categories."** Google's Universal Commerce Protocol (UCP) is a separate transaction protocol — our internal "UCP" naming causes confusion. Tables/fields use `product_categories` and `brand_categories`.
-- **Simplified skill.json format.** Instead of verbose objects with `gptId`, `name`, `path`, `depth`, `primary`, use Google's own format: `"productCategories": ["141 - Cameras & Optics", "223 - Electronics > Audio"]`. One array of self-describing strings matching the canonical taxonomy file format.
-- **No backward compatibility / no backfill.** Old brands keep their freeform `sub_sectors` until rescanned. New scans get proper Google taxonomy IDs. No migration of existing data.
-- **Sector-scoped category selection during scan.** When Perplexity classifies a brand into a root category (e.g., Electronics), the category matching step only considers L2-L3 categories under that root (~50-150 instead of 5,600).
+- **Hybrid sector list: all 21 Google roots + our own additions.** New sector list has 27 entries: all 21 Google Product Taxonomy roots (kept as-is), plus 4 custom sectors (Food Services, Travel, Education, Events), plus 2 special entries (Luxury as a tier-driven filter view, Specialty as fallback). "Retail" removed (it's a channel, not a category).
+- **Luxury is NOT a sector assignment.** It's a filter view — the `/c/luxury` page queries brands where `tier` is `ultra_luxury` or `luxury`. It appears in navigation alongside real sectors but isn't assigned during scan.
+- **Rename "UCP Categories" to "Product Categories."** Google's UCP is a separate transaction protocol. Tables/fields use `product_categories` and `brand_categories`.
+- **Simplified skill.json format.** Use Google's own format: `"productCategories": ["141 - Cameras & Optics", "223 - Electronics > Audio"]`. One array of self-describing strings.
+- **No backward compatibility / no backfill.** Old brands keep stale values until rescanned. No migration.
+- **Sector-scoped sub-classification.** For sectors that map to a Google root, only consider L2-L3 categories under that root (~50-150 instead of 5,600). For custom sectors (Food Services, Travel, Education, Events), skip sub-classification.
 
 **Build scope:**
-- Create `product_categories` table (import Google Product Taxonomy — 5,595 categories with `gpt_id`, `name`, `slug`, `parent_id`, `depth`, `path`)
+- Create `product_categories` table (import Google Product Taxonomy — 5,595 categories)
 - Create `brand_categories` junction table (brand_id → category_id, `is_primary` flag)
-- Replace `VendorSector` type system + `SECTOR_LABELS` + `VALID_SECTORS` with Google root categories (touches 14 code files)
-- Update Perplexity classifier to constrain sector to Google root names
-- Wire category selection into scan pipeline (new scans get `brand_categories` rows)
+- Replace `VendorSector` type system with new 27-entry list (touches 14 code files)
+- Update Perplexity classifier to constrain sector to 25 assignable values
+- Wire category selection into scan pipeline
 - Update `skill.json` serializer to output `productCategories` array
-- Update catalog UI, sector landing pages (`/c/[sector]`), sitemap, vendor cards
-- Update `skill-json-schema.md` to reflect simplified format
-- **Category Landing Pages**: Build `/c/[root]/[category-slug]` pages driven by Google taxonomy IDs
+- Update catalog UI, sector landing pages, sitemap, vendor cards
+- Build `/c/luxury` as tier-driven query page
 
 ---
 
