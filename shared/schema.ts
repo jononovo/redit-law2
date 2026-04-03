@@ -1510,3 +1510,25 @@ export const brandClaims = pgTable("brand_claims", {
 
 export type BrandClaim = typeof brandClaims.$inferSelect;
 export type InsertBrandClaim = typeof brandClaims.$inferInsert;
+
+// ─── Scan Queue ──────────────────────────────────────────────────────────────
+
+export const scanQueue = pgTable("scan_queue", {
+  id: serial("id").primaryKey(),
+  domain: text("domain").notNull(),
+  status: text("status").notNull().default("pending"),
+  priority: integer("priority").notNull().default(0),
+  error: text("error"),
+  resultSlug: text("result_slug"),
+  resultScore: integer("result_score"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  startedAt: timestamp("started_at"),
+  completedAt: timestamp("completed_at"),
+}, (table) => [
+  index("scan_queue_status_idx").on(table.status),
+  index("scan_queue_domain_idx").on(table.domain),
+  index("scan_queue_priority_status_idx").on(table.priority, table.status),
+]);
+
+export type ScanQueueEntry = typeof scanQueue.$inferSelect;
+export type InsertScanQueueEntry = typeof scanQueue.$inferInsert;
