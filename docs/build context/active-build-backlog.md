@@ -58,16 +58,24 @@ One codebase serves both creditclaw.com and shopy.sh.
 ### Step 3: shopy.sh Pages
 
 **Priority:** High (after multitenant)
-**Status:** Brand identity doc complete, no build plan yet
-**Source:** `Shopy/shopy-sh-brand-identity.md`
+**Status:** ~70% complete — core pages built, 3 pages remaining
+**Source:** `Shopy/shopy-sh-brand-identity.md`, `Future/step-3-remaining-shopy-pages-plan.md`
 **Depends on:** Step 2
 
-Build the shopy.sh-specific pages:
-- `/` — shopy.sh landing page
-- `/standard` — the authoritative agentic commerce standard (render `agentic-commerce-standard.md`)
-- `/guide` — non-technical explainer for merchants
-- `/catalog` — developer-focused brand catalog
-- `/leaderboard` — top vendors by ASX Score and AXS Rating
+**Complete:**
+- [x] `/` — shopy.sh landing page (`components/tenants/shopy/landing.tsx`, registered in `app/page.tsx`)
+- [x] `/how-it-works` — tenant-aware with full redesign (`components/tenants/shopy/how-it-works.tsx`)
+- [x] `/agentic-shopping-score` — ASX Score Scanner (shared, works for all tenants)
+- [x] `/skills` — brand catalog (shared, works for all tenants)
+- [x] `/axs` — AXS Rating explainer page (`app/axs/page.tsx`)
+- [x] `/docs` — documentation pages (shared)
+- [x] Tenant config — nav, footer, theme, feature flags
+- [x] Middleware routing — shopy.sh domain registered
+
+**Remaining:**
+- [ ] `/standard` — render the agentic commerce standard (`agentic-commerce-standard.md`) as a formatted page
+- [ ] `/guide` — non-technical merchant explainer (plain-language walkthrough with diagrams)
+- [ ] `/leaderboard` — top vendors ranked by ASX Score and AXS Rating
 
 ---
 
