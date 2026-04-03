@@ -117,8 +117,9 @@ Keep these (Claude finds them from page analysis):
    ]);
    ```
 5. **Update resolution priority** for name/sector/tier/subSectors:
-   `existing DB → Perplexity → agent findings → HTML meta`
+   `existing DB → Perplexity → agent findings → domain-derived label`
 6. **Merge Perplexity capabilities** into the capabilities field
+7. **Remove** `extractMeta` import and usage
 
 ### MODIFY: `lib/scan-queue/process-next.ts`
 
@@ -127,10 +128,13 @@ Mirror the exact same changes as route.ts:
 - Delete local duplicated functions
 - Add parallel classifyBrand call
 - Same resolution priority
+- Remove `extractMeta` import and usage
 
-### KEEP: `lib/agentic-score/extract-meta.ts`
+### DELETE: `lib/agentic-score/extract-meta.ts`
 
-28-line last-resort fallback. Stays as-is. With Perplexity in the chain it will rarely be the source of the final name, but it's a harmless safety net.
+HTML title-tag parsing that produces garbage ("burger", "Previous Slide", "reCAPTCHA"). This is an AI analysis feature — if AI classification fails, a `<title>` tag isn't going to save it. Delete the file, remove the export from `lib/agentic-score/index.ts`.
+
+If both Perplexity and Claude fail to provide a name, the fallback is a simple domain-derived label (`patagonia.com` → `"Patagonia"`) done inline — one line, not a separate module.
 
 ## Net Code Impact
 
@@ -138,18 +142,20 @@ Mirror the exact same changes as route.ts:
 |------|--------|-------|
 | `classify-brand.ts` | — | ~60 lines (new) |
 | `scan-utils.ts` | — | ~70 lines (new, extracted) |
-| `route.ts` | 337 lines | ~270 lines (removed ~80 lines of duplicated helpers, added ~15 lines of Perplexity integration) |
-| `process-next.ts` | 356 lines | ~290 lines (same cleanup) |
+| `extract-meta.ts` | 28 lines | **DELETED** |
+| `route.ts` | 337 lines | ~260 lines (removed ~80 lines of duplicated helpers + extractMeta usage, added ~15 lines of Perplexity integration) |
+| `process-next.ts` | 356 lines | ~280 lines (same cleanup) |
 | `agent-scan.ts` | 476 lines | ~440 lines (removed entity fields from tool, removed unused enums) |
 
-Estimated net: **~130 lines of shared/new code replace ~200 lines of duplicated code.** Net reduction of ~70 lines.
+Estimated net: **~130 lines of shared/new code replace ~230 lines of duplicated/deleted code.** Net reduction of ~100 lines.
 
 ## Graceful Degradation
 
 If Perplexity is down or `PERPLEXITY_API_KEY` is missing:
 - `classifyBrand()` returns `null`
-- Resolution chain falls through to agent findings → HTML meta
-- Scan still completes with lower-quality metadata (same as current behavior)
+- Resolution chain falls through to agent findings → domain-derived label
+- No HTML meta fallback — if AI can't classify a brand, a `<title>` tag won't help
+- Scan still completes with scoring (the technical audit is unaffected)
 - Console warning: `[scan] Perplexity classification failed for {domain}: {error}`
 
 ## Testing
