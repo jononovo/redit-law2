@@ -6,11 +6,11 @@ The commerce-specific metadata lives in the `metadata` map of the YAML frontmatt
 
 ```yaml
 metadata:
-  vendor_domain: amazon.com
-  vendor_slug: amazon
-  vendor_name: Amazon
-  sector: general
-  maturity: established
+  vendor_domain: sweetwater.com
+  vendor_slug: sweetwater
+  vendor_name: Sweetwater
+  sector: arts-entertainment
+  tier: premium
 ```
 
 | Field | Type | Description |
@@ -18,8 +18,41 @@ metadata:
 | `vendor_domain` | string | The primary domain of the store |
 | `vendor_slug` | string | URL-safe identifier used in the catalog |
 | `vendor_name` | string | Display name of the vendor |
-| `sector` | string | Primary business sector (general, electronics, office, fashion, etc.) |
-| `maturity` | string | `emerging`, `growing`, or `established` |
+| `sector` | string | Primary sector slug — one of 27 values from the [sector taxonomy](/docs/shopy/taxonomy/sectors) (e.g., `electronics`, `apparel-accessories`, `business-industrial`) |
+| `tier` | string | Market position: `commodity`, `budget`, `value`, `mid_range`, `premium`, `luxury`, `ultra_luxury` |
+
+## Taxonomy fields
+
+```yaml
+metadata:
+  product_categories:
+    - "223 - Electronics > Audio"
+    - "505 - Arts & Entertainment > Musical Instruments"
+  categories:
+    - id: 505
+      name: Musical Instruments
+      path: "Arts & Entertainment > Musical Instruments"
+      depth: 2
+      primary: true
+    - id: 223
+      name: Audio
+      path: "Electronics > Audio"
+      depth: 2
+```
+
+| Field | Type | Description |
+|---|---|---|
+| `product_categories` | string[] | Human-readable category strings in `"{id} - {path}"` format |
+| `categories` | object[] | Structured category mappings using Google Product Taxonomy IDs |
+| `categories[].id` | integer | Taxonomy ID — Google Product Taxonomy number for Google categories, 100001+ for custom sectors |
+| `categories[].name` | string | Category display name |
+| `categories[].path` | string | Full path from root (e.g., `"Electronics > Computers > Laptops"`) |
+| `categories[].depth` | integer | Depth in taxonomy tree (1 = root, 2 = subcategory). Merchant-level uses depth 1-2. |
+| `categories[].primary` | boolean | Whether this is the merchant's primary category |
+
+Categories are assigned automatically during scanning using the Google Product Taxonomy. The full structured taxonomy data (including `product_categories` and `categories` arrays) is currently served through the `skill.json` companion file at `/brands/{slug}/skill-json`. Basic sector and tier values are included in SKILL.md frontmatter.
+
+See the [taxonomy documentation](/docs/shopy/taxonomy/sectors) for details on how sectors and categories work.
 
 ## Scoring fields
 
@@ -68,9 +101,9 @@ metadata:
 ```yaml
 metadata:
   generated_by: creditclaw
-  generated_at: 2025-01-15T00:00:00Z
+  generated_at: 2026-04-03T00:00:00Z
   verified: true
-  verified_at: 2025-01-15T00:00:00Z
+  verified_at: 2026-04-03T00:00:00Z
 ```
 
 | Field | Type | Description |

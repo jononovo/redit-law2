@@ -134,14 +134,14 @@ Market position classification defined in `lib/procurement-skills/taxonomy/tiers
 | Tier | Description |
 |------|-------------|
 | `commodity` | Lowest-cost, undifferentiated |
-| `value` | Budget-focused, discount retailers |
+| `budget` | Budget-focused, price-driven |
+| `value` | Value-oriented, balancing price and quality |
 | `mid_range` | Mainstream brands, moderate pricing |
 | `premium` | Higher-end brands, quality focus |
 | `luxury` | Luxury goods, exclusive brands |
 | `ultra_luxury` | Top-tier luxury, exclusive access |
-| `enterprise` | B2B, bulk purchasing, corporate accounts |
 
-Tiers affect how agents approach purchasing — a `value` tier merchant might prioritize coupon checking, while `enterprise` might require PO numbers and approval flows. The `luxury` and `ultra_luxury` tiers also power the `/c/luxury` filter view.
+Tiers affect how agents approach purchasing — a `budget` tier merchant might prioritize coupon checking, while a `premium` merchant might emphasize quality and exclusivity. The `luxury` and `ultra_luxury` tiers also power the `/c/luxury` filter view.
 
 ---
 

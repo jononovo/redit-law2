@@ -78,26 +78,21 @@ metadata:
   logo_url: https://cdn.example.com/brands/amazon/logo.png
 
   # === Taxonomy ===
-  sector: retail
-  tier: value
+  sector: electronics
+  tier: mid_range
+  product_categories:
+    - "223 - Electronics > Audio"
+    - "278 - Electronics > Computers"
   categories:
-    - gpt_id: 222
-      name: Electronics
-      path: "Electronics"
-      depth: 0
+    - id: 223
+      name: Audio
+      path: "Electronics > Audio"
+      depth: 2
       primary: true
-    - gpt_id: 536
-      name: "Home & Garden"
-      path: "Home & Garden"
-      depth: 0
-    - gpt_id: 783
-      name: Media
-      path: Media
-      depth: 0
-    - gpt_id: 412
-      name: "Food, Beverages & Tobacco"
-      path: "Food, Beverages & Tobacco"
-      depth: 0
+    - id: 278
+      name: Computers
+      path: "Electronics > Computers"
+      depth: 2
 
   # === ASX Score (scan-based, 0-100) ===
   asx_score: 82
@@ -194,13 +189,14 @@ metadata:
 
 | Field | Type | Required | Description |
 |---|---|---|---|
-| `sector` | string | Yes | CreditClaw sector slug (e.g., `retail`, `electronics`, `industrial`) |
-| `tier` | string | No | Market positioning: `value`, `mid-range`, `premium`, `luxury`, `wholesale`, `marketplace` |
-| `categories` | object[] | Yes | UCP category mappings using Google Product Taxonomy |
-| `categories[].gpt_id` | integer | Yes | Google Product Taxonomy numeric ID |
+| `sector` | string | Yes | Sector slug — one of 27 values derived from Google Product Taxonomy roots plus custom sectors (e.g., `electronics`, `business-industrial`, `food-services`). See the [Taxonomy & Sectors](/docs/shopy/taxonomy/sectors) documentation for the full list. |
+| `tier` | string | No | Market positioning: `commodity`, `budget`, `value`, `mid_range`, `premium`, `luxury`, `ultra_luxury` |
+| `product_categories` | string[] | No | Human-readable category strings in the format `"{id} - {path}"` (e.g., `"223 - Electronics > Audio"`) |
+| `categories` | object[] | Yes | Structured product category mappings using Google Product Taxonomy IDs |
+| `categories[].id` | integer | Yes | Taxonomy numeric ID — Google Product Taxonomy ID for Google categories, 100001+ for custom sectors |
 | `categories[].name` | string | Yes | Category display name (English) |
 | `categories[].path` | string | Yes | Full category path from root (e.g., `"Electronics > Computers > Laptops"`) |
-| `categories[].depth` | integer | Yes | Depth in taxonomy tree (0 = L1 root, 1 = L2, 2 = L3 max for merchants) |
+| `categories[].depth` | integer | Yes | Depth in taxonomy tree (1 = L1 root, 2 = L2, 3 = L3). Merchant-level classification uses depth 1-2. |
 | `categories[].primary` | boolean | No | Whether this is the merchant's primary category (one per merchant) |
 
 ### ASX Score Fields (Scan-Based)
@@ -377,7 +373,7 @@ Ratings are 1-5. This is optional but helps other agents find reliable vendors.
 
 The structured metadata for each merchant is defined in a `skill.json` file. The SKILL.md frontmatter is derived from `skill.json` — they contain the same data, but `skill.json` is the machine-readable source of truth.
 
-The full `skill.json` schema is specified in `Shopy/skill-json-schema.md`. It covers: identity, taxonomy (UCP categories), scoring (ASX + AXS), API access, checkout, shipping, returns, loyalty, skill quality, and distribution.
+The full `skill.json` schema covers: identity, taxonomy (sector + Google Product Taxonomy categories), scoring (ASX + AXS), API access, checkout, shipping, returns, loyalty, skill quality, and distribution.
 
 ### Relationship between formats
 

@@ -64,7 +64,7 @@ A single Perplexity `sonar` call that returns structured JSON about the brand:
 |-------|------|---------|
 | `name` | string | Official brand name (cleaned of Inc/LLC suffixes) |
 | `sector` | VendorSector | One of 26 assignable sectors (see Taxonomy below) |
-| `tier` | BrandTier | Pricing position: ultra_luxury → commodity |
+| `tier` | BrandTier | Pricing position: ultra_luxury, luxury, premium, mid_range, value, budget, commodity |
 | `subCategories` | string[] | Up to 5 freeform product category descriptions |
 | `capabilities` | VendorCapability[] | Detected e-commerce capabilities |
 | `description` | string | One-sentence summary |
