@@ -292,6 +292,8 @@ Human-facing catalog data source. Separate from the bot API — returns raw Bran
 
 **Brand Index** (`brand_index` table, `server/storage/brand-index.ts`):
 Sole source of truth for all brand data across all surfaces (bots, humans, exports). Single denormalized PostgreSQL table with:
+- **Primary identifier**: `domain` (text, NOT NULL, UNIQUE) — canonical dedup key for scans, cache lookups, upserts. Conflict target for `upsertBrandIndex`.
+- **URL routing key**: `slug` (text, NOT NULL, UNIQUE) — used for `/brands/[slug]` pages and `/brands/[slug]/skill.md`. Derived from domain via `domainToSlug()`: `.com` domains strip TLD (`staples.com` → `staples`), non-`.com` keep full domain minus dots (`staples.co.uk` → `staples-co-uk`). Slug is set on insert only — never overwritten by upsert (excluded from update set).
 - `brand_type` text — business model classification (brand, retailer, marketplace, chain, independent)
 - Flat indexed columns for every filterable field (sector, tier, maturity, ordering, etc.)
 - `carries_brands` text[] array (GIN-indexed) — distinguishes retailers from HQ brands (populated = retailer)
@@ -302,7 +304,7 @@ Sole source of truth for all brand data across all surfaces (bots, humans, expor
 - Rating columns: `rating_search_accuracy` (numeric), `rating_stock_reliability` (numeric), `rating_checkout_completion` (numeric), `axs_rating` (numeric — the "Agentic Experience Score" crowdsourced average), `rating_count` (integer). Null until 5+ weighted feedback events. Drizzle returns `numeric` as strings — always use `Number()` when displaying.
 - B2B columns: `tax_exempt_supported`, `po_number_supported`, `business_account`
 - Maturity progression: draft → community → official (brand claimed) → verified (CreditClaw audited)
-- Storage methods: `searchBrands`, `searchBrandsCount`, `getBrandById`, `getBrandBySlug`, `getRetailersForBrand`, `upsertBrandIndex`, `getAllBrandFacets`
+- Storage methods: `searchBrands`, `searchBrandsCount`, `getBrandById`, `getBrandBySlug`, `getBrandByDomain`, `getRetailersForBrand`, `upsertBrandIndex`, `getAllBrandFacets`
 - `searchBrands` supports `lite?: boolean` filter — when true, selects only catalog card fields (excludes `skillMd` and heavy metadata columns, but includes `axsRating`, `ratingCount`, `overallScore`). Used by internal search API and sitemap. Export type `BrandCardRow` for type-safe lite consumers.
 - `searchBrands` supports rating-based filters: `minAxsRating`, `minRatingSearch`, `minRatingStock`, `minRatingCheckout`. Also supports `sortBy: "rating"` and `sortBy: "score"` (ASX Score).
 - `getAllBrandFacets` uses 10-minute in-memory cache (module-level). `invalidateFacetCache()` exported from `server/storage/brand-index.ts` and called automatically on `upsertBrandIndex`.
@@ -311,14 +313,52 @@ Sole source of truth for all brand data across all surfaces (bots, humans, expor
 **ASX Score Engine** (`lib/agentic-score/`):
 Self-contained scoring module that evaluates how well a merchant's website supports AI shopping agents. Completely independent of `analyzeVendor()` and the skill builder pipeline.
 - `compute.ts` — main entry: `computeASXScore(input: ScoreInput): ASXScoreResult`
-- `fetch.ts` — parallel fetcher: `fetchScanInputs(domain: string): Promise<ScoreInput>` (fetches homepage + sitemap.xml + robots.txt in parallel with SSRF protection and manual redirect validation)
+- `fetch.ts` — parallel fetcher: `fetchScanInputs(domain: string): Promise<ScoreInput>` (fetches homepage + sitemap.xml + robots.txt in parallel with SSRF protection and manual redirect validation). Firecrawl JS rendering enabled when `FIRECRAWL_API_KEY` is set (falls back to raw fetch on failure or missing key). Also exports `normalizeDomain(input: string): string` for domain validation/cleanup, and `domainToSlug(domain: string): string` for URL-friendly slug derivation (`.com` strips TLD, non-`.com` replaces dots with dashes).
+- `llm.ts` — `analyzeScanWithClaude(html, domain)`: Claude-powered analysis extracting checkout flow, taxonomy (sector/subSectors/tier), capabilities, and shopping tips. Returns `LLMScanFindings` (partial, all fields optional). Graceful failure: returns `{}` if ANTHROPIC_API_KEY missing or Claude fails.
+- `enhance.ts` — `enhanceScores(baseResult, findings)`: boosts regex-based signal scores using LLM findings. Floor principle: never lowers a score, only boosts. Returns enhanced `ASXScoreResult`.
+- `extract-meta.ts` — `extractMeta(html, domain)`: extracts `<title>` and `<meta description>` from HTML with domain-based fallbacks
 - `recommendations.ts` — generates improvement recommendations sorted by potential point gain
 - `signals/clarity.ts` — JSON-LD (20pts), Product Feed/Sitemap (10pts), Clean HTML (10pts)
 - `signals/speed.ts` — Search API/MCP (10pts), Internal Site Search (10pts), Page Load (5pts)
 - `signals/reliability.ts` — Access & Auth (10pts), Order Management (10pts), Checkout Flow (10pts), Bot Tolerance (5pts)
 - 3 pillars: Clarity (40pts max) + Speed (25pts max) + Reliability (35pts max) = 100pts
 - Labels: Poor (0-20), Needs Work (21-40), Fair (41-60), Good (61-80), Excellent (81-100)
-- Output writes to `brand_index` via `overallScore`, `scoreBreakdown` (jsonb), `recommendations` (jsonb)
+- Output writes to `brand_index` via `overallScore`, `scoreBreakdown` (jsonb), `recommendations` (jsonb), `skillMd` (text)
+
+**Scan API** (`app/api/v1/scan/route.ts`):
+Public endpoint for the ASX Score Scanner — CreditClaw's lead gen tool. No auth required.
+- `POST /api/v1/scan` — accepts `{ domain: string }`, returns score + breakdown + recommendations + `skillMdUrl` + `enhanced` flag
+- Pipeline: normalizeDomain → cache check (30-day window) → fetchScanInputs (Firecrawl → raw fallback) → computeASXScore → analyzeScanWithClaude → enhanceScores → buildVendorSkillDraft → generateVendorSkill (SKILL.md) → upsertBrandIndex → response
+- Claude analysis is optional: if ANTHROPIC_API_KEY missing or credits exhausted, regex-only scores and default SKILL.md are used
+- Rate limiting: in-memory, 5 requests/min per IP (via x-forwarded-for)
+- Error responses: 400 (invalid domain), 422 (unreachable), 429 (rate limit), 500 (internal)
+- Taxonomy guard: existing non-"uncategorized" sector is never overwritten by Claude's classification
+- Capability persistence: boolean fields (`hasApi`, `hasMcp`) use OR-merge (false→true upgrade), arrays use set-union merge
+- Storage: `getBrandByDomain(domain)` added to IStorage interface and brand-index.ts
+
+**SKILL.md Serving** (`app/brands/[slug]/skill/route.ts`):
+Public endpoint serving raw SKILL.md markdown for a brand.
+- `GET /brands/[slug]/skill` — returns `Content-Type: text/markdown; charset=utf-8` with 24-hour cache
+- 404 if brand not found or skillMd is null
+
+**Public Brands API** (`app/api/v1/brands/[slug]/route.ts`):
+Public-facing brand data endpoint. No auth required.
+- `GET /api/v1/brands/[slug]` — returns lean brand profile (score, breakdown, recommendations, capabilities, meta) without full brandData JSONB
+- 404 if slug not found
+
+**Scanner Landing Page** (`app/agentic-shopping-score/page.tsx`):
+Public lead gen tool. SSR page with client-side form component.
+- Hero + domain input + scan button
+- States: idle → scanning → redirecting (auto-redirect to `/brands/[slug]` after 2.5s) → error
+- Uses `domainToSlug` from `lib/agentic-score/domain-utils.ts` (client-safe, no Node deps)
+
+**Brand Results Page** (`app/brands/[slug]/page.tsx`):
+SSR server component showing scan results. Bot-readable with full OG/Twitter/canonical meta.
+- Dynamic metadata via `generateMetadata`
+- Two states: scored (gauge + pillar breakdown + signal detail + recommendations) or unscanned (CTA to scan)
+- Client components: `scan-trigger.tsx` (scan/re-scan button), `copy-url-button.tsx` (share URL)
+- Reuses `getScoreColor` from `app/skills/vendor-card.tsx`
+- Score labels: Poor (0-20), Needs Work (21-40), Fair (41-60), Good (61-80), Excellent (81-100)
 
 **Brand Feedback** (`brand_feedback` table, `server/storage/brand-feedback.ts`):
 Agents and humans rate brands after purchase attempts. Three sub-ratings (search_accuracy, stock_reliability, checkout_completion) at 1-5 scale with outcome tracking.

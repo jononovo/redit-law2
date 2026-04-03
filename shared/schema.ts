@@ -1476,7 +1476,7 @@ export const brandIndex = pgTable("brand_index", {
   id: serial("id").primaryKey(),
   slug: text("slug").notNull().unique(),
   name: text("name").notNull(),
-  domain: text("domain"),
+  domain: text("domain").notNull().unique(),
   url: text("url").notNull(),
   logoUrl: text("logo_url"),
   description: text("description").notNull(),
@@ -1550,7 +1550,6 @@ export const brandIndex = pgTable("brand_index", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 }, (table) => [
-  index("brand_index_domain_idx").on(table.domain),
   index("brand_index_sector_idx").on(table.sector),
   index("brand_index_tier_idx").on(table.tier),
   index("brand_index_maturity_idx").on(table.maturity),
