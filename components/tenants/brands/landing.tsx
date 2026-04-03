@@ -5,8 +5,9 @@ import { Footer } from "@/components/footer";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState, useEffect, useMemo } from "react";
-import { Search, ArrowRight, ChevronRight, Terminal } from "lucide-react";
+import { ArrowRight, ChevronRight, Terminal, Loader2 } from "lucide-react";
 import { CAPABILITY_LABELS } from "@/lib/procurement-skills/taxonomy/capabilities";
 import { CHECKOUT_METHOD_LABELS } from "@/lib/procurement-skills/taxonomy/checkout-methods";
 
@@ -70,8 +71,13 @@ function CheckoutLabel({ methods }: { methods: string[] | null }) {
   );
 }
 
+type ScanState = "idle" | "scanning" | "error";
+
 export default function BrandsLanding() {
-  const [search, setSearch] = useState("");
+  const router = useRouter();
+  const [domain, setDomain] = useState("");
+  const [scanState, setScanState] = useState<ScanState>("idle");
+  const [errorMsg, setErrorMsg] = useState("");
   const [brands, setBrands] = useState<BrandRow[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -85,16 +91,48 @@ export default function BrandsLanding() {
       .catch(() => setLoading(false));
   }, []);
 
-  const filtered = search.trim()
-    ? brands.filter(
-        (b) =>
-          b.name.toLowerCase().includes(search.toLowerCase()) ||
-          b.domain.toLowerCase().includes(search.toLowerCase()) ||
-          b.sector.toLowerCase().includes(search.toLowerCase())
-      )
-    : brands;
-
   const sectorCount = useMemo(() => new Set(brands.map((b) => b.sector)).size, [brands]);
+
+  async function handleCreateSkill() {
+    const trimmed = domain.trim();
+    if (!trimmed || trimmed.length < 3 || !trimmed.includes(".")) {
+      setErrorMsg("Enter a valid domain (e.g. allbirds.com)");
+      setScanState("error");
+      return;
+    }
+
+    setScanState("scanning");
+    setErrorMsg("");
+
+    try {
+      const res = await fetch("/api/v1/scan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ domain: trimmed }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setErrorMsg(data.message || "Something went wrong. Try again.");
+        setScanState("error");
+        return;
+      }
+
+      router.push(`/skills/${data.slug}`);
+    } catch {
+      setErrorMsg("Network error. Check your connection and try again.");
+      setScanState("error");
+    }
+  }
+
+  function handleKeyDown(e: React.KeyboardEvent) {
+    if (e.key === "Enter" && scanState !== "scanning") {
+      handleCreateSkill();
+    }
+  }
+
+  const isScanning = scanState === "scanning";
 
   return (
     <div className="min-h-screen bg-neutral-950 text-neutral-100 font-sans">
@@ -107,27 +145,54 @@ export default function BrandsLanding() {
                 The skill registry for agentic shopping.
               </h1>
               <p className="text-lg text-neutral-400 font-medium" data-testid="text-hero-subtitle">
-                SKILL.md files that teach AI agents how to search, browse, and buy from real stores.
+                Create a shopping skill for your brand with a single click
               </p>
             </div>
 
-            <div className="max-w-2xl mx-auto mb-4">
-              <div className="relative">
-                <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-500" />
+            <div className="max-w-2xl mx-auto mb-3">
+              <div className="flex">
                 <Input
                   type="text"
-                  placeholder="Search brands, sectors, domains..."
-                  aria-label="Search the brand skill catalog"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="h-14 pl-14 pr-6 rounded-none bg-neutral-900 border-neutral-800 text-base font-medium text-white placeholder:text-neutral-500 focus-visible:ring-white/20 focus-visible:border-neutral-600"
-                  data-testid="input-search-brands"
+                  placeholder="Enter a domain (e.g. allbirds.com)"
+                  aria-label="Enter a domain to create a shopping skill"
+                  value={domain}
+                  onChange={(e) => {
+                    setDomain(e.target.value);
+                    if (scanState === "error") setScanState("idle");
+                  }}
+                  onKeyDown={handleKeyDown}
+                  disabled={isScanning}
+                  className="h-14 px-6 rounded-none bg-neutral-900 border-neutral-800 border-r-0 text-base font-medium text-white placeholder:text-neutral-500 focus-visible:ring-white/20 focus-visible:border-neutral-600 flex-1"
+                  data-testid="input-create-skill"
                 />
+                <button
+                  onClick={handleCreateSkill}
+                  disabled={isScanning}
+                  className="h-14 px-6 bg-white text-neutral-950 font-bold text-sm tracking-wide uppercase border border-white hover:bg-neutral-200 transition-colors disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-2 whitespace-nowrap"
+                  data-testid="button-create-skill"
+                >
+                  {isScanning ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Scanning...
+                    </>
+                  ) : (
+                    <>
+                      Create Skill
+                      <ArrowRight className="w-4 h-4" />
+                    </>
+                  )}
+                </button>
               </div>
+              {scanState === "error" && errorMsg && (
+                <p className="mt-2 text-sm font-mono text-red-400" data-testid="text-scan-error">
+                  {errorMsg}
+                </p>
+              )}
             </div>
 
             {!loading && (
-              <div className="max-w-2xl mx-auto flex items-center justify-center gap-4 text-sm font-mono text-neutral-500 tracking-wide mb-4" data-testid="stats-bar">
+              <div className="max-w-2xl mx-auto flex items-center justify-center gap-4 text-sm font-mono text-neutral-500 tracking-wide mb-10" data-testid="stats-bar">
                 <span>{brands.length} skills indexed</span>
                 <span className="text-neutral-700">·</span>
                 <span>{sectorCount} sectors</span>
@@ -138,17 +203,6 @@ export default function BrandsLanding() {
                 </span>
               </div>
             )}
-
-            <div className="max-w-2xl mx-auto text-center mb-10">
-              <Link
-                href="/agentic-shopping-score"
-                className="inline-flex items-center gap-2 text-sm font-semibold text-neutral-400 hover:text-white transition-colors"
-                data-testid="link-create-skill"
-              >
-                Submit a new skill
-                <ArrowRight className="w-3.5 h-3.5" />
-              </Link>
-            </div>
           </div>
         </section>
 
@@ -169,15 +223,15 @@ export default function BrandsLanding() {
                     <div className="inline-block w-5 h-5 border-2 border-neutral-700 border-t-white rounded-full animate-spin" />
                     <p className="text-sm text-neutral-500 mt-3 font-medium">Loading skills...</p>
                   </div>
-                ) : filtered.length === 0 ? (
+                ) : brands.length === 0 ? (
                   <div className="px-5 py-20 text-center">
                     <p className="text-sm text-neutral-500 font-medium">
-                      {search.trim() ? `No skills match "${search}"` : "No skills in the registry yet."}
+                      No skills in the registry yet.
                     </p>
                   </div>
                 ) : (
                   <div className="divide-y divide-neutral-800/60">
-                    {filtered.map((brand) => (
+                    {brands.map((brand) => (
                       <Link
                         key={brand.slug}
                         href={`/skills/${brand.slug}`}
