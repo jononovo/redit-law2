@@ -2,36 +2,44 @@
 
 ## Problem
 
-The current scanner asks Claude to do two fundamentally different jobs in one agent loop:
+The scanner asks Claude to do two fundamentally different jobs in one agent loop:
 
 1. **Entity classification** — What is this brand? What sector? What do they sell?
 2. **Technical page audit** — Does the site have structured data, guest checkout, API docs, etc.?
 
-Claude works from raw HTML, which makes it terrible at #1 (it reads "burger" from a JS-rendered page instead of knowing it's Patagonia) but good at #2 (it can actually inspect page elements and follow links).
+Claude works from raw HTML, which makes it terrible at #1 (reads "burger" from a JS-rendered page instead of knowing it's Patagonia) but good at #2 (can inspect page elements and follow links).
 
-Meanwhile, Perplexity Sonar is a search-grounded model — it already knows what every brand is, what they sell, what category they're in. Our test of 10 domains returned perfect results for all 10 in ~2 seconds each, with zero scraping.
+Perplexity Sonar is search-grounded — it already knows what every brand is. Tested 10 domains, all 10 returned perfect name/sector/tier/capabilities in ~2 seconds, zero scraping.
 
 ## Solution
 
-Add a Perplexity Sonar pre-step that resolves all brand metadata before the Claude agent scan runs. Claude then focuses purely on technical evidence gathering for the scoring rubric.
+Add a Perplexity Sonar pre-step for brand metadata. Strip entity classification duties from Claude. Extract duplicated logic into a shared module. Net result: cleaner code, fewer lines, better data.
 
 ## Architecture
 
 ```
-CURRENT FLOW:
-  domain → fetchScanInputs (Firecrawl) → detectAll (regex) → agenticScan (Claude does EVERYTHING) → upsert
+CURRENT:
+  domain → fetchScanInputs (Firecrawl)
+         → detectAll (regex)
+         → agenticScan (Claude does EVERYTHING including brand ID)
+         → duplicated helper functions in route.ts AND process-next.ts
+         → upsert
 
-NEW FLOW:
-  domain → classifyBrand (Perplexity Sonar) → fetchScanInputs (Firecrawl) → detectAll (regex) → agenticScan (Claude: scoring only) → upsert
+NEW:
+  domain → classifyBrand (Perplexity) ─┐
+         → fetchScanInputs (Firecrawl) ─┤  [parallel]
+                                        ↓
+         → detectAll (regex)
+         → agenticScan (Claude: technical audit ONLY)
+         → shared helper functions from scan-utils.ts
+         → upsert
 ```
 
-The Perplexity call is independent of HTML fetching, so they run in parallel.
+## File Changes
 
-## New File
+### NEW: `lib/agentic-score/classify-brand.ts`
 
-### `lib/agentic-score/classify-brand.ts`
-
-Single-purpose module. One exported function:
+Single exported function:
 
 ```ts
 export interface BrandClassification {
@@ -49,140 +57,108 @@ export interface BrandClassification {
 export async function classifyBrand(domain: string): Promise<BrandClassification | null>
 ```
 
-**Implementation details:**
-- Calls `https://api.perplexity.ai/chat/completions` with model `sonar`
-- System prompt: "You classify e-commerce merchants. Return ONLY valid JSON, no markdown."
-- User prompt: passes the domain and our exact enum values for sector, tier, capabilities
-- `temperature: 0.1` for deterministic output
-- Parses response, validates against our enums, returns typed object
-- Returns `null` on any failure (network, bad JSON, missing key) — never blocks the scan
-- Timeout: 15 seconds
+- Calls Perplexity Sonar REST API (`sonar` model, `temperature: 0.1`)
+- Passes our exact enum values in the prompt so output maps directly
+- Returns `null` on any failure — never blocks a scan
+- No new npm dependencies (uses native fetch)
 
-**No new dependencies needed** — uses native `fetch` against the REST API.
+### NEW: `lib/agentic-score/scan-utils.ts`
 
-## Changes to Existing Files
+Extract these duplicated items from route.ts and process-next.ts:
 
-### 1. `app/api/v1/scan/route.ts`
+- `VALID_SECTORS` array
+- `VALID_CAPABILITIES` array
+- `toValidSector()` function
+- `toValidCapabilities()` function
+- `mergeArrayField()` function
+- `mergeEvidence()` function
+- `buildVendorSkillDraft()` function
 
-**Lines ~219-228** — After rate limit check and domain normalization, before `fetchScanInputs`:
+Currently all of these are copy-pasted identically in both files. One source of truth.
 
-```ts
-// Run Perplexity classification and Firecrawl fetch in parallel
-const [classification, input] = await Promise.all([
-  classifyBrand(domain).catch(() => null),
-  fetchScanInputs(domain),
-]);
-```
+### MODIFY: `lib/agentic-score/agent-scan.ts`
 
-**Lines ~263-273** — Replace name/sector/tier resolution to prefer Perplexity over agent findings:
+**Strip entity classification from `record_findings` tool.**
 
-```ts
-// Priority: existing DB value > Perplexity classification > agent findings > HTML meta fallback
-const resolvedName = existing?.name
-  ?? classification?.name
-  ?? (agentFindings.name as string | undefined)
-  ?? meta.name;
+Remove these properties from the tool schema:
+- `name` (Perplexity provides this)
+- `sector` (Perplexity provides this)
+- `subSectors` (Perplexity provides this)
+- `tier` (Perplexity provides this)
+- `capabilities` (Perplexity provides this)
 
-const resolvedSector = (existing?.sector && existing.sector !== "uncategorized")
-  ? existing.sector
-  : classification?.sector
-  ?? (agentFindings.sector as string | undefined)
-  ?? "uncategorized";
+Keep these (Claude finds them from page analysis):
+- `guestCheckout`, `taxExemptField`, `poNumberField`
+- `searchUrlTemplate`, `searchPattern`, `productIdFormat`
+- `freeShippingThreshold`, `estimatedDeliveryDays`, `businessShipping`
+- `tips`, `checkoutProviders`, `paymentMethods`
+- `hasApi`, `hasMcp`
 
-const resolvedSubSectors = (existing?.subSectors && existing.subSectors.length > 0)
-  ? existing.subSectors
-  : classification?.subCategories
-  ?? (Array.isArray(agentFindings.subSectors) ? agentFindings.subSectors as string[] : []);
+**Update system prompt** (lines 252-276):
+- Remove instruction #4 about capturing "name, sector, capabilities"
+- Add: "Brand identification (name, sector, category) is handled separately. Focus on technical page audit evidence only."
 
-const resolvedTier = existing?.tier
-  ?? classification?.tier
-  ?? (agentFindings.tier as string | undefined)
-  ?? null;
-```
+**Remove unused constants** (lines 57-71):
+- `VALID_SECTORS` array — no longer needed without sector in record_findings
+- `VALID_TIERS` array — same
+- `VALID_CAPABILITIES` array — same
+- Associated validation logic in the record_findings handler (lines 418-425)
 
-**Lines ~286-313** — In the `upsertBrandIndex` call, merge Perplexity capabilities with agent/existing:
+### MODIFY: `app/api/v1/scan/route.ts`
 
-```ts
-capabilities: mergeArrayField(
-  existing?.capabilities,
-  mergeArrayField(
-    classification?.capabilities?.map(c => c as string),
-    draft?.capabilities?.map(c => c as string) ?? agentFindings.capabilities as string[] | undefined,
-  ),
-),
-description: existing?.description ?? classification?.description ?? meta.description,
-```
+1. **Import** `classifyBrand` from classify-brand.ts
+2. **Import** shared functions from scan-utils.ts
+3. **Delete** local copies of `buildVendorSkillDraft`, `mergeEvidence`, `mergeArrayField`, `toValidSector`, `toValidCapabilities`, `VALID_SECTORS`, `VALID_CAPABILITIES`
+4. **Parallelize** Perplexity + Firecrawl:
+   ```ts
+   const [classification, input] = await Promise.all([
+     classifyBrand(domain).catch(() => null),
+     fetchScanInputs(domain),
+   ]);
+   ```
+5. **Update resolution priority** for name/sector/tier/subSectors:
+   `existing DB → Perplexity → agent findings → HTML meta`
+6. **Merge Perplexity capabilities** into the capabilities field
 
-**Lines ~276-282** — Pass Perplexity data into `buildVendorSkillDraft` so the SKILL.md gets correct capabilities:
+### MODIFY: `lib/scan-queue/process-next.ts`
 
-The `buildVendorSkillDraft` function already takes `findings` — we merge Perplexity classification fields into `agentFindings` before passing:
+Mirror the exact same changes as route.ts:
+- Import from classify-brand.ts and scan-utils.ts
+- Delete local duplicated functions
+- Add parallel classifyBrand call
+- Same resolution priority
 
-```ts
-const enrichedFindings = {
-  ...agentFindings,
-  // Perplexity fills gaps the agent missed
-  ...(classification ? {
-    name: agentFindings.name ?? classification.name,
-    sector: agentFindings.sector ?? classification.sector,
-    capabilities: agentFindings.capabilities ?? classification.capabilities,
-    guestCheckout: agentFindings.guestCheckout ?? classification.guestCheckout,
-  } : {}),
-};
-```
+### KEEP: `lib/agentic-score/extract-meta.ts`
 
-### 2. `lib/scan-queue/process-next.ts`
+28-line last-resort fallback. Stays as-is. With Perplexity in the chain it will rarely be the source of the final name, but it's a harmless safety net.
 
-Mirror the exact same changes. This file duplicates the scan route logic for background queue processing.
+## Net Code Impact
 
-**Same pattern:**
-- Import `classifyBrand`
-- Run in parallel with `fetchScanInputs`
-- Same resolution priority for name/sector/tier/capabilities
-- Same `enrichedFindings` merge before `buildVendorSkillDraft`
+| File | Before | After |
+|------|--------|-------|
+| `classify-brand.ts` | — | ~60 lines (new) |
+| `scan-utils.ts` | — | ~70 lines (new, extracted) |
+| `route.ts` | 337 lines | ~270 lines (removed ~80 lines of duplicated helpers, added ~15 lines of Perplexity integration) |
+| `process-next.ts` | 356 lines | ~290 lines (same cleanup) |
+| `agent-scan.ts` | 476 lines | ~440 lines (removed entity fields from tool, removed unused enums) |
 
-### 3. `lib/agentic-score/agent-scan.ts`
+Estimated net: **~130 lines of shared/new code replace ~200 lines of duplicated code.** Net reduction of ~70 lines.
 
-**No structural changes.** The Claude agent keeps its current tools and prompt. It still tries to resolve name/sector/capabilities via `record_findings`, but those values become fallbacks — Perplexity's answers take priority in the route layer.
+## Graceful Degradation
 
-Future optimization (not in this PR): strip the entity-classification instructions from the Claude system prompt since Perplexity handles it. This would save tokens and reduce agent confusion, but it's a separate change.
-
-## Files Touched
-
-| File | Change |
-|------|--------|
-| `lib/agentic-score/classify-brand.ts` | **NEW** — Perplexity Sonar classification function |
-| `app/api/v1/scan/route.ts` | Add parallel classifyBrand call, update resolution priority |
-| `lib/scan-queue/process-next.ts` | Same changes mirrored |
-| `lib/agentic-score/agent-scan.ts` | No changes |
-| `lib/agentic-score/fetch.ts` | No changes |
-| `lib/agentic-score/extract-meta.ts` | No changes |
-
-## Files NOT Touched
-
-- `lib/agentic-score/rubric.ts` — scoring rubric stays the same
-- `lib/agentic-score/scoring-engine.ts` — score computation stays the same
-- `lib/procurement-skills/generator.ts` — SKILL.md generation stays the same
-- `shared/schema.ts` — no schema changes needed
-- `components/tenants/brands/landing.tsx` — no UI changes
+If Perplexity is down or `PERPLEXITY_API_KEY` is missing:
+- `classifyBrand()` returns `null`
+- Resolution chain falls through to agent findings → HTML meta
+- Scan still completes with lower-quality metadata (same as current behavior)
+- Console warning: `[scan] Perplexity classification failed for {domain}: {error}`
 
 ## Testing
 
-After implementation, re-scan the 4 problem domains and verify:
+Re-scan 4 problem domains and verify:
 1. **patagonia.com** → name: "Patagonia", sector: "sports"
 2. **chewy.com** → name: "Chewy", sector: "pets"
 3. **wayfair.com** → name: "Wayfair", sector: "home"
 4. **bestbuy.com** → name: "Best Buy", sector: "electronics"
 
-Also verify capabilities are populated (not empty arrays) and descriptions are meaningful (not "Online store at domain.com").
-
-## Graceful Degradation
-
-If Perplexity is down or the API key is missing:
-- `classifyBrand()` returns `null`
-- The resolution chain falls through to agent findings → HTML meta → domain-derived name
-- The scan still completes — just with lower-quality metadata (same as today)
-- Console warning logged: `[scan] Perplexity classification failed for {domain}: {error}`
-
-## Cost
-
-Perplexity Sonar: ~$1 per 1000 requests (search queries). Each scan = 1 API call. Negligible compared to the Claude agent loop (which runs 5-20 turns at ~$0.10-0.50 per scan).
+Verify capabilities populated, descriptions meaningful, tiers assigned.
+Also verify a scan works with `PERPLEXITY_API_KEY` unset (graceful fallback).
