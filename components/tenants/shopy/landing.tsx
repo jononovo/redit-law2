@@ -5,9 +5,9 @@ import { Footer } from "@/components/footer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, ExternalLink } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 
 type BrandRow = {
   slug: string;
@@ -49,6 +49,14 @@ export default function ShopyLanding() {
       })
       .catch(() => setLoading(false));
   }, []);
+
+  const scoredBrands = useMemo(
+    () => brands
+      .filter((b) => b.overallScore !== null)
+      .sort((a, b) => (b.overallScore ?? 0) - (a.overallScore ?? 0))
+      .slice(0, 10),
+    [brands]
+  );
 
   const handleScan = (e: React.FormEvent) => {
     e.preventDefault();
@@ -100,58 +108,50 @@ export default function ShopyLanding() {
           <div className="container mx-auto px-6">
             <div className="max-w-5xl mx-auto">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-sm font-bold text-neutral-400 uppercase tracking-wider" data-testid="text-catalog-title">
-                  Skill Catalog
+                <h2 className="text-sm font-mono text-neutral-400 tracking-wide uppercase" data-testid="text-scores-title">
+                  Recent Scores
                 </h2>
-                <Link href="/skills" className="text-sm font-semibold text-neutral-500 hover:text-neutral-900 transition-colors flex items-center gap-1" data-testid="link-view-all-skills">
-                  View all <ArrowRight className="w-3 h-3" />
+                <Link href="/agentic-shopping-score" className="text-sm font-semibold text-neutral-500 hover:text-neutral-900 transition-colors flex items-center gap-1" data-testid="link-scan-now">
+                  Scan yours <ArrowRight className="w-3 h-3" />
                 </Link>
               </div>
 
-              <div className="rounded-xl border border-neutral-200 overflow-hidden bg-white">
-                <div className="hidden md:grid grid-cols-[1fr_120px_120px_100px_80px] gap-4 px-5 py-3 bg-neutral-50 border-b border-neutral-200 text-xs font-bold text-neutral-400 uppercase tracking-wider">
-                  <span>Brand</span>
+              <div className="border border-neutral-200 overflow-hidden bg-white">
+                <div className="hidden md:grid grid-cols-[1fr_120px_100px] gap-4 px-5 py-3 border-b border-neutral-200 text-xs font-mono text-neutral-400 uppercase tracking-wide">
+                  <span>Domain</span>
                   <span>Sector</span>
-                  <span>Tier</span>
                   <span>ASX Score</span>
-                  <span></span>
                 </div>
 
                 {loading ? (
                   <div className="px-5 py-16 text-center">
                     <div className="inline-block w-5 h-5 border-2 border-neutral-200 border-t-neutral-900 rounded-full animate-spin" />
-                    <p className="text-sm text-neutral-400 mt-3 font-medium">Loading catalog...</p>
+                    <p className="text-sm text-neutral-400 mt-3 font-medium">Loading scores...</p>
                   </div>
-                ) : brands.length === 0 ? (
+                ) : scoredBrands.length === 0 ? (
                   <div className="px-5 py-16 text-center">
-                    <p className="text-sm text-neutral-400 font-medium">No skills in catalog yet. Scan a domain to add the first one.</p>
+                    <p className="text-sm text-neutral-400 font-medium">No scores yet. Scan a domain to see the first one.</p>
                   </div>
                 ) : (
                   <div className="divide-y divide-neutral-100">
-                    {brands.map((brand) => (
+                    {scoredBrands.map((brand) => (
                       <Link
                         key={brand.slug}
-                        href={`/skills/${brand.slug}`}
-                        className="grid grid-cols-1 md:grid-cols-[1fr_120px_120px_100px_80px] gap-2 md:gap-4 px-5 py-4 hover:bg-neutral-50 transition-colors items-center group"
-                        data-testid={`row-brand-${brand.slug}`}
+                        href={`/brands/${brand.slug}`}
+                        className="grid grid-cols-1 md:grid-cols-[1fr_120px_100px] gap-2 md:gap-4 px-5 py-4 hover:bg-neutral-50 transition-colors items-center group"
+                        data-testid={`row-score-${brand.slug}`}
                       >
                         <div className="flex items-center gap-3">
-                          {brand.logoUrl ? (
-                            <img src={brand.logoUrl} alt="" className="w-6 h-6 rounded object-contain bg-neutral-100" />
-                          ) : (
-                            <div className="w-6 h-6 rounded bg-neutral-100 flex items-center justify-center text-xs font-bold text-neutral-400">
-                              {brand.name.charAt(0)}
-                            </div>
-                          )}
+                          <div className="w-6 h-6 rounded bg-neutral-100 flex items-center justify-center text-xs font-bold text-neutral-400">
+                            {brand.name.charAt(0)}
+                          </div>
                           <div>
                             <span className="text-sm font-semibold text-neutral-900 group-hover:underline">{brand.name}</span>
                             <span className="text-xs text-neutral-400 ml-2 hidden sm:inline">{brand.domain}</span>
                           </div>
                         </div>
                         <span className="text-xs font-medium text-neutral-500 capitalize">{brand.sector}</span>
-                        <span className="text-xs font-medium text-neutral-500 capitalize">{brand.tier?.replace(/_/g, " ") || "—"}</span>
                         <ScoreBadge score={brand.overallScore} />
-                        <ExternalLink className="w-4 h-4 text-neutral-300 group-hover:text-neutral-500 transition-colors hidden md:block" />
                       </Link>
                     ))}
                   </div>
