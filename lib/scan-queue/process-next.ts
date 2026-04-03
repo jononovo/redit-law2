@@ -108,6 +108,7 @@ export async function processNextInQueue(): Promise<ProcessResult | null> {
         slug, domain, resolvedName, resolvedSector,
         audit, classification?.capabilities ?? [],
       );
+      draft.asxScore = scoreResult.overallScore;
       skillMd = generateVendorSkill(draft);
     } catch {
       // non-critical

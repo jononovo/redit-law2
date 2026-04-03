@@ -117,6 +117,7 @@ export async function POST(request: NextRequest) {
         breakdown: existing.scoreBreakdown,
         recommendations: existing.recommendations,
         skillMdUrl: existing.skillMd ? `/brands/${existing.slug}/skill` : null,
+        skillJsonUrl: `/brands/${existing.slug}/skill-json`,
       });
     }
 
@@ -161,6 +162,7 @@ export async function POST(request: NextRequest) {
         slug, domain, resolvedName, resolvedSector,
         audit, classification?.capabilities ?? [],
       );
+      draft.asxScore = scoreResult.overallScore;
       skillMd = generateVendorSkill(draft);
     } catch {
       // SKILL.md generation failed; non-critical
@@ -205,6 +207,7 @@ export async function POST(request: NextRequest) {
       breakdown: scoreResult.breakdown,
       recommendations: scoreResult.recommendations,
       skillMdUrl: skillMd ? `/brands/${slug}/skill` : null,
+      skillJsonUrl: `/brands/${slug}/skill-json`,
     });
   } catch (error) {
     console.error("POST /api/v1/scan error:", error);

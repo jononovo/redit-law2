@@ -1,0 +1,43 @@
+./app/skills/[vendor]/page.tsx:339:114
+Type error: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type 'Record<CheckoutMethod, string>'.
+  No index signature with a parameter of type 'string' was found on type 'Record<CheckoutMethod, string>'.
+
+  337 |                         return (
+  338 |                           <div key={method} className="flex items-start gap-3">
+> 339 |                             <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${CHECKOUT_METHOD_COLORS[method]}`}>
+      |                                                                                                                  ^
+  340 |                               {CHECKOUT_ICONS[method]}
+  341 |                             </div>
+  342 |                             <div>
+
+./app/skills/[vendor]/page.tsx:339:114
+Type error: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type 'Record<CheckoutMethod, string>'.
+  No index signature with a parameter of type 'string' was found on type 'Record<CheckoutMethod, string>'.
+
+  337 |                         return (
+  338 |                           <div key={method} className="flex items-start gap-3">
+> 339 |                             <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${CHECKOUT_METHOD_COLORS[method]}`}>
+      |                                                                                                                  ^
+  340 |                               {CHECKOUT_ICONS[method]}
+  341 |                             </div>
+  342 |                             <div>
+
+./app/skills/[vendor]/page.tsx:339:114
+Type error: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type 'Record<CheckoutMethod, string>'.
+  No index signature with a parameter of type 'string' was found on type 'Record<CheckoutMethod, string>'.
+
+  337 |                         return (
+  338 |                           <div key={method} className="flex items-start gap-3">
+> 339 |                             <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${CHECKOUT_METHOD_COLORS[method]}`}>
+      |                                                                                                                  ^
+  340 |                               {CHECKOUT_ICONS[method]}
+  341 |                             </div>
+  342 |                             <div>
+
+Next.js build worker exited with code: 1 and signal: null
+
+npm notice
+npm notice New major version of npm available! 10.8.2 -> 11.12.1
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.12.1
+npm notice To update run: npm install -g npm@11.12.1
+npm notice

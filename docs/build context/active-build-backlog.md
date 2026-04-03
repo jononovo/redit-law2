@@ -38,6 +38,7 @@ For reference — these are done and archived:
 - Step 1: Catalog Scale Readiness (1A URL-based filters, 1B generateStaticParams, 1C lean catalog query)
 - GIN indexes + partial boolean indexes on `brand_index` (migration 0007 — `sub_sectors`, `tags`, `carries_brands`, `capabilities`, `checkout_methods`, `payment_methods_accepted`, `supported_countries`, `search_vector` GIN; `has_mcp`, `has_api`, `has_deals`, `ordering=guest`, `tax_exempt`, `po_number`, `claimed_by` partial; plus `search_vector` trigger)
 - Step 2: Multitenant System (2A types+configs, 2B middleware, 2C layout metadata/theming, 2D TenantProvider, 2E nav/footer de-hardcode, 2F landing extraction, 2G API helper, 2H signupTenant column, 2I shopy config skeleton)
+- Step 3: shopy.sh Pages (landing, how-it-works, ASX scanner, skills catalog, AXS explainer, docs, tenant config, middleware routing)
 
 ---
 
@@ -55,14 +56,13 @@ One codebase serves both creditclaw.com and shopy.sh.
 
 ---
 
-### Step 3: shopy.sh Pages
+### Step 3: shopy.sh Pages ✅
 
 **Priority:** High (after multitenant)
-**Status:** ~70% complete — core pages built, 3 pages remaining
+**Status:** Complete
 **Source:** `Shopy/shopy-sh-brand-identity.md`, `Future/step-3-remaining-shopy-pages-plan.md`
 **Depends on:** Step 2
 
-**Complete:**
 - [x] `/` — shopy.sh landing page (`components/tenants/shopy/landing.tsx`, registered in `app/page.tsx`)
 - [x] `/how-it-works` — tenant-aware with full redesign (`components/tenants/shopy/how-it-works.tsx`)
 - [x] `/agentic-shopping-score` — ASX Score Scanner (shared, works for all tenants)
@@ -71,11 +71,6 @@ One codebase serves both creditclaw.com and shopy.sh.
 - [x] `/docs` — documentation pages (shared)
 - [x] Tenant config — nav, footer, theme, feature flags
 - [x] Middleware routing — shopy.sh domain registered
-
-**Remaining:**
-- [ ] `/standard` — render the agentic commerce standard (`agentic-commerce-standard.md`) as a formatted page
-- [ ] `/guide` — non-technical merchant explainer (plain-language walkthrough with diagrams)
-- [ ] `/leaderboard` — top vendors ranked by ASX Score and AXS Rating
 
 ---
 
@@ -127,18 +122,29 @@ Paid, end-user triggered via paywall. Webhook-triggered external browser agents 
 
 ---
 
-### Step 6: UCP Taxonomy Implementation
+### Step 6: Google Product Taxonomy Implementation
 
 **Priority:** Medium — prerequisite for Tier 3 and category pages
-**Status:** Schema designed, not implemented in code
-**Source:** `Shopy/2-merchant-taxonomy-schema-note.md`, `Shopy/3. product-index-taxonomy-plan.md`, `Shopy/skill-json-schema.md`
+**Status:** Research complete, ready to build
+**Source:** `Shopy/2-merchant-taxonomy-schema-note.md`, `Shopy/3. product-index-taxonomy-plan.md`, `Shopy/progressive-disclosure-taxonomy-research.md`
 
-- Create `ucp_categories` table (import Google Product Taxonomy — 5,595 categories)
-- Create `brand_categories` junction table
-- Migrate existing freeform `sub_sectors` to GPT ID mappings
-- Agent scan auto-detects UCP categories during scoring
-- Category-based navigation and filtering
-- **Category Landing Pages** (moved from Step 1 — depends on UCP tables): Build `/c/[sector]/[category-slug]` pages driven by GPT IDs. Requires `ucp_categories` and `brand_categories` tables to exist. Old plan (`completed/remaining-build-tasks.md` Task 3) used freeform `sub_sectors` — needs full rewrite for UCP model.
+**Key decisions (from April 3, 2026 session):**
+- **Hybrid sector list: all 21 Google roots + our own additions.** New sector list has 27 entries: all 21 Google Product Taxonomy roots (kept as-is), plus 4 custom sectors (Food Services, Travel, Education, Events), plus 2 special entries (Luxury as a tier-driven filter view, Specialty as fallback). "Retail" removed (it's a channel, not a category).
+- **Luxury is NOT a sector assignment.** It's a filter view — the `/c/luxury` page queries brands where `tier` is `ultra_luxury` or `luxury`. It appears in navigation alongside real sectors but isn't assigned during scan.
+- **Rename "UCP Categories" to "Product Categories."** Google's UCP is a separate transaction protocol. Tables/fields use `product_categories` and `brand_categories`.
+- **Simplified skill.json format.** Use Google's own format: `"productCategories": ["141 - Cameras & Optics", "223 - Electronics > Audio"]`. One array of self-describing strings.
+- **No backward compatibility / no backfill.** Old brands keep stale values until rescanned. No migration.
+- **Sector-scoped sub-classification.** For sectors that map to a Google root, only consider L2-L3 categories under that root (~50-150 instead of 5,600). For custom sectors (Food Services, Travel, Education, Events), skip sub-classification.
+
+**Build scope:**
+- Create `product_categories` table (import Google Product Taxonomy — 5,595 categories)
+- Create `brand_categories` junction table (brand_id → category_id, `is_primary` flag)
+- Replace `VendorSector` type system with new 27-entry list (touches 14 code files)
+- Update Perplexity classifier to constrain sector to 25 assignable values
+- Wire category selection into scan pipeline
+- Update `skill.json` serializer to output `productCategories` array
+- Update catalog UI, sector landing pages, sitemap, vendor cards
+- Build `/c/luxury` as tier-driven query page
 
 ---
 
