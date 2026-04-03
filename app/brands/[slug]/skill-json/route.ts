@@ -32,7 +32,16 @@ export async function GET(
       );
     }
 
-    const skillJson = buildSkillJson(brand as Parameters<typeof buildSkillJson>[0]);
+    let categoryObjects: { gptId: number; name: string; path: string; depth: number; primary: boolean }[] = [];
+    try {
+      categoryObjects = await storage.getBrandCategoryObjects(brand.id);
+    } catch {
+    }
+
+    const skillJson = buildSkillJson({
+      ...brand,
+      categoryObjects,
+    } as Parameters<typeof buildSkillJson>[0]);
 
     return NextResponse.json(skillJson, {
       headers: {

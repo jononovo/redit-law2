@@ -13,7 +13,13 @@ export interface SkillJson {
   taxonomy: {
     sector: string;
     tier: string | null;
-    productCategories: string[];
+    categories: {
+      gptId: number;
+      name: string;
+      path: string;
+      depth: number;
+      primary?: boolean;
+    }[];
   };
   scoring: {
     asxScore: number;
@@ -88,6 +94,7 @@ interface BrandRecord {
   hasApi: boolean | null;
   brandData: Record<string, unknown> | null;
   productCategoryStrings?: string[];
+  categoryObjects?: { gptId: number; name: string; path: string; depth: number; primary: boolean }[];
 }
 
 function extractPillarScore(breakdown: Record<string, unknown> | null, pillar: string): number {
@@ -126,7 +133,13 @@ export function buildSkillJson(brand: BrandRecord): SkillJson {
     ? new Date(brand.lastScannedAt).toISOString().split("T")[0]
     : new Date().toISOString().split("T")[0];
 
-  const productCategories = brand.productCategoryStrings ?? [];
+  const categories = (brand.categoryObjects ?? []).map((c) => ({
+    gptId: c.gptId,
+    name: c.name,
+    path: c.path,
+    depth: c.depth,
+    ...(c.primary ? { primary: true } : {}),
+  }));
 
   return {
     $schema: "https://shopy.sh/schemas/skill.json/v1",
@@ -143,7 +156,7 @@ export function buildSkillJson(brand: BrandRecord): SkillJson {
     taxonomy: {
       sector: brand.sector ?? "specialty",
       tier: brand.tier ?? null,
-      productCategories,
+      categories,
     },
 
     scoring: {

@@ -1562,4 +1562,5 @@ export const brandCategories = pgTable("brand_categories", {
 }, (table) => [
   index("brand_categories_brand_idx").on(table.brandId),
   index("brand_categories_category_idx").on(table.categoryId),
+  uniqueIndex("brand_categories_brand_category_uniq").on(table.brandId, table.categoryId),
 ]);

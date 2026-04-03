@@ -13,6 +13,8 @@ import {
   domainToLabel,
 } from "@/lib/agentic-score/scan-utils";
 import { generateVendorSkill } from "@/lib/procurement-skills/generator";
+import { resolveProductCategories } from "@/lib/agentic-score/resolve-categories";
+import type { VendorSector } from "@/lib/procurement-skills/taxonomy/sectors";
 import type { VendorSkill } from "@/lib/procurement-skills/types";
 
 export interface ProcessResult {
@@ -116,7 +118,7 @@ export async function processNextInQueue(): Promise<ProcessResult | null> {
 
     const now = new Date();
 
-    await storage.upsertBrandIndex({
+    const upserted = await storage.upsertBrandIndex({
       slug: existing?.slug ?? slug,
       name: resolvedName,
       domain,
@@ -141,6 +143,18 @@ export async function processNextInQueue(): Promise<ProcessResult | null> {
       hasApi: audit?.hasApi ?? existing?.hasApi ?? false,
       hasMcp: audit?.hasMcp ?? existing?.hasMcp ?? false,
     });
+
+    try {
+      const resolved = await resolveProductCategories(
+        resolvedSector as VendorSector,
+        resolvedSubSectors,
+      );
+      if (resolved.length > 0) {
+        await storage.setBrandCategories(upserted.id, resolved);
+      }
+    } catch (catErr) {
+      console.warn("[scan-queue] category resolution failed (non-critical):", catErr instanceof Error ? catErr.message : catErr);
+    }
 
     const finalSlug = existing?.slug ?? slug;
 
