@@ -89,9 +89,10 @@ Categories use Google's numeric taxonomy IDs directly. For custom sectors (food-
 |---|---|---|---|
 | 1 | Root | Sector identification | Electronics (222) |
 | 2 | Subcategory | Merchant classification | Audio (223), Computers (278) |
-| 3–5 | Deep categories | Future product-level classification | Headphones (505), Laptops (328) |
+| 3 | Sub-subcategory | Merchant classification | Headphones (543), Laptops (328) |
+| 4–5 | Deep categories | Future product-level classification | Wireless Headphones, Gaming Laptops |
 
-Merchant-level classification uses depth 1–2. Deeper levels (3–5) are available in the taxonomy for future product-level indexing.
+Merchant-level classification uses depth 2–3, preferring the most specific level available. Deeper levels (4–5) are available in the taxonomy for future product-level indexing.
 
 ## How taxonomy appears in skill.json
 
@@ -100,24 +101,31 @@ The taxonomy block in `skill.json` includes both human-readable strings and stru
 ```json
 {
   "taxonomy": {
-    "sector": "electronics",
-    "tier": "mid_range",
+    "sector": "apparel-accessories",
+    "tier": "premium",
     "productCategories": [
-      "223 - Electronics > Audio",
-      "278 - Electronics > Computers"
+      "Apparel & Accessories > Clothing > Activewear, Outerwear, Pants, Shirts & Tops",
+      "Apparel & Accessories > Clothing Accessories > Gloves & Mittens, Hats",
+      "Apparel & Accessories > Shoes"
     ],
     "categories": [
       {
-        "id": 223,
-        "name": "Audio",
-        "path": "Electronics > Audio",
-        "depth": 2,
+        "id": 5322,
+        "name": "Activewear",
+        "path": "Apparel & Accessories > Clothing > Activewear",
+        "depth": 3,
         "primary": true
       },
       {
-        "id": 278,
-        "name": "Computers",
-        "path": "Electronics > Computers",
+        "id": 203,
+        "name": "Outerwear",
+        "path": "Apparel & Accessories > Clothing > Outerwear",
+        "depth": 3
+      },
+      {
+        "id": 187,
+        "name": "Shoes",
+        "path": "Apparel & Accessories > Shoes",
         "depth": 2
       }
     ]
@@ -125,7 +133,7 @@ The taxonomy block in `skill.json` includes both human-readable strings and stru
 }
 ```
 
-- `productCategories` — flat strings for quick human or agent readability
+- `productCategories` — grouped human-readable strings. Categories sharing the same parent are comma-separated to avoid repeating the path prefix.
 - `categories` — structured objects with IDs for programmatic use and cross-referencing with the Google Product Taxonomy
 
 ## Market tiers

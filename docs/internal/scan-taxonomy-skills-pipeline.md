@@ -34,7 +34,7 @@ POST /api/v1/scan (or scan-queue worker)
   upsertBrandIndex() ──── write to brand_index table
   ↓
   Call 3: resolveProductCategories(domain, sector) ── Perplexity (sonar)
-    │  Queries L2 taxonomy categories for the sector root
+    │  Queries L2+L3 taxonomy categories for the sector root
     │  Sends compact menu to Perplexity, gets back IDs
     │  Validates IDs against product_categories table
     ↓
@@ -155,10 +155,10 @@ After the brand is persisted, a third Perplexity call classifies the brand into 
 ### How it works
 
 1. Look up the sector's root ID in `SECTOR_ROOT_IDS`
-2. Query `product_categories` for all L2 categories under that root (2-25 entries per sector)
-3. Format as a compact menu: `"223 - Audio\n278 - Computers\n386 - Video\n..."`
-4. Send to Perplexity with a focused prompt: "Which of these subcategories does {domain} sell products in?"
-5. Perplexity returns structured JSON: `{ categoryIds: [223, 278], primaryCategoryId: 223 }`
+2. Query `product_categories` for all L2 and L3 categories under that root (depth ≤ 3)
+3. Format as a compact menu with parent context: `"223 - Audio\n543 - Audio > Headphones\n544 - Audio > Speakers\n..."`
+4. Send to Perplexity with a focused prompt that instructs it to prefer the most specific (deepest) categories
+5. Perplexity returns structured JSON: `{ categoryIds: [543, 544], primaryCategoryId: 543 }`
 6. Validate every returned ID against the queried subtree (reject unknown IDs)
 7. Build `ResolvedCategory[]` and call `setBrandCategories(brandId, categories)`
 
@@ -247,8 +247,8 @@ Unique constraint on `(brandId, categoryId)` prevents duplicates.
 
 ### Depth limits
 
-- **Merchant-level classification uses depth ≤ 2** — L1 (root) and L2 subcategories. This keeps the Perplexity menu compact (2-25 entries per sector).
-- **L3+ categories** (depth 3-5) exist in `product_categories` but are reserved for future product-level classification (Tier 3 Product Index).
+- **Merchant-level classification uses depth 2-3** — L2 subcategories and L3 sub-subcategories. The Perplexity prompt instructs the classifier to prefer the most specific level available.
+- **L4+ categories** (depth 4-5) exist in `product_categories` but are reserved for future product-level classification (Tier 3 Product Index).
 
 ---
 
@@ -267,24 +267,31 @@ The skill.json route at `/brands/{slug}/skill-json` assembles the machine-readab
 ```json
 {
   "taxonomy": {
-    "sector": "electronics",
-    "tier": "mid_range",
+    "sector": "apparel-accessories",
+    "tier": "premium",
     "productCategories": [
-      "223 - Electronics > Audio",
-      "278 - Electronics > Computers"
+      "Apparel & Accessories > Clothing > Activewear, Outerwear, Pants, Shirts & Tops",
+      "Apparel & Accessories > Clothing Accessories > Gloves & Mittens, Hats",
+      "Apparel & Accessories > Shoes"
     ],
     "categories": [
       {
-        "id": 223,
-        "name": "Audio",
-        "path": "Electronics > Audio",
-        "depth": 2,
+        "id": 5322,
+        "name": "Activewear",
+        "path": "Apparel & Accessories > Clothing > Activewear",
+        "depth": 3,
         "primary": true
       },
       {
-        "id": 278,
-        "name": "Computers",
-        "path": "Electronics > Computers",
+        "id": 203,
+        "name": "Outerwear",
+        "path": "Apparel & Accessories > Clothing > Outerwear",
+        "depth": 3
+      },
+      {
+        "id": 187,
+        "name": "Shoes",
+        "path": "Apparel & Accessories > Shoes",
         "depth": 2
       }
     ]
@@ -293,7 +300,7 @@ The skill.json route at `/brands/{slug}/skill-json` assembles the machine-readab
 ```
 
 Two representations of the same data:
-- `productCategories` — flat strings for quick human/agent readability
+- `productCategories` — grouped human-readable strings. Categories sharing the same L2 parent are comma-separated (e.g., `"Electronics > Audio > Headphones, Speakers"`) to avoid repeating the path prefix.
 - `categories` — structured objects with IDs for programmatic use
 
 ### Other skill.json blocks

@@ -18,8 +18,8 @@ Google Product Taxonomy (~5,595 categories)
   = 5,638 total in product_categories table
   ↓
   ├── Layer 1: Sector (27 slugs)            → brand_index.sector
-  ├── Layer 2: Category (depth 2)           → brand_categories junction table
-  └── Layer 3+: Sub-Category (depth 3-5)    → in product_categories, reserved for product-level
+  ├── Layer 2: Category (depth 2-3)         → brand_categories junction table
+  └── Layer 4+: Deep categories (depth 4-5) → in product_categories, reserved for product-level
   ↓
   Also stored on brand_index:
   ├── subSectors (text[])    → freeform strings from classification (display only)
@@ -118,10 +118,10 @@ Luxury is NOT a sector assignment. It's a tier-driven filter view:
 
 Perplexity-powered resolution after the main scan (third API call):
 1. Look up sector root ID from `SECTOR_ROOT_IDS`
-2. Query L2 categories under that root (2-25 entries)
-3. Send compact menu to Perplexity
-4. Perplexity returns structured category IDs
-5. Validate and store in `brand_categories` junction table
+2. Query L2 and L3 categories under that root (depth ≤ 3)
+3. Send compact menu to Perplexity with instruction to prefer deepest applicable categories
+4. Perplexity returns structured category IDs (deduplicated, validated against subtree)
+5. Store in `brand_categories` junction table with primary flag
 
 See `scan-taxonomy-skills-pipeline.md` § Step 6 for the full flow.
 
@@ -171,26 +171,39 @@ The machine-readable metadata format served at `/brands/{slug}/skill-json`. The 
 ```json
 {
   "taxonomy": {
-    "sector": "electronics",
-    "tier": "mid_range",
+    "sector": "apparel-accessories",
+    "tier": "premium",
     "productCategories": [
-      "223 - Electronics > Audio",
-      "278 - Electronics > Computers"
+      "Apparel & Accessories > Clothing > Activewear, Outerwear, Pants, Shirts & Tops",
+      "Apparel & Accessories > Clothing Accessories > Gloves & Mittens, Hats",
+      "Apparel & Accessories > Shoes"
     ],
     "categories": [
       {
-        "id": 223,
-        "name": "Audio",
-        "path": "Electronics > Audio",
-        "depth": 2,
+        "id": 5322,
+        "name": "Activewear",
+        "path": "Apparel & Accessories > Clothing > Activewear",
+        "depth": 3,
         "primary": true
+      },
+      {
+        "id": 203,
+        "name": "Outerwear",
+        "path": "Apparel & Accessories > Clothing > Outerwear",
+        "depth": 3
+      },
+      {
+        "id": 187,
+        "name": "Shoes",
+        "path": "Apparel & Accessories > Shoes",
+        "depth": 2
       }
     ]
   }
 }
 ```
 
-Two representations: `productCategories` (flat strings for readability) and `categories` (structured objects for programmatic use).
+Two representations: `productCategories` (grouped human-readable strings — sibling categories under the same parent are comma-separated) and `categories` (structured objects for programmatic use).
 
 **Source of truth:** The database. skill.json is always derived from `brand_index` columns + `brand_categories`/`product_categories` joins. Never the other way around.
 

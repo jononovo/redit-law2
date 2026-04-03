@@ -55,17 +55,20 @@ export async function resolveProductCategories(
           eq(productCategories.id, rootId),
           like(productCategories.path, `${rootName} > %`),
         ),
-        lte(productCategories.depth, 2),
+        lte(productCategories.depth, 3),
       ),
     );
 
-  const l2Categories = subtree.filter((c) => c.depth === 2);
-  if (!l2Categories.length) return [];
+  const selectableCategories = subtree.filter((c) => c.depth >= 2);
+  if (!selectableCategories.length) return [];
 
-  const validIds = new Set(l2Categories.map((c) => c.id));
+  const validIds = new Set(selectableCategories.map((c) => c.id));
 
-  const categoryMenu = l2Categories
-    .map((c) => `${c.id} - ${c.name}`)
+  const categoryMenu = selectableCategories
+    .map((c) => {
+      const shortPath = c.path.split(" > ").slice(1).join(" > ");
+      return `${c.id} - ${shortPath}`;
+    })
     .join("\n");
 
   try {
@@ -91,7 +94,7 @@ export async function resolveProductCategories(
             },
             {
               role: "user",
-              content: `The e-commerce website ${domain} operates in the "${rootName}" sector.\n\nHere are the available subcategories:\n${categoryMenu}\n\nWhich of these subcategories does ${domain} sell products in? Select all that apply (up to ${MAX_CATEGORIES}). Return the category IDs and identify which single category is most representative of their business.`,
+              content: `The e-commerce website ${domain} operates in the "${rootName}" sector.\n\nHere are the available subcategories (indented entries are more specific sub-categories):\n${categoryMenu}\n\nWhich of these subcategories does ${domain} sell products in? Prefer the most specific (deepest) categories that apply. Select all that apply (up to ${MAX_CATEGORIES}). Return the category IDs and identify which single category is most representative of their business.`,
             },
           ],
           response_format: {
@@ -121,14 +124,16 @@ export async function resolveProductCategories(
     const parsed = JSON.parse(content);
 
     const categoryIds: number[] = Array.isArray(parsed.categoryIds)
-      ? parsed.categoryIds.filter((id: unknown) => typeof id === "number" && validIds.has(id as number)).slice(0, MAX_CATEGORIES)
+      ? [...new Set(parsed.categoryIds.filter((id: unknown) => typeof id === "number" && validIds.has(id as number)))].slice(0, MAX_CATEGORIES)
       : [];
 
     if (!categoryIds.length) return [];
 
-    const primaryId = typeof parsed.primaryCategoryId === "number" && validIds.has(parsed.primaryCategoryId)
-      ? parsed.primaryCategoryId
-      : categoryIds[0];
+    const selectedSet = new Set(categoryIds);
+    const primaryId =
+      typeof parsed.primaryCategoryId === "number" && selectedSet.has(parsed.primaryCategoryId)
+        ? parsed.primaryCategoryId
+        : categoryIds[0];
 
     return categoryIds.map((id) => ({
       categoryId: id,

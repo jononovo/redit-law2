@@ -81,18 +81,30 @@ metadata:
   sector: electronics
   tier: mid_range
   product_categories:
-    - "223 - Electronics > Audio"
-    - "278 - Electronics > Computers"
+    - "Electronics > Audio > Headphones, Speakers, DJ & Specialty Audio"
+    - "Electronics > Computers > Laptops, Desktop Computers"
   categories:
-    - id: 223
-      name: Audio
-      path: "Electronics > Audio"
-      depth: 2
+    - id: 543
+      name: Headphones
+      path: "Electronics > Audio > Headphones"
+      depth: 3
       primary: true
-    - id: 278
-      name: Computers
-      path: "Electronics > Computers"
-      depth: 2
+    - id: 544
+      name: Speakers
+      path: "Electronics > Audio > Speakers"
+      depth: 3
+    - id: 4921
+      name: DJ & Specialty Audio
+      path: "Electronics > Audio > DJ & Specialty Audio"
+      depth: 3
+    - id: 328
+      name: Laptops
+      path: "Electronics > Computers > Laptops"
+      depth: 3
+    - id: 325
+      name: Desktop Computers
+      path: "Electronics > Computers > Desktop Computers"
+      depth: 3
 
   # === ASX Score (scan-based, 0-100) ===
   asx_score: 82
@@ -191,12 +203,12 @@ metadata:
 |---|---|---|---|
 | `sector` | string | Yes | Sector slug — one of 27 values derived from Google Product Taxonomy roots plus custom sectors (e.g., `electronics`, `business-industrial`, `food-services`). See the [Taxonomy & Sectors](/docs/shopy/taxonomy/sectors) documentation for the full list. |
 | `tier` | string | No | Market positioning: `commodity`, `budget`, `value`, `mid_range`, `premium`, `luxury`, `ultra_luxury` |
-| `product_categories` | string[] | No | Human-readable category strings in the format `"{id} - {path}"` (e.g., `"223 - Electronics > Audio"`) |
+| `product_categories` | string[] | No | Human-readable grouped category strings. Categories sharing a parent are comma-separated (e.g., `"Electronics > Audio > Headphones, Speakers"`) |
 | `categories` | object[] | Yes | Structured product category mappings using Google Product Taxonomy IDs |
 | `categories[].id` | integer | Yes | Taxonomy numeric ID — Google Product Taxonomy ID for Google categories, 100001+ for custom sectors |
 | `categories[].name` | string | Yes | Category display name (English) |
 | `categories[].path` | string | Yes | Full category path from root (e.g., `"Electronics > Computers > Laptops"`) |
-| `categories[].depth` | integer | Yes | Depth in taxonomy tree (1 = L1 root, 2 = L2, 3 = L3). Merchant-level classification uses depth 1-2. |
+| `categories[].depth` | integer | Yes | Depth in taxonomy tree (1 = L1 root, 2 = L2, 3 = L3). Merchant-level classification uses depth 2-3. |
 | `categories[].primary` | boolean | No | Whether this is the merchant's primary category (one per merchant) |
 
 ### ASX Score Fields (Scan-Based)

@@ -110,6 +110,37 @@ function extractPillarMax(breakdown: Record<string, unknown> | null, pillar: str
   return typeof p?.max === "number" ? p.max : 0;
 }
 
+function buildProductCategoryStrings(
+  categories: { id: number; name: string; path: string; depth: number; primary?: boolean }[],
+): string[] {
+  if (!categories.length) return [];
+
+  const grouped = new Map<string, string[]>();
+  for (const c of categories) {
+    const parts = c.path.split(" > ");
+    let groupKey: string;
+    let leafName: string;
+    if (parts.length >= 3) {
+      groupKey = parts.slice(0, 2).join(" > ");
+      leafName = parts.slice(2).join(" > ");
+    } else if (parts.length === 2) {
+      groupKey = parts[0];
+      leafName = parts[1];
+    } else {
+      groupKey = parts[0];
+      leafName = c.name;
+    }
+    if (!grouped.has(groupKey)) grouped.set(groupKey, []);
+    grouped.get(groupKey)!.push(leafName);
+  }
+
+  const result: string[] = [];
+  for (const [parent, leaves] of grouped) {
+    result.push(`${parent} > ${leaves.join(", ")}`);
+  }
+  return result;
+}
+
 export function buildSkillJson(brand: BrandRecord): SkillJson {
   const bd = (brand.brandData ?? {}) as Partial<VendorSkill>;
   const breakdown = brand.scoreBreakdown as Record<string, unknown> | null;
@@ -157,7 +188,7 @@ export function buildSkillJson(brand: BrandRecord): SkillJson {
     taxonomy: {
       sector: brand.sector ?? "specialty",
       tier: brand.tier ?? null,
-      productCategories: categories.map((c) => `${c.id} - ${c.path}`),
+      productCategories: buildProductCategoryStrings(categories),
       categories,
     },
 
