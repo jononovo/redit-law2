@@ -1,6 +1,6 @@
 # Product Index (Brand Catalog) — Internal Developer Guide
 
-> Last updated: 2026-04-02
+> Last updated: 2026-04-03
 
 ## Overview
 
@@ -18,10 +18,15 @@ brand_index table (source of truth)
   ├── /skills (catalog UI)           → searchBrands() with LITE_COLUMNS
   ├── /skills/[vendor] (detail)      → full row fetch by slug
   ├── /c/[sector] (sector landing)   → filtered by sector column
+  ├── /c/luxury (tier filter)        → tier IN ('ultra_luxury', 'luxury')
   ├── /api/v1/bot/skills (agent API) → searchBrands() → formatted VendorSkill objects
   ├── /api/v1/vendors (simple list)  → all brands, minimal fields
   ├── generateStaticParams           → pre-renders top 1000 verified/official pages
-  └── skill.json / SKILL.md          → serialized from brandData JSONB + skillMd text
+  └── skill.json / SKILL.md          → serialized from brandData JSONB + skillMd text + brand_categories
+
+brand_categories junction table
+  → links brand_index rows to product_categories taxonomy entries
+  → powers skill.json taxonomy output
 ```
 
 ### Key files
@@ -29,7 +34,9 @@ brand_index table (source of truth)
 | File | Purpose |
 |------|---------|
 | `shared/schema.ts` (brand_index) | Table definition — ~85 columns covering identity, classification, scoring, capabilities, and payloads |
+| `shared/schema.ts` (product_categories, brand_categories) | Taxonomy tables |
 | `server/storage/brand-index.ts` | All DB operations: search, count, upsert, lite queries |
+| `server/storage/brand-categories.ts` | Category junction CRUD |
 | `app/skills/page.tsx` | Server component — initial data fetch + SEO metadata |
 | `app/skills/catalog-client.tsx` | Client component — interactive filtering, pagination, URL sync |
 | `lib/catalog/parse-filters.ts` | URL ↔ filter state parsing (sectors, maturity, capabilities, search) |
@@ -44,9 +51,9 @@ brand_index table (source of truth)
 `id`, `slug`, `name`, `domain` (unique), `url`, `logoUrl`, `description`
 
 ### Classification columns
-- `sector` — primary sector slug from `lib/procurement-skills/taxonomy/sectors.ts` (21 values)
-- `subSectors` — text array (currently freeform, migrating to UCP categories)
-- `tier` — market position: `value`, `mid-market`, `premium`, `luxury`, `enterprise`
+- `sector` — primary sector slug from `lib/procurement-skills/taxonomy/sectors.ts` (27 values, 26 assignable)
+- `subSectors` — text array (freeform strings from Perplexity classification — used for display)
+- `tier` — market position: `commodity`, `value`, `mid_range`, `premium`, `luxury`, `ultra_luxury`, `enterprise`
 - `maturity` — `draft`, `verified`, `official` (controls visibility and trust level)
 - `tags`, `carriesBrands` — text arrays for additional classification
 
@@ -80,6 +87,20 @@ brand_index table (source of truth)
 
 ---
 
+## Related Tables
+
+### product_categories (5,638 rows)
+
+The taxonomy tree. `id` is the taxonomy identifier directly — Google Product Taxonomy numeric IDs for Google categories, 100001+ for custom categories. Seeded by `scripts/seed-google-taxonomy.ts`.
+
+### brand_categories (junction)
+
+Links brands to taxonomy categories. Unique constraint on `(brandId, categoryId)`. Populated by the Perplexity category resolver during scanning. Always cleared and re-inserted on rescan.
+
+See `metadata-and-taxonomy.md` and `scan-taxonomy-skills-pipeline.md` for full taxonomy details.
+
+---
+
 ## LITE_COLUMNS Optimization
 
 `LITE_COLUMNS` is a Drizzle projection defined in `server/storage/brand-index.ts` that selects only the columns needed for catalog list views. It deliberately excludes:
@@ -106,6 +127,13 @@ The projection also includes a computed `successRate` extracted from `brandData`
 - `page`, `limit` → pagination
 
 The `hasUserInteracted` ref in `catalog-client.tsx` prevents the component from rewriting the URL on mount — only user-initiated filter changes trigger URL updates.
+
+### Facet navigation
+
+`getAllBrandFacets()` in `server/storage/brand-index.ts` returns available filter values:
+- Sector facets are filtered to only known slugs from `SECTOR_LABELS`
+- The "luxury" facet is injected when any brand has `tier IN ('ultra_luxury', 'luxury')`
+- Old/stale sector values from pre-overhaul scans are excluded automatically
 
 ---
 
@@ -148,12 +176,12 @@ GIN indexes on array columns (`subSectors`, `tags`, `capabilities`, etc.) can bl
 ## Expansion Plans
 
 ### Near-term
-- **UCP category migration** — replace freeform `subSectors` with structured `brand_categories` junction table linked to a `ucp_categories` master tree (Google Product Taxonomy based)
-- **skill.json serializer** — read flat columns from `brand_index` and assemble the structured `skill.json` output alongside SKILL.md
+- **Category-based filtering** — filter catalog by taxonomy category (brand_categories), not just sector
+- **Category landing pages** — `/c/electronics/audio` drill-down pages
 
 ### Medium-term
-- **Product-level index** — `product_listings` table for individual products with GTIN/UPC/MPN, cross-referenced to brands and UCP categories
-- **Incremental re-scan** — only re-run signals that are likely to have changed, rather than full multi-page scans
+- **Product-level index** — `product_listings` table for individual products with GTIN/UPC/MPN, cross-referenced to brands and taxonomy categories
+- **Incremental re-scan** — only re-run signals that are likely to have changed
 - **Bulk import API** — allow merchants to submit their own catalog data via CSV/API
 
 ### Longer-term

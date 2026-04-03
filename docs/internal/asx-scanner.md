@@ -1,12 +1,14 @@
 # ASX Score Scanner — Internal Developer Guide
 
-> Last updated: 2026-04-02
+> Last updated: 2026-04-03
 
 ## Overview
 
-The ASX (Agentic Shopping Experience) Score Scanner evaluates how "AI-ready" a retail website is. It combines deterministic HTML/file detection with an LLM-powered multi-page browsing agent that visits product pages and checkout flows. The output is a 0–100 score, a per-signal breakdown, improvement recommendations, and a generated SKILL.md file that teaches AI agents how to shop on that site.
+The ASX (Agentic Shopping Experience) Score Scanner evaluates how "AI-ready" a retail website is. It combines a Perplexity-powered site audit (40+ signals) with a Perplexity-powered brand classification to produce a 0–100 score, per-signal breakdown, improvement recommendations, a generated SKILL.md file, and structured product category assignments.
 
 The scanner is the primary growth engine — every scan creates or updates a `brand_index` row, so the catalog grows automatically.
+
+For the full end-to-end pipeline including taxonomy and skill.json output, see `scan-taxonomy-skills-pipeline.md`.
 
 ---
 
@@ -17,27 +19,23 @@ User submits domain → POST /api/v1/scan
   ↓
   ├── Cache check: brand_index row < 30 days old? → return cached
   ↓
-  fetchScanInputs()
-    ├── Firecrawl (if FIRECRAWL_API_KEY set) → rendered HTML
-    └── Fallback: raw fetch with custom User-Agent → static HTML
-    ├── sitemap.xml fetch
-    └── robots.txt fetch
+  ├── classifyBrand(domain) ──── Perplexity sonar (parallel)
+  │     → name, sector, tier, subCategories, capabilities
+  │
+  ├── auditSite(domain) ──────── Perplexity sonar (parallel)
+  │     → 40+ boolean/string/numeric signals
+  │
+  ↓ (merge results)
+  │
+  computeScoreFromRubric() ── Rubric v1.1.0, 11 signals, 100 pts
+  buildVendorSkillDraft()  ── VendorSkill object
+  generateVendorSkill()    ── SKILL.md markdown
   ↓
-  detectAll() — 10+ static regex/string detectors
-    → JSON-LD, semantic HTML, search forms, sitemaps, robots.txt rules
+  upsertBrandIndex() ── write to brand_index (domain as unique key)
   ↓
-  agenticScan() — Claude multi-page browser agent
-    → visits up to 8 pages, records evidence
-    → tools: fetch_page, record_evidence, record_findings
-  ↓
-  Merge static + agent evidence
-  ↓
-  computeScoreFromRubric() — Rubric v1.1.0, 11 signals, 100 pts
-  ↓
-  buildVendorSkillDraft() → VendorSkill object
-  generateVendorSkill() → SKILL.md markdown
-  ↓
-  upsertBrandIndex() → write to brand_index (domain as unique key)
+  resolveProductCategories(domain, sector) ── Perplexity sonar (sequential)
+    → maps brand to Google Product Taxonomy categories
+    → writes to brand_categories junction table
   ↓
   Return score + breakdown + recommendations to client
 ```
@@ -49,14 +47,16 @@ User submits domain → POST /api/v1/scan
 | `app/agentic-shopping-score/` | Frontend: scanner form, results display, multi-step UI |
 | `app/agentic-shopping-score/scanner-form.tsx` | Domain input form with validation |
 | `app/api/v1/scan/route.ts` | API entry point — orchestrates the full scan |
-| `lib/procurement-skills/scan/` | Core scan logic directory |
-| `lib/procurement-skills/scan/fetch-inputs.ts` | `fetchScanInputs()` — homepage, sitemap, robots.txt retrieval |
-| `lib/procurement-skills/scan/detect-all.ts` | `detectAll()` — static regex-based signal detection |
-| `lib/procurement-skills/scan/agent-scan.ts` | `agenticScan()` — Claude-powered multi-page browsing |
-| `lib/procurement-skills/scan/compute-score.ts` | `computeScoreFromRubric()` — applies rubric to evidence |
-| `lib/procurement-skills/generator.ts` | `generateVendorSkill()` — SKILL.md markdown generation |
-| `lib/procurement-skills/scan/rubric.ts` | `SCORING_RUBRIC` — the 11 signals, point values, and thresholds |
+| `lib/scan-queue/process-next.ts` | Background scan queue worker — same pipeline, different entry |
+| `lib/agentic-score/classify-brand.ts` | Perplexity brand classification |
+| `lib/agentic-score/audit-site.ts` | Perplexity site audit (40+ signals) |
+| `lib/agentic-score/resolve-categories.ts` | Perplexity category resolution (post-upsert) |
+| `lib/agentic-score/scoring-engine.ts` | Score computation from evidence |
+| `lib/agentic-score/rubric.ts` | ASX rubric — 11 signals, point values, thresholds |
+| `lib/agentic-score/scan-utils.ts` | VendorSkill builder, domain utilities |
+| `lib/procurement-skills/generator.ts` | SKILL.md markdown generation |
 | `server/storage/brand-index.ts` | `upsertBrandIndex()` — persistence |
+| `server/storage/brand-categories.ts` | Category junction CRUD |
 
 ---
 
@@ -68,7 +68,7 @@ User submits domain → POST /api/v1/scan
 |---|--------|-----|----------------|
 | 1 | JSON-LD / Structured Data | 15 | Product, Offer, Organization schema.org markup |
 | 2 | Product Feed / Sitemap | 10 | Accessible sitemap.xml with product URLs |
-| 3 | Clean HTML / Semantic Markup | 10 | HTML5 landmarks, ARIA attributes, alt text |
+| 3 | Agent Metadata | 10 | llms.txt, ai-plugin.json, OpenAPI docs, semantic HTML |
 
 ### Discoverability (30 pts)
 
@@ -77,7 +77,7 @@ User submits domain → POST /api/v1/scan
 | 4 | Search API / MCP | 10 | MCP endpoint, OpenAPI spec, x402 protocol support |
 | 5 | Internal Site Search | 10 | Search forms, OpenSearch description |
 | 6 | Page Load Performance | 5 | Response time (target < 1 second) |
-| 7 | Product Page Quality | 5 | Machine-readable pricing, variant IDs (agent-verified) |
+| 7 | Product Page Quality | 5 | Machine-readable pricing, variant IDs |
 
 ### Reliability (35 pts)
 
@@ -90,42 +90,77 @@ User submits domain → POST /api/v1/scan
 
 ---
 
-## The Agentic Scan
+## Brand Classification (Perplexity Call 1)
 
-The most complex and expensive part of the system. A Claude Sonnet instance acts as a web browsing agent:
+**File:** `lib/agentic-score/classify-brand.ts`
 
-- **Model:** `claude-sonnet-4-6-20260320` via the Anthropic SDK
-- **Budget:** max 8 page fetches (`MAX_PAGES`), max 20 tool-call turns (`MAX_TURNS`)
-- **Tools available to the agent:**
-  - `fetch_page(url)` — fetches a URL and returns rendered HTML (uses Firecrawl or raw fetch)
-  - `record_evidence(signal, value, source_url, notes)` — logs evidence for a specific rubric signal
-  - `record_findings(findings)` — records general observations about the site
+Sends the domain to Perplexity `sonar` with a structured JSON prompt. Returns:
 
-The agent is prompted with the rubric and told to focus on evidence that static detectors can't find — especially signals 7, 8, 9, 10 which require navigating to product pages and checkout flows.
+| Field | Type | Purpose |
+|-------|------|---------|
+| `name` | string | Official brand name |
+| `sector` | VendorSector | Constrained to 26 assignable sectors |
+| `tier` | BrandTier | Market position (commodity → ultra_luxury) |
+| `subCategories` | string[] | Up to 5 freeform product descriptions |
+| `capabilities` | VendorCapability[] | Detected e-commerce capabilities |
+| `description` | string | One-sentence summary |
+| `guestCheckout` | boolean | Whether guest checkout is available |
+
+Sector is constrained to `ASSIGNABLE_SECTORS` (26 entries — all 27 minus luxury). Unknown values fall back to `"specialty"`.
+
+If classification fails entirely, the pipeline continues with degraded defaults (name from domain, existing sector, null tier).
+
+---
+
+## Site Audit (Perplexity Call 2)
+
+**File:** `lib/agentic-score/audit-site.ts`
+
+Runs in parallel with classification. Evaluates 40+ technical signals:
+
+- Structured data: JSON-LD, schema types, Open Graph
+- Sitemaps: availability, structure, product URL presence
+- Robots: rules, AI-agent blocking patterns
+- Search: functionality, URL patterns, autocomplete, OpenSearch
+- Checkout: guest checkout, cart page, payment methods, PO/tax-exempt
+- Agent features: llms.txt, ai-plugin.json, OpenAPI docs, MCP endpoints
+- Bot tolerance: CAPTCHAs, rate limiting, login walls
+
+Returns a `SiteAudit` object with boolean/string/numeric values for each signal.
+
+---
+
+## Category Resolution (Perplexity Call 3)
+
+**File:** `lib/agentic-score/resolve-categories.ts`
+
+Runs after upsert — sequential, non-critical. See `scan-taxonomy-skills-pipeline.md` § Step 6 for the full flow.
 
 ---
 
 ## SKILL.md Generation
+
+**File:** `lib/procurement-skills/generator.ts`
 
 After scoring, `generateVendorSkill()` produces a markdown file that an AI agent can consume:
 
 ### Structure
 1. **YAML frontmatter** — `asx_score`, `maturity: draft`, capabilities array, checkout methods
 2. **Overview** — what the store sells, who it's for
-3. **How to Search** — instructions for finding products (site search, category navigation, API if available)
-4. **How to Checkout** — step-by-step checkout flow as observed by the agent
-5. **Checkout Methods** — browser automation instructions, API details if detected
-6. **Tips** — 3–5 practical tips gathered by the LLM during the scan
+3. **How to Search** — instructions for finding products
+4. **How to Checkout** — step-by-step checkout flow
+5. **Checkout Methods** — browser automation instructions, API details
+6. **Tips** — 3–5 practical tips from the scan
 7. **Known Issues** — CAPTCHAs, login walls, broken flows
 
 ### NEVER OVERWRITE rules
-`generateVendorSkill()`, `fetchScanInputs()`, and `upsertBrandIndex()` have established contracts. Do not change their function signatures or return types without updating all callers.
+`generateVendorSkill()`, `buildVendorSkillDraft()`, and `upsertBrandIndex()` have established contracts. Do not change their function signatures or return types without updating all callers.
 
 ---
 
 ## Evidence System
 
-Evidence is a flat key-value map where keys correspond to rubric signals:
+Evidence is derived from the Perplexity site audit response and mapped to rubric signals:
 
 ```
 jsonLd: boolean | string
@@ -141,33 +176,29 @@ checkoutFlow: boolean | string
 botTolerance: boolean | string
 ```
 
-The `coerceEvidenceValue()` function in `agent-scan.ts` converts LLM-returned strings (`"yes"`, `"true"`, `"found"`, etc.) into boolean/numeric values for the scoring engine. This is a potential source of misclassification if the LLM returns unexpected phrasing.
+The scoring engine in `scoring-engine.ts` converts these values to numeric scores using the rubric thresholds.
 
 ---
 
 ## Fragile Areas & Gotchas
 
-### Firecrawl dependency
+### Perplexity API dependency
 
-Without `FIRECRAWL_API_KEY`, the scanner falls back to raw `fetch`. This fails silently on SPA sites (React, Vue, Angular) because the HTML returned is just a shell with `<div id="root"></div>`. The score will be artificially low because none of the structured data or semantic markup is present in the un-rendered HTML.
+The entire scan pipeline depends on Perplexity (`PERPLEXITY_API_KEY`). Without it, no scans work. There is no fallback to a different LLM provider for classification or audit.
 
-**Impact:** A site built with Shopify Hydrogen or Next.js SSR will score fine. A pure React SPA will score near zero on Clarity signals.
+### Three API calls per scan
 
-### LLM budget exhaustion
+Each scan makes 3 Perplexity calls: classification (parallel), audit (parallel), category resolution (sequential). At high scan volumes, this is the primary cost and rate-limit concern.
 
-The agent has 8 page fetches and 20 turns. Complex sites with multi-step checkout flows (age verification → location selection → product page → cart → checkout) can exhaust the budget before reaching the checkout signals. Signals 8–10 (Reliability pillar, 30 points) may all score zero.
+### Evidence mapping is implicit
 
-**Symptom:** High Clarity score but zero Reliability score on sites known to have checkout.
-
-### Evidence coercion is string-based
-
-The agent returns free-text observations. `coerceEvidenceValue` maps strings like `"yes"`, `"true"`, `"found"` to booleans, but nuanced responses like `"partially available"` or `"requires login first"` may not map correctly. This can cause false positives or false negatives.
+The mapping between Perplexity's audit response fields and rubric signal names happens in `scoring-engine.ts`. If audit response shape changes (field renames, new fields), the mapping must be updated manually.
 
 ### Domain normalization edge cases
 
 `normalizeDomain()` strips protocols and `www.` but doesn't handle:
-- Subdomains that are actually separate stores (e.g., `shop.brand.com` vs `brand.com`)
-- Country-specific TLDs (e.g., `brand.co.uk` vs `brand.com`)
+- Subdomains that are separate stores (`shop.brand.com` vs `brand.com`)
+- Country-specific TLDs (`brand.co.uk` vs `brand.com`)
 - Non-ASCII domains (punycode)
 
 ### Scan cache is time-based only
@@ -184,14 +215,13 @@ The `SCORING_RUBRIC` data structure must not be modified without coordinating ac
 
 ### Near-term
 - **Rescan API** — allow merchants to trigger a fresh scan from their claimed brand page
-- **Partial rescan** — only re-evaluate signals likely to have changed (e.g., skip Clarity if HTML structure hasn't changed)
+- **Partial rescan** — only re-evaluate signals likely to have changed
 
 ### Medium-term
 - **Batch scanning** — CLI tool or admin API to scan thousands of domains from a CSV
 - **Score history** — track score changes over time per domain (currently each scan overwrites)
-- **Signal-level evidence viewer** — show exactly what the scanner found for each signal, with source URLs and screenshots
+- **Signal-level evidence viewer** — show exactly what the scanner found for each signal
 
 ### Longer-term
 - **Real-time monitoring** — periodic re-scans with alerting on score drops
-- **Community-contributed detectors** — plugin system for new signals beyond the core 11
-- **Rubric v2** — potential addition of signals for returns/refund policy quality, shipping transparency, and accessibility compliance
+- **Rubric v2** — potential addition of signals for returns/refund policy quality, shipping transparency, accessibility compliance
