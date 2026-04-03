@@ -1,6 +1,6 @@
 import type { VendorSkill, VendorCapability } from "@/lib/procurement-skills/types";
 import type { VendorSector } from "@/lib/procurement-skills/taxonomy/sectors";
-import type { EvidenceMap } from "./rubric";
+import type { SiteAudit } from "./audit-site";
 
 export const VALID_SECTORS: VendorSector[] = [
   "retail", "office", "fashion", "health", "beauty", "saas", "home",
@@ -34,18 +34,9 @@ export function mergeArrayField(
   return [...new Set([...base, ...incoming])];
 }
 
-export function mergeEvidence(detectorEvidence: EvidenceMap, agentEvidence: EvidenceMap): EvidenceMap {
-  const merged = { ...detectorEvidence };
-  for (const [key, value] of Object.entries(agentEvidence)) {
-    if (value === null || value === undefined) continue;
-    const existing = merged[key];
-    if (existing === null || existing === undefined || existing === false) {
-      merged[key] = value;
-    } else if (typeof value === "boolean" && value === true) {
-      merged[key] = true;
-    }
-  }
-  return merged;
+export function domainToLabel(domain: string): string {
+  const segment = domain.split(".")[0];
+  return segment.charAt(0).toUpperCase() + segment.slice(1);
 }
 
 export function buildVendorSkillDraft(
@@ -53,7 +44,8 @@ export function buildVendorSkillDraft(
   domain: string,
   name: string,
   sector: string,
-  findings: Record<string, unknown>,
+  audit: SiteAudit | null,
+  capabilities: VendorCapability[],
 ): VendorSkill {
   return {
     slug,
@@ -61,32 +53,35 @@ export function buildVendorSkillDraft(
     url: `https://${domain}`,
     sector: toValidSector(sector),
     checkoutMethods: ["browser_automation"],
-    capabilities: toValidCapabilities(findings.capabilities),
+    capabilities,
     maturity: "draft",
     methodConfig: {
       browser_automation: {
-        requiresAuth: !(findings.guestCheckout ?? false),
-        notes: findings.guestCheckout
+        requiresAuth: !(audit?.hasGuestCheckout ?? false),
+        notes: audit?.hasGuestCheckout
           ? "Guest checkout available"
           : "Account may be required",
       },
     },
     search: {
-      pattern: (findings.searchPattern as string) ?? `Search on ${name}`,
-      urlTemplate: findings.searchUrlTemplate as string | undefined,
-      productIdFormat: findings.productIdFormat as string | undefined,
+      pattern: audit?.searchUrlPattern
+        ? `Search via ${audit.searchUrlPattern}`
+        : `Search on ${name}`,
+      urlTemplate: audit?.searchUrlPattern ?? undefined,
     },
     checkout: {
-      guestCheckout: (findings.guestCheckout as boolean) ?? false,
-      taxExemptField: (findings.taxExemptField as boolean) ?? false,
-      poNumberField: (findings.poNumberField as boolean) ?? false,
+      guestCheckout: audit?.hasGuestCheckout ?? false,
+      taxExemptField: false,
+      poNumberField: false,
     },
     shipping: {
-      freeThreshold: (findings.freeShippingThreshold as number | undefined) ?? undefined,
-      estimatedDays: (findings.estimatedDeliveryDays as string) ?? "Varies",
-      businessShipping: (findings.businessShipping as boolean) ?? false,
+      freeThreshold: (audit?.freeShippingThreshold != null && audit.freeShippingThreshold >= 0)
+        ? audit.freeShippingThreshold
+        : undefined,
+      estimatedDays: audit?.estimatedDeliveryDays ?? "Varies",
+      businessShipping: false,
     },
-    tips: Array.isArray(findings.tips) ? findings.tips as string[] : [
+    tips: audit?.tips?.length ? audit.tips : [
       `Visit https://${domain} to browse products`,
       "Use the site search to find specific items",
     ],
@@ -94,9 +89,4 @@ export function buildVendorSkillDraft(
     lastVerified: new Date().toISOString().split("T")[0],
     generatedBy: "agentic_scanner",
   };
-}
-
-export function domainToLabel(domain: string): string {
-  const segment = domain.split(".")[0];
-  return segment.charAt(0).toUpperCase() + segment.slice(1);
 }

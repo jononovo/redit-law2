@@ -2,21 +2,18 @@ import { storage } from "@/server/storage";
 import { db } from "@/server/db";
 import { scanQueue } from "@/shared/schema";
 import { eq, asc, and, sql } from "drizzle-orm";
-import { normalizeDomain, domainToSlug, fetchScanInputs } from "@/lib/agentic-score";
-import { detectAll } from "@/lib/agentic-score/detectors";
+import { normalizeDomain, domainToSlug } from "@/lib/agentic-score";
 import { SCORING_RUBRIC } from "@/lib/agentic-score/rubric";
 import { computeScoreFromRubric } from "@/lib/agentic-score/scoring-engine";
-import { agenticScan } from "@/lib/agentic-score/agent-scan";
+import { auditSite, auditToEvidence } from "@/lib/agentic-score/audit-site";
 import { classifyBrand } from "@/lib/agentic-score/classify-brand";
 import {
   buildVendorSkillDraft,
-  mergeEvidence,
   mergeArrayField,
   domainToLabel,
 } from "@/lib/agentic-score/scan-utils";
 import { generateVendorSkill } from "@/lib/procurement-skills/generator";
 import type { VendorSkill } from "@/lib/procurement-skills/types";
-import type { EvidenceMap } from "@/lib/agentic-score/rubric";
 
 export interface ProcessResult {
   success: boolean;
@@ -70,35 +67,13 @@ export async function processNextInQueue(): Promise<ProcessResult | null> {
     const domain = normalizeDomain(entry.domain);
     const slug = domainToSlug(domain);
 
-    const [classification, input] = await Promise.all([
+    const [classification, audit] = await Promise.all([
       classifyBrand(domain).catch(() => null),
-      fetchScanInputs(domain),
+      auditSite(domain).catch(() => null),
     ]);
 
-    const detectorEvidence = detectAll(
-      input.homepageHtml || "",
-      input.sitemapContent ?? null,
-      input.robotsTxtContent ?? null,
-      input.pageLoadTimeMs ?? null,
-    );
-
-    let agentResult;
-    try {
-      agentResult = await agenticScan(domain, input.homepageHtml);
-    } catch (err) {
-      console.error(`[scan-queue] agentic scan failed for ${domain}:`, err instanceof Error ? err.message : err);
-      agentResult = null;
-    }
-
-    const agentEvidence = agentResult?.evidence ?? {};
-    const agentFindings = agentResult?.findings ?? {};
-    const hasAgentEvidence = agentResult !== null && Object.keys(agentEvidence).length > 0;
-
-    const finalEvidence = hasAgentEvidence
-      ? mergeEvidence(detectorEvidence, agentEvidence)
-      : detectorEvidence;
-
-    const scoreResult = computeScoreFromRubric(SCORING_RUBRIC, finalEvidence);
+    const evidence = audit ? auditToEvidence(audit) : {};
+    const scoreResult = computeScoreFromRubric(SCORING_RUBRIC, evidence);
 
     const existing = await storage.getBrandByDomain(domain);
 
@@ -121,16 +96,18 @@ export async function processNextInQueue(): Promise<ProcessResult | null> {
       ?? existing?.description
       ?? `${resolvedName} at ${domain}`;
 
-    const enrichedFindings: Record<string, unknown> = {
-      ...agentFindings,
-      capabilities: classification?.capabilities ?? [],
-      guestCheckout: agentFindings.guestCheckout ?? classification?.guestCheckout ?? false,
-    };
+    const resolvedCapabilities = mergeArrayField(
+      existing?.capabilities,
+      classification?.capabilities?.map(c => c as string),
+    );
 
     let skillMd: string | null = null;
     let draft: VendorSkill | null = null;
     try {
-      draft = buildVendorSkillDraft(slug, domain, resolvedName, resolvedSector, enrichedFindings);
+      draft = buildVendorSkillDraft(
+        slug, domain, resolvedName, resolvedSector,
+        audit, classification?.capabilities ?? [],
+      );
       skillMd = generateVendorSkill(draft);
     } catch {
       // non-critical
@@ -154,17 +131,14 @@ export async function processNextInQueue(): Promise<ProcessResult | null> {
       overallScore: scoreResult.overallScore,
       scoreBreakdown: scoreResult.breakdown,
       recommendations: scoreResult.recommendations,
-      scanTier: hasAgentEvidence ? "agentic" : "free",
+      scanTier: audit ? "perplexity" : "free",
       lastScannedAt: now,
       lastScannedBy: "scan-queue",
       skillMd: skillMd ?? existing?.skillMd ?? undefined,
       checkoutMethods: draft?.checkoutMethods ?? existing?.checkoutMethods ?? [],
-      capabilities: mergeArrayField(
-        existing?.capabilities,
-        classification?.capabilities?.map(c => c as string),
-      ),
-      hasApi: (existing?.hasApi || (agentFindings.hasApi as boolean | undefined)) ?? false,
-      hasMcp: (existing?.hasMcp || (agentFindings.hasMcp as boolean | undefined)) ?? false,
+      capabilities: resolvedCapabilities,
+      hasApi: audit?.hasApi ?? existing?.hasApi ?? false,
+      hasMcp: audit?.hasMcp ?? existing?.hasMcp ?? false,
     });
 
     const finalSlug = existing?.slug ?? slug;

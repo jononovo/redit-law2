@@ -139,9 +139,9 @@ const RECOMMENDATION_TEMPLATES: Record<string, RecommendationTemplate> = {
   },
   clean_html: {
     signal: "clean_html",
-    impact: "medium",
-    title: "Improve HTML semantic structure",
-    description: "Use semantic HTML5 elements (header, nav, main, article, footer) and proper heading hierarchy. Add alt text to images and ARIA labels to interactive elements. This makes your site parseable even without structured data.",
+    impact: "high",
+    title: "Add agent metadata (llms.txt, AI plugin, OpenAPI)",
+    description: "Publish agent-friendly metadata: an llms.txt file with AI instructions, a .well-known/ai-plugin.json manifest, or OpenAPI documentation. These let AI agents understand your site programmatically without needing to parse HTML.",
   },
   search_api: {
     signal: "search_api",
@@ -153,7 +153,7 @@ const RECOMMENDATION_TEMPLATES: Record<string, RecommendationTemplate> = {
     signal: "site_search",
     impact: "medium",
     title: "Make site search discoverable",
-    description: "Ensure your site search form is accessible on the homepage with a clear action URL. Add an OpenSearch description file so agents can discover your search template automatically.",
+    description: "Ensure your site search is accessible with a clear URL pattern. Expose a predictable search endpoint (e.g., /search?q=) that AI agents can query directly. Autocomplete support further improves agent shopping speed.",
   },
   page_load: {
     signal: "page_load",

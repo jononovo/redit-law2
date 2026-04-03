@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 
 interface QueueEntry {
   id: number;
@@ -24,7 +24,24 @@ interface QueueStats {
   total: number;
 }
 
-const SCAN_INTERVAL_MS = 17 * 60 * 1000;
+interface SchedulerStatus {
+  running: boolean;
+  startedAt: string | null;
+  lastTickAt: string | null;
+  lastResult: string | null;
+  totalProcessed: number;
+  totalFailed: number;
+  stopReason: string | null;
+  quietHours: boolean;
+  tickInProgress: boolean;
+  expiresIn: string | null;
+  nextTickIn: string | null;
+  config: {
+    intervalMinutes: number;
+    maxRuntimeDays: number;
+    quietHoursUTC: string;
+  };
+}
 
 function timeAgo(dateStr: string | null): string {
   if (!dateStr) return "—";
@@ -51,19 +68,24 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
+function stopReasonLabel(reason: string | null): string {
+  if (!reason) return "";
+  switch (reason) {
+    case "manual": return "Stopped manually";
+    case "queue_empty": return "Queue empty — all done";
+    case "auto_expired_3d": return "Auto-stopped after 3 days";
+    default: return reason;
+  }
+}
+
 export default function ScanQueuePage() {
   const [stats, setStats] = useState<QueueStats | null>(null);
+  const [scheduler, setScheduler] = useState<SchedulerStatus | null>(null);
   const [domainInput, setDomainInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [scanRunning, setScanRunning] = useState(false);
-  const [autoScan, setAutoScan] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [authError, setAuthError] = useState(false);
-  const [lastScanTime, setLastScanTime] = useState<Date | null>(null);
-  const [nextScanIn, setNextScanIn] = useState<string | null>(null);
-  const autoScanRef = useRef(false);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const fetchStats = useCallback(async () => {
     try {
@@ -79,6 +101,17 @@ export default function ScanQueuePage() {
       }
     } catch {
       // silently retry next poll
+    }
+  }, []);
+
+  const fetchScheduler = useCallback(async () => {
+    try {
+      const res = await fetch("/api/admin/scan-queue/scheduler", { credentials: "include" });
+      if (res.ok) {
+        setScheduler(await res.json());
+      }
+    } catch {
+      // silently retry
     }
   }, []);
 
@@ -102,7 +135,6 @@ export default function ScanQueuePage() {
       } else if (data.error) {
         setMessage(`Failed: ${data.error}`);
       }
-      setLastScanTime(new Date());
       await fetchStats();
     } catch {
       setMessage("Request failed");
@@ -111,56 +143,34 @@ export default function ScanQueuePage() {
     }
   }, [fetchStats]);
 
+  async function toggleScheduler() {
+    const action = scheduler?.running ? "stop" : "start";
+    try {
+      const res = await fetch("/api/admin/scan-queue/scheduler", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ action }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setMessage(data.message);
+        await fetchScheduler();
+      }
+    } catch {
+      setMessage("Failed to toggle scheduler");
+    }
+  }
+
   useEffect(() => {
     fetchStats();
-    const pollInterval = setInterval(fetchStats, 10000);
-    return () => clearInterval(pollInterval);
-  }, [fetchStats]);
-
-  useEffect(() => {
-    autoScanRef.current = autoScan;
-  }, [autoScan]);
-
-  useEffect(() => {
-    if (autoScan && stats && stats.pending > 0) {
-      if (!timerRef.current) {
-        runNext();
-        setLastScanTime(new Date());
-        timerRef.current = setInterval(() => {
-          if (autoScanRef.current) {
-            runNext();
-          }
-        }, SCAN_INTERVAL_MS);
-      }
-    } else if (!autoScan && timerRef.current) {
-      clearInterval(timerRef.current);
-      timerRef.current = null;
-    }
-    return () => {
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-        timerRef.current = null;
-      }
-    };
-  }, [autoScan]);
-
-  useEffect(() => {
-    if (countdownRef.current) clearInterval(countdownRef.current);
-    if (autoScan && lastScanTime) {
-      countdownRef.current = setInterval(() => {
-        const elapsed = Date.now() - lastScanTime.getTime();
-        const remaining = Math.max(0, SCAN_INTERVAL_MS - elapsed);
-        const mins = Math.floor(remaining / 60000);
-        const secs = Math.floor((remaining % 60000) / 1000);
-        setNextScanIn(`${mins}:${secs.toString().padStart(2, "0")}`);
-      }, 1000);
-    } else {
-      setNextScanIn(null);
-    }
-    return () => {
-      if (countdownRef.current) clearInterval(countdownRef.current);
-    };
-  }, [autoScan, lastScanTime]);
+    fetchScheduler();
+    const poll = setInterval(() => {
+      fetchStats();
+      fetchScheduler();
+    }, 10000);
+    return () => clearInterval(poll);
+  }, [fetchStats, fetchScheduler]);
 
   async function handleAddDomains() {
     const domains = domainInput
@@ -248,6 +258,82 @@ export default function ScanQueuePage() {
         </div>
 
         <div className="border border-neutral-800 p-6 mb-8">
+          <h2 className="text-sm font-mono text-neutral-400 tracking-wide uppercase mb-4">Scheduler</h2>
+
+          <div className="flex items-center gap-4 mb-4">
+            <button
+              onClick={toggleScheduler}
+              className={`px-4 py-2 text-sm font-medium border transition-colors ${
+                scheduler?.running
+                  ? "border-green-600 text-green-400 hover:bg-green-950"
+                  : "border-neutral-700 text-neutral-400 hover:bg-neutral-900"
+              }`}
+              data-testid="button-scheduler-toggle"
+            >
+              {scheduler?.running ? "Scheduler ON" : "Scheduler OFF"}
+            </button>
+
+            {scheduler?.running && scheduler.nextTickIn && (
+              <span className="text-sm font-mono text-neutral-500" data-testid="text-next-tick">
+                Next tick in {scheduler.nextTickIn}
+              </span>
+            )}
+
+            {scheduler?.running && scheduler.expiresIn && (
+              <span className="text-sm font-mono text-neutral-600" data-testid="text-expires-in">
+                Auto-stop in {scheduler.expiresIn}
+              </span>
+            )}
+
+            {scheduler?.quietHours && (
+              <span className="text-xs font-mono text-amber-500" data-testid="text-quiet-hours">
+                quiet hours active
+              </span>
+            )}
+
+            {scheduler?.tickInProgress && (
+              <span className="text-xs font-mono text-blue-400 animate-pulse" data-testid="text-tick-in-progress">
+                scanning...
+              </span>
+            )}
+          </div>
+
+          {scheduler && (
+            <div className="grid grid-cols-2 gap-x-8 gap-y-1 text-sm">
+              {scheduler.lastResult && (
+                <div className="col-span-2 mb-2">
+                  <span className="text-neutral-500">Last result: </span>
+                  <span className="font-mono text-neutral-300" data-testid="text-last-result">{scheduler.lastResult}</span>
+                </div>
+              )}
+              <div>
+                <span className="text-neutral-500">Processed: </span>
+                <span className="font-mono text-neutral-300" data-testid="text-total-processed">{scheduler.totalProcessed}</span>
+              </div>
+              <div>
+                <span className="text-neutral-500">Failed: </span>
+                <span className="font-mono text-neutral-300" data-testid="text-total-failed">{scheduler.totalFailed}</span>
+              </div>
+              <div>
+                <span className="text-neutral-500">Interval: </span>
+                <span className="font-mono text-neutral-300">{scheduler.config.intervalMinutes}m</span>
+              </div>
+              <div>
+                <span className="text-neutral-500">Quiet hours (UTC): </span>
+                <span className="font-mono text-neutral-300">{scheduler.config.quietHoursUTC}</span>
+              </div>
+              {!scheduler.running && scheduler.stopReason && (
+                <div className="col-span-2 mt-2">
+                  <span className="text-xs font-mono text-neutral-600" data-testid="text-stop-reason">
+                    {stopReasonLabel(scheduler.stopReason)}
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        <div className="border border-neutral-800 p-6 mb-8">
           <h2 className="text-sm font-mono text-neutral-400 tracking-wide uppercase mb-4">Add Domains</h2>
           <textarea
             className="w-full bg-neutral-900 border border-neutral-700 text-neutral-200 p-3 font-mono text-sm resize-none focus:outline-none focus:border-neutral-500 placeholder-neutral-600"
@@ -273,32 +359,16 @@ export default function ScanQueuePage() {
         </div>
 
         <div className="border border-neutral-800 p-6 mb-8">
-          <h2 className="text-sm font-mono text-neutral-400 tracking-wide uppercase mb-4">Controls</h2>
+          <h2 className="text-sm font-mono text-neutral-400 tracking-wide uppercase mb-4">Manual Controls</h2>
           <div className="flex flex-wrap items-center gap-3">
             <button
               onClick={runNext}
-              disabled={scanRunning || (stats?.pending ?? 0) === 0}
+              disabled={scanRunning || (stats?.pending ?? 0) === 0 || scheduler?.running || scheduler?.tickInProgress}
               className="bg-neutral-100 text-neutral-900 px-4 py-2 text-sm font-medium hover:bg-white disabled:opacity-40 transition-colors"
               data-testid="button-scan-next"
             >
-              {scanRunning ? "Scanning…" : "Scan Next"}
+              {scanRunning ? "Scanning..." : scheduler?.running ? "Scan Next (scheduler active)" : "Scan Next"}
             </button>
-            <button
-              onClick={() => setAutoScan(!autoScan)}
-              className={`px-4 py-2 text-sm font-medium border transition-colors ${
-                autoScan
-                  ? "border-green-600 text-green-400 hover:bg-green-950"
-                  : "border-neutral-700 text-neutral-400 hover:bg-neutral-900"
-              }`}
-              data-testid="button-auto-scan"
-            >
-              {autoScan ? "Auto-Scan ON" : "Auto-Scan OFF"}
-            </button>
-            {autoScan && nextScanIn && (
-              <span className="text-sm font-mono text-neutral-500" data-testid="text-countdown">
-                Next in {nextScanIn}
-              </span>
-            )}
             <div className="flex-1" />
             <button
               onClick={() => handleAction("retry_failed")}

@@ -3,7 +3,7 @@ import type { BrandTier } from "@/lib/procurement-skills/taxonomy/tiers";
 import type { VendorCapability } from "@/lib/procurement-skills/types";
 import { VALID_SECTORS, VALID_CAPABILITIES } from "./scan-utils";
 
-const PERPLEXITY_TIMEOUT_MS = 15_000;
+const PERPLEXITY_TIMEOUT_MS = 25_000;
 
 const VALID_TIERS: BrandTier[] = [
   "ultra_luxury", "luxury", "premium", "mid_range", "value", "budget", "commodity",
@@ -20,6 +20,22 @@ export interface BrandClassification {
   hasSearchApi: boolean;
   hasMobileApp: boolean;
 }
+
+const CLASSIFICATION_SCHEMA = {
+  type: "object" as const,
+  properties: {
+    name: { type: "string", description: "Official brand/company name (clean, no Inc/LLC/Ltd suffix)" },
+    sector: { type: "string", enum: VALID_SECTORS, description: "Primary business sector" },
+    tier: { type: "string", enum: VALID_TIERS, description: "Brand pricing tier" },
+    subCategories: { type: "array", items: { type: "string" }, description: "Up to 5 product categories they sell" },
+    capabilities: { type: "array", items: { type: "string", enum: VALID_CAPABILITIES }, description: "Supported e-commerce capabilities" },
+    description: { type: "string", description: "One sentence about what they sell and who they serve" },
+    guestCheckout: { type: "boolean", description: "Whether checkout is available without creating an account" },
+    hasSearchApi: { type: "boolean", description: "Whether they have a public search or product API" },
+    hasMobileApp: { type: "boolean", description: "Whether they have a mobile shopping app" },
+  },
+  required: ["name", "sector", "tier", "subCategories", "description", "guestCheckout"],
+};
 
 export async function classifyBrand(domain: string): Promise<BrandClassification | null> {
   const apiKey = process.env.PERPLEXITY_API_KEY;
@@ -46,25 +62,21 @@ export async function classifyBrand(domain: string): Promise<BrandClassification
           messages: [
             {
               role: "system",
-              content: "You classify e-commerce merchants. Return ONLY valid JSON, no markdown, no explanation.",
+              content: "You classify e-commerce merchants. Return precise, factual data about the brand.",
             },
             {
               role: "user",
-              content: `For the e-commerce website at ${domain}, return a JSON object with these exact fields:
-{
-  "name": "Official brand/company name (clean, no Inc/LLC/Ltd suffix)",
-  "sector": "one of: ${VALID_SECTORS.join(", ")}",
-  "tier": "one of: ${VALID_TIERS.join(", ")}",
-  "subCategories": ["up to 5 product categories they sell"],
-  "capabilities": ["from this list only: ${VALID_CAPABILITIES.join(", ")} - include ones the site supports"],
-  "description": "One sentence about what they sell",
-  "guestCheckout": true/false,
-  "hasSearchApi": true/false,
-  "hasMobileApp": true/false
-}`,
+              content: `Classify the e-commerce website at ${domain}. Identify the brand name, business sector, pricing tier, main product categories (up to 5), and key e-commerce capabilities.`,
             },
           ],
-          max_tokens: 400,
+          response_format: {
+            type: "json_schema",
+            json_schema: {
+              name: "brand_classification",
+              schema: CLASSIFICATION_SCHEMA,
+            },
+          },
+          max_tokens: 500,
           temperature: 0.1,
         }),
       });
@@ -84,8 +96,7 @@ export async function classifyBrand(domain: string): Promise<BrandClassification
       return null;
     }
 
-    const cleaned = content.replace(/```json\s*/g, "").replace(/```\s*/g, "").trim();
-    const parsed = JSON.parse(cleaned);
+    const parsed = JSON.parse(content);
 
     const sector = VALID_SECTORS.includes(parsed.sector) ? parsed.sector : "specialty";
     const tier = VALID_TIERS.includes(parsed.tier) ? parsed.tier : "mid_range";
