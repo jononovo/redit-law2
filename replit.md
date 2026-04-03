@@ -698,12 +698,17 @@ Private technical documentation covering implementation details, fragile areas, 
 - `metadata-and-taxonomy.md` — Google Product Taxonomy, UCP, sectors, tiers, capabilities, skill.json
 
 ### Documentation System (`docs/content/`, `app/docs/`)
-Self-hosted documentation at `/docs` with sidebar navigation, audience toggle (User Guide / Developers), and markdown rendering.
-- **Config**: `docs/content/sections.ts` — typed section/page registry with audience tagging.
-- **Layout**: `app/docs/layout.tsx` — persistent sidebar with audience toggle. `app/docs/page.tsx` redirects to first page.
-- **Renderer**: `app/docs/[...slug]/page.tsx` — reads markdown from `docs/content/{section}/{page}.md`, renders via `react-markdown` with `prose` typography classes. Prev/next navigation at bottom.
-- **User docs** (27 pages): Getting Started, Bots, Wallets, Guardrails, Selling, Settings, Transactions, Skills.
-- **Developer docs** (13 pages): API Overview (introduction, authentication), API Endpoints (wallets, bots, checkout-pages, invoices, sales, skills), Webhooks (setup, events), Agent Integration (quick-start, x402-protocol, mcp placeholder).
-- **URL pattern**: `/docs/{section-slug}/{page-slug}`. Developer docs use `/docs/api/...` prefix.
+Self-hosted documentation at `/docs` with sidebar navigation, audience toggle, and markdown rendering. Multi-tenant aware — each tenant sees its own docs.
+- **Config**: `docs/content/sections.ts` — typed section/page registry with `Audience` + `DocTenant` tagging. `getSectionsByAudience(audience, tenant?)` filters both. `normalizeTenantId()` validates tenant cookies. `getTenantFromSlug()` derives tenant from URL path.
+- **Layout**: `app/docs/layout.tsx` — client component with persistent sidebar. Swaps branding (logo, labels) per tenant. `app/docs/page.tsx` redirects to first page for current tenant (from cookie).
+- **Renderer**: `app/docs/[...slug]/page.tsx` — reads markdown from `docs/content/{section}/{page}.md`, renders via `react-markdown` with `prose` typography classes. Prev/next navigation filtered by tenant.
+- **CreditClaw docs** — User docs (27 pages): Getting Started, Bots, Wallets, Guardrails, Selling, Settings, Transactions, Skills. Developer docs (13 pages): API Overview, API Endpoints, Webhooks, Agent Integration.
+- **Shopy docs** (8 pages) — Getting Started (what-is-shopy, asx-score-explained), CLI (installation, commands), Skill Format (structure, frontmatter), Agent Integration (reading-skills, feedback-protocol). URL prefix: `/docs/shopy/...`.
+- **URL pattern**: `/docs/{section-slug}/{page-slug}`. CreditClaw dev docs: `/docs/api/...`. Shopy docs: `/docs/shopy/...`.
 - **Tailwind**: Typography plugin added via `@plugin "@tailwindcss/typography"`, source added via `@source "../docs"` in `app/globals.css`.
 - **LLM access**: Raw markdown endpoint at `GET /api/docs/{section}/{page}` (Content-Type: text/markdown). Each doc page has "Copy for LLM" and "View as Markdown" buttons. `GET /llms.txt` serves a structured index of all docs with markdown links. `GET /llms-full.txt` concatenates all docs into a single file.
+
+### Shopy.sh Pages
+- **`/standard`**: The Agentic Commerce Standard spec page. Server component with custom markdown renderer (no prose library), sticky TOC sidebar, non-dev callout card linking to `/guide`. Source: `content/agentic-commerce-standard.md`.
+- **`/guide`**: Non-technical merchant explainer. 6 sections with Nav/Footer, CSS-only flow diagram, improvement checklist in shopy's `gap-px` grid style, dark CTA section.
+- **Design rules**: No rounded corners on cards, no shadows, `font-mono` section labels, `gap-px bg-neutral-200` grid dividers, `→` list items, dark sections `bg-neutral-950`, green accent only in terminal contexts.

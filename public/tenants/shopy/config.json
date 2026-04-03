@@ -45,8 +45,11 @@
       "variant": "light",
       "showLogo": true,
       "links": [
+        { "label": "Standard", "href": "/standard" },
+        { "label": "Guide", "href": "/guide" },
         { "label": "Score Scanner", "href": "/agentic-shopping-score" },
         { "label": "Shopping Skills", "href": "/skills" },
+        { "label": "Docs", "href": "/docs" },
         { "label": "AXS", "href": "/axs" }
       ]
     },
@@ -61,11 +64,19 @@
           ]
         },
         {
+          "title": "Resources",
+          "links": [
+            { "label": "Merchant Guide", "href": "/guide" },
+            { "label": "The Standard", "href": "/standard" },
+            { "label": "AXS Scoring", "href": "/axs" }
+          ]
+        },
+        {
           "title": "Developers",
           "links": [
-            { "label": "CLI Reference", "href": "/docs" },
-            { "label": "API", "href": "/docs/api/introduction" },
-            { "label": "SKILL.md Standard", "href": "/docs" }
+            { "label": "Documentation", "href": "/docs" },
+            { "label": "CLI Reference", "href": "/docs/shopy/cli/installation" },
+            { "label": "Skill Format", "href": "/docs/shopy/skill-format/structure" }
           ]
         }
       ],
