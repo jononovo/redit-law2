@@ -70,19 +70,6 @@ const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || "https://creditclaw.com";
 
 export const revalidate = 3600;
 
-export async function generateStaticParams() {
-  try {
-    const brands = await storage.searchBrands({
-      maturities: ["verified", "official"],
-      limit: 1000,
-      lite: true,
-    });
-    return brands.map(b => ({ vendor: b.slug }));
-  } catch {
-    return [];
-  }
-}
-
 const getBrand = cache(async (slug: string) => {
   return storage.getBrandBySlug(slug);
 });

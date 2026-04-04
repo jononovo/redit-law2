@@ -701,19 +701,17 @@ The app supports multiple tenants (CreditClaw, shopy.sh, brands.sh) via hostname
 - **Config loader (server)**: `lib/tenants/config.ts` — `getTenantConfig()`, `resolveTenantId()` with caching (uses filesystem, server-only)
 - **Config loader (client)**: `lib/tenants/tenant-configs.ts` — `getStaticTenantConfig()` + `TENANT_THEMES` (bundled statically, no fs dependency)
 - **Middleware**: `middleware.ts` — resolves hostname → tenantId, sets `x-tenant-id` header + `tenant-id` cookie
-- **Root layout** (`app/layout.tsx`): Static — NO `headers()` or `cookies()` calls. Uses inline `<script>` to read `tenant-id` cookie and set CSS theme variables synchronously (prevents flash). Wraps children in `TenantHydrator` for React context.
-- **TenantHydrator** (`lib/tenants/tenant-hydrator.tsx`): Client component that reads `tenant-id` cookie, resolves config from static map, provides via `TenantProvider`.
-- **TenantAnalytics** (`lib/tenants/tenant-analytics.tsx`): Client component that conditionally renders GA scripts based on tenant config.
+- **Root layout** (`app/layout.tsx`): Uses `cookies()` to read `tenant-id` cookie set by middleware. Resolves tenant config server-side for correct SSR (no flash of wrong tenant). Also includes inline `<script>` for CSS theme variables on client-side navigations. Wraps children in `TenantProvider`.
 - **Client context**: `lib/tenants/tenant-context.tsx` — `TenantProvider` + `useTenant()` hook for client components
 - **Server helper (deprecated)**: `lib/tenants/get-request-tenant.ts` — `getRequestTenant()` reads from headers. Pages should use `cookies()` directly with `export const dynamic = "force-dynamic"` instead.
-- **Tenant-aware pages**: Pages needing server-side tenant info (home, guide, standard, how-it-works) use `cookies()` + `force-dynamic`. Pages that don't need tenant (skills detail) remain ISR-compatible.
+- **Tenant-aware pages**: Pages needing server-side tenant routing (home, guide, standard, how-it-works) use `cookies()` + `force-dynamic`. The root layout also uses `cookies()` making child pages dynamic by default, but `revalidate` on individual pages enables ISR caching.
 - **Tenant components**: `components/tenants/{id}/` — per-tenant landing pages, how-it-works pages, etc.
 - **Nav**: Uses `useTenant()` for logo, name, tagline, routes
 - **Footer**: Config-driven via `tenant.navigation.footer` in config.json — each tenant defines its own columns and social links
 - **How It Works**: `app/how-it-works/page.tsx` is a tenant router (same pattern as landing page)
 - **owners.signup_tenant**: Tracks which tenant a user signed up from (migration 0011)
 - **Active tenants**: creditclaw (payments), shopy (ASX scoring/readiness), brands (skill catalog/registry)
-- **brands.sh skill detail page** (`app/skills/[vendor]/page.tsx`): ISR-enabled (revalidate=3600, generateStaticParams). Null-safe — gracefully renders when `brandData` is missing by falling back to `brand.*` fields. Sections like search/checkout/shipping/deals/tips only render when vendor data exists.
+- **brands.sh skill detail page** (`app/skills/[vendor]/page.tsx`): ISR-enabled (revalidate=3600). Null-safe — gracefully renders when `brandData` is missing by falling back to `brand.*` fields. Sections like search/checkout/shipping/deals/tips only render when vendor data exists.
 - **brands.sh landing** (`components/tenants/brands/landing.tsx`): Skill-registry framing. Columns: Skill | Capabilities | Checkout | Maturity. Imports shared label maps from `lib/procurement-skills/taxonomy/`. No ScoreBadge (scores live on shopy.sh).
 - To test locally as a different tenant: add `?tenant=shopy` or `?tenant=brands` to any URL
 - **IMPORTANT**: When adding new tenant configs, update BOTH `public/tenants/{id}/config.json` AND `lib/tenants/tenant-configs.ts`
