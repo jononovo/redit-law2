@@ -33,7 +33,7 @@ function RotatingSlug() {
         setVisible(true);
       }, 150);
       return () => clearTimeout(swap);
-    }, 3000);
+    }, 30000);
     return () => clearInterval(interval);
   }, []);
 
