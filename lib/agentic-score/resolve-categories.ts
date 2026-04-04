@@ -13,9 +13,7 @@ export interface ResolvedCategory {
 
 const PERPLEXITY_TIMEOUT_MS = 25_000;
 const MAX_CATEGORIES_FOCUSED = 10;
-const MAX_CATEGORIES_CROSS = 15;
 const MAX_CATEGORIES_MULTI = 20;
-const MULTI_SECTOR_THRESHOLD = 4;
 
 const CATEGORY_SCHEMA = {
   type: "object" as const,
@@ -45,13 +43,10 @@ function getDepthConfig(brandType: BrandType, sectors: VendorSector[]): DepthCon
   if (brandType === "mega_merchant") {
     return { maxDepth: 1, minSelectable: 1, maxCategories: MAX_CATEGORIES_MULTI, sectorOverride: "multi-sector", querySectors: "all" };
   }
-  if (MULTI_SECTOR_TYPES.includes(brandType) || sectors.length >= MULTI_SECTOR_THRESHOLD) {
+  if (MULTI_SECTOR_TYPES.includes(brandType)) {
     return { maxDepth: 2, minSelectable: 1, maxCategories: MAX_CATEGORIES_MULTI, sectorOverride: "multi-sector", querySectors: "all" };
   }
-  if (sectors.length > 1) {
-    return { maxDepth: 3, minSelectable: 2, maxCategories: MAX_CATEGORIES_CROSS, sectorOverride: null, querySectors: "all" };
-  }
-  return { maxDepth: 3, minSelectable: 2, maxCategories: MAX_CATEGORIES_FOCUSED, sectorOverride: null, querySectors: "primary" };
+  return { maxDepth: 3, minSelectable: 2, maxCategories: MAX_CATEGORIES_FOCUSED, sectorOverride: null, querySectors: sectors.length > 1 ? "all" : "primary" };
 }
 
 async function querySubtreeForSectors(

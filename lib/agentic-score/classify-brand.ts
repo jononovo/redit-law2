@@ -43,7 +43,7 @@ const CLASSIFICATION_SCHEMA = {
     sectors: {
       type: "array",
       items: { type: "string", enum: [...ASSIGNABLE_SECTORS] },
-      description: "All sectors this merchant operates in. For focused merchants (brand, retailer, independent), this is usually just the primary sector. For department stores, supermarkets, and mega merchants, list all applicable sectors (up to 8).",
+      description: "All sectors this merchant operates in. For focused merchants (brand, retailer, independent, chain, marketplace), return at most 2 sectors — the primary plus one secondary if the brand clearly spans two roots. For department stores, supermarkets, and mega merchants, list all applicable sectors (up to 8).",
     },
     tier: { type: "string", enum: VALID_TIERS, description: "Brand pricing tier" },
     subCategories: { type: "array", items: { type: "string" }, description: "Up to 5 product categories they sell" },
@@ -120,10 +120,12 @@ export async function classifyBrand(domain: string): Promise<BrandClassification
     const sector = ASSIGNABLE_SECTORS.includes(parsed.sector) ? parsed.sector : "specialty";
     const tier = VALID_TIERS.includes(parsed.tier) ? parsed.tier : "mid_range";
     const brandType: BrandType = VALID_BRAND_TYPES.includes(parsed.brandType) ? parsed.brandType : "brand";
-    const sectors: VendorSector[] = Array.isArray(parsed.sectors)
+    const rawSectors: VendorSector[] = Array.isArray(parsed.sectors)
       ? parsed.sectors.filter((s: string) => ASSIGNABLE_SECTORS.includes(s as VendorSector))
       : [sector];
-    if (!sectors.includes(sector)) sectors.unshift(sector);
+    if (!rawSectors.includes(sector)) rawSectors.unshift(sector);
+    const isFocused = ["brand", "retailer", "independent", "chain", "marketplace"].includes(brandType);
+    const sectors = isFocused ? rawSectors.slice(0, 2) : rawSectors.slice(0, 8);
     const capabilities = Array.isArray(parsed.capabilities)
       ? parsed.capabilities.filter((c: string) => VALID_CAPABILITIES.includes(c as VendorCapability))
       : [];
@@ -132,7 +134,7 @@ export async function classifyBrand(domain: string): Promise<BrandClassification
       name: typeof parsed.name === "string" && parsed.name.length > 0 ? parsed.name : domain.split(".")[0],
       sector,
       brandType,
-      sectors: sectors.slice(0, 8),
+      sectors,
       tier,
       subCategories: Array.isArray(parsed.subCategories) ? parsed.subCategories.filter((s: unknown) => typeof s === "string") : [],
       capabilities,
