@@ -29,7 +29,7 @@ const SECTOR_SHORT_LABELS: Record<string, string> = {
   "health-beauty": "Beauty",
   "home-garden": "Home",
   "luggage-bags": "Bags",
-  "mature": "Mature",
+  "mature": "Adult",
   "media": "Media",
   "office-supplies": "Office",
   "religious-ceremonial": "Religious",
@@ -43,10 +43,10 @@ const SECTOR_SHORT_LABELS: Record<string, string> = {
   "events": "Events",
   "specialty": "Specialty",
   "luxury": "Luxury",
-  "multi-sector": "Multi",
+  "multi-sector": "General",
 };
 
-const ALL_FILTER_SECTORS: string[] = [...ASSIGNABLE_SECTORS, "luxury", "multi-sector"];
+const ALL_FILTER_SECTORS: string[] = ["luxury", ...ASSIGNABLE_SECTORS, "multi-sector"];
 
 type BrandRow = {
   slug: string;
@@ -108,6 +108,32 @@ function CheckoutLabel({ methods }: { methods: string[] | null }) {
   );
 }
 
+function SectorButton({
+  label,
+  active,
+  onClick,
+  testId,
+}: {
+  label: string;
+  active: boolean;
+  onClick: () => void;
+  testId: string;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`inline-flex items-center rounded-none px-3 py-1.5 text-xs font-mono font-medium whitespace-nowrap transition-colors border ${
+        active
+          ? "bg-white text-neutral-950 border-white"
+          : "bg-transparent text-neutral-500 border-neutral-800 hover:text-white hover:border-neutral-600"
+      }`}
+      data-testid={testId}
+    >
+      {label}
+    </button>
+  );
+}
+
 function SectorFilterBar({
   activeSector,
   onSelect,
@@ -146,57 +172,59 @@ function SectorFilterBar({
     });
   };
 
+  const buttons = (
+    <>
+      <SectorButton
+        label="All"
+        active={activeSector === null}
+        onClick={() => onSelect(null)}
+        testId="filter-sector-all"
+      />
+      {ALL_FILTER_SECTORS.map((sector) => (
+        <SectorButton
+          key={sector}
+          label={SECTOR_SHORT_LABELS[sector] ?? sector}
+          active={activeSector === sector}
+          onClick={() => onSelect(sector)}
+          testId={`filter-sector-${sector}`}
+        />
+      ))}
+    </>
+  );
+
   return (
-    <div className="relative" data-testid="sector-filter-bar">
-      {canScrollLeft && (
-        <button
-          onClick={() => scroll("left")}
-          className="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-7 h-7 rounded-none bg-neutral-900 border border-neutral-700 flex items-center justify-center text-neutral-400 hover:text-white transition-colors"
-          data-testid="button-sector-scroll-left"
-        >
-          <ChevronLeft className="w-4 h-4" />
-        </button>
-      )}
-      <div
-        ref={scrollRef}
-        className="flex items-center gap-1.5 overflow-x-auto px-1 py-1 [&::-webkit-scrollbar]:hidden"
-        style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
-      >
-        <button
-          onClick={() => onSelect(null)}
-          className={`inline-flex items-center rounded-none px-3 py-1.5 text-xs font-mono font-medium whitespace-nowrap transition-colors border ${
-            activeSector === null
-              ? "bg-white text-neutral-950 border-white"
-              : "bg-transparent text-neutral-500 border-neutral-800 hover:text-white hover:border-neutral-600"
-          }`}
-          data-testid="filter-sector-all"
-        >
-          All
-        </button>
-        {ALL_FILTER_SECTORS.map((sector) => (
-          <button
-            key={sector}
-            onClick={() => onSelect(sector)}
-            className={`inline-flex items-center rounded-none px-3 py-1.5 text-xs font-mono font-medium whitespace-nowrap transition-colors border ${
-              activeSector === sector
-                ? "bg-white text-neutral-950 border-white"
-                : "bg-transparent text-neutral-500 border-neutral-800 hover:text-white hover:border-neutral-600"
-            }`}
-            data-testid={`filter-sector-${sector}`}
-          >
-            {SECTOR_SHORT_LABELS[sector] ?? sector}
-          </button>
-        ))}
+    <div data-testid="sector-filter-bar">
+      <div className="hidden md:flex flex-wrap items-center justify-center gap-1.5 py-1">
+        {buttons}
       </div>
-      {canScrollRight && (
-        <button
-          onClick={() => scroll("right")}
-          className="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-7 h-7 rounded-none bg-neutral-900 border border-neutral-700 flex items-center justify-center text-neutral-400 hover:text-white transition-colors"
-          data-testid="button-sector-scroll-right"
+
+      <div className="relative md:hidden">
+        {canScrollLeft && (
+          <button
+            onClick={() => scroll("left")}
+            className="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-7 h-7 rounded-none bg-neutral-900 border border-neutral-700 flex items-center justify-center text-neutral-400 hover:text-white transition-colors"
+            data-testid="button-sector-scroll-left"
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+        )}
+        <div
+          ref={scrollRef}
+          className="flex items-center gap-1.5 overflow-x-auto px-1 py-1 [&::-webkit-scrollbar]:hidden"
+          style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
         >
-          <ChevronRight className="w-4 h-4" />
-        </button>
-      )}
+          {buttons}
+        </div>
+        {canScrollRight && (
+          <button
+            onClick={() => scroll("right")}
+            className="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-7 h-7 rounded-none bg-neutral-900 border border-neutral-700 flex items-center justify-center text-neutral-400 hover:text-white transition-colors"
+            data-testid="button-sector-scroll-right"
+          >
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        )}
+      </div>
     </div>
   );
 }
