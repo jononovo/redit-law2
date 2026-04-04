@@ -7,13 +7,66 @@ import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useEffect, useRef, useCallback } from "react";
-import { ArrowRight, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import { ArrowRight, ChevronLeft, ChevronRight, Terminal, Loader2 } from "lucide-react";
 import { CAPABILITY_LABELS } from "@/lib/procurement-skills/taxonomy/capabilities";
 import { CHECKOUT_METHOD_LABELS } from "@/lib/procurement-skills/taxonomy/checkout-methods";
 import { ASSIGNABLE_SECTORS } from "@/lib/procurement-skills/taxonomy/sectors";
 import type { VendorSector } from "@/lib/procurement-skills/taxonomy/sectors";
 import { ScanProgress } from "@/components/scan-progress";
 import { useDomainScan } from "@/hooks/use-domain-scan";
+
+const ROTATING_BRANDS = [
+  "nike", "gucci", "apple", "sephora", "walmart", "patagonia",
+  "lululemon", "dyson", "allbirds", "glossier", "tesla", "airbnb",
+  "spotify", "adidas", "zara", "asos",
+];
+
+function RotatingSlug() {
+  const [index, setIndex] = useState(0);
+  const [visible, setVisible] = useState(true);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setVisible(false);
+      const swap = setTimeout(() => {
+        setIndex((i) => (i + 1) % ROTATING_BRANDS.length);
+        setVisible(true);
+      }, 150);
+      return () => clearTimeout(swap);
+    }, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <span
+      className="inline-block min-w-[5ch] text-neutral-300"
+      style={{ opacity: visible ? 1 : 0, transition: "opacity 150ms" }}
+    >
+      {ROTATING_BRANDS[index]}
+    </span>
+  );
+}
+
+function CliHint() {
+  const [show, setShow] = useState(false);
+
+  useEffect(() => {
+    const delay = setTimeout(() => setShow(true), 4000);
+    return () => clearTimeout(delay);
+  }, []);
+
+  return (
+    <div
+      className="flex justify-center mb-5"
+      style={{ opacity: show ? 1 : 0, transition: "opacity 600ms ease-in" }}
+    >
+      <div className="inline-flex items-center gap-2 px-3 py-1.5 border border-neutral-800 bg-neutral-900 text-xs font-mono text-neutral-400" data-testid="dev-cli-hint">
+        <Terminal className="w-3.5 h-3.5" />
+        <span>npx shopy add <RotatingSlug /></span>
+      </div>
+    </div>
+  );
+}
 
 const SECTOR_SHORT_LABELS: Record<string, string> = {
   "animals-pet-supplies": "Pets",
@@ -275,6 +328,7 @@ export default function BrandsLanding() {
         <section className="pt-20 pb-8">
           <div className="container mx-auto px-6">
             <div className="max-w-4xl mx-auto text-center mb-8">
+              <CliHint />
               <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight text-white leading-[1.1] mb-3" data-testid="text-hero-title">
                 The skill registry for agentic shopping
               </h1>
