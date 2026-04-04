@@ -26,22 +26,17 @@ metadata:
 ```yaml
 metadata:
   product_categories:
-    - "505 - Arts & Entertainment > Musical Instruments > Guitars"
-    - "506 - Arts & Entertainment > Musical Instruments > Drums & Percussion"
-    - "510 - Arts & Entertainment > Musical Instrument Accessories > Instrument Cables"
+    - "54 - Arts & Entertainment > Hobbies & Creative Arts > Musical Instruments"
+    - "55 - Arts & Entertainment > Hobbies & Creative Arts > Musical Instrument & Orchestra Accessories"
   categories:
-    - id: 505
-      name: Guitars
-      path: "Arts & Entertainment > Musical Instruments > Guitars"
+    - id: 54
+      name: Musical Instruments
+      path: "Arts & Entertainment > Hobbies & Creative Arts > Musical Instruments"
       depth: 3
       primary: true
-    - id: 506
-      name: Drums & Percussion
-      path: "Arts & Entertainment > Musical Instruments > Drums & Percussion"
-      depth: 3
-    - id: 510
-      name: Instrument Cables
-      path: "Arts & Entertainment > Musical Instrument Accessories > Instrument Cables"
+    - id: 55
+      name: Musical Instrument & Orchestra Accessories
+      path: "Arts & Entertainment > Hobbies & Creative Arts > Musical Instrument & Orchestra Accessories"
       depth: 3
 ```
 

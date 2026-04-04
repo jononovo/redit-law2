@@ -81,20 +81,20 @@ metadata:
   sector: electronics
   tier: mid_range
   product_categories:
-    - "543 - Electronics > Audio > Headphones"
-    - "544 - Electronics > Audio > Speakers"
+    - "242 - Electronics > Audio > Audio Players & Recorders"
+    - "2165 - Electronics > Audio > Audio Components"
     - "4921 - Electronics > Audio > DJ & Specialty Audio"
     - "328 - Electronics > Computers > Laptops"
     - "325 - Electronics > Computers > Desktop Computers"
   categories:
-    - id: 543
-      name: Headphones
-      path: "Electronics > Audio > Headphones"
+    - id: 242
+      name: Audio Players & Recorders
+      path: "Electronics > Audio > Audio Players & Recorders"
       depth: 3
       primary: true
-    - id: 544
-      name: Speakers
-      path: "Electronics > Audio > Speakers"
+    - id: 2165
+      name: Audio Components
+      path: "Electronics > Audio > Audio Components"
       depth: 3
     - id: 4921
       name: DJ & Specialty Audio
@@ -206,7 +206,7 @@ metadata:
 |---|---|---|---|
 | `sector` | string | Yes | Sector slug — one of 27 values derived from Google Product Taxonomy roots plus custom sectors (e.g., `electronics`, `business-industrial`, `food-services`). See the [Taxonomy & Sectors](/docs/shopy/taxonomy/sectors) documentation for the full list. |
 | `tier` | string | No | Market positioning: `commodity`, `budget`, `value`, `mid_range`, `premium`, `luxury`, `ultra_luxury` |
-| `product_categories` | string[] | No | Category strings in Google Product Taxonomy format: `"{id} - {full path}"` (e.g., `"543 - Electronics > Audio > Headphones"`) |
+| `product_categories` | string[] | No | Category strings in Google Product Taxonomy format: `"{id} - {full path}"` (e.g., `"242 - Electronics > Audio > Audio Players & Recorders"`) |
 | `categories` | object[] | Yes | Structured product category mappings using Google Product Taxonomy IDs |
 | `categories[].id` | integer | Yes | Taxonomy numeric ID — Google Product Taxonomy ID for Google categories, 100001+ for custom sectors |
 | `categories[].name` | string | Yes | Category display name (English) |

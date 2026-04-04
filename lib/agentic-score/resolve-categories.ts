@@ -94,7 +94,7 @@ export async function resolveProductCategories(
             },
             {
               role: "user",
-              content: `The e-commerce website ${domain} operates in the "${rootName}" sector.\n\nHere are the available subcategories (indented entries are more specific sub-categories):\n${categoryMenu}\n\nWhich of these subcategories does ${domain} sell products in? Prefer the most specific (deepest) categories that apply. Select all that apply (up to ${MAX_CATEGORIES}). Return the category IDs and identify which single category is most representative of their business.`,
+              content: `The e-commerce website ${domain} operates in the "${rootName}" sector.\n\nHere are the available subcategories (entries with ">" indicate deeper sub-categories, e.g. "Clothing > Activewear" is a child of "Clothing"):\n${categoryMenu}\n\nWhich of these subcategories does ${domain} sell products in? Prefer the most specific (deepest) categories that apply. Select all that apply (up to ${MAX_CATEGORIES}). Return the category IDs and identify which single category is most representative of their business.`,
             },
           ],
           response_format: {
