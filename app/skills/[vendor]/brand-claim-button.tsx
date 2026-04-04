@@ -6,9 +6,12 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth/auth-context";
 import { Shield, CheckCircle2, Clock } from "lucide-react";
+import { useTenant } from "@/lib/tenants/tenant-context";
 
 export function BrandClaimButton({ slug }: { slug: string }) {
   const { user } = useAuth();
+  const tenant = useTenant();
+  const isDark = (tenant.navigation?.header?.variant ?? "light") === "dark";
   const [claimState, setClaimState] = useState<"idle" | "loading" | "verified" | "pending" | "error" | "already_claimed">("idle");
   const [errorMsg, setErrorMsg] = useState("");
 
@@ -51,7 +54,7 @@ export function BrandClaimButton({ slug }: { slug: string }) {
         <Button
           variant="ghost"
           size="sm"
-          className="text-[11px] text-neutral-400 hover:text-primary rounded-full px-3 h-7"
+          className={`text-[11px] text-neutral-400 hover:text-primary rounded-full px-3 h-7 ${isDark ? "hover:bg-neutral-800" : ""}`}
           data-testid="button-claim-brand-login"
         >
           <Shield className="w-3 h-3 mr-1" />
@@ -64,7 +67,11 @@ export function BrandClaimButton({ slug }: { slug: string }) {
   if (claimState === "verified") {
     return (
       <Link href="/overview">
-        <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 text-xs border cursor-pointer hover:bg-emerald-200/60 transition-colors" data-testid="badge-claim-verified">
+        <Badge className={`text-xs border cursor-pointer transition-colors ${
+          isDark
+            ? "bg-emerald-900/40 text-emerald-400 border-emerald-800 hover:bg-emerald-900/60"
+            : "bg-emerald-100 text-emerald-700 border-emerald-200 hover:bg-emerald-200/60"
+        }`} data-testid="badge-claim-verified">
           <CheckCircle2 className="w-3 h-3 mr-1" /> Claimed
         </Badge>
       </Link>
@@ -74,7 +81,11 @@ export function BrandClaimButton({ slug }: { slug: string }) {
   if (claimState === "pending") {
     return (
       <Link href="/overview">
-        <Badge className="bg-amber-100 text-amber-700 border-amber-200 text-xs border cursor-pointer hover:bg-amber-200/60 transition-colors" data-testid="badge-claim-pending">
+        <Badge className={`text-xs border cursor-pointer transition-colors ${
+          isDark
+            ? "bg-amber-900/40 text-amber-400 border-amber-800 hover:bg-amber-900/60"
+            : "bg-amber-100 text-amber-700 border-amber-200 hover:bg-amber-200/60"
+        }`} data-testid="badge-claim-pending">
           <Clock className="w-3 h-3 mr-1" /> Claim Pending
         </Badge>
       </Link>
@@ -83,7 +94,11 @@ export function BrandClaimButton({ slug }: { slug: string }) {
 
   if (claimState === "already_claimed") {
     return (
-      <Badge className="bg-neutral-100 text-neutral-500 border-neutral-200 text-xs border" data-testid="badge-claim-taken">
+      <Badge className={`text-xs border ${
+        isDark
+          ? "bg-neutral-800 text-neutral-400 border-neutral-700"
+          : "bg-neutral-100 text-neutral-500 border-neutral-200"
+      }`} data-testid="badge-claim-taken">
         Already Claimed
       </Badge>
     );
@@ -94,7 +109,7 @@ export function BrandClaimButton({ slug }: { slug: string }) {
       <Button
         variant="ghost"
         size="sm"
-        className="text-[11px] text-neutral-400 hover:text-primary rounded-full px-3 h-7"
+        className={`text-[11px] text-neutral-400 hover:text-primary rounded-full px-3 h-7 ${isDark ? "hover:bg-neutral-800" : ""}`}
         onClick={handleClaim}
         disabled={claimState === "loading"}
         data-testid="button-claim-brand"

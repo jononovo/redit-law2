@@ -3,9 +3,16 @@
 import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
+import { useTenant } from "@/lib/tenants/tenant-context";
+
+function useIsDark() {
+  const tenant = useTenant();
+  return (tenant.navigation?.header?.variant ?? "light") === "dark";
+}
 
 export function SkillPreviewPanel({ skillMd, slug }: { skillMd: string; slug: string }) {
   const [showSkillPreview, setShowSkillPreview] = useState(false);
+  const isDark = useIsDark();
 
   const handleDownload = () => {
     const blob = new Blob([skillMd], { type: "text/markdown" });
@@ -18,9 +25,12 @@ export function SkillPreviewPanel({ skillMd, slug }: { skillMd: string; slug: st
   };
 
   return (
-    <div className="bg-white rounded-2xl border border-neutral-100 p-6">
+    <div className={isDark
+      ? "bg-neutral-900 rounded-none border border-neutral-800 p-6"
+      : "bg-white rounded-2xl border border-neutral-100 p-6"
+    }>
       <div className="flex items-center justify-between mb-4">
-        <h3 className="font-bold text-neutral-900 flex items-center gap-2">
+        <h3 className={`font-bold flex items-center gap-2 ${isDark ? "text-neutral-100" : "text-neutral-900"}`}>
           SKILL.md Preview
         </h3>
         <div className="flex items-center gap-2">
@@ -28,7 +38,7 @@ export function SkillPreviewPanel({ skillMd, slug }: { skillMd: string; slug: st
             variant="ghost"
             size="sm"
             onClick={() => setShowSkillPreview(!showSkillPreview)}
-            className="text-xs font-semibold"
+            className={`text-xs font-semibold ${isDark ? "text-neutral-400 hover:text-neutral-100 hover:bg-neutral-800" : ""}`}
             data-testid="button-toggle-preview"
           >
             {showSkillPreview ? "Hide" : "Show"} Preview
@@ -37,7 +47,7 @@ export function SkillPreviewPanel({ skillMd, slug }: { skillMd: string; slug: st
             variant="ghost"
             size="sm"
             onClick={handleDownload}
-            className="text-xs font-semibold"
+            className={`text-xs font-semibold ${isDark ? "text-neutral-400 hover:text-neutral-100 hover:bg-neutral-800" : ""}`}
             data-testid="button-download-skill"
           >
             <Download className="w-3.5 h-3.5 mr-1" />
@@ -46,7 +56,11 @@ export function SkillPreviewPanel({ skillMd, slug }: { skillMd: string; slug: st
         </div>
       </div>
       {showSkillPreview && (
-        <pre className="bg-neutral-50 rounded-xl p-4 text-xs font-mono text-neutral-700 overflow-x-auto max-h-[600px] overflow-y-auto border border-neutral-100" data-testid="preview-skill-md">
+        <pre className={`p-4 text-xs font-mono overflow-x-auto max-h-[600px] overflow-y-auto border ${
+          isDark
+            ? "bg-neutral-800 rounded-none text-neutral-300 border-neutral-700"
+            : "bg-neutral-50 rounded-xl text-neutral-700 border-neutral-100"
+        }`} data-testid="preview-skill-md">
           {skillMd}
         </pre>
       )}
@@ -59,6 +73,7 @@ export function SkillJsonPanel({ slug }: { slug: string }) {
   const [jsonData, setJsonData] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
+  const isDark = useIsDark();
 
   const fetchJson = useCallback(async () => {
     if (jsonData) return;
@@ -105,9 +120,12 @@ export function SkillJsonPanel({ slug }: { slug: string }) {
   };
 
   return (
-    <div className="bg-white rounded-2xl border border-neutral-100 p-6">
+    <div className={isDark
+      ? "bg-neutral-900 rounded-none border border-neutral-800 p-6"
+      : "bg-white rounded-2xl border border-neutral-100 p-6"
+    }>
       <div className="flex items-center justify-between mb-4">
-        <h3 className="font-bold text-neutral-900 flex items-center gap-2">
+        <h3 className={`font-bold flex items-center gap-2 ${isDark ? "text-neutral-100" : "text-neutral-900"}`}>
           skill.json
         </h3>
         <div className="flex items-center gap-2">
@@ -115,7 +133,7 @@ export function SkillJsonPanel({ slug }: { slug: string }) {
             variant="ghost"
             size="sm"
             onClick={() => setShowPreview(!showPreview)}
-            className="text-xs font-semibold"
+            className={`text-xs font-semibold ${isDark ? "text-neutral-400 hover:text-neutral-100 hover:bg-neutral-800" : ""}`}
             data-testid="button-toggle-json-preview"
           >
             {showPreview ? "Hide" : "Show"} Preview
@@ -124,7 +142,7 @@ export function SkillJsonPanel({ slug }: { slug: string }) {
             variant="ghost"
             size="sm"
             onClick={handleDownload}
-            className="text-xs font-semibold"
+            className={`text-xs font-semibold ${isDark ? "text-neutral-400 hover:text-neutral-100 hover:bg-neutral-800" : ""}`}
             data-testid="button-download-skill-json"
           >
             <Download className="w-3.5 h-3.5 mr-1" />
@@ -141,7 +159,11 @@ export function SkillJsonPanel({ slug }: { slug: string }) {
             <p className="text-xs text-red-500 font-mono py-4">Failed to load skill.json</p>
           )}
           {jsonData && (
-            <pre className="bg-neutral-50 rounded-xl p-4 text-xs font-mono text-neutral-700 overflow-x-auto max-h-[600px] overflow-y-auto border border-neutral-100" data-testid="preview-skill-json">
+            <pre className={`p-4 text-xs font-mono overflow-x-auto max-h-[600px] overflow-y-auto border ${
+              isDark
+                ? "bg-neutral-800 rounded-none text-neutral-300 border-neutral-700"
+                : "bg-neutral-50 rounded-xl text-neutral-700 border-neutral-100"
+            }`} data-testid="preview-skill-json">
               {jsonData}
             </pre>
           )}
