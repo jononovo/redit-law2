@@ -440,11 +440,11 @@ export default function BrandsLanding() {
                 />
               </div>
               <div className="border border-neutral-800 overflow-hidden bg-neutral-900/50">
-                <div className="hidden md:grid grid-cols-[1fr_240px_100px_100px_40px] gap-4 px-5 py-3 bg-neutral-900 border-b border-neutral-800">
+                <div className="hidden md:grid grid-cols-[1fr_90px_90px_220px_28px] gap-3 px-4 py-3 bg-neutral-900 border-b border-neutral-800">
                   <span className="text-sm font-mono text-neutral-400 tracking-wide uppercase">Skill</span>
-                  <span className="text-sm font-mono text-neutral-400 tracking-wide uppercase">Capabilities</span>
                   <span className="text-sm font-mono text-neutral-400 tracking-wide uppercase">Sector</span>
                   <span className="text-sm font-mono text-neutral-400 tracking-wide uppercase">Tier</span>
+                  <span className="text-sm font-mono text-neutral-400 tracking-wide uppercase">Capabilities</span>
                   <span></span>
                 </div>
 
@@ -481,7 +481,7 @@ export default function BrandsLanding() {
                       <Link
                         key={brand.slug}
                         href={`/skills/${brand.slug}`}
-                        className="grid grid-cols-1 md:grid-cols-[1fr_240px_100px_100px_40px] gap-2 md:gap-4 px-5 py-4 hover:bg-neutral-800/40 transition-colors items-center group"
+                        className="grid grid-cols-1 md:grid-cols-[1fr_90px_90px_220px_28px] gap-2 md:gap-3 px-4 py-3 hover:bg-neutral-800/40 transition-colors items-center group"
                         data-testid={`row-brand-${brand.slug}`}
                       >
                         <div className="flex items-center gap-3">
@@ -497,9 +497,9 @@ export default function BrandsLanding() {
                             <span className="text-xs text-neutral-500 ml-2 hidden sm:inline">{brand.domain}</span>
                           </div>
                         </div>
-                        <CapabilityPills capabilities={brand.capabilities} />
                         <SectorLabel sector={brand.sector} />
                         <TierBadge tier={brand.tier} />
+                        <CapabilityPills capabilities={brand.capabilities} />
                         <ChevronRight className="w-4 h-4 text-neutral-600 group-hover:text-neutral-400 transition-colors hidden md:block" />
                       </Link>
                     ))}
