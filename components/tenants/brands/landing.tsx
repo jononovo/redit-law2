@@ -10,6 +10,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { ArrowRight, ChevronLeft, ChevronRight, Terminal, Loader2, Search } from "lucide-react";
 import { CAPABILITY_LABELS } from "@/lib/procurement-skills/taxonomy/capabilities";
 import { BRAND_TIER_LABELS } from "@/lib/procurement-skills/taxonomy/tiers";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ASSIGNABLE_SECTORS } from "@/lib/procurement-skills/taxonomy/sectors";
 import type { VendorSector } from "@/lib/procurement-skills/taxonomy/sectors";
 import { ScanProgress } from "@/components/scan-progress";
@@ -111,24 +112,28 @@ type BrandRow = {
   capabilities: string[] | null;
 };
 
-const TIER_STYLES: Record<string, string> = {
-  ultra_luxury: "bg-amber-900/40 text-amber-300 border-amber-800",
-  luxury: "bg-amber-900/30 text-amber-400 border-amber-800/70",
-  premium: "bg-blue-900/40 text-blue-400 border-blue-800",
-  mid_range: "bg-neutral-800 text-neutral-300 border-neutral-700",
-  value: "bg-emerald-900/40 text-emerald-400 border-emerald-800",
-  budget: "bg-neutral-800/60 text-neutral-400 border-neutral-700",
-  commodity: "bg-neutral-800/40 text-neutral-500 border-neutral-700",
-};
-
 function TierBadge({ tier }: { tier: string | null }) {
   if (!tier) return <span className="text-xs text-neutral-600">—</span>;
-  const style = TIER_STYLES[tier] ?? TIER_STYLES.mid_range;
   const label = (BRAND_TIER_LABELS as Record<string, string>)[tier] ?? tier;
   return (
-    <Badge className={`text-[10px] font-bold uppercase tracking-wider border rounded-none px-2 py-0.5 ${style}`} data-testid={`badge-tier-${tier}`}>
-      {label}
-    </Badge>
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Badge
+            className="text-[10px] font-bold uppercase tracking-wider border rounded-none px-2 py-0.5 bg-neutral-800 text-neutral-300 border-neutral-700 cursor-help"
+            data-testid={`badge-tier-${tier}`}
+          >
+            {label}
+          </Badge>
+        </TooltipTrigger>
+        <TooltipContent
+          side="top"
+          className="max-w-[240px] text-xs leading-relaxed bg-neutral-900 text-neutral-300 border border-neutral-700"
+        >
+          Tier reflects the brand's typical price positioning, from Budget to Ultra Luxury.
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   );
 }
 
