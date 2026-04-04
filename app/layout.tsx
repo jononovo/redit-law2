@@ -1,11 +1,10 @@
 import type { Metadata } from "next";
-import Script from "next/script";
 import { Plus_Jakarta_Sans, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/app/providers";
-import { TenantProvider } from "@/lib/tenants/tenant-context";
-import { headers } from "next/headers";
-import { getTenantConfig } from "@/lib/tenants/config";
+import { TenantHydrator } from "@/lib/tenants/tenant-hydrator";
+import { TenantAnalytics } from "@/lib/tenants/tenant-analytics";
+import { TENANT_THEMES } from "@/lib/tenants/tenant-configs";
 
 const jakarta = Plus_Jakarta_Sans({
   subsets: ["latin"],
@@ -19,110 +18,55 @@ const mono = JetBrains_Mono({
   display: "swap",
 });
 
-export async function generateMetadata(): Promise<Metadata> {
-  const headersList = await headers();
-  const tenantId = headersList.get("x-tenant-id") || "creditclaw";
-  const tenant = getTenantConfig(tenantId);
+const THEME_INIT_SCRIPT = `(function(){var m=document.cookie.match(/tenant-id=([^;]+)/);var t=m?m[1]:"creditclaw";var T=${JSON.stringify(TENANT_THEMES)};var th=T[t]||T.creditclaw;var s=document.documentElement.style;s.setProperty("--primary",th.primary);s.setProperty("--primary-foreground",th.primaryForeground);s.setProperty("--accent",th.accent);s.setProperty("--secondary",th.secondary)})()`;
 
-  const faviconIcons = tenant.branding.favicon
-    ? [
-        { url: tenant.branding.favicon, sizes: "32x32" },
-      ]
-    : [
-        { url: `data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>${tenant.branding.logoEmoji}</text></svg>` },
-      ];
+export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_BASE_URL || "https://creditclaw.com"),
+  title: "CreditClaw - Give your bot a card",
+  description: "The fun, safe way to give your OpenClaw bot an allowance. Self-hosted cards, wallets, and spending guardrails for AI agents.",
+  openGraph: {
+    title: "CreditClaw - Give your bot a card",
+    description: "The fun, safe way to give your OpenClaw bot an allowance. Self-hosted cards, wallets, and spending guardrails for AI agents.",
+    type: "website",
+    siteName: "CreditClaw",
+  },
+  twitter: {
+    card: "summary_large_image",
+    site: "@creditclaw",
+  },
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "32x32" },
+      { url: "/assets/images/favicon-16x16.png", sizes: "16x16", type: "image/png" },
+      { url: "/assets/images/favicon-32x32.png", sizes: "32x32", type: "image/png" },
+    ],
+    apple: [
+      { url: "/assets/images/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
+    ],
+  },
+};
 
-  return {
-    metadataBase: new URL(tenant.meta.url || process.env.NEXT_PUBLIC_BASE_URL || "https://creditclaw.com"),
-    title: tenant.meta.title,
-    description: tenant.meta.description,
-    openGraph: {
-      title: tenant.meta.title,
-      description: tenant.meta.description,
-      type: "website",
-      siteName: tenant.branding.name,
-      images: [
-        {
-          url: tenant.meta.ogImage,
-          width: 1200,
-          height: 675,
-          alt: `${tenant.branding.name} - ${tenant.branding.tagline}`,
-        },
-      ],
-    },
-    twitter: {
-      card: "summary_large_image",
-      site: tenantId === "creditclaw" ? "@creditclaw" : undefined,
-      title: tenant.meta.title,
-      description: tenant.meta.description,
-      images: [
-        {
-          url: tenant.meta.twitterImage,
-          width: 1200,
-          height: 675,
-          alt: `${tenant.branding.name} - ${tenant.branding.tagline}`,
-        },
-      ],
-    },
-    icons: tenantId === "creditclaw"
-      ? {
-          icon: [
-            { url: "/favicon.ico", sizes: "32x32" },
-            { url: "/assets/images/favicon-16x16.png", sizes: "16x16", type: "image/png" },
-            { url: "/assets/images/favicon-32x32.png", sizes: "32x32", type: "image/png" },
-          ],
-          apple: [
-            { url: "/assets/images/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
-          ],
-        }
-      : {
-          icon: faviconIcons,
-        },
-  };
-}
-
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const headersList = await headers();
-  const tenantId = headersList.get("x-tenant-id") || "creditclaw";
-  const tenant = getTenantConfig(tenantId);
-
   return (
     <html
       lang="en"
       className={`${jakarta.variable} ${mono.variable}`}
-      style={{
-        "--primary": tenant.theme.primaryColor,
-        "--primary-foreground": tenant.theme.primaryForeground,
-        "--accent": tenant.theme.accentColor,
-        "--secondary": tenant.theme.secondaryColor,
-      } as React.CSSProperties}
+      suppressHydrationWarning
     >
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+      </head>
       <body>
-        <TenantProvider tenant={tenant}>
+        <TenantHydrator>
           <Providers>
             {children}
           </Providers>
-        </TenantProvider>
-        {tenant.tracking?.gaId && (
-          <>
-            <Script
-              src={`https://www.googletagmanager.com/gtag/js?id=${tenant.tracking.gaId}`}
-              strategy="lazyOnload"
-            />
-            <Script id="google-analytics" strategy="lazyOnload">
-              {`
-                window.dataLayer = window.dataLayer || [];
-                function gtag(){dataLayer.push(arguments);}
-                gtag('js', new Date());
-                gtag('config', '${tenant.tracking.gaId}');
-              `}
-            </Script>
-          </>
-        )}
+          <TenantAnalytics />
+        </TenantHydrator>
       </body>
     </html>
   );

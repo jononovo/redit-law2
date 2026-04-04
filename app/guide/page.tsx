@@ -16,13 +16,15 @@ import {
   TrendingUp,
   BookOpen,
 } from "lucide-react";
-import { headers } from "next/headers";
+import { cookies } from "next/headers";
 import { getTenantConfig } from "@/lib/tenants/config";
 import type { Metadata } from "next";
 
+export const dynamic = "force-dynamic";
+
 export async function generateMetadata(): Promise<Metadata> {
-  const headersList = await headers();
-  const tenantId = headersList.get("x-tenant-id") || "creditclaw";
+  const cookieStore = await cookies();
+  const tenantId = cookieStore.get("tenant-id")?.value || "creditclaw";
   const tenant = getTenantConfig(tenantId);
   const brandName = tenant.branding.name;
 
@@ -79,8 +81,8 @@ const IMPROVEMENT_ITEMS = [
 ];
 
 export default async function GuidePage() {
-  const headersList = await headers();
-  const tenantId = headersList.get("x-tenant-id") || "creditclaw";
+  const cookieStore = await cookies();
+  const tenantId = cookieStore.get("tenant-id")?.value || "creditclaw";
   const tenant = getTenantConfig(tenantId);
 
   return (

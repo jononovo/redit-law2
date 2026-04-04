@@ -1,5 +1,7 @@
-import { headers } from "next/headers";
+import { cookies } from "next/headers";
 import { getTenantConfig } from "@/lib/tenants/config";
+
+export const dynamic = "force-dynamic";
 
 const howItWorksComponents: Record<string, () => Promise<{ default: React.ComponentType }>> = {
   creditclaw: () => import("@/components/tenants/creditclaw/how-it-works"),
@@ -8,8 +10,8 @@ const howItWorksComponents: Record<string, () => Promise<{ default: React.Compon
 };
 
 export default async function HowItWorksPage() {
-  const headersList = await headers();
-  const tenantId = headersList.get("x-tenant-id") || "creditclaw";
+  const cookieStore = await cookies();
+  const tenantId = cookieStore.get("tenant-id")?.value || "creditclaw";
   const tenant = getTenantConfig(tenantId);
 
   const loader = howItWorksComponents[tenant.id];
