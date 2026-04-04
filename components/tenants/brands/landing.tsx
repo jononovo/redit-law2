@@ -3,13 +3,13 @@
 import { Nav } from "@/components/nav";
 import { Footer } from "@/components/footer";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useEffect, useRef, useCallback } from "react";
-import { ArrowRight, ChevronLeft, ChevronRight, Terminal, Loader2 } from "lucide-react";
+import { ArrowRight, ChevronLeft, ChevronRight, Terminal, Loader2, Search } from "lucide-react";
 import { CAPABILITY_LABELS } from "@/lib/procurement-skills/taxonomy/capabilities";
 import { BRAND_TIER_LABELS } from "@/lib/procurement-skills/taxonomy/tiers";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ASSIGNABLE_SECTORS } from "@/lib/procurement-skills/taxonomy/sectors";
 import type { VendorSector } from "@/lib/procurement-skills/taxonomy/sectors";
 import { ScanProgress } from "@/components/scan-progress";
@@ -111,24 +111,28 @@ type BrandRow = {
   capabilities: string[] | null;
 };
 
-const TIER_STYLES: Record<string, string> = {
-  ultra_luxury: "bg-amber-900/40 text-amber-300 border-amber-800",
-  luxury: "bg-amber-900/30 text-amber-400 border-amber-800/70",
-  premium: "bg-blue-900/40 text-blue-400 border-blue-800",
-  mid_range: "bg-neutral-800 text-neutral-300 border-neutral-700",
-  value: "bg-emerald-900/40 text-emerald-400 border-emerald-800",
-  budget: "bg-neutral-800/60 text-neutral-400 border-neutral-700",
-  commodity: "bg-neutral-800/40 text-neutral-500 border-neutral-700",
-};
-
-function TierBadge({ tier }: { tier: string | null }) {
+function TierLabel({ tier }: { tier: string | null }) {
   if (!tier) return <span className="text-xs text-neutral-600">—</span>;
-  const style = TIER_STYLES[tier] ?? TIER_STYLES.mid_range;
   const label = (BRAND_TIER_LABELS as Record<string, string>)[tier] ?? tier;
   return (
-    <Badge className={`text-[10px] font-bold uppercase tracking-wider border rounded-none px-2 py-0.5 ${style}`} data-testid={`badge-tier-${tier}`}>
-      {label}
-    </Badge>
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span
+            className="text-xs font-medium text-neutral-400 cursor-help"
+            data-testid={`text-tier-${tier}`}
+          >
+            {label}
+          </span>
+        </TooltipTrigger>
+        <TooltipContent
+          side="top"
+          className="max-w-[240px] text-xs leading-relaxed bg-neutral-900 text-neutral-300 border border-neutral-700"
+        >
+          Tier reflects the brand's typical price positioning, from Budget to Ultra Luxury.
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   );
 }
 
@@ -290,6 +294,19 @@ export default function BrandsLanding() {
   const [brands, setBrands] = useState<BrandRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeSector, setActiveSector] = useState<string | null>(null);
+  const [inputValue, setInputValue] = useState("");
+
+  const isDomain = inputValue.includes(".");
+  const searchQuery = isDomain ? "" : inputValue.trim().toLowerCase();
+
+  const filteredBrands = searchQuery
+    ? brands.filter(
+        (b) =>
+          b.name.toLowerCase().includes(searchQuery) ||
+          b.domain.toLowerCase().includes(searchQuery) ||
+          b.slug.toLowerCase().includes(searchQuery)
+      )
+    : brands;
 
   useEffect(() => {
     setLoading(true);
@@ -315,9 +332,19 @@ export default function BrandsLanding() {
     }
   }, [scan.status, scan.result, router]);
 
+  function handleInputChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const val = e.target.value;
+    setInputValue(val);
+    if (val.includes(".")) {
+      scan.setDomain(val);
+    }
+    if (scan.status === "error") scan.reset();
+  }
+
   function handleKeyDown(e: React.KeyboardEvent) {
-    if (e.key === "Enter" && scan.status !== "scanning") {
-      scan.triggerScan();
+    if (e.key === "Enter" && isDomain && scan.status !== "scanning") {
+      scan.setDomain(inputValue);
+      scan.triggerScan(inputValue);
     }
   }
 
@@ -341,24 +368,37 @@ export default function BrandsLanding() {
 
             <div className="max-w-2xl mx-auto mb-10">
               <div className="flex">
-                <Input
-                  type="text"
-                  placeholder="Enter a domain (e.g. allbirds.com)"
-                  aria-label="Enter a domain to create a shopping skill"
-                  value={scan.domain}
-                  onChange={(e) => {
-                    scan.setDomain(e.target.value);
-                    if (scan.status === "error") scan.reset();
-                  }}
-                  onKeyDown={handleKeyDown}
-                  disabled={isScanning}
-                  className="h-14 px-6 rounded-none bg-neutral-900 border-neutral-800 border-r-0 text-base font-medium text-white placeholder:text-neutral-500 focus-visible:ring-white/20 focus-visible:border-neutral-600 flex-1"
-                  data-testid="input-create-skill"
-                />
+                <div className="relative flex-1">
+                  {!isDomain && inputValue.length === 0 && (
+                    <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-500 pointer-events-none" />
+                  )}
+                  <Input
+                    type="text"
+                    placeholder="Search brands or enter a domain to create a skill"
+                    aria-label="Search brands or enter a domain to create a shopping skill"
+                    value={inputValue}
+                    onChange={handleInputChange}
+                    onKeyDown={handleKeyDown}
+                    disabled={isScanning}
+                    className={`h-14 rounded-none bg-neutral-900 border-neutral-800 border-r-0 text-base font-medium text-white placeholder:text-neutral-500 focus-visible:ring-white/20 focus-visible:border-neutral-600 w-full ${
+                      !isDomain && inputValue.length === 0 ? "pl-12 pr-6" : "px-6"
+                    }`}
+                    data-testid="input-create-skill"
+                  />
+                </div>
                 <button
-                  onClick={() => scan.triggerScan()}
-                  disabled={isScanning}
-                  className="h-14 px-6 bg-white text-neutral-950 font-bold text-sm tracking-wide uppercase border border-white hover:bg-neutral-200 transition-colors disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-2 whitespace-nowrap"
+                  onClick={() => {
+                    if (isDomain) {
+                      scan.setDomain(inputValue);
+                      scan.triggerScan(inputValue);
+                    }
+                  }}
+                  disabled={isScanning || !isDomain}
+                  className={`h-14 px-6 font-bold text-sm tracking-wide uppercase border transition-colors flex items-center gap-2 whitespace-nowrap ${
+                    isDomain
+                      ? "bg-white text-neutral-950 border-white hover:bg-neutral-200"
+                      : "bg-neutral-800 text-neutral-500 border-neutral-700 cursor-default"
+                  } disabled:opacity-60 disabled:cursor-not-allowed`}
                   data-testid="button-create-skill"
                 >
                   {isScanning ? (
@@ -374,6 +414,11 @@ export default function BrandsLanding() {
                   )}
                 </button>
               </div>
+              {searchQuery && !loading && (
+                <p className="text-xs text-neutral-500 mt-2 font-mono" data-testid="text-search-count">
+                  Showing {filteredBrands.length} of {brands.length} skills
+                </p>
+              )}
               <ScanProgress
                 status={scan.status}
                 currentStage={scan.currentStage}
@@ -394,12 +439,12 @@ export default function BrandsLanding() {
                 />
               </div>
               <div className="border border-neutral-800 overflow-hidden bg-neutral-900/50">
-                <div className="hidden md:grid grid-cols-[1fr_240px_100px_100px_40px] gap-4 px-5 py-3 bg-neutral-900 border-b border-neutral-800">
+                <div className="hidden md:grid grid-cols-[1fr_90px_90px_220px_28px] gap-3 px-4 py-3 bg-neutral-900 border-b border-neutral-800">
                   <span className="text-sm font-mono text-neutral-400 tracking-wide uppercase">Skill</span>
-                  <span className="text-sm font-mono text-neutral-400 tracking-wide uppercase">Capabilities</span>
                   <span className="text-sm font-mono text-neutral-400 tracking-wide uppercase">Sector</span>
                   <span className="text-sm font-mono text-neutral-400 tracking-wide uppercase">Tier</span>
-                  <span></span>
+                  <span className="text-sm font-mono text-neutral-400 tracking-wide uppercase">Capabilities</span>
+                  <span />
                 </div>
 
                 {loading ? (
@@ -407,16 +452,21 @@ export default function BrandsLanding() {
                     <div className="inline-block w-5 h-5 border-2 border-neutral-700 border-t-white rounded-full animate-spin" />
                     <p className="text-sm text-neutral-500 mt-3 font-medium">Loading skills...</p>
                   </div>
-                ) : brands.length === 0 ? (
+                ) : filteredBrands.length === 0 ? (
                   <div className="px-5 py-20 text-center">
                     <p className="text-sm text-neutral-500 font-medium">
-                      {activeSector
-                        ? `No skills found in ${SECTOR_SHORT_LABELS[activeSector] ?? activeSector}.`
-                        : "No skills in the registry yet."}
+                      {searchQuery
+                        ? `No skills matching "${inputValue.trim()}".`
+                        : activeSector
+                          ? `No skills found in ${SECTOR_SHORT_LABELS[activeSector] ?? activeSector}.`
+                          : "No skills in the registry yet."}
                     </p>
-                    {activeSector && (
+                    {(activeSector || searchQuery) && (
                       <button
-                        onClick={() => setActiveSector(null)}
+                        onClick={() => {
+                          setActiveSector(null);
+                          setInputValue("");
+                        }}
                         className="mt-3 text-xs font-mono text-neutral-400 hover:text-white transition-colors underline"
                         data-testid="button-clear-filter"
                       >
@@ -426,11 +476,11 @@ export default function BrandsLanding() {
                   </div>
                 ) : (
                   <div className="divide-y divide-neutral-800/60">
-                    {brands.map((brand) => (
+                    {filteredBrands.map((brand) => (
                       <Link
                         key={brand.slug}
                         href={`/skills/${brand.slug}`}
-                        className="grid grid-cols-1 md:grid-cols-[1fr_240px_100px_100px_40px] gap-2 md:gap-4 px-5 py-4 hover:bg-neutral-800/40 transition-colors items-center group"
+                        className="grid grid-cols-1 md:grid-cols-[1fr_90px_90px_220px_28px] gap-2 md:gap-3 px-4 py-3 hover:bg-neutral-800/40 transition-colors items-center group"
                         data-testid={`row-brand-${brand.slug}`}
                       >
                         <div className="flex items-center gap-3">
@@ -446,9 +496,14 @@ export default function BrandsLanding() {
                             <span className="text-xs text-neutral-500 ml-2 hidden sm:inline">{brand.domain}</span>
                           </div>
                         </div>
+                        <div className="hidden md:block"><SectorLabel sector={brand.sector} /></div>
+                        <div className="hidden md:block"><TierLabel tier={brand.tier} /></div>
+                        <div className="flex items-center gap-2 md:hidden">
+                          <SectorLabel sector={brand.sector} />
+                          <span className="text-neutral-700">·</span>
+                          <TierLabel tier={brand.tier} />
+                        </div>
                         <CapabilityPills capabilities={brand.capabilities} />
-                        <SectorLabel sector={brand.sector} />
-                        <TierBadge tier={brand.tier} />
                         <ChevronRight className="w-4 h-4 text-neutral-600 group-hover:text-neutral-400 transition-colors hidden md:block" />
                       </Link>
                     ))}
