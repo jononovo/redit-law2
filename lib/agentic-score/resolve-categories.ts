@@ -13,7 +13,9 @@ export interface ResolvedCategory {
 
 const PERPLEXITY_TIMEOUT_MS = 25_000;
 const MAX_CATEGORIES_FOCUSED = 10;
+const MAX_CATEGORIES_CROSS = 15;
 const MAX_CATEGORIES_MULTI = 20;
+const MULTI_SECTOR_THRESHOLD = 4;
 
 const CATEGORY_SCHEMA = {
   type: "object" as const,
@@ -36,16 +38,20 @@ interface DepthConfig {
   minSelectable: number;
   maxCategories: number;
   sectorOverride: VendorSector | null;
+  querySectors: "primary" | "all";
 }
 
 function getDepthConfig(brandType: BrandType, sectors: VendorSector[]): DepthConfig {
   if (brandType === "mega_merchant") {
-    return { maxDepth: 1, minSelectable: 1, maxCategories: MAX_CATEGORIES_MULTI, sectorOverride: "multi-sector" };
+    return { maxDepth: 1, minSelectable: 1, maxCategories: MAX_CATEGORIES_MULTI, sectorOverride: "multi-sector", querySectors: "all" };
   }
-  if (MULTI_SECTOR_TYPES.includes(brandType) || sectors.length > 1) {
-    return { maxDepth: 2, minSelectable: 1, maxCategories: MAX_CATEGORIES_MULTI, sectorOverride: "multi-sector" };
+  if (MULTI_SECTOR_TYPES.includes(brandType) || sectors.length >= MULTI_SECTOR_THRESHOLD) {
+    return { maxDepth: 2, minSelectable: 1, maxCategories: MAX_CATEGORIES_MULTI, sectorOverride: "multi-sector", querySectors: "all" };
   }
-  return { maxDepth: 3, minSelectable: 2, maxCategories: MAX_CATEGORIES_FOCUSED, sectorOverride: null };
+  if (sectors.length > 1) {
+    return { maxDepth: 3, minSelectable: 2, maxCategories: MAX_CATEGORIES_CROSS, sectorOverride: null, querySectors: "all" };
+  }
+  return { maxDepth: 3, minSelectable: 2, maxCategories: MAX_CATEGORIES_FOCUSED, sectorOverride: null, querySectors: "primary" };
 }
 
 async function querySubtreeForSectors(
@@ -121,8 +127,9 @@ export async function resolveProductCategories(
   const apiKey = process.env.PERPLEXITY_API_KEY;
   if (!apiKey) return { categories: [], resolvedSector: fallbackSector };
 
+  const queryTargetSectors = config.querySectors === "all" ? effectiveSectors : [sector];
   const { subtree, validIds } = await querySubtreeForSectors(
-    config.sectorOverride ? effectiveSectors : [sector],
+    queryTargetSectors,
     config.maxDepth,
     config.minSelectable,
   );
@@ -136,8 +143,8 @@ export async function resolveProductCategories(
     })
     .join("\n");
 
-  const sectorDescription = config.sectorOverride
-    ? `multiple sectors (${effectiveSectors.map((s) => SECTOR_LABELS[s]).join(", ")})`
+  const sectorDescription = queryTargetSectors.length > 1
+    ? `multiple sectors (${queryTargetSectors.map((s) => SECTOR_LABELS[s]).join(", ")})`
     : `the "${SECTOR_LABELS[sector]}" sector`;
 
   try {
