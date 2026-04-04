@@ -11,9 +11,9 @@ export interface SkillJson {
     url: string;
   };
   taxonomy: {
+    brandType: string;
     sector: string;
     tier: string | null;
-    productCategories: string[];
     categories: {
       id: number;
       name: string;
@@ -94,7 +94,7 @@ interface BrandRecord {
   hasMcp: boolean | null;
   hasApi: boolean | null;
   brandData: Record<string, unknown> | null;
-  productCategoryStrings?: string[];
+  brandType?: string | null;
   categoryObjects?: { id: number; name: string; path: string; depth: number; primary: boolean }[];
 }
 
@@ -108,12 +108,6 @@ function extractPillarMax(breakdown: Record<string, unknown> | null, pillar: str
   if (!breakdown) return 0;
   const p = breakdown[pillar] as Record<string, unknown> | undefined;
   return typeof p?.max === "number" ? p.max : 0;
-}
-
-function buildProductCategoryStrings(
-  categories: { id: number; name: string; path: string; depth: number; primary?: boolean }[],
-): string[] {
-  return categories.map((c) => `${c.id} - ${c.path}`);
 }
 
 export function buildSkillJson(brand: BrandRecord): SkillJson {
@@ -161,9 +155,9 @@ export function buildSkillJson(brand: BrandRecord): SkillJson {
     },
 
     taxonomy: {
+      brandType: brand.brandType ?? "brand",
       sector: brand.sector ?? "specialty",
       tier: brand.tier ?? null,
-      productCategories: buildProductCategoryStrings(categories),
       categories,
     },
 

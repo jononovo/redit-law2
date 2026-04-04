@@ -184,13 +184,9 @@ The machine-readable metadata format served at `/brands/{slug}/skill-json`. The 
 ```json
 {
   "taxonomy": {
+    "brandType": "brand",
     "sector": "apparel-accessories",
     "tier": "premium",
-    "productCategories": [
-      "5322 - Apparel & Accessories > Clothing > Activewear",
-      "203 - Apparel & Accessories > Clothing > Outerwear",
-      "187 - Apparel & Accessories > Shoes"
-    ],
     "categories": [
       {
         "id": 5322,
@@ -216,7 +212,7 @@ The machine-readable metadata format served at `/brands/{slug}/skill-json`. The 
 }
 ```
 
-Two representations: `productCategories` (one string per category in `"{id} - {path}"` format, following Google Product Taxonomy convention) and `categories` (structured objects for programmatic use).
+The taxonomy block uses a single `categories` array of structured objects (with `id`, `name`, `path`, `depth`, `primary` fields). The previous `productCategories` string array (duplicate data in `"{id} - {path}"` format) was removed to avoid duplication in the machine-readable format.
 
 **Source of truth:** The database. skill.json is always derived from `brand_index` columns + `brand_categories`/`product_categories` joins. Never the other way around.
 

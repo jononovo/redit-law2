@@ -306,13 +306,9 @@ The skill.json route at `/brands/{slug}/skill-json` assembles the machine-readab
 ```json
 {
   "taxonomy": {
+    "brandType": "retailer",
     "sector": "apparel-accessories",
     "tier": "premium",
-    "productCategories": [
-      "5322 - Apparel & Accessories > Clothing > Activewear",
-      "203 - Apparel & Accessories > Clothing > Outerwear",
-      "187 - Apparel & Accessories > Shoes"
-    ],
     "categories": [
       {
         "id": 5322,
@@ -338,9 +334,7 @@ The skill.json route at `/brands/{slug}/skill-json` assembles the machine-readab
 }
 ```
 
-Two representations of the same data:
-- `productCategories` — one string per category in Google Product Taxonomy format: `"{id} - {full path}"`. Each category individually addressable by numeric ID.
-- `categories` — structured objects with IDs for programmatic use
+`categories` — structured objects with numeric IDs for programmatic use and cross-referencing with the Google Product Taxonomy. Each object includes `id`, `name`, `path`, `depth`, and an optional `primary` flag.
 
 ### Other skill.json blocks
 

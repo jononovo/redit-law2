@@ -52,7 +52,7 @@ metadata:
 | `categories[].depth` | integer | Depth in taxonomy tree (1 = root, 2 = subcategory, 3 = sub-subcategory). Merchant-level uses depth 2-3. |
 | `categories[].primary` | boolean | Whether this is the merchant's primary category |
 
-Categories are assigned automatically during scanning using the Google Product Taxonomy. The full structured taxonomy data (including `product_categories` and `categories` arrays) is currently served through the `skill.json` companion file at `/brands/{slug}/skill-json`. Basic sector and tier values are included in SKILL.md frontmatter.
+Categories are assigned automatically during scanning using the Google Product Taxonomy. The `product_categories` string format shown above is used in SKILL.md frontmatter for human readability. The machine-readable `skill.json` companion file at `/brands/{slug}/skill-json` uses only the structured `categories` array (with `id`, `name`, `path`, `depth`, `primary` fields) — it does not include the string format.
 
 See the [taxonomy documentation](/docs/shopy/taxonomy/sectors) for details on how sectors and categories work.
 

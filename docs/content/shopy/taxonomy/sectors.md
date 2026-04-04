@@ -106,7 +106,7 @@ The depth used for merchant-level classification depends on brand type. Focused 
 
 ## How taxonomy appears in skill.json
 
-The taxonomy block in `skill.json` includes both human-readable strings and structured objects:
+The taxonomy block in `skill.json` includes structured category objects for programmatic use:
 
 ```json
 {
@@ -114,15 +114,6 @@ The taxonomy block in `skill.json` includes both human-readable strings and stru
     "brandType": "brand",
     "sector": "apparel-accessories",
     "tier": "premium",
-    "productCategories": [
-      "5322 - Apparel & Accessories > Clothing > Activewear",
-      "203 - Apparel & Accessories > Clothing > Outerwear",
-      "204 - Apparel & Accessories > Clothing > Pants",
-      "212 - Apparel & Accessories > Clothing > Shirts & Tops",
-      "170 - Apparel & Accessories > Clothing Accessories > Gloves & Mittens",
-      "173 - Apparel & Accessories > Clothing Accessories > Hats",
-      "187 - Apparel & Accessories > Shoes"
-    ],
     "categories": [
       {
         "id": 5322,
@@ -148,8 +139,7 @@ The taxonomy block in `skill.json` includes both human-readable strings and stru
 }
 ```
 
-- `productCategories` — one string per category in Google Product Taxonomy format: `"{id} - {full path}"`. Each category is individually addressable by its numeric ID.
-- `categories` — structured objects with IDs for programmatic use and cross-referencing with the Google Product Taxonomy
+- `categories` — structured objects with numeric IDs for programmatic use and cross-referencing with the Google Product Taxonomy. Each category includes `id`, `name`, `path`, `depth`, and an optional `primary` flag.
 
 ## Market tiers
 
