@@ -9,6 +9,7 @@ metadata:
   vendor_domain: sweetwater.com
   vendor_slug: sweetwater
   vendor_name: Sweetwater
+  brand_type: retailer
   sector: arts-entertainment
   tier: premium
 ```
@@ -18,7 +19,8 @@ metadata:
 | `vendor_domain` | string | The primary domain of the store |
 | `vendor_slug` | string | URL-safe identifier used in the catalog |
 | `vendor_name` | string | Display name of the vendor |
-| `sector` | string | Primary sector slug — one of 27 values from the [sector taxonomy](/docs/shopy/taxonomy/sectors) (e.g., `electronics`, `apparel-accessories`, `business-industrial`) |
+| `brand_type` | string | Brand classification: `brand`, `retailer`, `independent`, `chain`, `marketplace`, `department_store`, `supermarket`, or `mega_merchant`. Determines how sectors and categories are resolved — see [taxonomy docs](/docs/shopy/taxonomy/sectors#brand-types). |
+| `sector` | string | Primary sector slug — one of 27 assignable values from the [sector taxonomy](/docs/shopy/taxonomy/sectors) (e.g., `electronics`, `apparel-accessories`, `business-industrial`), or `multi-sector` for department stores, supermarkets, and mega merchants. |
 | `tier` | string | Market position: `commodity`, `budget`, `value`, `mid_range`, `premium`, `luxury`, `ultra_luxury` |
 
 ## Taxonomy fields

@@ -12,7 +12,8 @@ version: 1.0.0
 metadata:
   vendor_domain: amazon.com
   vendor_slug: amazon
-  sector: general
+  sector: multi-sector
+  brand_type: mega_merchant
   asx_score: 82
   axs_rating: 4.2
   # ... additional commerce fields

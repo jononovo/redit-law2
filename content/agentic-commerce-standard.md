@@ -78,36 +78,52 @@ metadata:
   logo_url: https://cdn.example.com/brands/amazon/logo.png
 
   # === Taxonomy ===
-  sector: electronics
+  brand_type: mega_merchant    # brand | retailer | independent | chain | marketplace | department_store | supermarket | mega_merchant
+  sector: multi-sector         # mega_merchant → multi-sector (set programmatically)
   tier: mid_range
   product_categories:
-    - "242 - Electronics > Audio > Audio Players & Recorders"
-    - "2165 - Electronics > Audio > Audio Components"
-    - "4921 - Electronics > Audio > DJ & Specialty Audio"
-    - "328 - Electronics > Computers > Laptops"
-    - "325 - Electronics > Computers > Desktop Computers"
+    - "222 - Electronics"
+    - "166 - Apparel & Accessories"
+    - "536 - Home & Garden"
+    - "469 - Health & Beauty"
+    - "783 - Media"
+    - "922 - Office Supplies"
+    - "1239 - Toys & Games"
+    - "990 - Sporting Goods"
   categories:
-    - id: 242
-      name: Audio Players & Recorders
-      path: "Electronics > Audio > Audio Players & Recorders"
-      depth: 3
+    - id: 222
+      name: Electronics
+      path: "Electronics"
+      depth: 1
       primary: true
-    - id: 2165
-      name: Audio Components
-      path: "Electronics > Audio > Audio Components"
-      depth: 3
-    - id: 4921
-      name: DJ & Specialty Audio
-      path: "Electronics > Audio > DJ & Specialty Audio"
-      depth: 3
-    - id: 328
-      name: Laptops
-      path: "Electronics > Computers > Laptops"
-      depth: 3
-    - id: 325
-      name: Desktop Computers
-      path: "Electronics > Computers > Desktop Computers"
-      depth: 3
+    - id: 166
+      name: Apparel & Accessories
+      path: "Apparel & Accessories"
+      depth: 1
+    - id: 536
+      name: Home & Garden
+      path: "Home & Garden"
+      depth: 1
+    - id: 469
+      name: Health & Beauty
+      path: "Health & Beauty"
+      depth: 1
+    - id: 783
+      name: Media
+      path: "Media"
+      depth: 1
+    - id: 922
+      name: Office Supplies
+      path: "Office Supplies"
+      depth: 1
+    - id: 1239
+      name: Toys & Games
+      path: "Toys & Games"
+      depth: 1
+    - id: 990
+      name: Sporting Goods
+      path: "Sporting Goods"
+      depth: 1
 
   # === ASX Score (scan-based, 0-100) ===
   asx_score: 82
@@ -204,15 +220,28 @@ metadata:
 
 | Field | Type | Required | Description |
 |---|---|---|---|
-| `sector` | string | Yes | Sector slug — one of 27 values derived from Google Product Taxonomy roots plus custom sectors (e.g., `electronics`, `business-industrial`, `food-services`). See the [Taxonomy & Sectors](/docs/shopy/taxonomy/sectors) documentation for the full list. |
+| `brand_type` | string | Yes | Brand classification: `brand`, `retailer`, `independent`, `chain`, `marketplace`, `department_store`, `supermarket`, or `mega_merchant`. Determines category resolution depth — see below. |
+| `sector` | string | Yes | Sector slug — one of 27 assignable values derived from Google Product Taxonomy roots plus custom sectors (e.g., `electronics`, `business-industrial`, `food-services`), or `multi-sector` for department stores, supermarkets, and mega merchants. See the [Taxonomy & Sectors](/docs/shopy/taxonomy/sectors) documentation for the full list. |
 | `tier` | string | No | Market positioning: `commodity`, `budget`, `value`, `mid_range`, `premium`, `luxury`, `ultra_luxury` |
 | `product_categories` | string[] | No | Category strings in Google Product Taxonomy format: `"{id} - {full path}"` (e.g., `"242 - Electronics > Audio > Audio Players & Recorders"`) |
 | `categories` | object[] | Yes | Structured product category mappings using Google Product Taxonomy IDs |
 | `categories[].id` | integer | Yes | Taxonomy numeric ID — Google Product Taxonomy ID for Google categories, 100001+ for custom sectors |
 | `categories[].name` | string | Yes | Category display name (English) |
 | `categories[].path` | string | Yes | Full category path from root (e.g., `"Electronics > Computers > Laptops"`) |
-| `categories[].depth` | integer | Yes | Depth in taxonomy tree (1 = L1 root, 2 = L2, 3 = L3). Merchant-level classification uses depth 2-3. |
+| `categories[].depth` | integer | Yes | Depth in taxonomy tree (1 = L1 root, 2 = L2, 3 = L3). Depth depends on brand type — see below. |
 | `categories[].primary` | boolean | No | Whether this is the merchant's primary category (one per merchant) |
+
+### Brand Type and Category Depth
+
+The `brand_type` field determines how product categories are resolved:
+
+| Brand Type | Sector Value | Category Depth | Max Categories |
+|---|---|---|---|
+| `brand`, `retailer`, `independent`, `chain`, `marketplace` | Primary sector kept (e.g., `apparel-accessories`) | L2–L3 (up to 2 sectors) | 10 |
+| `department_store`, `supermarket` | `multi-sector` (set automatically) | L1–L2 across all sectors | 20 |
+| `mega_merchant` | `multi-sector` (set automatically) | L1 roots only | No limit |
+
+The `multi-sector` value is not directly assignable — it is set programmatically when the brand type is `department_store`, `supermarket`, or `mega_merchant`. Focused brand types (brand, retailer, independent, chain, marketplace) keep their primary sector and can span categories across up to 2 sector roots.
 
 ### ASX Score Fields (Scan-Based)
 
