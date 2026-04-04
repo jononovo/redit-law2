@@ -3,7 +3,6 @@
 import { Nav } from "@/components/nav";
 import { Footer } from "@/components/footer";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useEffect, useRef, useCallback } from "react";
@@ -112,19 +111,19 @@ type BrandRow = {
   capabilities: string[] | null;
 };
 
-function TierBadge({ tier }: { tier: string | null }) {
+function TierLabel({ tier }: { tier: string | null }) {
   if (!tier) return <span className="text-xs text-neutral-600">—</span>;
   const label = (BRAND_TIER_LABELS as Record<string, string>)[tier] ?? tier;
   return (
     <TooltipProvider>
       <Tooltip>
         <TooltipTrigger asChild>
-          <Badge
-            className="text-[10px] font-bold uppercase tracking-wider border rounded-none px-2 py-0.5 bg-neutral-800 text-neutral-300 border-neutral-700 cursor-help"
-            data-testid={`badge-tier-${tier}`}
+          <span
+            className="text-xs font-medium text-neutral-400 cursor-help"
+            data-testid={`text-tier-${tier}`}
           >
             {label}
-          </Badge>
+          </span>
         </TooltipTrigger>
         <TooltipContent
           side="top"
@@ -445,7 +444,7 @@ export default function BrandsLanding() {
                   <span className="text-sm font-mono text-neutral-400 tracking-wide uppercase">Sector</span>
                   <span className="text-sm font-mono text-neutral-400 tracking-wide uppercase">Tier</span>
                   <span className="text-sm font-mono text-neutral-400 tracking-wide uppercase">Capabilities</span>
-                  <span></span>
+                  <span />
                 </div>
 
                 {loading ? (
@@ -497,8 +496,13 @@ export default function BrandsLanding() {
                             <span className="text-xs text-neutral-500 ml-2 hidden sm:inline">{brand.domain}</span>
                           </div>
                         </div>
-                        <SectorLabel sector={brand.sector} />
-                        <TierBadge tier={brand.tier} />
+                        <div className="hidden md:block"><SectorLabel sector={brand.sector} /></div>
+                        <div className="hidden md:block"><TierLabel tier={brand.tier} /></div>
+                        <div className="flex items-center gap-2 md:hidden">
+                          <SectorLabel sector={brand.sector} />
+                          <span className="text-neutral-700">·</span>
+                          <TierLabel tier={brand.tier} />
+                        </div>
                         <CapabilityPills capabilities={brand.capabilities} />
                         <ChevronRight className="w-4 h-4 text-neutral-600 group-hover:text-neutral-400 transition-colors hidden md:block" />
                       </Link>
