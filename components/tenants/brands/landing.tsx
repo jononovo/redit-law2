@@ -344,7 +344,7 @@ export default function BrandsLanding() {
 
         <section className="pb-24">
           <div className="container mx-auto px-6">
-            <div className="max-w-5xl mx-auto">
+            <div className="max-w-7xl mx-auto">
               <div className="mb-4">
                 <SectorFilterBar
                   activeSector={activeSector}
@@ -352,7 +352,7 @@ export default function BrandsLanding() {
                 />
               </div>
               <div className="border border-neutral-800 overflow-hidden bg-neutral-900/50">
-                <div className="hidden md:grid grid-cols-[1fr_180px_100px_100px_40px] gap-4 px-5 py-3 bg-neutral-900 border-b border-neutral-800">
+                <div className="hidden md:grid grid-cols-[1fr_240px_120px_100px_40px] gap-4 px-5 py-3 bg-neutral-900 border-b border-neutral-800">
                   <span className="text-sm font-mono text-neutral-400 tracking-wide uppercase">Skill</span>
                   <span className="text-sm font-mono text-neutral-400 tracking-wide uppercase">Capabilities</span>
                   <span className="text-sm font-mono text-neutral-400 tracking-wide uppercase">Checkout</span>
@@ -388,7 +388,7 @@ export default function BrandsLanding() {
                       <Link
                         key={brand.slug}
                         href={`/skills/${brand.slug}`}
-                        className="grid grid-cols-1 md:grid-cols-[1fr_180px_100px_100px_40px] gap-2 md:gap-4 px-5 py-4 hover:bg-neutral-800/40 transition-colors items-center group"
+                        className="grid grid-cols-1 md:grid-cols-[1fr_240px_120px_100px_40px] gap-2 md:gap-4 px-5 py-4 hover:bg-neutral-800/40 transition-colors items-center group"
                         data-testid={`row-brand-${brand.slug}`}
                       >
                         <div className="flex items-center gap-3">
