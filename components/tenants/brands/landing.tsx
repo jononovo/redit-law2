@@ -314,7 +314,7 @@ export default function BrandsLanding() {
                 </div>
               </div>
               <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight text-white leading-[1.1] mb-3" data-testid="text-hero-title">
-                The skill registry for agentic shopping.
+                The skill registry for agentic shopping
               </h1>
               <p className="text-lg text-neutral-400 font-medium" data-testid="text-hero-subtitle">
                 Create a shopping skill for your brand with a single click
