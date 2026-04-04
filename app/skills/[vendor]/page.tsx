@@ -61,7 +61,7 @@ import {
   Dog,
 } from "lucide-react";
 import { BrandClaimButton } from "./brand-claim-button";
-import { SkillPreviewPanel } from "./skill-preview-panel";
+import { SkillPreviewPanel, SkillJsonPanel } from "./skill-preview-panel";
 import { CopySkillUrl } from "./copy-skill-url";
 import { getScoreColor } from "@/app/skills/vendor-card";
 import type { Metadata } from "next";
@@ -651,6 +651,7 @@ export default async function VendorDetailPage({ params }: Props) {
                 )}
 
                 {skillMd && <SkillPreviewPanel skillMd={skillMd} slug={brand.slug} />}
+                {brand.overallScore !== null && <SkillJsonPanel slug={brand.slug} />}
               </div>
 
               <aside className="lg:w-72 flex-shrink-0">
