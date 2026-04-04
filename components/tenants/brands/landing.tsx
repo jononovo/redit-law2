@@ -6,12 +6,47 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, useEffect, useMemo } from "react";
-import { ArrowRight, ChevronRight, Terminal, Loader2 } from "lucide-react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import { ArrowRight, ChevronLeft, ChevronRight, Terminal, Loader2 } from "lucide-react";
 import { CAPABILITY_LABELS } from "@/lib/procurement-skills/taxonomy/capabilities";
 import { CHECKOUT_METHOD_LABELS } from "@/lib/procurement-skills/taxonomy/checkout-methods";
+import { ASSIGNABLE_SECTORS } from "@/lib/procurement-skills/taxonomy/sectors";
+import type { VendorSector } from "@/lib/procurement-skills/taxonomy/sectors";
 import { ScanProgress } from "@/components/scan-progress";
 import { useDomainScan } from "@/hooks/use-domain-scan";
+
+const SECTOR_SHORT_LABELS: Record<string, string> = {
+  "animals-pet-supplies": "Pets",
+  "apparel-accessories": "Apparel",
+  "arts-entertainment": "Arts",
+  "baby-toddler": "Baby",
+  "business-industrial": "B2B",
+  "cameras-optics": "Cameras",
+  "electronics": "Electronics",
+  "food-beverages-tobacco": "Food",
+  "furniture": "Furniture",
+  "hardware": "Hardware",
+  "health-beauty": "Beauty",
+  "home-garden": "Home",
+  "luggage-bags": "Bags",
+  "mature": "Mature",
+  "media": "Media",
+  "office-supplies": "Office",
+  "religious-ceremonial": "Religious",
+  "software": "Software",
+  "sporting-goods": "Sports",
+  "toys-games": "Toys",
+  "vehicles-parts": "Vehicles",
+  "food-services": "Dining",
+  "travel": "Travel",
+  "education": "Education",
+  "events": "Events",
+  "specialty": "Specialty",
+  "luxury": "Luxury",
+  "multi-sector": "Multi",
+};
+
+const ALL_FILTER_SECTORS: string[] = [...ASSIGNABLE_SECTORS, "luxury", "multi-sector"];
 
 type BrandRow = {
   slug: string;
@@ -73,21 +108,123 @@ function CheckoutLabel({ methods }: { methods: string[] | null }) {
   );
 }
 
+function SectorFilterBar({
+  activeSector,
+  onSelect,
+}: {
+  activeSector: string | null;
+  onSelect: (sector: string | null) => void;
+}) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+
+  const checkScroll = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    setCanScrollLeft(el.scrollLeft > 0);
+    setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 1);
+  }, []);
+
+  useEffect(() => {
+    checkScroll();
+    const el = scrollRef.current;
+    if (!el) return;
+    el.addEventListener("scroll", checkScroll, { passive: true });
+    const ro = new ResizeObserver(checkScroll);
+    ro.observe(el);
+    return () => {
+      el.removeEventListener("scroll", checkScroll);
+      ro.disconnect();
+    };
+  }, [checkScroll]);
+
+  const scroll = (dir: "left" | "right") => {
+    scrollRef.current?.scrollBy({
+      left: dir === "left" ? -200 : 200,
+      behavior: "smooth",
+    });
+  };
+
+  return (
+    <div className="relative" data-testid="sector-filter-bar">
+      {canScrollLeft && (
+        <button
+          onClick={() => scroll("left")}
+          className="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-7 h-7 rounded-none bg-neutral-900 border border-neutral-700 flex items-center justify-center text-neutral-400 hover:text-white transition-colors"
+          data-testid="button-sector-scroll-left"
+        >
+          <ChevronLeft className="w-4 h-4" />
+        </button>
+      )}
+      <div
+        ref={scrollRef}
+        className="flex items-center gap-1.5 overflow-x-auto px-1 py-1 [&::-webkit-scrollbar]:hidden"
+        style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+      >
+        <button
+          onClick={() => onSelect(null)}
+          className={`inline-flex items-center rounded-none px-3 py-1.5 text-xs font-mono font-medium whitespace-nowrap transition-colors border ${
+            activeSector === null
+              ? "bg-white text-neutral-950 border-white"
+              : "bg-transparent text-neutral-500 border-neutral-800 hover:text-white hover:border-neutral-600"
+          }`}
+          data-testid="filter-sector-all"
+        >
+          All
+        </button>
+        {ALL_FILTER_SECTORS.map((sector) => (
+          <button
+            key={sector}
+            onClick={() => onSelect(sector)}
+            className={`inline-flex items-center rounded-none px-3 py-1.5 text-xs font-mono font-medium whitespace-nowrap transition-colors border ${
+              activeSector === sector
+                ? "bg-white text-neutral-950 border-white"
+                : "bg-transparent text-neutral-500 border-neutral-800 hover:text-white hover:border-neutral-600"
+            }`}
+            data-testid={`filter-sector-${sector}`}
+          >
+            {SECTOR_SHORT_LABELS[sector] ?? sector}
+          </button>
+        ))}
+      </div>
+      {canScrollRight && (
+        <button
+          onClick={() => scroll("right")}
+          className="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-7 h-7 rounded-none bg-neutral-900 border border-neutral-700 flex items-center justify-center text-neutral-400 hover:text-white transition-colors"
+          data-testid="button-sector-scroll-right"
+        >
+          <ChevronRight className="w-4 h-4" />
+        </button>
+      )}
+    </div>
+  );
+}
+
 export default function BrandsLanding() {
   const router = useRouter();
   const scan = useDomainScan();
   const [brands, setBrands] = useState<BrandRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeSector, setActiveSector] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch("/api/v1/brands?limit=100&lite=true&maturity=verified,official,beta,community,draft")
+    setLoading(true);
+    const base = "/api/v1/brands?limit=100&lite=true&maturity=verified,official,beta,community,draft";
+    let url = base;
+    if (activeSector === "luxury") {
+      url += "&tier=luxury,ultra_luxury";
+    } else if (activeSector) {
+      url += `&sector=${activeSector}`;
+    }
+    fetch(url)
       .then((r) => r.json())
       .then((data) => {
         setBrands(data.brands || data || []);
         setLoading(false);
       })
       .catch(() => setLoading(false));
-  }, []);
+  }, [activeSector]);
 
   useEffect(() => {
     if (scan.status === "done" && scan.result) {
@@ -180,6 +317,12 @@ export default function BrandsLanding() {
         <section className="pb-24">
           <div className="container mx-auto px-6">
             <div className="max-w-5xl mx-auto">
+              <div className="mb-4">
+                <SectorFilterBar
+                  activeSector={activeSector}
+                  onSelect={setActiveSector}
+                />
+              </div>
               <div className="border border-neutral-800 overflow-hidden bg-neutral-900/50">
                 <div className="hidden md:grid grid-cols-[1fr_180px_100px_100px_40px] gap-4 px-5 py-3 bg-neutral-900 border-b border-neutral-800">
                   <span className="text-sm font-mono text-neutral-400 tracking-wide uppercase">Skill</span>
@@ -197,8 +340,19 @@ export default function BrandsLanding() {
                 ) : brands.length === 0 ? (
                   <div className="px-5 py-20 text-center">
                     <p className="text-sm text-neutral-500 font-medium">
-                      No skills in the registry yet.
+                      {activeSector
+                        ? `No skills found in ${SECTOR_SHORT_LABELS[activeSector] ?? activeSector}.`
+                        : "No skills in the registry yet."}
                     </p>
+                    {activeSector && (
+                      <button
+                        onClick={() => setActiveSector(null)}
+                        className="mt-3 text-xs font-mono text-neutral-400 hover:text-white transition-colors underline"
+                        data-testid="button-clear-filter"
+                      >
+                        Clear filter
+                      </button>
+                    )}
                   </div>
                 ) : (
                   <div className="divide-y divide-neutral-800/60">
