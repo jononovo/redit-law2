@@ -4,7 +4,7 @@ export const office_depot: VendorSkill = {
     slug: "office-depot",
   name: "Office Depot",
   logoUrl: "/assets/images/vendors/office-depot.svg",
-  sector: "office",
+  sector: "office-supplies",
   url: "https://www.officedepot.com",
   checkoutMethods: ["self_hosted_card"],
   capabilities: ["price_lookup", "stock_check", "tax_exemption", "po_numbers", "order_tracking", "business_invoicing"],
@@ -33,7 +33,7 @@ export const office_depot: VendorSkill = {
   lastVerified: "2026-02-05",
   generatedBy: "manual",
   taxonomy: {
-    sector: "office",
+    sector: "office-supplies",
     subSectors: ["office supplies", "ink & toner", "furniture", "technology", "cleaning"],
     tier: "mid_range",
     tags: ["bsd accounts", "contract pricing", "next-day delivery"],

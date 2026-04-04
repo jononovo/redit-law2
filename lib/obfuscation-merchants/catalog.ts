@@ -26,7 +26,7 @@ export const MERCHANT_CATALOG: Merchant[] = [
   {
     name: "Amazon Verified Merchant",
     slug: "amazon-verified-merchant",
-    category: "retail",
+    category: "specialty",
     products: [
       { name: "Wireless Bluetooth Earbuds", minCents: 1999, maxCents: 4999 },
       { name: "USB-C Charging Cable 6ft", minCents: 799, maxCents: 1499 },
@@ -57,7 +57,7 @@ export const MERCHANT_CATALOG: Merchant[] = [
   {
     name: "CloudServe Pro",
     slug: "cloudserve-pro",
-    category: "saas",
+    category: "software",
     products: [
       { name: "Compute Instance Monthly", minCents: 500, maxCents: 8000 },
       { name: "Storage Expansion 100GB", minCents: 200, maxCents: 2000 },
@@ -68,7 +68,7 @@ export const MERCHANT_CATALOG: Merchant[] = [
   {
     name: "Verified Google Services",
     slug: "verified-google-services",
-    category: "saas",
+    category: "software",
     products: [
       { name: "Workspace Seat Monthly", minCents: 600, maxCents: 1800 },
       { name: "Cloud API Credits", minCents: 1000, maxCents: 10000 },
@@ -78,7 +78,7 @@ export const MERCHANT_CATALOG: Merchant[] = [
   {
     name: "SpicyThai Kitchen",
     slug: "spicythai-kitchen",
-    category: "food",
+    category: "food-services",
     products: [
       { name: "Spicy Coconut PadThai", minCents: 1249, maxCents: 1899 },
       { name: "Green Curry Bowl", minCents: 1399, maxCents: 1999 },
@@ -89,7 +89,7 @@ export const MERCHANT_CATALOG: Merchant[] = [
   {
     name: "DigitalOcean Marketplace",
     slug: "digitalocean-marketplace",
-    category: "saas",
+    category: "software",
     products: [
       { name: "Droplet Credit Pack", minCents: 500, maxCents: 5000 },
       { name: "Managed Database Monthly", minCents: 1500, maxCents: 9900 },
@@ -129,7 +129,7 @@ export const MERCHANT_CATALOG: Merchant[] = [
   {
     name: "FreshMart Grocery",
     slug: "freshmart-grocery",
-    category: "food",
+    category: "food-services",
     products: [
       { name: "Organic Produce Box", minCents: 2499, maxCents: 4999 },
       { name: "Artisan Sourdough Bread", minCents: 599, maxCents: 1299 },

@@ -4,7 +4,7 @@ export const walmart: VendorSkill = {
     slug: "walmart",
   name: "Walmart",
   logoUrl: "/assets/images/vendors/walmart.svg",
-  sector: "retail",
+  sector: "specialty",
   url: "https://www.walmart.com",
   checkoutMethods: ["self_hosted_card", "browser_automation"],
   capabilities: ["price_lookup", "stock_check", "order_tracking"],
@@ -38,7 +38,7 @@ export const walmart: VendorSkill = {
   lastVerified: "2026-02-10",
   generatedBy: "manual",
   taxonomy: {
-    sector: "retail",
+    sector: "specialty",
     subSectors: ["general merchandise", "grocery", "home goods", "electronics"],
     tier: "value",
     tags: ["everyday low prices", "walmart+", "in-store pickup"],

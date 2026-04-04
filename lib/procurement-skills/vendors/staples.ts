@@ -4,7 +4,7 @@ export const staples: VendorSkill = {
     slug: "staples",
   name: "Staples",
   logoUrl: "/assets/images/vendors/staples.svg",
-  sector: "office",
+  sector: "office-supplies",
   url: "https://www.staples.com",
   checkoutMethods: ["self_hosted_card"],
   capabilities: ["price_lookup", "stock_check", "bulk_pricing", "tax_exemption", "po_numbers", "order_tracking", "business_invoicing"],
@@ -34,7 +34,7 @@ export const staples: VendorSkill = {
   lastVerified: "2026-02-10",
   generatedBy: "manual",
   taxonomy: {
-    sector: "office",
+    sector: "office-supplies",
     subSectors: ["office supplies", "ink & toner", "furniture", "technology"],
     tier: "mid_range",
     tags: ["staples advantage", "next-day delivery", "office essentials"],

@@ -78,26 +78,43 @@ metadata:
   logo_url: https://cdn.example.com/brands/amazon/logo.png
 
   # === Taxonomy ===
-  sector: retail
-  tier: value
+  brand_type: mega_merchant    # brand | retailer | independent | chain | marketplace | department_store | supermarket | mega_merchant
+  sector: multi-sector         # mega_merchant → multi-sector (set programmatically)
+  tier: mid_range
   categories:
-    - gpt_id: 222
+    - id: 222
       name: Electronics
       path: "Electronics"
-      depth: 0
+      depth: 1
       primary: true
-    - gpt_id: 536
-      name: "Home & Garden"
+    - id: 166
+      name: Apparel & Accessories
+      path: "Apparel & Accessories"
+      depth: 1
+    - id: 536
+      name: Home & Garden
       path: "Home & Garden"
-      depth: 0
-    - gpt_id: 783
+      depth: 1
+    - id: 469
+      name: Health & Beauty
+      path: "Health & Beauty"
+      depth: 1
+    - id: 783
       name: Media
-      path: Media
-      depth: 0
-    - gpt_id: 412
-      name: "Food, Beverages & Tobacco"
-      path: "Food, Beverages & Tobacco"
-      depth: 0
+      path: "Media"
+      depth: 1
+    - id: 922
+      name: Office Supplies
+      path: "Office Supplies"
+      depth: 1
+    - id: 1239
+      name: Toys & Games
+      path: "Toys & Games"
+      depth: 1
+    - id: 990
+      name: Sporting Goods
+      path: "Sporting Goods"
+      depth: 1
 
   # === ASX Score (scan-based, 0-100) ===
   asx_score: 82
@@ -194,14 +211,27 @@ metadata:
 
 | Field | Type | Required | Description |
 |---|---|---|---|
-| `sector` | string | Yes | CreditClaw sector slug (e.g., `retail`, `electronics`, `industrial`) |
-| `tier` | string | No | Market positioning: `value`, `mid-range`, `premium`, `luxury`, `wholesale`, `marketplace` |
-| `categories` | object[] | Yes | UCP category mappings using Google Product Taxonomy |
-| `categories[].gpt_id` | integer | Yes | Google Product Taxonomy numeric ID |
+| `brand_type` | string | Yes | Brand classification: `brand`, `retailer`, `independent`, `chain`, `marketplace`, `department_store`, `supermarket`, or `mega_merchant`. Determines category resolution depth — see below. |
+| `sector` | string | Yes | Sector slug — one of 27 assignable values derived from Google Product Taxonomy roots plus custom sectors (e.g., `electronics`, `business-industrial`, `food-services`), or `multi-sector` for department stores, supermarkets, and mega merchants. See the [Taxonomy & Sectors](/docs/shopy/taxonomy/sectors) documentation for the full list. |
+| `tier` | string | No | Market positioning: `commodity`, `budget`, `value`, `mid_range`, `premium`, `luxury`, `ultra_luxury` |
+| `categories` | object[] | Yes | Structured product category mappings using Google Product Taxonomy IDs |
+| `categories[].id` | integer | Yes | Taxonomy numeric ID — Google Product Taxonomy ID for Google categories, 100001+ for custom sectors |
 | `categories[].name` | string | Yes | Category display name (English) |
 | `categories[].path` | string | Yes | Full category path from root (e.g., `"Electronics > Computers > Laptops"`) |
-| `categories[].depth` | integer | Yes | Depth in taxonomy tree (0 = L1 root, 1 = L2, 2 = L3 max for merchants) |
+| `categories[].depth` | integer | Yes | Depth in taxonomy tree (1 = L1 root, 2 = L2, 3 = L3). Depth depends on brand type — see below. |
 | `categories[].primary` | boolean | No | Whether this is the merchant's primary category (one per merchant) |
+
+### Brand Type and Category Depth
+
+The `brand_type` field determines how product categories are resolved:
+
+| Brand Type | Sector Value | Category Depth | Max Categories |
+|---|---|---|---|
+| `brand`, `retailer`, `independent`, `chain`, `marketplace` | Primary sector kept (e.g., `apparel-accessories`) | L2–L3 (up to 2 sectors) | 10 |
+| `department_store`, `supermarket` | `multi-sector` (set automatically) | L1–L2 across all sectors | 20 |
+| `mega_merchant` | `multi-sector` (set automatically) | L1 roots only | No limit |
+
+The `multi-sector` value is not directly assignable — it is set programmatically when the brand type is `department_store`, `supermarket`, or `mega_merchant`. Focused brand types (brand, retailer, independent, chain, marketplace) keep their primary sector and can span categories across up to 2 sector roots.
 
 ### ASX Score Fields (Scan-Based)
 
@@ -377,7 +407,7 @@ Ratings are 1-5. This is optional but helps other agents find reliable vendors.
 
 The structured metadata for each merchant is defined in a `skill.json` file. The SKILL.md frontmatter is derived from `skill.json` — they contain the same data, but `skill.json` is the machine-readable source of truth.
 
-The full `skill.json` schema is specified in `Shopy/skill-json-schema.md`. It covers: identity, taxonomy (UCP categories), scoring (ASX + AXS), API access, checkout, shipping, returns, loyalty, skill quality, and distribution.
+The full `skill.json` schema covers: identity, taxonomy (sector + Google Product Taxonomy categories), scoring (ASX + AXS), API access, checkout, shipping, returns, loyalty, skill quality, and distribution.
 
 ### Relationship between formats
 

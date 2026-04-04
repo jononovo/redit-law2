@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
 
@@ -49,6 +49,103 @@ export function SkillPreviewPanel({ skillMd, slug }: { skillMd: string; slug: st
         <pre className="bg-neutral-50 rounded-xl p-4 text-xs font-mono text-neutral-700 overflow-x-auto max-h-[600px] overflow-y-auto border border-neutral-100" data-testid="preview-skill-md">
           {skillMd}
         </pre>
+      )}
+    </div>
+  );
+}
+
+export function SkillJsonPanel({ slug }: { slug: string }) {
+  const [showPreview, setShowPreview] = useState(false);
+  const [jsonData, setJsonData] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(false);
+
+  const fetchJson = useCallback(async () => {
+    if (jsonData) return;
+    setLoading(true);
+    setError(false);
+    try {
+      const res = await fetch(`/brands/${slug}/skill-json`);
+      if (!res.ok) throw new Error("Not found");
+      const data = await res.json();
+      setJsonData(JSON.stringify(data, null, 2));
+    } catch {
+      setError(true);
+    } finally {
+      setLoading(false);
+    }
+  }, [slug, jsonData]);
+
+  useEffect(() => {
+    if (showPreview && !jsonData && !loading) {
+      fetchJson();
+    }
+  }, [showPreview, jsonData, loading, fetchJson]);
+
+  const handleDownload = async () => {
+    let data = jsonData;
+    if (!data) {
+      try {
+        const res = await fetch(`/brands/${slug}/skill-json`);
+        if (!res.ok) return;
+        const parsed = await res.json();
+        data = JSON.stringify(parsed, null, 2);
+        setJsonData(data);
+      } catch {
+        return;
+      }
+    }
+    const blob = new Blob([data], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${slug}-skill.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  return (
+    <div className="bg-white rounded-2xl border border-neutral-100 p-6">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="font-bold text-neutral-900 flex items-center gap-2">
+          skill.json
+        </h3>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowPreview(!showPreview)}
+            className="text-xs font-semibold"
+            data-testid="button-toggle-json-preview"
+          >
+            {showPreview ? "Hide" : "Show"} Preview
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleDownload}
+            className="text-xs font-semibold"
+            data-testid="button-download-skill-json"
+          >
+            <Download className="w-3.5 h-3.5 mr-1" />
+            Download
+          </Button>
+        </div>
+      </div>
+      {showPreview && (
+        <div>
+          {loading && (
+            <p className="text-xs text-neutral-400 font-mono py-4">Loading...</p>
+          )}
+          {error && (
+            <p className="text-xs text-red-500 font-mono py-4">Failed to load skill.json</p>
+          )}
+          {jsonData && (
+            <pre className="bg-neutral-50 rounded-xl p-4 text-xs font-mono text-neutral-700 overflow-x-auto max-h-[600px] overflow-y-auto border border-neutral-100" data-testid="preview-skill-json">
+              {jsonData}
+            </pre>
+          )}
+        </div>
       )}
     </div>
   );

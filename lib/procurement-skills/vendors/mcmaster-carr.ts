@@ -4,7 +4,7 @@ export const mcmaster_carr: VendorSkill = {
     slug: "mcmaster-carr",
   name: "McMaster-Carr",
   logoUrl: "/assets/images/vendors/mcmaster-carr.svg",
-  sector: "industrial",
+  sector: "business-industrial",
   url: "https://www.mcmaster.com",
   checkoutMethods: ["self_hosted_card"],
   capabilities: ["price_lookup", "stock_check", "order_tracking", "bulk_pricing"],
@@ -33,7 +33,7 @@ export const mcmaster_carr: VendorSkill = {
   lastVerified: "2026-02-05",
   generatedBy: "manual",
   taxonomy: {
-    sector: "industrial",
+    sector: "business-industrial",
     subSectors: ["fasteners", "raw materials", "pneumatics", "hydraulics", "bearings", "hardware"],
     tier: "premium",
     tags: ["next-day delivery", "cad models", "fixed pricing", "engineering grade"],

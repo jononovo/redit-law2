@@ -4,7 +4,7 @@ export const amazon_business: VendorSkill = {
     slug: "amazon-business",
   name: "Amazon Business",
   logoUrl: "/assets/images/vendors/amazon-business.svg",
-  sector: "retail",
+  sector: "specialty",
   url: "https://business.amazon.com",
   checkoutMethods: ["self_hosted_card"],
   capabilities: ["price_lookup", "bulk_pricing", "tax_exemption", "po_numbers", "order_tracking", "business_invoicing", "account_creation"],
@@ -34,7 +34,7 @@ export const amazon_business: VendorSkill = {
   lastVerified: "2026-02-10",
   generatedBy: "manual",
   taxonomy: {
-    sector: "office",
+    sector: "office-supplies",
     subSectors: ["business supplies", "bulk purchasing", "office equipment"],
     tier: "value",
     tags: ["b2b", "tax exempt", "quantity discounts", "business prime"],

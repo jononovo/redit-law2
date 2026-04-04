@@ -4,7 +4,7 @@ export const amazon: VendorSkill = {
     slug: "amazon",
   name: "Amazon",
   logoUrl: "/assets/images/vendors/amazon.svg",
-  sector: "retail",
+  sector: "specialty",
   url: "https://www.amazon.com",
   checkoutMethods: ["native_api", "self_hosted_card"],
   capabilities: ["price_lookup", "stock_check", "programmatic_checkout", "order_tracking", "returns"],
@@ -40,7 +40,7 @@ export const amazon: VendorSkill = {
   generatedBy: "manual",
   feedbackStats: { successRate: 0.94 },
   taxonomy: {
-    sector: "retail",
+    sector: "specialty",
     subSectors: ["general merchandise", "electronics", "home goods", "books", "grocery"],
     tier: "value",
     tags: ["everything store", "prime", "aws", "fba"],

@@ -254,9 +254,9 @@ A `/skills/` module provides a curated library of vendor shopping skills. **Modu
 
 **Taxonomy** (`lib/procurement-skills/taxonomy/`):
 Each concern has its own file with type definition + label map. Barrel-exported via `index.ts`.
-- `sectors.ts` — `VendorSector` type + `SECTOR_LABELS` (20 sectors: retail, office, fashion, health, home, electronics, industrial, etc.)
+- `sectors.ts` — `VendorSector` type + `SECTOR_LABELS` (28 sectors: 21 Google Product Taxonomy roots + food-services, travel, education, events, luxury, specialty, multi-sector). `SECTOR_ROOT_IDS` maps every sector to its root category ID (Google IDs < 100000, custom IDs ≥ 100001, multi-sector = 0). `GOOGLE_ROOT_IDS` (derived) covers only the 21 Google-mapped sectors. `hasSectorRoot()` and `hasGoogleRoot()` helpers. `ASSIGNABLE_SECTORS` excludes luxury (tier-filter only) and multi-sector (set programmatically, not by Perplexity).
+- `brand-types.ts` — `BrandType` union (brand, retailer, marketplace, chain, independent, department_store, supermarket, mega_merchant). `MULTI_SECTOR_TYPES` = [department_store, supermarket, mega_merchant]. `VALID_BRAND_TYPES` = all 8 values.
 - `tiers.ts` — `BrandTier` type + `BRAND_TIER_LABELS` (7 tiers: ultra_luxury, luxury, premium, mid_range, value, budget, commodity). Deprecated `VendorTier` and `TIER_LABELS` aliases are re-exported for backward compatibility.
-- `brand-types.ts` — `BrandType` type + `BRAND_TYPE_LABELS` (5 types: brand, retailer, marketplace, chain, independent)
 - `checkout-methods.ts` — `CheckoutMethod` type + `CHECKOUT_METHOD_LABELS` + `CHECKOUT_METHOD_COLORS`
 - `capabilities.ts` — `VendorCapability` type + `CAPABILITY_LABELS`
 - `payment-methods.ts` — `PaymentMethod` type + `PAYMENT_METHOD_LABELS` (11 methods: card, ach, crypto, apple_pay, etc.)
@@ -275,6 +275,12 @@ Each vendor is its own file exporting a single `VendorSkill` object. Barrel-expo
 
 **Generator** (`lib/procurement-skills/generator.ts`):
 Converts `VendorSkill` objects into `SKILL.md` markdown with frontmatter, taxonomy, discovery, buying, and deals sections.
+
+**Category Resolution** (`lib/agentic-score/resolve-categories.ts`):
+After the initial scan classifies a brand's sector and brand type, category resolution varies by brand type. Focused merchants (brand, retailer, independent) get single-sector L3 categories via Perplexity. Department stores and supermarkets get multi-sector L2 categories via Perplexity. Mega merchants get L1 root categories directly (no Perplexity call). Results are persisted in `brand_categories` junction table. The `brand_type` is stored in `brand_index`. Multi-sector merchants get `sector = "multi-sector"`. Non-critical — failures result in empty categories, never a broken scan.
+
+**Product Categories DB** (`product_categories` table, seeded by `scripts/seed-google-taxonomy.ts`):
+5,638 entries: 5,595 from Google Product Taxonomy + 43 custom categories for non-Google sectors (food-services, travel, education, events, luxury, specialty). The `id` column IS the taxonomy ID (Google taxonomy numbers for Google categories, 100001+ for custom sectors). No separate `gptId` — unified single identifier.
 
 **Package exports** (`lib/procurement-skills/package/`):
 - `skill-json.ts` — JSON package format including taxonomy/searchDiscovery/buying/deals blocks
@@ -297,7 +303,7 @@ CreditClaw's public-facing growth engine. The ASX (Agentic Shopping Experience) 
 Sole source of truth for all brand data across all surfaces (bots, humans, exports). Single denormalized PostgreSQL table with:
 - **Primary identifier**: `domain` (text, NOT NULL, UNIQUE) — canonical dedup key for scans, cache lookups, upserts. Conflict target for `upsertBrandIndex`.
 - **URL routing key**: `slug` (text, NOT NULL, UNIQUE) — used for `/brands/[slug]` pages and `/brands/[slug]/skill.md`. Derived from domain via `domainToSlug()`: `.com` domains strip TLD (`staples.com` → `staples`), non-`.com` keep full domain minus dots (`staples.co.uk` → `staples-co-uk`). Slug is set on insert only — never overwritten by upsert (excluded from update set).
-- `brand_type` text — business model classification (brand, retailer, marketplace, chain, independent)
+- `brand_type` text — business model classification (brand, retailer, marketplace, chain, independent, department_store, supermarket, mega_merchant). Populated automatically by classification. Controls category resolution depth routing.
 - Flat indexed columns for every filterable field (sector, tier, maturity, ordering, etc.)
 - `carries_brands` text[] array (GIN-indexed) — distinguishes retailers from HQ brands (populated = retailer)
 - `brand_data` jsonb — full VendorSkill object for retrieval
@@ -689,23 +695,26 @@ Two layers of testing:
 - **Manual integration tests** (`docs/testing.md`): curl-based test suite covering bot registration, wallet ops, purchases, guardrails, checkout pages, x402 endpoints. Sections 1-12 cover core API, Section 13 covers checkout & x402, Section 14 references the automated tests.
 
 ### Multitenant Architecture
-The app supports multiple tenants (CreditClaw, shopy.sh) via hostname-based routing:
-- **Tenant configs**: `public/tenants/{tenantId}/config.json` — branding, meta, theme, routes, features, tracking
+The app supports multiple tenants (CreditClaw, shopy.sh, brands.sh) via hostname-based routing:
+- **Tenant configs**: `public/tenants/{tenantId}/config.json` — branding, meta, theme, routes, features, tracking (source of truth). Also mirrored in `lib/tenants/tenant-configs.ts` as static imports for client-side use.
 - **Types**: `lib/tenants/types.ts` — `TenantConfig` interface
-- **Config loader**: `lib/tenants/config.ts` — `getTenantConfig()`, `resolveTenantId()` with caching
+- **Config loader (server)**: `lib/tenants/config.ts` — `getTenantConfig()`, `resolveTenantId()` with caching (uses filesystem, server-only)
+- **Config loader (client)**: `lib/tenants/tenant-configs.ts` — `getStaticTenantConfig()` + `TENANT_THEMES` (bundled statically, no fs dependency)
 - **Middleware**: `middleware.ts` — resolves hostname → tenantId, sets `x-tenant-id` header + `tenant-id` cookie
-- **Server helper**: `lib/tenants/get-request-tenant.ts` — `getRequestTenant()` reads from headers in server components/API routes
+- **Root layout** (`app/layout.tsx`): Uses `cookies()` to read `tenant-id` cookie set by middleware. Resolves tenant config server-side for correct SSR (no flash of wrong tenant). Also includes inline `<script>` for CSS theme variables on client-side navigations. Wraps children in `TenantProvider`.
 - **Client context**: `lib/tenants/tenant-context.tsx` — `TenantProvider` + `useTenant()` hook for client components
-- **Layout**: `app/layout.tsx` injects tenant theme CSS vars + wraps children in `TenantProvider`
+- **Server helper (deprecated)**: `lib/tenants/get-request-tenant.ts` — `getRequestTenant()` reads from headers. Pages should use `cookies()` directly with `export const dynamic = "force-dynamic"` instead.
+- **Tenant-aware pages**: Pages needing server-side tenant routing (home, guide, standard, how-it-works) use `cookies()` + `force-dynamic`. The root layout also uses `cookies()` making child pages dynamic by default, but `revalidate` on individual pages enables ISR caching.
 - **Tenant components**: `components/tenants/{id}/` — per-tenant landing pages, how-it-works pages, etc.
 - **Nav**: Uses `useTenant()` for logo, name, tagline, routes
 - **Footer**: Config-driven via `tenant.navigation.footer` in config.json — each tenant defines its own columns and social links
 - **How It Works**: `app/how-it-works/page.tsx` is a tenant router (same pattern as landing page)
 - **owners.signup_tenant**: Tracks which tenant a user signed up from (migration 0011)
 - **Active tenants**: creditclaw (payments), shopy (ASX scoring/readiness), brands (skill catalog/registry)
-- **brands.sh skill detail page** (`app/skills/[vendor]/page.tsx`): Null-safe — gracefully renders when `brandData` is missing by falling back to `brand.*` fields. Sections like search/checkout/shipping/deals/tips only render when vendor data exists.
+- **brands.sh skill detail page** (`app/skills/[vendor]/page.tsx`): ISR-enabled (revalidate=3600). Null-safe — gracefully renders when `brandData` is missing by falling back to `brand.*` fields. Sections like search/checkout/shipping/deals/tips only render when vendor data exists.
 - **brands.sh landing** (`components/tenants/brands/landing.tsx`): Skill-registry framing. Columns: Skill | Capabilities | Checkout | Maturity. Imports shared label maps from `lib/procurement-skills/taxonomy/`. No ScoreBadge (scores live on shopy.sh).
 - To test locally as a different tenant: add `?tenant=shopy` or `?tenant=brands` to any URL
+- **IMPORTANT**: When adding new tenant configs, update BOTH `public/tenants/{id}/config.json` AND `lib/tenants/tenant-configs.ts`
 
 ### Database Schema Workflow
 Schema changes flow through Drizzle ORM and are auto-synced to production on deploy:

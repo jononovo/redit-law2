@@ -19,7 +19,8 @@ Private technical documentation for the CreditClaw / shopy.sh engineering team. 
 
 | File | Feature | Summary |
 |------|---------|---------|
-| `multitenant-system.md` | Multitenant | Hostname routing, tenant configs, theming, adding new tenants |
+| `scan-taxonomy-skills-pipeline.md` | **Pipeline Overview** | End-to-end flow: scan → classify → score → taxonomy → SKILL.md → skill.json. Start here. |
+| `asx-scanner.md` | ASX Scanner | Perplexity-powered scan, rubric v1.1.0, 11 signals, 3 API calls per scan |
+| `metadata-and-taxonomy.md` | Metadata & Taxonomy | 27-sector system, Google Product Taxonomy, tiers, capabilities, skill.json |
 | `product-index.md` | Product Index | Brand catalog, LITE_COLUMNS, filtering, generateStaticParams, search_vector |
-| `asx-scanner.md` | ASX Scanner | Multi-page scan flow, rubric v1.1.0, 11 signals, SKILL.md generation, evidence system |
-| `metadata-and-taxonomy.md` | Metadata & Taxonomy | Google Product Taxonomy, UCP, sectors, tiers, capabilities, skill.json |
+| `multitenant-system.md` | Multitenant | Hostname routing, tenant configs, theming, adding new tenants |

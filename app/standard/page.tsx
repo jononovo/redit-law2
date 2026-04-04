@@ -2,14 +2,15 @@ import fs from "fs";
 import path from "path";
 import Link from "next/link";
 import { BookOpen, ChevronRight, ArrowRight, List } from "lucide-react";
-import { getRequestTenant } from "@/lib/tenants/get-request-tenant";
 import type { Metadata } from "next";
-import { headers } from "next/headers";
+import { cookies } from "next/headers";
 import { getTenantConfig } from "@/lib/tenants/config";
 
+export const dynamic = "force-dynamic";
+
 export async function generateMetadata(): Promise<Metadata> {
-  const headersList = await headers();
-  const tenantId = headersList.get("x-tenant-id") || "creditclaw";
+  const cookieStore = await cookies();
+  const tenantId = cookieStore.get("tenant-id")?.value || "creditclaw";
   const tenant = getTenantConfig(tenantId);
   const brandName = tenant.branding.name;
 
@@ -253,7 +254,9 @@ function MarkdownTable({ lines }: { lines: string[] }) {
 }
 
 export default async function StandardPage() {
-  const tenant = await getRequestTenant();
+  const cookieStore = await cookies();
+  const tenantId = cookieStore.get("tenant-id")?.value || "creditclaw";
+  const tenant = getTenantConfig(tenantId);
 
   const mdPath = path.join(process.cwd(), "content", "agentic-commerce-standard.md");
   let content = "";

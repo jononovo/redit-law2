@@ -37,21 +37,22 @@ Scan a merchant's website and get the ASX Score with a full signal breakdown and
   "scannedAt": "2026-03-31T12:00:00Z",
   "breakdown": {
     "clarity": {
-      "score": 30,
-      "max": 40,
+      "score": 27,
+      "max": 35,
       "signals": [
-        { "key": "json_ld", "label": "JSON-LD / Structured Data", "score": 18, "max": 20, "detail": "3 JSON-LD blocks found. Product schema detected. Offer/pricing data in schema." },
+        { "key": "json_ld", "label": "JSON-LD / Structured Data", "score": 12, "max": 15, "detail": "3 JSON-LD blocks found. Product schema detected. Offer/pricing data in schema." },
         { "key": "product_feed", "label": "Product Feed / Sitemap", "score": 7, "max": 10, "detail": "sitemap.xml found. Valid XML sitemap structure. Product URLs detected." },
-        { "key": "clean_html", "label": "Clean HTML / Semantic Markup", "score": 5, "max": 10, "detail": "Partial semantic structure (3/7 landmark elements). Good heading hierarchy." }
+        { "key": "clean_html", "label": "Clean HTML / Semantic Markup", "score": 8, "max": 10, "detail": "Partial semantic structure (3/7 landmark elements). Good heading hierarchy." }
       ]
     },
-    "speed": {
-      "score": 17,
-      "max": 25,
+    "discoverability": {
+      "score": 20,
+      "max": 30,
       "signals": [
         { "key": "search_api", "label": "Search API / MCP", "score": 3, "max": 10, "detail": "Versioned API endpoint detected." },
         { "key": "site_search", "label": "Internal Site Search", "score": 8, "max": 10, "detail": "Search form detected. Search autocomplete capability detected." },
-        { "key": "page_load", "label": "Page Load Performance", "score": 4, "max": 5, "detail": "Good load time: 1200ms" }
+        { "key": "page_load", "label": "Page Load Performance", "score": 4, "max": 5, "detail": "Good load time: 1200ms" },
+        { "key": "product_page", "label": "Product Page Quality", "score": 5, "max": 5, "detail": "Clear pricing, variant selectors, direct product URLs." }
       ]
     },
     "reliability": {

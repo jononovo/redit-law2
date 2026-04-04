@@ -12,16 +12,37 @@ Navigate to the **Skills** page from the main navigation. The Supplier Hub is pu
 
 Use the search bar at the top to find vendors by name. Results update as you type, making it easy to quickly locate a specific store.
 
-### Category Filters
+### Sector Filters
 
-Filter vendors by category to narrow down your options:
+Filter vendors by sector — the system uses 27 sectors derived from the Google Product Taxonomy, plus a Luxury filter:
 
-- **Retail** — General consumer goods and marketplaces
-- **Office Supplies** — Business and office essentials
-- **Hardware & Tools** — Physical tools, equipment, and hardware
-- **Electronics** — Computers, components, and electronic devices
-- **Industrial** — Industrial supplies and equipment
-- **Specialty** — Niche and specialized vendors
+- **Animals & Pet Supplies** — Pet food, supplies, and accessories
+- **Apparel & Accessories** — Clothing, shoes, and fashion accessories
+- **Arts & Entertainment** — Musical instruments, hobby supplies, art materials
+- **Baby & Toddler** — Baby gear, clothing, and accessories
+- **Business & Industrial** — Office equipment, industrial supplies
+- **Cameras & Optics** — Photography equipment and optical instruments
+- **Education** — Online courses, tutoring, certifications
+- **Electronics** — Computers, phones, audio, and components
+- **Events** — Concert tickets, sports tickets, conferences
+- **Food, Beverages & Tobacco** — Grocery, specialty food, beverages
+- **Food Services** — Restaurants, meal delivery, catering
+- **Furniture** — Home and office furniture
+- **Hardware** — Tools, fasteners, building materials
+- **Health & Beauty** — Skincare, cosmetics, wellness products
+- **Home & Garden** — Home decor, gardening, kitchen supplies
+- **Luggage & Bags** — Travel bags, backpacks, handbags
+- **Media** — Books, music, movies, video games
+- **Office Supplies** — Stationery, paper, desk accessories
+- **Religious & Ceremonial** — Religious items and ceremonial supplies
+- **Software** — Desktop, mobile, and enterprise software
+- **Sporting Goods** — Sports equipment, outdoor gear, fitness
+- **Toys & Games** — Children's toys, board games, puzzles
+- **Travel** — Flights, hotels, car rental, tours
+- **Vehicles & Parts** — Automotive parts, vehicle accessories
+- **General** — Department stores, supermarkets, and mega merchants that span multiple sectors
+- **Specialty** — Niche vendors that don't fit other sectors
+- **Luxury** — A special filter that shows brands with `luxury` or `ultra_luxury` tier, regardless of sector
 
 ### Checkout Method Filters
 
@@ -38,7 +59,7 @@ You can also filter by how the vendor accepts payments:
 
 Each vendor in the catalog is displayed as a card showing key information at a glance:
 
-- **Vendor name and category** — What they sell and their category badge
+- **Vendor name and sector** — What they sell and their sector badge
 - **Maturity level** — Verified, Beta, Community, or Draft
 - **Checkout methods** — Which payment methods the vendor supports
 - **Agent friendliness score** — A 0–5 rating of how easy it is for bots to shop there

@@ -801,7 +801,7 @@ export default function CatalogClient({
                 </p>
                 <div className="bg-neutral-900 rounded-xl p-4 text-left space-y-2">
                   <code className="text-sm text-green-400 font-mono block">
-                    GET /api/v1/bot/skills?sector=office&tier=mid_range
+                    GET /api/v1/bot/skills?sector=office-supplies&tier=mid_range
                   </code>
                   <code className="text-sm text-green-400 font-mono block">
                     GET /api/v1/bot/skills?payment_method=card&ordering_permission=guest

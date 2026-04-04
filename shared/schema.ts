@@ -1532,3 +1532,33 @@ export const scanQueue = pgTable("scan_queue", {
 
 export type ScanQueueEntry = typeof scanQueue.$inferSelect;
 export type InsertScanQueueEntry = typeof scanQueue.$inferInsert;
+
+// ─── Google Product Taxonomy ─────────────────────────────────────────────────
+
+export const productCategories = pgTable("product_categories", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  slug: text("slug").notNull(),
+  parentId: integer("parent_id"),
+  depth: integer("depth").notNull().default(1),
+  path: text("path").notNull(),
+}, (table) => [
+  index("product_categories_parent_idx").on(table.parentId),
+  index("product_categories_depth_idx").on(table.depth),
+  index("product_categories_slug_idx").on(table.slug),
+]);
+
+export type ProductCategory = typeof productCategories.$inferSelect;
+export type InsertProductCategory = typeof productCategories.$inferInsert;
+
+export const brandCategories = pgTable("brand_categories", {
+  id: serial("id").primaryKey(),
+  brandId: integer("brand_id").notNull(),
+  categoryId: integer("category_id").notNull(),
+  isPrimary: boolean("is_primary").notNull().default(false),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (table) => [
+  index("brand_categories_brand_idx").on(table.brandId),
+  index("brand_categories_category_idx").on(table.categoryId),
+  uniqueIndex("brand_categories_brand_category_uniq").on(table.brandId, table.categoryId),
+]);

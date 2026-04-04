@@ -1,4 +1,5 @@
 import { VendorSkill, CHECKOUT_METHOD_LABELS, CAPABILITY_LABELS, SECTOR_LABELS, BRAND_TIER_LABELS, ORDERING_PERMISSION_LABELS, PAYMENT_METHOD_LABELS } from "./types";
+import type { VendorSector } from "./taxonomy/sectors";
 
 export function generateVendorSkill(vendor: VendorSkill): string {
   const primaryMethod = vendor.checkoutMethods[0];
@@ -77,7 +78,7 @@ curl -X POST https://creditclaw.com/api/v1/${primaryMethod === "native_api" ? "c
     ? `
 ## Taxonomy
 
-- **Sector:** ${SECTOR_LABELS[vendor.taxonomy.sector]}
+- **Sector:** ${SECTOR_LABELS[vendor.taxonomy.sector as VendorSector] || vendor.taxonomy.sector}
 - **Sub-sectors:** ${vendor.taxonomy.subSectors.join(", ")}
 - **Tier:** ${BRAND_TIER_LABELS[vendor.taxonomy.tier]}
 ${vendor.taxonomy.tags?.length ? `- **Tags:** ${vendor.taxonomy.tags.join(", ")}` : ""}
@@ -141,7 +142,7 @@ ${vendor.deals ? `current_deals: ${vendor.deals.currentDeals}` : ""}
 # Shopping at ${vendor.name}
 
 **Store URL:** ${vendor.url}
-**Sector:** ${vendor.sector}
+**Sector:** ${SECTOR_LABELS[vendor.sector as VendorSector] || vendor.sector}
 **ASX Score:** ${asxScore}/100
 **Capabilities:** ${capsList}
 ${vendor.feedbackStats ? `**Success Rate:** ${Math.round(vendor.feedbackStats.successRate * 100)}%` : ""}

@@ -3,7 +3,10 @@ export type BrandType =
   | "retailer"
   | "marketplace"
   | "chain"
-  | "independent";
+  | "independent"
+  | "department_store"
+  | "supermarket"
+  | "mega_merchant";
 
 export const BRAND_TYPE_LABELS: Record<BrandType, string> = {
   brand: "Brand",
@@ -11,4 +14,24 @@ export const BRAND_TYPE_LABELS: Record<BrandType, string> = {
   marketplace: "Marketplace",
   chain: "Chain",
   independent: "Independent",
+  department_store: "Department Store",
+  supermarket: "Supermarket",
+  mega_merchant: "Mega Merchant",
 };
+
+export const MULTI_SECTOR_TYPES: BrandType[] = [
+  "department_store",
+  "supermarket",
+  "mega_merchant",
+];
+
+export const VALID_BRAND_TYPES: BrandType[] = [
+  "brand",
+  "retailer",
+  "marketplace",
+  "chain",
+  "independent",
+  "department_store",
+  "supermarket",
+  "mega_merchant",
+];

@@ -186,6 +186,15 @@ export const sections: DocSection[] = [
     ],
   },
   {
+    title: "Taxonomy",
+    slug: "shopy/taxonomy",
+    audience: "developer",
+    tenant: "shopy",
+    pages: [
+      { title: "Taxonomy & Sectors", slug: "sectors" },
+    ],
+  },
+  {
     title: "Agent Integration",
     slug: "shopy/agent-integration",
     audience: "developer",

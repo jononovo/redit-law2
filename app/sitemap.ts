@@ -4,6 +4,7 @@ import { getAllPosts, getAllTags } from "@/content/blog/posts";
 import { categories } from "@/content/blog/taxonomy";
 import { storage } from "@/server/storage";
 import { SECTOR_LABELS, VendorSector } from "@/lib/procurement-skills/types";
+import { isSectorLuxuryFilter, LUXURY_TIERS } from "@/lib/procurement-skills/taxonomy/sectors";
 
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || "https://creditclaw.com";
 
@@ -114,9 +115,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.7,
     }));
 
-    const populatedSectors = (Object.keys(SECTOR_LABELS) as VendorSector[]);
+    const allSectors = Object.keys(SECTOR_LABELS) as VendorSector[];
     const sectorCounts = await Promise.all(
-      populatedSectors.map(async (s) => {
+      allSectors.map(async (s) => {
+        if (isSectorLuxuryFilter(s)) {
+          const count = await storage.searchBrandsCount({
+            tiers: [...LUXURY_TIERS],
+            maturities: ["verified", "official", "beta", "community"],
+          });
+          return { sector: s, count };
+        }
         const count = await storage.searchBrandsCount({
           sectors: [s],
           maturities: ["verified", "official", "beta", "community"],

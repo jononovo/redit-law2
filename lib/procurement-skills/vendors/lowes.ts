@@ -4,7 +4,7 @@ export const lowes: VendorSkill = {
     slug: "lowes",
   name: "Lowe's",
   logoUrl: "/assets/images/vendors/lowes.svg",
-  sector: "home",
+  sector: "home-garden",
   url: "https://www.lowes.com",
   checkoutMethods: ["self_hosted_card"],
   capabilities: ["price_lookup", "stock_check", "order_tracking"],
@@ -34,7 +34,7 @@ export const lowes: VendorSkill = {
   lastVerified: "2026-02-10",
   generatedBy: "manual",
   taxonomy: {
-    sector: "home",
+    sector: "home-garden",
     subSectors: ["building materials", "tools", "appliances", "plumbing", "electrical"],
     tier: "mid_range",
     tags: ["pro accounts", "price match", "home improvement"],

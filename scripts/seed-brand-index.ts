@@ -44,7 +44,7 @@ const DESCRIPTIONS: Record<string, string> = {
 
 function vendorToRow(vendor: VendorSkill): typeof brandIndex.$inferInsert {
   const skillMd = generateVendorSkill(vendor);
-  const sector = vendor.taxonomy?.sector ?? vendor.sector ?? "retail";
+  const sector = vendor.taxonomy?.sector ?? vendor.sector ?? "specialty";
   const domain = new URL(vendor.url).hostname.replace(/^www\./, "");
 
   return {

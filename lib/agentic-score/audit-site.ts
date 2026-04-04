@@ -169,6 +169,7 @@ export async function auditSite(domain: string): Promise<SiteAudit | null> {
       jsonLdTypes: Array.isArray(p.jsonLdTypes) ? p.jsonLdTypes : [],
       hasOpenGraph: p.hasOpenGraph ?? false,
       sitemapPresent: p.sitemapPresent ?? false,
+      sitemapValidXml: p.sitemapValidXml ?? false,
       sitemapHasProducts: p.sitemapHasProducts ?? false,
       sitemapIsIndex: p.sitemapIsIndex ?? false,
       robotsAllowsCrawl: p.robotsAllowsCrawl ?? null,

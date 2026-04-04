@@ -1,101 +1,142 @@
 # Metadata & Google Product Taxonomy — Internal Developer Guide
 
-> Last updated: 2026-04-02
+> Last updated: 2026-04-04
 
 ## Overview
 
-The metadata system classifies merchants and their products using a structured taxonomy based on the Google Product Taxonomy (GPT). This classification powers catalog filtering, agent search, and the `skill.json` machine-readable format. The system uses a three-layer model — Sector → Category → Sub-Category — built on top of Google's ~5,600 category tree.
+The metadata system classifies merchants and their products using a structured taxonomy based on the Google Product Taxonomy. This classification powers catalog filtering, agent search, and the `skill.json` machine-readable format. The system uses a three-layer model — Sector → Category → Sub-Category — built on top of Google's ~5,600 category tree plus 43 custom entries for non-Google sectors.
 
-This is a system in active transition: the codebase currently uses freeform strings for sub-sector classification, with a planned migration to the structured Universal Category Protocol (UCP).
+For the full end-to-end pipeline (scan → classification → categories → skill output), see `scan-taxonomy-skills-pipeline.md`.
 
 ---
 
 ## Architecture
 
 ```
-Google Product Taxonomy (~5,600 categories)
-  ↓ simplified into
-Universal Category Protocol (UCP)
-  ├── Layer 1: Sector (21 stable slugs)     → brand_index.sector
-  ├── Layer 2: Category (GPT Level 2-3)     → future: ucp_categories table
-  └── Layer 3: Sub-Category (GPT Level 3-5) → future: ucp_categories table
-  ↓ currently stored as
-brand_index columns
-  ├── sector (text)          → single sector slug
-  ├── subSectors (text[])    → freeform strings (being replaced)
+Google Product Taxonomy (~5,595 categories)
+  + 43 custom categories (IDs 100001+)
+  = 5,638 total in product_categories table
+  ↓
+  ├── Layer 1: Sector (27 slugs)            → brand_index.sector
+  ├── Layer 2: Category (depth 2-3)         → brand_categories junction table
+  └── Layer 4+: Deep categories (depth 4-5) → in product_categories, reserved for product-level
+  ↓
+  Also stored on brand_index:
+  ├── subSectors (text[])    → freeform strings from classification (display only)
   ├── tier (text)            → market position
   ├── capabilities (text[])  → functional tags
   └── tags (text[])          → additional classification
-  ↓ serialized into
-skill.json (machine-readable) + SKILL.md (agent-readable)
+  ↓
+  Serialized into:
+  skill.json (machine-readable) + SKILL.md (agent-readable)
 ```
 
 ### Key files
 
 | File | Purpose |
 |------|---------|
-| `lib/procurement-skills/taxonomy/sectors.ts` | 21 sector slugs with display names and descriptions |
+| `lib/procurement-skills/taxonomy/sectors.ts` | 27 sector slugs with display names, root IDs, helpers |
+| `lib/procurement-skills/taxonomy/brand-types.ts` | 8 brand types, MULTI_SECTOR_TYPES, VALID_BRAND_TYPES |
 | `lib/procurement-skills/taxonomy/tiers.ts` | Market tier definitions (value → enterprise) |
 | `lib/procurement-skills/taxonomy/capabilities.ts` | Functional capability tags and descriptions |
-| `shared/schema.ts` (brand_index) | Where taxonomy data lives in the database |
-| `docs/build context/Future/Product_index/Shopy/3. product-index-taxonomy-plan.md` | Full UCP implementation roadmap |
-| `docs/build context/Future/Product_index/Shopy/skill-json-schema.md` | skill.json spec including taxonomy block |
-| `docs/build context/Future/Product_index/agentic-commerce-standard.md` | The standard that defines how metadata is scored |
+| `shared/schema.ts` (product_categories, brand_categories) | Taxonomy and junction tables |
+| `shared/schema.ts` (brand_index) | Where classification data lives |
+| `lib/agentic-score/resolve-categories.ts` | Perplexity-powered category resolution |
+| `server/storage/brand-categories.ts` | Category CRUD operations |
+| `scripts/seed-google-taxonomy.ts` | Seeds product_categories (Google + custom) |
+| `lib/procurement-skills/skill-json.ts` | skill.json builder including taxonomy block |
 
 ---
 
-## Layer 1: Sectors (Live)
+## Layer 1: Sectors (27 entries)
 
-21 stable slugs defined in `lib/procurement-skills/taxonomy/sectors.ts`:
+Defined in `lib/procurement-skills/taxonomy/sectors.ts`. A hybrid of Google Product Taxonomy roots and custom additions.
 
-| Sector | Examples |
-|--------|----------|
-| `retail` | General merchandise, department stores |
-| `electronics` | Consumer electronics, computers |
-| `fashion` | Clothing, shoes, accessories |
-| `grocery` | Food, beverages, household essentials |
-| `health` | Pharmacy, supplements, medical supplies |
-| `beauty` | Cosmetics, skincare, personal care |
-| `home` | Furniture, decor, appliances |
-| `industrial` | B2B supplies, tools, raw materials |
-| `automotive` | Parts, accessories, vehicles |
-| `sports` | Equipment, apparel, outdoor gear |
-| ... | (21 total — see `sectors.ts` for complete list) |
+### Google Product Taxonomy roots (21)
 
-Sectors are assigned during scanning (the LLM classifies the merchant) and can be manually corrected by brand claimants or admins. They power the `/c/[sector]` landing pages and the catalog sector filter.
+| Sector Slug | Google Root ID |
+|------------|----------------|
+| `animals-pet-supplies` | 1 |
+| `apparel-accessories` | 166 |
+| `arts-entertainment` | 8 |
+| `baby-toddler` | 537 |
+| `business-industrial` | 111 |
+| `cameras-optics` | 141 |
+| `electronics` | 222 |
+| `food-beverages-tobacco` | 422 |
+| `furniture` | 436 |
+| `hardware` | 632 |
+| `health-beauty` | 469 |
+| `home-garden` | 536 |
+| `luggage-bags` | 110 |
+| `mature` | 772 |
+| `media` | 839 |
+| `office-supplies` | 922 |
+| `religious-ceremonial` | 988 |
+| `software` | 313 |
+| `sporting-goods` | 990 |
+| `toys-games` | 1239 |
+| `vehicles-parts` | 888 |
+
+### Custom sectors (6)
+
+| Sector Slug | Root ID | Notes |
+|------------|---------|-------|
+| `food-services` | 100001 | Restaurant delivery, catering, meal kits |
+| `travel` | 100010 | Flights, hotels, tours, car rental |
+| `education` | 100020 | Online courses, tutoring, test prep |
+| `events` | 100030 | Concerts, sports, festivals, conferences |
+| `luxury` | 100040 | NOT an assignable sector — tier-driven filter view |
+| `specialty` | 100050 | Fallback for uncategorizable brands |
+
+### Key constants
+
+| Constant | What it contains |
+|----------|-----------------|
+| `SECTOR_ROOT_IDS` | All 27 sectors → root category IDs |
+| `GOOGLE_ROOT_IDS` | Derived — only the 21 Google-mapped sectors |
+| `ASSIGNABLE_SECTORS` | 26 entries — luxury excluded from assignment |
+| `SECTOR_LABELS` | Display names for all 27 sectors |
+
+### Luxury is special
+
+Luxury is NOT a sector assignment. It's a tier-driven filter view:
+- `/c/luxury` queries brands where `tier IN ('ultra_luxury', 'luxury')`
+- Injected into facet navigation by `getAllBrandFacets()` when luxury-tier brands exist
+- The classifier never assigns `sector = "luxury"` — a luxury brand gets its product sector + `tier = "luxury"`
 
 ---
 
-## Layer 2-3: Categories and Sub-Categories (Planned)
+## Layer 2: Product Categories (Live)
 
-The current `subSectors` text array is freeform — scanners and humans type whatever they want. This will be replaced by the UCP system:
+5,638 categories stored in the `product_categories` table:
+- 5,595 from Google Product Taxonomy
+- 43 custom entries for non-Google sectors (IDs 100001+)
 
-### Planned schema
+**Important:** The `id` column IS the taxonomy identifier directly. Google categories use Google's numeric ID as the PK. Custom categories use 100001+. There is no separate `gptId` column.
 
-```
-ucp_categories table:
-  id (serial)
-  gptId (integer)       → Google Product Taxonomy numeric ID
-  name (text)           → human-readable name
-  path (text)           → full path, e.g. "Electronics > Computers > Laptops"
-  depth (integer)       → 1-5, matching GPT hierarchy depth
-  parentId (integer)    → self-referential FK
+### How categories are assigned to brands
 
-brand_categories junction table:
-  brandId (integer)     → FK to brand_index
-  categoryId (integer)  → FK to ucp_categories
-  isPrimary (boolean)   → one primary category per brand
-```
+Perplexity-powered resolution after the main scan (third API call). Behavior varies by brand type:
 
-### Why GPT?
+**Focused types** (brand, retailer, independent, chain, marketplace):
+1. Look up root IDs for up to 2 sectors from `SECTOR_ROOT_IDS`
+2. Query L2 and L3 categories under those roots (depth ≤ 3)
+3. Send compact menu to Perplexity, get back up to 10 category IDs
+4. Primary sector kept; categories can span both sector roots
 
-The Google Product Taxonomy is the most widely adopted product classification system:
-- Used by Google Shopping, Facebook Commerce, and most feed management tools
-- ~5,600 categories with stable numeric IDs
-- Hierarchical (5 levels deep) with clear parent-child relationships
-- Updated periodically by Google with backward-compatible additions
+**Multi-sector types** (department_store, supermarket):
+1. Query L1 and L2 categories across all classified sectors
+2. Send combined menu to Perplexity, get back up to 20 category IDs
+3. Sector set to `multi-sector`
 
-Using GPT IDs means our taxonomy is interoperable with existing merchant feeds, shopping APIs, and product data services.
+**Mega merchants** (mega_merchant):
+1. No Perplexity call — directly map each sector to its L1 root category
+2. Sector set to `multi-sector`
+
+All paths: validate returned IDs against queried subtree, store in `brand_categories` junction table with primary flag.
+
+See `scan-taxonomy-skills-pipeline.md` § Step 6 for the full flow.
 
 ---
 
@@ -105,19 +146,21 @@ Market position classification defined in `lib/procurement-skills/taxonomy/tiers
 
 | Tier | Description |
 |------|-------------|
-| `value` | Budget-focused, discount retailers |
-| `mid-market` | Mainstream brands, moderate pricing |
+| `commodity` | Lowest-cost, undifferentiated |
+| `budget` | Budget-focused, price-driven |
+| `value` | Value-oriented, balancing price and quality |
+| `mid_range` | Mainstream brands, moderate pricing |
 | `premium` | Higher-end brands, quality focus |
 | `luxury` | Luxury goods, exclusive brands |
-| `enterprise` | B2B, bulk purchasing, corporate accounts |
+| `ultra_luxury` | Top-tier luxury, exclusive access |
 
-Tiers affect how agents approach purchasing decisions — a `value` tier merchant might prioritize coupon/deal checking, while an `enterprise` tier merchant might require PO numbers and approval flows.
+Tiers affect how agents approach purchasing — a `budget` tier merchant might prioritize coupon checking, while a `premium` merchant might emphasize quality and exclusivity. The `luxury` and `ultra_luxury` tiers also power the `/c/luxury` filter view.
 
 ---
 
 ## Capabilities (Live)
 
-Functional tags in `lib/procurement-skills/taxonomy/capabilities.ts` that describe what a merchant supports:
+Functional tags in `lib/procurement-skills/taxonomy/capabilities.ts`:
 
 | Capability | What it means |
 |------------|---------------|
@@ -130,91 +173,108 @@ Functional tags in `lib/procurement-skills/taxonomy/capabilities.ts` that descri
 | `wishlist` | Has a wishlist/saved items feature |
 | `price_match` | Offers price matching guarantees |
 
-These are detected by the ASX scanner (both static detectors and the agentic scan) and stored in the `capabilities` text array on `brand_index`. Agents use them to decide if a merchant fits a procurement requirement.
+Detected during scanning and stored in the `capabilities` text array on `brand_index`. Agents use them to match merchants to procurement requirements.
 
 ---
 
-## skill.json Schema
+## skill.json Taxonomy Block
 
-The machine-readable metadata format served alongside SKILL.md. Defined in `docs/build context/Future/Product_index/Shopy/skill-json-schema.md`.
-
-### Taxonomy block (in skill.json)
+The machine-readable metadata format served at `/brands/{slug}/skill-json`. The taxonomy section includes:
 
 ```json
 {
   "taxonomy": {
-    "sector": "electronics",
-    "gptId": 222,
-    "name": "Electronics",
-    "path": "Electronics",
-    "depth": 1,
-    "subCategories": [
+    "brandType": "brand",
+    "sector": "apparel-accessories",
+    "tier": "premium",
+    "categories": [
       {
-        "gptId": 2082,
-        "name": "Computers",
-        "path": "Electronics > Computers"
+        "id": 5322,
+        "name": "Activewear",
+        "path": "Apparel & Accessories > Clothing > Activewear",
+        "depth": 3,
+        "primary": true
+      },
+      {
+        "id": 203,
+        "name": "Outerwear",
+        "path": "Apparel & Accessories > Clothing > Outerwear",
+        "depth": 3
+      },
+      {
+        "id": 187,
+        "name": "Shoes",
+        "path": "Apparel & Accessories > Shoes",
+        "depth": 2
       }
     ]
   }
 }
 ```
 
-**Important:** `skill.json` is derived from the database, not the other way around. The `brand_index` table is the source of truth. The serializer reads columns and assembles the JSON output. Some fields in the `skill.json` spec (returns policy, platform info, API tier, loyalty enrichment) require new `brand_index` columns that don't exist yet — they'll be added incrementally.
+The taxonomy block uses a single `categories` array of structured objects (with `id`, `name`, `path`, `depth`, `primary` fields). The previous `productCategories` string array (duplicate data in `"{id} - {path}"` format) was removed to avoid duplication in the machine-readable format.
+
+**Source of truth:** The database. skill.json is always derived from `brand_index` columns + `brand_categories`/`product_categories` joins. Never the other way around.
 
 ---
 
 ## How Metadata Feeds Into Scoring
 
-The Agentic Commerce Standard (`agentic-commerce-standard.md`) uses metadata quality as a scoring input:
+The Agentic Commerce Standard uses metadata quality as a scoring input:
 
-- **Clarity pillar (35 pts):** Directly measures metadata — JSON-LD structured data, sitemaps, semantic HTML. A site with rich Product/Offer schema.org markup scores high because it's giving agents machine-readable product information.
-- **Discoverability pillar (30 pts):** Rewards sites that make their catalog programmatically accessible — search APIs, MCP endpoints, OpenSearch. These are forms of structured metadata access.
-- **Reliability pillar (35 pts):** Indirectly related — guest checkout, order management, and checkout flow quality are "operational metadata" that tells agents what to expect.
+- **Clarity pillar (35 pts):** Measures structured data — JSON-LD, sitemaps, agent metadata files. Rich Product/Offer schema.org markup scores high.
+- **Discoverability pillar (30 pts):** Rewards programmatic catalog access — search APIs, MCP endpoints, OpenSearch.
+- **Reliability pillar (35 pts):** Operational quality — guest checkout, order management, checkout flow, bot tolerance.
 
 ---
 
 ## Fragile Areas & Gotchas
 
-### subSectors is freeform and inconsistent
+### subSectors vs brand_categories — different things
 
-The current `subSectors` text array has no validation. Different scans of similar merchants produce different sub-sector strings. Searching or filtering by sub-sector is unreliable because the same concept might appear as `"Laptops"`, `"Laptop Computers"`, `"Portable Computers"`, or `"Notebooks"`.
+`subSectors` (text[] on brand_index) = freeform strings for display. `brand_categories` (junction table) = structured taxonomy references. Both exist, serve different purposes. Do not conflate them.
 
-**Workaround until UCP migration:** The catalog filters don't expose sub-sector filtering to users. It's only used for display on brand detail pages.
+### Brand types and multi-sector routing
+
+Brand type (8 values defined in `lib/procurement-skills/taxonomy/brand-types.ts`) determines how category resolution works:
+- **Focused types** (brand, retailer, independent, chain, marketplace) — keep their primary sector, can span up to 2 sectors in categories, L3 depth
+- **MULTI_SECTOR_TYPES** (department_store, supermarket) — sector set to `multi-sector`, L1+L2 categories across all sectors
+- **mega_merchant** — sector set to `multi-sector`, L1 roots only (no Perplexity call)
+
+The `multi-sector` value is NOT in `ASSIGNABLE_SECTORS` — it's set programmatically only for MULTI_SECTOR_TYPES and mega_merchant.
 
 ### Sector assignment is LLM-dependent
 
-The scanner's LLM assigns the sector during scanning. It usually gets it right, but edge cases exist:
-- Multi-category merchants (e.g., Amazon) get assigned a single sector
-- Niche merchants may get miscategorized (e.g., a pet food subscription service could be `grocery` or `pets`)
-- The LLM's classification is not deterministic — rescanning the same site might produce a different sector
+Perplexity classifies the sector(s). Edge cases:
+- Focused brands get up to 2 sectors (e.g., Patagonia: apparel-accessories + sporting-goods). Primary sector is kept for catalog listing.
+- Multi-sector types (department_store, supermarket, mega_merchant) always get `sector = "multi-sector"`
+- Niche merchants may be miscategorized
+- Not deterministic — rescanning the same site may produce a different sector (rare but possible)
 
-### GPT IDs are not yet stored
+### Stale data from pre-overhaul scans
 
-The planned `gptId` column doesn't exist in `brand_index` yet. The taxonomy plan calls for a separate `ucp_categories` table with a junction to `brand_index`. Until this migration happens, there's no way to map a brand to a specific Google Product Taxonomy category.
+Brands scanned before April 3, 2026 may have old sector slugs (`"retail"`, `"home"`, `"pets"`). The facet system filters these out. Rescanning fixes them.
 
-### Capability detection is boolean
+### Taxonomy constants are append-only
 
-Capabilities are stored as present/absent (the capability string is in the array or it isn't). There's no "partial" or "quality" dimension. A merchant with a terrible guest checkout experience and one with a seamless one both have `guest_checkout` in their capabilities array.
+The sector, tier, and capability lists are plain TypeScript arrays. Never rename or remove existing values without a migration — existing `brand_index` rows would become orphaned.
 
-### Taxonomy constants are not versioned
+### Category resolution is non-critical
 
-The sector, tier, and capability lists in `lib/procurement-skills/taxonomy/` are plain TypeScript arrays. There's no versioning — if you rename or remove a value, existing `brand_index` rows with the old value become orphaned. Always add new values; never rename or remove existing ones without a migration.
+The try/catch around `resolveProductCategories()` is intentional. Failure returns empty array — brands get no categories but the scan still succeeds. Never make it blocking.
 
 ---
 
 ## Expansion Plans
 
 ### Near-term
-- **UCP category migration** — create `ucp_categories` and `brand_categories` tables, backfill from existing `subSectors` data
-- **GPT ID mapping** — assign Google Product Taxonomy IDs to existing sectors and categories
-- **skill.json serializer** — build the function that reads `brand_index` and assembles the full `skill.json` output
+- **Category-based filtering** — catalog filter by taxonomy category (currently only by sector)
+- **Category landing pages** — `/c/electronics/audio` browsing experience
 
 ### Medium-term
-- **Product-level taxonomy** — individual products classified to GPT Level 4-5 (e.g., "Electronics > Computers > Laptops > Chromebooks")
-- **Taxonomy-aware search** — agents query by GPT category ID instead of freeform text, enabling cross-vendor product comparison
-- **Category auto-suggestion** — LLM proposes categories during scanning, validated against the UCP tree
+- **Product-level taxonomy** — individual products classified to L3-L5 (e.g., "Electronics > Audio > Headphones")
+- **Taxonomy-aware search** — agents query by category ID for cross-vendor product comparison
 
 ### Longer-term
-- **Merchant feed ingestion** — import Google Shopping feeds, Facebook catalogs, or Shopify product data and auto-classify using GPT taxonomy
-- **Category health dashboard** — admin view showing category coverage, gaps, and classification quality metrics
-- **Taxonomy API** — public endpoint for the UCP tree so third-party tools can classify merchants against our standard
+- **Merchant feed ingestion** — import Google Shopping feeds and auto-classify against taxonomy
+- **Category health dashboard** — admin view of coverage, gaps, classification quality

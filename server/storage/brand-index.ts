@@ -2,6 +2,7 @@ import { db } from "@/server/db";
 import { brandIndex, type BrandIndex, type InsertBrandIndex } from "@/shared/schema";
 import { eq, and, sql, desc, asc, inArray, count } from "drizzle-orm";
 import type { IStorage } from "./types";
+import { SECTOR_LABELS } from "@/lib/procurement-skills/taxonomy/sectors";
 
 export interface BrandSearchFilters {
   q?: string;
@@ -246,11 +247,17 @@ export const brandIndexMethods: BrandIndexMethods = {
       return facetCache;
     }
 
+    const validSectorSlugs = new Set(Object.keys(SECTOR_LABELS));
     const rows = await db
       .select({ sector: brandIndex.sector, tier: brandIndex.tier })
       .from(brandIndex);
-    const sectors = [...new Set(rows.map(r => r.sector))];
+    const sectors = [...new Set(rows.map(r => r.sector))].filter(s => validSectorSlugs.has(s));
     const tiers = [...new Set(rows.map(r => r.tier).filter((t): t is string => t !== null))];
+
+    const hasLuxuryBrands = tiers.includes("luxury") || tiers.includes("ultra_luxury");
+    if (hasLuxuryBrands && !sectors.includes("luxury")) {
+      sectors.push("luxury");
+    }
 
     facetCache = { sectors, tiers };
     facetCacheExpiry = now + FACET_CACHE_TTL_MS;

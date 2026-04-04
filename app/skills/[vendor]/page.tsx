@@ -43,9 +43,25 @@ import {
   Search as SearchIcon,
   Truck,
   Wallet,
+  Baby,
+  Camera,
+  Armchair,
+  Briefcase,
+  Wrench,
+  Heart,
+  Home,
+  Music,
+  BookOpen,
+  Ticket,
+  Plane,
+  Gamepad2,
+  Car,
+  Church,
+  Clapperboard,
+  Dog,
 } from "lucide-react";
 import { BrandClaimButton } from "./brand-claim-button";
-import { SkillPreviewPanel } from "./skill-preview-panel";
+import { SkillPreviewPanel, SkillJsonPanel } from "./skill-preview-panel";
 import { CopySkillUrl } from "./copy-skill-url";
 import { getScoreColor } from "@/app/skills/vendor-card";
 import type { Metadata } from "next";
@@ -53,19 +69,6 @@ import type { Metadata } from "next";
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || "https://creditclaw.com";
 
 export const revalidate = 3600;
-
-export async function generateStaticParams() {
-  try {
-    const brands = await storage.searchBrands({
-      maturities: ["verified", "official"],
-      limit: 1000,
-      lite: true,
-    });
-    return brands.map(b => ({ vendor: b.slug }));
-  } catch {
-    return [];
-  }
-}
 
 const getBrand = cache(async (slug: string) => {
   return storage.getBrandBySlug(slug);
@@ -80,26 +83,33 @@ const MATURITY_CONFIG: Record<SkillMaturity, { label: string; className: string;
 };
 
 const SECTOR_ICONS: Partial<Record<VendorSector, React.ReactNode>> = {
-  retail: <ShoppingCart className="w-5 h-5" />,
-  office: <Package className="w-5 h-5" />,
-  electronics: <Cpu className="w-5 h-5" />,
-  industrial: <Globe className="w-5 h-5" />,
-  specialty: <Star className="w-5 h-5" />,
-  home: <Package className="w-5 h-5" />,
-  fashion: <Tag className="w-5 h-5" />,
-  health: <Zap className="w-5 h-5" />,
-  beauty: <Star className="w-5 h-5" />,
-  saas: <Monitor className="w-5 h-5" />,
-  construction: <Globe className="w-5 h-5" />,
-  automotive: <Zap className="w-5 h-5" />,
-  food: <ShoppingCart className="w-5 h-5" />,
-  sports: <TrendingUp className="w-5 h-5" />,
-  luxury: <Star className="w-5 h-5" />,
-  travel: <Globe className="w-5 h-5" />,
-  entertainment: <Monitor className="w-5 h-5" />,
-  education: <Package className="w-5 h-5" />,
-  pets: <Star className="w-5 h-5" />,
-  garden: <Globe className="w-5 h-5" />,
+  "animals-pet-supplies": <Dog className="w-5 h-5" />,
+  "apparel-accessories": <Tag className="w-5 h-5" />,
+  "arts-entertainment": <Clapperboard className="w-5 h-5" />,
+  "baby-toddler": <Baby className="w-5 h-5" />,
+  "business-industrial": <Briefcase className="w-5 h-5" />,
+  "cameras-optics": <Camera className="w-5 h-5" />,
+  "electronics": <Cpu className="w-5 h-5" />,
+  "food-beverages-tobacco": <ShoppingCart className="w-5 h-5" />,
+  "furniture": <Armchair className="w-5 h-5" />,
+  "hardware": <Wrench className="w-5 h-5" />,
+  "health-beauty": <Heart className="w-5 h-5" />,
+  "home-garden": <Home className="w-5 h-5" />,
+  "luggage-bags": <Briefcase className="w-5 h-5" />,
+  "mature": <Star className="w-5 h-5" />,
+  "media": <Music className="w-5 h-5" />,
+  "office-supplies": <Package className="w-5 h-5" />,
+  "religious-ceremonial": <Church className="w-5 h-5" />,
+  "software": <Monitor className="w-5 h-5" />,
+  "sporting-goods": <TrendingUp className="w-5 h-5" />,
+  "toys-games": <Gamepad2 className="w-5 h-5" />,
+  "vehicles-parts": <Car className="w-5 h-5" />,
+  "food-services": <ShoppingCart className="w-5 h-5" />,
+  "travel": <Plane className="w-5 h-5" />,
+  "education": <BookOpen className="w-5 h-5" />,
+  "events": <Ticket className="w-5 h-5" />,
+  "luxury": <Star className="w-5 h-5" />,
+  "specialty": <Layers className="w-5 h-5" />,
 };
 
 const CHECKOUT_ICONS: Record<CheckoutMethod, React.ReactNode> = {
@@ -628,6 +638,7 @@ export default async function VendorDetailPage({ params }: Props) {
                 )}
 
                 {skillMd && <SkillPreviewPanel skillMd={skillMd} slug={brand.slug} />}
+                {brand.overallScore !== null && <SkillJsonPanel slug={brand.slug} />}
               </div>
 
               <aside className="lg:w-72 flex-shrink-0">

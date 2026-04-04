@@ -1,7 +1,10 @@
 import type { VendorSector } from "@/lib/procurement-skills/taxonomy/sectors";
+import { ASSIGNABLE_SECTORS } from "@/lib/procurement-skills/taxonomy/sectors";
 import type { BrandTier } from "@/lib/procurement-skills/taxonomy/tiers";
+import type { BrandType } from "@/lib/procurement-skills/taxonomy/brand-types";
+import { VALID_BRAND_TYPES } from "@/lib/procurement-skills/taxonomy/brand-types";
 import type { VendorCapability } from "@/lib/procurement-skills/types";
-import { VALID_SECTORS, VALID_CAPABILITIES } from "./scan-utils";
+import { VALID_CAPABILITIES } from "./scan-utils";
 
 const PERPLEXITY_TIMEOUT_MS = 25_000;
 
@@ -12,6 +15,8 @@ const VALID_TIERS: BrandTier[] = [
 export interface BrandClassification {
   name: string;
   sector: VendorSector;
+  brandType: BrandType;
+  sectors: VendorSector[];
   tier: BrandTier;
   subCategories: string[];
   capabilities: VendorCapability[];
@@ -25,7 +30,21 @@ const CLASSIFICATION_SCHEMA = {
   type: "object" as const,
   properties: {
     name: { type: "string", description: "Official brand/company name (clean, no Inc/LLC/Ltd suffix)" },
-    sector: { type: "string", enum: VALID_SECTORS, description: "Primary business sector" },
+    sector: {
+      type: "string",
+      enum: [...ASSIGNABLE_SECTORS],
+      description: "Primary business sector. Use Google Product Taxonomy roots where applicable (e.g. 'electronics', 'apparel-accessories', 'health-beauty'). Use 'food-services' for delivery/takeout/meal kits, 'travel' for booking/hospitality, 'education' for learning platforms, 'events' for ticketing/conferences. Use 'specialty' if no other sector fits.",
+    },
+    brandType: {
+      type: "string",
+      enum: [...VALID_BRAND_TYPES],
+      description: "Merchant type: 'brand' for DTC/own-brand (e.g. Nike, Glossier), 'retailer' for specialist retailers (e.g. Best Buy, Sephora), 'marketplace' for multi-seller platforms (e.g. Etsy, eBay), 'chain' for multi-location chains, 'independent' for small independent shops, 'department_store' for general multi-category stores (e.g. Target, Costco, Macy's), 'supermarket' for grocery/general merchandise stores, 'mega_merchant' for massive platforms selling across virtually all categories (e.g. Amazon, Walmart).",
+    },
+    sectors: {
+      type: "array",
+      items: { type: "string", enum: [...ASSIGNABLE_SECTORS] },
+      description: "All sectors this merchant operates in. For focused merchants (brand, retailer, independent, chain, marketplace), return at most 2 sectors — the primary plus one secondary if the brand clearly spans two roots. For department stores, supermarkets, and mega merchants, list all applicable sectors (up to 8).",
+    },
     tier: { type: "string", enum: VALID_TIERS, description: "Brand pricing tier" },
     subCategories: { type: "array", items: { type: "string" }, description: "Up to 5 product categories they sell" },
     capabilities: { type: "array", items: { type: "string", enum: VALID_CAPABILITIES }, description: "Supported e-commerce capabilities" },
@@ -34,7 +53,7 @@ const CLASSIFICATION_SCHEMA = {
     hasSearchApi: { type: "boolean", description: "Whether they have a public search or product API" },
     hasMobileApp: { type: "boolean", description: "Whether they have a mobile shopping app" },
   },
-  required: ["name", "sector", "tier", "subCategories", "description", "guestCheckout"],
+  required: ["name", "sector", "brandType", "sectors", "tier", "subCategories", "description", "guestCheckout"],
 };
 
 export async function classifyBrand(domain: string): Promise<BrandClassification | null> {
@@ -98,8 +117,15 @@ export async function classifyBrand(domain: string): Promise<BrandClassification
 
     const parsed = JSON.parse(content);
 
-    const sector = VALID_SECTORS.includes(parsed.sector) ? parsed.sector : "specialty";
+    const sector = ASSIGNABLE_SECTORS.includes(parsed.sector) ? parsed.sector : "specialty";
     const tier = VALID_TIERS.includes(parsed.tier) ? parsed.tier : "mid_range";
+    const brandType: BrandType = VALID_BRAND_TYPES.includes(parsed.brandType) ? parsed.brandType : "brand";
+    const rawSectors: VendorSector[] = Array.isArray(parsed.sectors)
+      ? parsed.sectors.filter((s: string) => ASSIGNABLE_SECTORS.includes(s as VendorSector))
+      : [sector];
+    if (!rawSectors.includes(sector)) rawSectors.unshift(sector);
+    const isFocused = ["brand", "retailer", "independent", "chain", "marketplace"].includes(brandType);
+    const sectors = isFocused ? rawSectors.slice(0, 2) : rawSectors.slice(0, 8);
     const capabilities = Array.isArray(parsed.capabilities)
       ? parsed.capabilities.filter((c: string) => VALID_CAPABILITIES.includes(c as VendorCapability))
       : [];
@@ -107,6 +133,8 @@ export async function classifyBrand(domain: string): Promise<BrandClassification
     return {
       name: typeof parsed.name === "string" && parsed.name.length > 0 ? parsed.name : domain.split(".")[0],
       sector,
+      brandType,
+      sectors,
       tier,
       subCategories: Array.isArray(parsed.subCategories) ? parsed.subCategories.filter((s: unknown) => typeof s === "string") : [],
       capabilities,

@@ -13,6 +13,9 @@ import {
   domainToLabel,
 } from "@/lib/agentic-score/scan-utils";
 import { generateVendorSkill } from "@/lib/procurement-skills/generator";
+import { resolveProductCategories } from "@/lib/agentic-score/resolve-categories";
+import type { VendorSector } from "@/lib/procurement-skills/taxonomy/sectors";
+import type { BrandType } from "@/lib/procurement-skills/taxonomy/brand-types";
 import type { VendorSkill } from "@/lib/procurement-skills/types";
 
 export interface ProcessResult {
@@ -82,8 +85,8 @@ export async function processNextInQueue(): Promise<ProcessResult | null> {
       ?? domainToLabel(domain);
 
     const resolvedSector = classification?.sector
-      ?? (existing?.sector && existing.sector !== "uncategorized" ? existing.sector : null)
-      ?? "uncategorized";
+      ?? (existing?.sector && existing.sector !== "uncategorized" && existing.sector !== "retail" ? existing.sector : null)
+      ?? "specialty";
 
     const resolvedSubSectors = classification?.subCategories
       ?? (existing?.subSectors && existing.subSectors.length > 0 ? existing.subSectors : []);
@@ -91,6 +94,13 @@ export async function processNextInQueue(): Promise<ProcessResult | null> {
     const resolvedTier = classification?.tier
       ?? existing?.tier
       ?? null;
+
+    const resolvedBrandType: BrandType = classification?.brandType
+      ?? (existing?.brandType as BrandType | null)
+      ?? "brand";
+
+    const resolvedSectors: VendorSector[] = (classification?.sectors as VendorSector[] | undefined)
+      ?? [resolvedSector as VendorSector];
 
     const resolvedDescription = classification?.description
       ?? existing?.description
@@ -116,15 +126,33 @@ export async function processNextInQueue(): Promise<ProcessResult | null> {
 
     const now = new Date();
 
-    await storage.upsertBrandIndex({
+    let finalSector: string = resolvedSector;
+
+    let categoryResult: { categories: import("@/lib/agentic-score/resolve-categories").ResolvedCategory[]; resolvedSector: VendorSector } | null = null;
+    try {
+      categoryResult = await resolveProductCategories(
+        domain,
+        resolvedSector as VendorSector,
+        resolvedBrandType,
+        resolvedSectors,
+      );
+      if (categoryResult.resolvedSector) {
+        finalSector = categoryResult.resolvedSector;
+      }
+    } catch (catErr) {
+      console.warn("[scan-queue] category resolution failed (non-critical):", catErr instanceof Error ? catErr.message : catErr);
+    }
+
+    const upserted = await storage.upsertBrandIndex({
       slug: existing?.slug ?? slug,
       name: resolvedName,
       domain,
       url: existing?.url ?? `https://${domain}`,
       description: resolvedDescription,
-      sector: resolvedSector,
+      sector: finalSector,
       subSectors: resolvedSubSectors,
       tier: resolvedTier,
+      brandType: resolvedBrandType,
       submittedBy: existing?.submittedBy ?? "scan-queue",
       submitterType: existing?.submitterType ?? "auto_scan",
       maturity: existing?.maturity ?? "draft",
@@ -141,6 +169,14 @@ export async function processNextInQueue(): Promise<ProcessResult | null> {
       hasApi: audit?.hasApi ?? existing?.hasApi ?? false,
       hasMcp: audit?.hasMcp ?? existing?.hasMcp ?? false,
     });
+
+    if (categoryResult?.categories.length) {
+      try {
+        await storage.setBrandCategories(upserted.id, categoryResult.categories);
+      } catch (catErr) {
+        console.warn("[scan-queue] setBrandCategories failed (non-critical):", catErr instanceof Error ? catErr.message : catErr);
+      }
+    }
 
     const finalSlug = existing?.slug ?? slug;
 

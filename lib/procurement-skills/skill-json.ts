@@ -11,9 +11,16 @@ export interface SkillJson {
     url: string;
   };
   taxonomy: {
+    brandType: string;
     sector: string;
     tier: string | null;
-    subCategories: string[];
+    categories: {
+      id: number;
+      name: string;
+      path: string;
+      depth: number;
+      primary?: boolean;
+    }[];
   };
   scoring: {
     asxScore: number;
@@ -87,6 +94,8 @@ interface BrandRecord {
   hasMcp: boolean | null;
   hasApi: boolean | null;
   brandData: Record<string, unknown> | null;
+  brandType?: string | null;
+  categoryObjects?: { id: number; name: string; path: string; depth: number; primary: boolean }[];
 }
 
 function extractPillarScore(breakdown: Record<string, unknown> | null, pillar: string): number {
@@ -125,6 +134,14 @@ export function buildSkillJson(brand: BrandRecord): SkillJson {
     ? new Date(brand.lastScannedAt).toISOString().split("T")[0]
     : new Date().toISOString().split("T")[0];
 
+  const categories = (brand.categoryObjects ?? []).map((c) => ({
+    id: c.id,
+    name: c.name,
+    path: c.path,
+    depth: c.depth,
+    ...(c.primary ? { primary: true } : {}),
+  }));
+
   return {
     $schema: "https://shopy.sh/schemas/skill.json/v1",
     version: "1.0",
@@ -138,9 +155,10 @@ export function buildSkillJson(brand: BrandRecord): SkillJson {
     },
 
     taxonomy: {
-      sector: brand.sector ?? "uncategorized",
+      brandType: brand.brandType ?? "brand",
+      sector: brand.sector ?? "specialty",
       tier: brand.tier ?? null,
-      subCategories: brand.subSectors ?? [],
+      categories,
     },
 
     scoring: {
