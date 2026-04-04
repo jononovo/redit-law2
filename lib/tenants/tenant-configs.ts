@@ -109,7 +109,11 @@ const brandsConfig: TenantConfig = {
     header: {
       variant: "dark",
       showLogo: false,
-      links: [{ label: "Skills", href: "/skills" }],
+      links: [
+        { label: "Skills", href: "/skills" },
+        { label: "Submit", href: "/skills/submit" },
+        { label: "Docs", href: "/docs" },
+      ],
     },
     footer: {
       showLogo: false,
