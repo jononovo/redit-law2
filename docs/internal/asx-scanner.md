@@ -1,6 +1,6 @@
 # ASX Score Scanner — Internal Developer Guide
 
-> Last updated: 2026-04-03
+> Last updated: 2026-04-04
 
 ## Overview
 
@@ -20,7 +20,8 @@ User submits domain → POST /api/v1/scan
   ├── Cache check: brand_index row < 30 days old? → return cached
   ↓
   ├── classifyBrand(domain) ──── Perplexity sonar (parallel)
-  │     → name, sector, tier, subCategories, capabilities
+  │     → name, sector, brandType, sectors[],
+  │       tier, subCategories, capabilities, description
   │
   ├── auditSite(domain) ──────── Perplexity sonar (parallel)
   │     → 40+ boolean/string/numeric signals
@@ -31,11 +32,13 @@ User submits domain → POST /api/v1/scan
   buildVendorSkillDraft()  ── VendorSkill object
   generateVendorSkill()    ── SKILL.md markdown
   ↓
+  resolveProductCategories(domain, sector, brandType, sectors) ── Perplexity sonar (sequential)
+    │  Depth and scope vary by brand type:
+    │    focused types (brand/retailer/etc) → up to 2 sectors, L3 categories
+    │    department_store/supermarket → multi-sector, L1+L2 categories
+    │    mega_merchant → L1 root categories only (no Perplexity call)
+    ↓
   upsertBrandIndex() ── write to brand_index (domain as unique key)
-  ↓
-  resolveProductCategories(domain, sector) ── Perplexity sonar (sequential)
-    → maps brand to Google Product Taxonomy categories
-    → writes to brand_categories junction table
   ↓
   Return score + breakdown + recommendations to client
 ```

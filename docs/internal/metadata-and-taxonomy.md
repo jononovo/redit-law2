@@ -1,6 +1,6 @@
 # Metadata & Google Product Taxonomy — Internal Developer Guide
 
-> Last updated: 2026-04-03
+> Last updated: 2026-04-04
 
 ## Overview
 
@@ -36,6 +36,7 @@ Google Product Taxonomy (~5,595 categories)
 | File | Purpose |
 |------|---------|
 | `lib/procurement-skills/taxonomy/sectors.ts` | 27 sector slugs with display names, root IDs, helpers |
+| `lib/procurement-skills/taxonomy/brand-types.ts` | 8 brand types, MULTI_SECTOR_TYPES, VALID_BRAND_TYPES |
 | `lib/procurement-skills/taxonomy/tiers.ts` | Market tier definitions (value → enterprise) |
 | `lib/procurement-skills/taxonomy/capabilities.ts` | Functional capability tags and descriptions |
 | `shared/schema.ts` (product_categories, brand_categories) | Taxonomy and junction tables |
@@ -116,12 +117,24 @@ Luxury is NOT a sector assignment. It's a tier-driven filter view:
 
 ### How categories are assigned to brands
 
-Perplexity-powered resolution after the main scan (third API call):
-1. Look up sector root ID from `SECTOR_ROOT_IDS`
-2. Query L2 and L3 categories under that root (depth ≤ 3)
-3. Send compact menu to Perplexity with instruction to prefer deepest applicable categories
-4. Perplexity returns structured category IDs (deduplicated, validated against subtree)
-5. Store in `brand_categories` junction table with primary flag
+Perplexity-powered resolution after the main scan (third API call). Behavior varies by brand type:
+
+**Focused types** (brand, retailer, independent, chain, marketplace):
+1. Look up root IDs for up to 2 sectors from `SECTOR_ROOT_IDS`
+2. Query L2 and L3 categories under those roots (depth ≤ 3)
+3. Send compact menu to Perplexity, get back up to 10 category IDs
+4. Primary sector kept; categories can span both sector roots
+
+**Multi-sector types** (department_store, supermarket):
+1. Query L1 and L2 categories across all classified sectors
+2. Send combined menu to Perplexity, get back up to 20 category IDs
+3. Sector set to `multi-sector`
+
+**Mega merchants** (mega_merchant):
+1. No Perplexity call — directly map each sector to its L1 root category
+2. Sector set to `multi-sector`
+
+All paths: validate returned IDs against queried subtree, store in `brand_categories` junction table with primary flag.
 
 See `scan-taxonomy-skills-pipeline.md` § Step 6 for the full flow.
 
@@ -225,10 +238,20 @@ The Agentic Commerce Standard uses metadata quality as a scoring input:
 
 `subSectors` (text[] on brand_index) = freeform strings for display. `brand_categories` (junction table) = structured taxonomy references. Both exist, serve different purposes. Do not conflate them.
 
+### Brand types and multi-sector routing
+
+Brand type (8 values defined in `lib/procurement-skills/taxonomy/brand-types.ts`) determines how category resolution works:
+- **Focused types** (brand, retailer, independent, chain, marketplace) — keep their primary sector, can span up to 2 sectors in categories, L3 depth
+- **MULTI_SECTOR_TYPES** (department_store, supermarket) — sector set to `multi-sector`, L1+L2 categories across all sectors
+- **mega_merchant** — sector set to `multi-sector`, L1 roots only (no Perplexity call)
+
+The `multi-sector` value is NOT in `ASSIGNABLE_SECTORS` — it's set programmatically only for MULTI_SECTOR_TYPES and mega_merchant.
+
 ### Sector assignment is LLM-dependent
 
-Perplexity classifies the sector. Edge cases:
-- Multi-category merchants get a single sector (the dominant one)
+Perplexity classifies the sector(s). Edge cases:
+- Focused brands get up to 2 sectors (e.g., Patagonia: apparel-accessories + sporting-goods). Primary sector is kept for catalog listing.
+- Multi-sector types (department_store, supermarket, mega_merchant) always get `sector = "multi-sector"`
 - Niche merchants may be miscategorized
 - Not deterministic — rescanning the same site may produce a different sector (rare but possible)
 

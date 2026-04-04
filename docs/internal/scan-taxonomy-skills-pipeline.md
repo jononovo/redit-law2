@@ -1,6 +1,6 @@
 # Scan → Taxonomy → Skills Pipeline — Internal Developer Guide
 
-> Last updated: 2026-04-03
+> Last updated: 2026-04-04
 
 ## Overview
 
@@ -65,7 +65,9 @@ A single Perplexity `sonar` call that returns structured JSON about the brand:
 | Field | Type | Purpose |
 |-------|------|---------|
 | `name` | string | Official brand name (cleaned of Inc/LLC suffixes) |
-| `sector` | VendorSector | One of 26 assignable sectors (see Taxonomy below) |
+| `sector` | VendorSector | Primary sector — one of 26 assignable sectors |
+| `brandType` | BrandType | One of 8 types: brand, retailer, independent, chain, marketplace, department_store, supermarket, mega_merchant |
+| `sectors` | VendorSector[] | All sectors the brand operates in — max 2 for focused types, up to 8 for multi-sector types |
 | `tier` | BrandTier | Pricing position: ultra_luxury, luxury, premium, mid_range, value, budget, commodity |
 | `subCategories` | string[] | Up to 5 freeform product category descriptions |
 | `capabilities` | VendorCapability[] | Detected e-commerce capabilities |
@@ -73,6 +75,8 @@ A single Perplexity `sonar` call that returns structured JSON about the brand:
 | `guestCheckout` | boolean | Whether guest checkout is available |
 
 The sector is constrained to `ASSIGNABLE_SECTORS` (26 entries — all 27 minus luxury, which is tier-driven). If Perplexity returns an unknown value, it falls back to `"specialty"`.
+
+The `brandType` determines how deep category resolution goes (see Step 6). The `sectors[]` array lets focused brands span up to 2 sectors (e.g., Patagonia: apparel-accessories + sporting-goods) while multi-sector types (department_store, supermarket, mega_merchant) can span many.
 
 ### Fallback behavior
 
@@ -158,13 +162,13 @@ After the brand is persisted, a third Perplexity call classifies the brand into 
 
 Resolution behavior varies by brand type. The `resolveProductCategories()` function accepts `brandType` and `sectors[]` from the classification call and routes accordingly:
 
-**Focused merchants** (brand, retailer, independent):
-1. Look up the single sector's root ID in `SECTOR_ROOT_IDS`
-2. Query `product_categories` for L2 and L3 categories under that root (depth ≤ 3)
+**Focused merchants** (brand, retailer, independent, chain, marketplace — any type not in MULTI_SECTOR_TYPES):
+1. Look up root IDs for up to 2 sectors from `SECTOR_ROOT_IDS`
+2. Query `product_categories` for L2 and L3 categories under those roots (depth ≤ 3)
 3. Send compact menu to Perplexity, get back up to 10 category IDs
-4. Sector stays as assigned (e.g., `health-beauty`)
+4. Primary sector stays as assigned (e.g., `health-beauty`); categories can span both sectors
 
-**Department stores / supermarkets** (department_store, supermarket, chain, marketplace with multiple sectors):
+**Department stores / supermarkets** (department_store, supermarket — MULTI_SECTOR_TYPES):
 1. Query `product_categories` for L1 and L2 categories across ALL sectors returned by classification
 2. Send combined multi-sector menu to Perplexity, get back up to 20 category IDs
 3. Sector set to `multi-sector`
