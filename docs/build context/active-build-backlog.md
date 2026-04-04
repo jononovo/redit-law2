@@ -2,7 +2,7 @@
 
 Everything that's outstanding, in build sequence order. Each item has a priority, status, dependencies, and reference to its source plan (if one exists).
 
-Last updated: 2026-04-03
+Last updated: 2026-04-04
 
 ---
 
@@ -77,7 +77,7 @@ One codebase serves both creditclaw.com and shopy.sh.
 
 ### Step 4: Registry API + shopy CLI + Master Skill
 
-**Priority:** Medium (after shopy.sh pages)
+**Priority:** Medium-High (after shopy.sh pages) — **the brands.sh landing page already advertises `npx shopy add <brand>` with a rotating showcase of well-known brands (nike, gucci, apple, etc.). This command does not work yet — the npm package does not exist. Building this is needed to fulfill the promise shown to every visitor.**
 **Status:** Plan complete (3 phases), not started
 **Source:** `Shopy/shopy-cli-technical-plan.md`
 **Depends on:** Step 3
@@ -85,6 +85,9 @@ One codebase serves both creditclaw.com and shopy.sh.
 - Phase 1: Public registry API (`/api/v1/registry/`) — search, download, version manifests
   - Includes `GET /api/v1/registry/{vendor}/skill.json` — serializes `brand_index` data into the `skill.json` format
 - Phase 2: npm package — `npx shopy add amazon`, config management, local manifests
+  - This is the minimum needed to make the landing page CTA truthful
+  - Package name: `shopy` (needs to be claimed on npm)
+  - Core flow: `npx shopy add nike` → hits registry API → downloads skill.json + SKILL.md → writes to `./skills/nike/`
 - Phase 3: `update`, `init`/`remove` commands, GitHub Actions CI
 - **Master Skill (PROCUREMENT.md):** A meta-document (stored as a special `brand_index` row with slug `_creditclaw_index` or served from a dedicated endpoint) that teaches agents how to use the search/registry API — available parameters, how to combine filters, how maturity levels work, how brand relationships work (searching for "Nike" returns Nike HQ + retailers carrying Nike), example queries for common scenarios, and how to read the SKILL.md once a brand is selected. Ships alongside the registry API since it only makes sense once agents have a programmatic way to query the index.
 
