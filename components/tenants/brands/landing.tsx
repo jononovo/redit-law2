@@ -15,6 +15,38 @@ import type { VendorSector } from "@/lib/procurement-skills/taxonomy/sectors";
 import { ScanProgress } from "@/components/scan-progress";
 import { useDomainScan } from "@/hooks/use-domain-scan";
 
+const ROTATING_BRANDS = [
+  "nike", "gucci", "apple", "sephora", "walmart", "patagonia",
+  "lululemon", "dyson", "allbirds", "glossier", "tesla", "airbnb",
+  "spotify", "adidas", "zara", "asos",
+];
+
+function RotatingSlug() {
+  const [index, setIndex] = useState(0);
+  const [visible, setVisible] = useState(true);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setVisible(false);
+      const swap = setTimeout(() => {
+        setIndex((i) => (i + 1) % ROTATING_BRANDS.length);
+        setVisible(true);
+      }, 150);
+      return () => clearTimeout(swap);
+    }, 3000);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <span
+      className="inline-block min-w-[5ch] text-neutral-300"
+      style={{ opacity: visible ? 1 : 0, transition: "opacity 150ms" }}
+    >
+      {ROTATING_BRANDS[index]}
+    </span>
+  );
+}
+
 const SECTOR_SHORT_LABELS: Record<string, string> = {
   "animals-pet-supplies": "Pets",
   "apparel-accessories": "Apparel",
@@ -278,7 +310,7 @@ export default function BrandsLanding() {
               <div className="flex justify-center mb-5">
                 <div className="inline-flex items-center gap-2 px-3 py-1.5 border border-neutral-800 bg-neutral-900 text-xs font-mono text-neutral-400" data-testid="dev-cli-hint">
                   <Terminal className="w-3.5 h-3.5" />
-                  <span>npx shopy add &lt;slug&gt;</span>
+                  <span>npx shopy add <RotatingSlug /></span>
                 </div>
               </div>
               <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight text-white leading-[1.1] mb-3" data-testid="text-hero-title">
