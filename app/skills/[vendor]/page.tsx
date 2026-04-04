@@ -2,7 +2,7 @@ import { cache } from "react";
 import { notFound } from "next/navigation";
 import { storage } from "@/server/storage";
 import { generateVendorSkill } from "@/lib/procurement-skills/generator";
-import type { VendorSkill, VendorSector } from "@/lib/procurement-skills/types";
+import type { VendorSkill, VendorSector, SkillMaturity } from "@/lib/procurement-skills/types";
 import type { Metadata } from "next";
 import { SkillDetailContent } from "./skill-detail-content";
 
@@ -112,7 +112,7 @@ export default async function VendorDetailPage({ params }: Props) {
       vendorUrl={vendorUrl}
       vendorSector={vendorSector}
       score={score}
-      maturityKey={brand.maturity}
+      maturityKey={brand.maturity as SkillMaturity}
       skillMd={skillMd}
       skillUrl={skillUrl}
       slug={brand.slug}
