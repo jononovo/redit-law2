@@ -254,9 +254,9 @@ A `/skills/` module provides a curated library of vendor shopping skills. **Modu
 
 **Taxonomy** (`lib/procurement-skills/taxonomy/`):
 Each concern has its own file with type definition + label map. Barrel-exported via `index.ts`.
-- `sectors.ts` — `VendorSector` type + `SECTOR_LABELS` (27 sectors: 21 Google Product Taxonomy roots + food-services, travel, education, events, luxury, specialty). `SECTOR_ROOT_IDS` maps every sector to its root category ID (Google IDs < 100000, custom IDs ≥ 100001). `GOOGLE_ROOT_IDS` (derived) covers only the 21 Google-mapped sectors. `hasSectorRoot()` and `hasGoogleRoot()` helpers. `ASSIGNABLE_SECTORS` excludes luxury (tier-filter only).
+- `sectors.ts` — `VendorSector` type + `SECTOR_LABELS` (28 sectors: 21 Google Product Taxonomy roots + food-services, travel, education, events, luxury, specialty, multi-sector). `SECTOR_ROOT_IDS` maps every sector to its root category ID (Google IDs < 100000, custom IDs ≥ 100001, multi-sector = 0). `GOOGLE_ROOT_IDS` (derived) covers only the 21 Google-mapped sectors. `hasSectorRoot()` and `hasGoogleRoot()` helpers. `ASSIGNABLE_SECTORS` excludes luxury (tier-filter only) and multi-sector (set programmatically, not by Perplexity).
+- `brand-types.ts` — `BrandType` union (brand, retailer, marketplace, chain, independent, department_store, supermarket, mega_merchant). `MULTI_SECTOR_TYPES` = [department_store, supermarket, mega_merchant]. `VALID_BRAND_TYPES` = all 8 values.
 - `tiers.ts` — `BrandTier` type + `BRAND_TIER_LABELS` (7 tiers: ultra_luxury, luxury, premium, mid_range, value, budget, commodity). Deprecated `VendorTier` and `TIER_LABELS` aliases are re-exported for backward compatibility.
-- `brand-types.ts` — `BrandType` type + `BRAND_TYPE_LABELS` (5 types: brand, retailer, marketplace, chain, independent)
 - `checkout-methods.ts` — `CheckoutMethod` type + `CHECKOUT_METHOD_LABELS` + `CHECKOUT_METHOD_COLORS`
 - `capabilities.ts` — `VendorCapability` type + `CAPABILITY_LABELS`
 - `payment-methods.ts` — `PaymentMethod` type + `PAYMENT_METHOD_LABELS` (11 methods: card, ach, crypto, apple_pay, etc.)
@@ -277,7 +277,7 @@ Each vendor is its own file exporting a single `VendorSkill` object. Barrel-expo
 Converts `VendorSkill` objects into `SKILL.md` markdown with frontmatter, taxonomy, discovery, buying, and deals sections.
 
 **Category Resolution** (`lib/agentic-score/resolve-categories.ts`):
-After the initial scan classifies a brand's sector, a second Perplexity call resolves the brand into specific product categories from our taxonomy. Queries `product_categories` for L2 categories under the sector root, sends them to Perplexity as a compact menu, and gets back structured category IDs. Results are persisted in `brand_categories` junction table and appear in skill.json output. Non-critical — failures result in empty categories, never a broken scan.
+After the initial scan classifies a brand's sector and brand type, category resolution varies by brand type. Focused merchants (brand, retailer, independent) get single-sector L3 categories via Perplexity. Department stores and supermarkets get multi-sector L2 categories via Perplexity. Mega merchants get L1 root categories directly (no Perplexity call). Results are persisted in `brand_categories` junction table. The `brand_type` is stored in `brand_index`. Multi-sector merchants get `sector = "multi-sector"`. Non-critical — failures result in empty categories, never a broken scan.
 
 **Product Categories DB** (`product_categories` table, seeded by `scripts/seed-google-taxonomy.ts`):
 5,638 entries: 5,595 from Google Product Taxonomy + 43 custom categories for non-Google sectors (food-services, travel, education, events, luxury, specialty). The `id` column IS the taxonomy ID (Google taxonomy numbers for Google categories, 100001+ for custom sectors). No separate `gptId` — unified single identifier.
@@ -303,7 +303,7 @@ CreditClaw's public-facing growth engine. The ASX (Agentic Shopping Experience) 
 Sole source of truth for all brand data across all surfaces (bots, humans, exports). Single denormalized PostgreSQL table with:
 - **Primary identifier**: `domain` (text, NOT NULL, UNIQUE) — canonical dedup key for scans, cache lookups, upserts. Conflict target for `upsertBrandIndex`.
 - **URL routing key**: `slug` (text, NOT NULL, UNIQUE) — used for `/brands/[slug]` pages and `/brands/[slug]/skill.md`. Derived from domain via `domainToSlug()`: `.com` domains strip TLD (`staples.com` → `staples`), non-`.com` keep full domain minus dots (`staples.co.uk` → `staples-co-uk`). Slug is set on insert only — never overwritten by upsert (excluded from update set).
-- `brand_type` text — business model classification (brand, retailer, marketplace, chain, independent)
+- `brand_type` text — business model classification (brand, retailer, marketplace, chain, independent, department_store, supermarket, mega_merchant). Populated automatically by classification. Controls category resolution depth routing.
 - Flat indexed columns for every filterable field (sector, tier, maturity, ordering, etc.)
 - `carries_brands` text[] array (GIN-indexed) — distinguishes retailers from HQ brands (populated = retailer)
 - `brand_data` jsonb — full VendorSkill object for retrieval

@@ -1,16 +1,19 @@
 import { db } from "@/server/db";
 import { productCategories } from "@/shared/schema";
-import { eq, lte, like, and, or } from "drizzle-orm";
-import { SECTOR_ROOT_IDS, SECTOR_LABELS } from "@/lib/procurement-skills/taxonomy/sectors";
+import { eq, lte, like, and, or, inArray } from "drizzle-orm";
+import { SECTOR_ROOT_IDS, SECTOR_LABELS, GOOGLE_ROOT_IDS, hasSectorRoot } from "@/lib/procurement-skills/taxonomy/sectors";
 import type { VendorSector } from "@/lib/procurement-skills/taxonomy/sectors";
+import type { BrandType } from "@/lib/procurement-skills/taxonomy/brand-types";
+import { MULTI_SECTOR_TYPES } from "@/lib/procurement-skills/taxonomy/brand-types";
 
 export interface ResolvedCategory {
   categoryId: number;
   isPrimary: boolean;
 }
 
-const PERPLEXITY_TIMEOUT_MS = 20_000;
-const MAX_CATEGORIES = 10;
+const PERPLEXITY_TIMEOUT_MS = 25_000;
+const MAX_CATEGORIES_FOCUSED = 10;
+const MAX_CATEGORIES_MULTI = 20;
 
 const CATEGORY_SCHEMA = {
   type: "object" as const,
@@ -18,7 +21,7 @@ const CATEGORY_SCHEMA = {
     categoryIds: {
       type: "array",
       items: { type: "number" },
-      description: "IDs of matching categories from the provided list (max 10)",
+      description: "IDs of matching categories from the provided list",
     },
     primaryCategoryId: {
       type: "number",
@@ -28,18 +31,38 @@ const CATEGORY_SCHEMA = {
   required: ["categoryIds", "primaryCategoryId"],
 };
 
-export async function resolveProductCategories(
-  domain: string,
-  sector: VendorSector,
-): Promise<ResolvedCategory[]> {
-  const rootId = SECTOR_ROOT_IDS[sector];
-  if (rootId === undefined) return [];
+interface DepthConfig {
+  maxDepth: number;
+  minSelectable: number;
+  maxCategories: number;
+  sectorOverride: VendorSector | null;
+}
 
-  const rootName = SECTOR_LABELS[sector];
-  if (!rootName) return [];
+function getDepthConfig(brandType: BrandType, sectors: VendorSector[]): DepthConfig {
+  if (brandType === "mega_merchant") {
+    return { maxDepth: 1, minSelectable: 1, maxCategories: MAX_CATEGORIES_MULTI, sectorOverride: "multi-sector" };
+  }
+  if (MULTI_SECTOR_TYPES.includes(brandType) || sectors.length > 1) {
+    return { maxDepth: 2, minSelectable: 1, maxCategories: MAX_CATEGORIES_MULTI, sectorOverride: "multi-sector" };
+  }
+  return { maxDepth: 3, minSelectable: 2, maxCategories: MAX_CATEGORIES_FOCUSED, sectorOverride: null };
+}
 
-  const apiKey = process.env.PERPLEXITY_API_KEY;
-  if (!apiKey) return [];
+async function querySubtreeForSectors(
+  sectors: VendorSector[],
+  maxDepth: number,
+  minSelectable: number,
+): Promise<{ subtree: { id: number; name: string; path: string; depth: number }[]; validIds: Set<number> }> {
+  const resolvableSectors = sectors.filter((s) => hasSectorRoot(s) && s !== "multi-sector");
+  if (!resolvableSectors.length) return { subtree: [], validIds: new Set() };
+
+  const pathConditions = resolvableSectors.map((s) => {
+    const rootName = SECTOR_LABELS[s];
+    return or(
+      eq(productCategories.id, SECTOR_ROOT_IDS[s]),
+      like(productCategories.path, `${rootName} > %`),
+    )!;
+  });
 
   const subtree = await db
     .select({
@@ -51,25 +74,71 @@ export async function resolveProductCategories(
     .from(productCategories)
     .where(
       and(
-        or(
-          eq(productCategories.id, rootId),
-          like(productCategories.path, `${rootName} > %`),
-        ),
-        lte(productCategories.depth, 3),
+        or(...pathConditions),
+        lte(productCategories.depth, maxDepth),
       ),
     );
 
-  const selectableCategories = subtree.filter((c) => c.depth >= 2);
-  if (!selectableCategories.length) return [];
-
+  const selectableCategories = subtree.filter((c) => c.depth >= minSelectable);
   const validIds = new Set(selectableCategories.map((c) => c.id));
+  return { subtree: selectableCategories, validIds };
+}
 
-  const categoryMenu = selectableCategories
+function isMultiSectorType(brandType: BrandType): boolean {
+  return MULTI_SECTOR_TYPES.includes(brandType);
+}
+
+function buildMegaMerchantCategories(sectors: VendorSector[]): ResolvedCategory[] {
+  const resolvable = sectors.filter((s) => hasSectorRoot(s) && s !== "multi-sector");
+  if (!resolvable.length) return [];
+  const first = SECTOR_ROOT_IDS[resolvable[0]];
+  return resolvable.map((s) => ({
+    categoryId: SECTOR_ROOT_IDS[s],
+    isPrimary: SECTOR_ROOT_IDS[s] === first,
+  }));
+}
+
+export async function resolveProductCategories(
+  domain: string,
+  sector: VendorSector,
+  brandType: BrandType = "brand",
+  sectors: VendorSector[] = [],
+): Promise<{ categories: ResolvedCategory[]; resolvedSector: VendorSector }> {
+  const effectiveSectors = sectors.length > 0 ? sectors : [sector];
+  const config = getDepthConfig(brandType, effectiveSectors);
+  const fallbackSector: VendorSector = isMultiSectorType(brandType) ? "multi-sector" : sector;
+
+  if (brandType === "mega_merchant") {
+    return {
+      categories: buildMegaMerchantCategories(effectiveSectors),
+      resolvedSector: "multi-sector",
+    };
+  }
+
+  const rootId = SECTOR_ROOT_IDS[sector];
+  if (rootId === undefined && !config.sectorOverride) return { categories: [], resolvedSector: fallbackSector };
+
+  const apiKey = process.env.PERPLEXITY_API_KEY;
+  if (!apiKey) return { categories: [], resolvedSector: fallbackSector };
+
+  const { subtree, validIds } = await querySubtreeForSectors(
+    config.sectorOverride ? effectiveSectors : [sector],
+    config.maxDepth,
+    config.minSelectable,
+  );
+
+  if (!subtree.length) return { categories: [], resolvedSector: fallbackSector };
+
+  const categoryMenu = subtree
     .map((c) => {
       const shortPath = c.path.split(" > ").slice(1).join(" > ");
-      return `${c.id} - ${shortPath}`;
+      return `${c.id} - ${shortPath || c.name}`;
     })
     .join("\n");
+
+  const sectorDescription = config.sectorOverride
+    ? `multiple sectors (${effectiveSectors.map((s) => SECTOR_LABELS[s]).join(", ")})`
+    : `the "${SECTOR_LABELS[sector]}" sector`;
 
   try {
     const controller = new AbortController();
@@ -94,7 +163,7 @@ export async function resolveProductCategories(
             },
             {
               role: "user",
-              content: `The e-commerce website ${domain} operates in the "${rootName}" sector.\n\nHere are the available subcategories (entries with ">" indicate deeper sub-categories, e.g. "Clothing > Activewear" is a child of "Clothing"):\n${categoryMenu}\n\nWhich of these subcategories does ${domain} sell products in? Prefer the most specific (deepest) categories that apply. Select all that apply (up to ${MAX_CATEGORIES}). Return the category IDs and identify which single category is most representative of their business.`,
+              content: `The e-commerce website ${domain} operates in ${sectorDescription}.\n\nHere are the available subcategories (entries with ">" indicate deeper sub-categories, e.g. "Clothing > Activewear" is a child of "Clothing"):\n${categoryMenu}\n\nWhich of these subcategories does ${domain} sell products in? Prefer the most specific (deepest) categories that apply. Select all that apply (up to ${config.maxCategories}). Return the category IDs and identify which single category is most representative of their business.`,
             },
           ],
           response_format: {
@@ -104,7 +173,7 @@ export async function resolveProductCategories(
               schema: CATEGORY_SCHEMA,
             },
           },
-          max_tokens: 300,
+          max_tokens: 400,
           temperature: 0.1,
         }),
       });
@@ -114,20 +183,20 @@ export async function resolveProductCategories(
 
     if (!res.ok) {
       console.warn(`[categories] Perplexity call failed for ${domain}: HTTP ${res.status}`);
-      return [];
+      return { categories: [], resolvedSector: fallbackSector };
     }
 
     const data = await res.json();
     const content = data.choices?.[0]?.message?.content;
-    if (!content) return [];
+    if (!content) return { categories: [], resolvedSector: fallbackSector };
 
     const parsed = JSON.parse(content);
 
     const categoryIds: number[] = Array.isArray(parsed.categoryIds)
-      ? [...new Set(parsed.categoryIds.filter((id: unknown) => typeof id === "number" && validIds.has(id as number)))].slice(0, MAX_CATEGORIES)
+      ? ([...new Set(parsed.categoryIds.filter((id: unknown) => typeof id === "number" && validIds.has(id as number)))] as number[]).slice(0, config.maxCategories)
       : [];
 
-    if (!categoryIds.length) return [];
+    if (!categoryIds.length) return { categories: [], resolvedSector: fallbackSector };
 
     const selectedSet = new Set(categoryIds);
     const primaryId =
@@ -135,12 +204,17 @@ export async function resolveProductCategories(
         ? parsed.primaryCategoryId
         : categoryIds[0];
 
-    return categoryIds.map((id) => ({
-      categoryId: id,
-      isPrimary: id === primaryId,
-    }));
+    const resolvedSector = config.sectorOverride ?? sector;
+
+    return {
+      categories: categoryIds.map((id) => ({
+        categoryId: id,
+        isPrimary: id === primaryId,
+      })),
+      resolvedSector,
+    };
   } catch (err) {
     console.warn(`[categories] Resolution failed for ${domain}:`, err instanceof Error ? err.message : err);
-    return [];
+    return { categories: [], resolvedSector: fallbackSector };
   }
 }

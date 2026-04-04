@@ -25,7 +25,8 @@ export type VendorSector =
   | "education"
   | "events"
   | "luxury"
-  | "specialty";
+  | "specialty"
+  | "multi-sector";
 
 export const SECTOR_LABELS: Record<VendorSector, string> = {
   "animals-pet-supplies": "Animals & Pet Supplies",
@@ -55,6 +56,7 @@ export const SECTOR_LABELS: Record<VendorSector, string> = {
   "events": "Events",
   "luxury": "Luxury",
   "specialty": "Specialty",
+  "multi-sector": "Multi-Sector",
 };
 
 export const SECTOR_ROOT_IDS: Record<VendorSector, number> = {
@@ -85,6 +87,7 @@ export const SECTOR_ROOT_IDS: Record<VendorSector, number> = {
   "events": 100030,
   "luxury": 100040,
   "specialty": 100050,
+  "multi-sector": 0,
 };
 
 export const ASSIGNABLE_SECTORS: VendorSector[] = [

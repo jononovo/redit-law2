@@ -18,8 +18,8 @@ POST /api/v1/scan (or scan-queue worker)
   ├── Cache check: brand_index row < 30 days old? → return cached
   ↓
   ├── Call 1: classifyBrand(domain) ──────────────── Perplexity (sonar)
-  │     Returns: name, sector, tier, subCategories,
-  │              capabilities, description
+  │     Returns: name, sector, brandType, sectors[],
+  │              tier, subCategories, capabilities, description
   │
   ├── Call 2: auditSite(domain) ─────────────────── Perplexity (sonar)
   │     Returns: 40+ boolean/string signals about
@@ -33,9 +33,11 @@ POST /api/v1/scan (or scan-queue worker)
   ↓
   upsertBrandIndex() ──── write to brand_index table
   ↓
-  Call 3: resolveProductCategories(domain, sector) ── Perplexity (sonar)
-    │  Queries L2+L3 taxonomy categories for the sector root
-    │  Sends compact menu to Perplexity, gets back IDs
+  Call 3: resolveProductCategories(domain, sector, brandType, sectors) ── Perplexity (sonar)
+    │  Depth and scope vary by brand type:
+    │    brand/retailer/independent → single sector, L2+L3 categories
+    │    department_store/supermarket → multi-sector, L1+L2 categories
+    │    mega_merchant → L1 root categories only (no Perplexity call)
     │  Validates IDs against product_categories table
     ↓
   setBrandCategories() ──── write to brand_categories junction table
@@ -139,7 +141,7 @@ Output: overall score (0-100), per-pillar breakdown, and ranked recommendations 
 `upsertBrandIndex()` writes everything to the `brand_index` table using `domain` as the unique conflict key. Key columns:
 
 - **Identity:** slug, name, domain, url, logoUrl, description
-- **Classification:** sector, subSectors (freeform text[]), tier, maturity
+- **Classification:** sector, brandType, subSectors (freeform text[]), tier, maturity
 - **Scoring:** overallScore, scoreBreakdown (JSONB), recommendations (JSONB)
 - **Capabilities:** hasMcp, hasApi, capabilities[], checkoutMethods[]
 - **Payloads:** brandData (full VendorSkill JSONB), skillMd (markdown text)
@@ -154,13 +156,27 @@ After the brand is persisted, a third Perplexity call classifies the brand into 
 
 ### How it works
 
-1. Look up the sector's root ID in `SECTOR_ROOT_IDS`
-2. Query `product_categories` for all L2 and L3 categories under that root (depth ≤ 3)
-3. Format as a compact menu with parent context: `"223 - Audio\n543 - Audio > Headphones\n544 - Audio > Speakers\n..."`
-4. Send to Perplexity with a focused prompt that instructs it to prefer the most specific (deepest) categories
-5. Perplexity returns structured JSON: `{ categoryIds: [543, 544], primaryCategoryId: 543 }`
-6. Validate every returned ID against the queried subtree (reject unknown IDs)
-7. Build `ResolvedCategory[]` and call `setBrandCategories(brandId, categories)`
+Resolution behavior varies by brand type. The `resolveProductCategories()` function accepts `brandType` and `sectors[]` from the classification call and routes accordingly:
+
+**Focused merchants** (brand, retailer, independent):
+1. Look up the single sector's root ID in `SECTOR_ROOT_IDS`
+2. Query `product_categories` for L2 and L3 categories under that root (depth ≤ 3)
+3. Send compact menu to Perplexity, get back up to 10 category IDs
+4. Sector stays as assigned (e.g., `health-beauty`)
+
+**Department stores / supermarkets** (department_store, supermarket, chain, marketplace with multiple sectors):
+1. Query `product_categories` for L1 and L2 categories across ALL sectors returned by classification
+2. Send combined multi-sector menu to Perplexity, get back up to 20 category IDs
+3. Sector set to `multi-sector`
+
+**Mega merchants** (mega_merchant):
+1. No Perplexity call — directly map each sector to its L1 root category ID
+2. Sector set to `multi-sector`
+
+For all paths:
+- Validate every returned ID against the queried subtree (reject unknown IDs)
+- Build `ResolvedCategory[]` and call `setBrandCategories(brandId, categories)`
+- Set `brand_index.brand_type` to the classified value
 
 ### Why a second Perplexity call instead of local matching?
 
@@ -179,7 +195,7 @@ The original approach used fuzzy string matching — mapping freeform `subCatego
 
 ## Taxonomy System
 
-### Sectors (27 entries)
+### Sectors (28 entries)
 
 **File:** `lib/procurement-skills/taxonomy/sectors.ts`
 
@@ -188,17 +204,36 @@ The sector system is a hybrid of Google Product Taxonomy roots and custom additi
 **21 Google Product Taxonomy roots:**
 animals-pet-supplies, apparel-accessories, arts-entertainment, baby-toddler, business-industrial, cameras-optics, electronics, food-beverages-tobacco, furniture, hardware, health-beauty, home-garden, luggage-bags, mature, media, office-supplies, religious-ceremonial, software, sporting-goods, toys-games, vehicles-parts
 
-**6 custom sectors:**
-food-services, travel, education, events, luxury, specialty
+**7 custom/special sectors:**
+food-services, travel, education, events, luxury, specialty, multi-sector
 
 ### Key constants
 
 | Constant | What it is |
 |----------|-----------|
-| `SECTOR_ROOT_IDS` | Maps every sector → its root category ID. Google sectors use Google IDs (< 100000). Custom sectors use IDs ≥ 100001 |
+| `SECTOR_ROOT_IDS` | Maps every sector → its root category ID. Google sectors use Google IDs (< 100000). Custom sectors use IDs ≥ 100001. `multi-sector` has root ID 0 (placeholder) |
 | `GOOGLE_ROOT_IDS` | Derived from SECTOR_ROOT_IDS — only the 21 Google-mapped sectors |
-| `ASSIGNABLE_SECTORS` | 26 entries — all sectors minus luxury (which is a tier-filter, not an assignable sector) |
-| `SECTOR_LABELS` | Display names for all 27 sectors |
+| `ASSIGNABLE_SECTORS` | 26 entries — all sectors minus luxury and multi-sector (neither is directly assignable by Perplexity) |
+| `SECTOR_LABELS` | Display names for all 28 sectors |
+
+### multi-sector is special
+
+`multi-sector` is NOT an assignable sector. It is set programmatically by the category resolution step when a merchant's brand type indicates it spans multiple root sectors (department_store, supermarket, mega_merchant). Perplexity never assigns `sector = "multi-sector"` directly.
+
+### Brand Types (8 values)
+
+**File:** `lib/procurement-skills/taxonomy/brand-types.ts`
+
+| Type | Description | Category depth | Sector behavior |
+|------|------------|----------------|-----------------|
+| `brand` | DTC / own-brand (Nike, Glossier) | L3 | Single sector |
+| `retailer` | Specialist retailer (Best Buy, Sephora) | L3 | Single sector |
+| `independent` | Small independent shop | L3 | Single sector |
+| `chain` | Multi-location chain | L2 | Single or multi-sector |
+| `marketplace` | Multi-seller platform (Etsy, eBay) | L2 | Single or multi-sector |
+| `department_store` | General multi-category (Target, Macy's) | L2 | multi-sector |
+| `supermarket` | Grocery + general merchandise | L2 | multi-sector |
+| `mega_merchant` | Massive all-category (Amazon, Walmart) | L1 roots only | multi-sector |
 
 ### Luxury is special
 
