@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { ArrowRight, ChevronLeft, ChevronRight, Terminal, Loader2 } from "lucide-react";
 import { CAPABILITY_LABELS } from "@/lib/procurement-skills/taxonomy/capabilities";
 import { CHECKOUT_METHOD_LABELS } from "@/lib/procurement-skills/taxonomy/checkout-methods";
@@ -260,8 +260,6 @@ export default function BrandsLanding() {
     }
   }, [scan.status, scan.result, router]);
 
-  const sectorCount = useMemo(() => new Set(brands.map((b) => b.sector)).size, [brands]);
-
   function handleKeyDown(e: React.KeyboardEvent) {
     if (e.key === "Enter" && scan.status !== "scanning") {
       scan.triggerScan();
@@ -277,6 +275,12 @@ export default function BrandsLanding() {
         <section className="pt-20 pb-8">
           <div className="container mx-auto px-6">
             <div className="max-w-4xl mx-auto text-center mb-8">
+              <div className="flex justify-center mb-5">
+                <div className="inline-flex items-center gap-2 px-3 py-1.5 border border-neutral-800 bg-neutral-900 text-xs font-mono text-neutral-400" data-testid="dev-cli-hint">
+                  <Terminal className="w-3.5 h-3.5" />
+                  <span>npx shopy add &lt;slug&gt;</span>
+                </div>
+              </div>
               <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight text-white leading-[1.1] mb-3" data-testid="text-hero-title">
                 The skill registry for agentic shopping.
               </h1>
@@ -285,7 +289,7 @@ export default function BrandsLanding() {
               </p>
             </div>
 
-            <div className="max-w-2xl mx-auto mb-3">
+            <div className="max-w-2xl mx-auto mb-10">
               <div className="flex">
                 <Input
                   type="text"
@@ -327,18 +331,6 @@ export default function BrandsLanding() {
               />
             </div>
 
-            {!loading && scan.status === "idle" && (
-              <div className="max-w-2xl mx-auto flex items-center justify-center gap-4 text-sm font-mono text-neutral-500 tracking-wide mb-10" data-testid="stats-bar">
-                <span>{brands.length} skills indexed</span>
-                <span className="text-neutral-700">·</span>
-                <span>{sectorCount} sectors</span>
-                <span className="text-neutral-700">·</span>
-                <span className="inline-flex items-center gap-1.5">
-                  <Terminal className="w-3.5 h-3.5" />
-                  npx shopy add &lt;slug&gt;
-                </span>
-              </div>
-            )}
           </div>
         </section>
 
