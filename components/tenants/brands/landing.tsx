@@ -9,7 +9,7 @@ import { useRouter } from "next/navigation";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { ArrowRight, ChevronLeft, ChevronRight, Terminal, Loader2 } from "lucide-react";
 import { CAPABILITY_LABELS } from "@/lib/procurement-skills/taxonomy/capabilities";
-import { CHECKOUT_METHOD_LABELS } from "@/lib/procurement-skills/taxonomy/checkout-methods";
+import { BRAND_TIER_LABELS } from "@/lib/procurement-skills/taxonomy/tiers";
 import { ASSIGNABLE_SECTORS } from "@/lib/procurement-skills/taxonomy/sectors";
 import type { VendorSector } from "@/lib/procurement-skills/taxonomy/sectors";
 import { ScanProgress } from "@/components/scan-progress";
@@ -106,26 +106,38 @@ type BrandRow = {
   name: string;
   domain: string;
   sector: string;
-  maturity: string;
+  tier: string | null;
   logoUrl: string | null;
   capabilities: string[] | null;
-  checkoutMethods: string[] | null;
 };
 
-const MATURITY_STYLES: Record<string, string> = {
-  verified: "bg-emerald-900/40 text-emerald-400 border-emerald-800",
-  official: "bg-blue-900/40 text-blue-400 border-blue-800",
-  beta: "bg-amber-900/40 text-amber-400 border-amber-800",
-  community: "bg-purple-900/40 text-purple-400 border-purple-800",
-  draft: "bg-neutral-800 text-neutral-400 border-neutral-700",
+const TIER_STYLES: Record<string, string> = {
+  ultra_luxury: "bg-amber-900/40 text-amber-300 border-amber-800",
+  luxury: "bg-amber-900/30 text-amber-400 border-amber-800/70",
+  premium: "bg-blue-900/40 text-blue-400 border-blue-800",
+  mid_range: "bg-neutral-800 text-neutral-300 border-neutral-700",
+  value: "bg-emerald-900/40 text-emerald-400 border-emerald-800",
+  budget: "bg-neutral-800/60 text-neutral-400 border-neutral-700",
+  commodity: "bg-neutral-800/40 text-neutral-500 border-neutral-700",
 };
 
-function MaturityBadge({ maturity }: { maturity: string }) {
-  const style = MATURITY_STYLES[maturity] ?? MATURITY_STYLES.draft;
+function TierBadge({ tier }: { tier: string | null }) {
+  if (!tier) return <span className="text-xs text-neutral-600">—</span>;
+  const style = TIER_STYLES[tier] ?? TIER_STYLES.mid_range;
+  const label = (BRAND_TIER_LABELS as Record<string, string>)[tier] ?? tier;
   return (
-    <Badge className={`text-[10px] font-bold uppercase tracking-wider border rounded-none px-2 py-0.5 ${style}`} data-testid={`badge-maturity-${maturity}`}>
-      {maturity}
+    <Badge className={`text-[10px] font-bold uppercase tracking-wider border rounded-none px-2 py-0.5 ${style}`} data-testid={`badge-tier-${tier}`}>
+      {label}
     </Badge>
+  );
+}
+
+function SectorLabel({ sector }: { sector: string }) {
+  const label = SECTOR_SHORT_LABELS[sector] ?? sector;
+  return (
+    <span className="text-xs font-medium text-neutral-400" data-testid="text-sector">
+      {label}
+    </span>
   );
 }
 
@@ -150,16 +162,6 @@ function CapabilityPills({ capabilities }: { capabilities: string[] | null }) {
   );
 }
 
-function CheckoutLabel({ methods }: { methods: string[] | null }) {
-  const m = methods ?? [];
-  if (m.length === 0) return <span className="text-xs text-neutral-600">—</span>;
-  return (
-    <span className="text-xs font-medium text-neutral-300" data-testid="text-checkout-method">
-      {(CHECKOUT_METHOD_LABELS as Record<string, string>)[m[0]] ?? m[0]}
-      {m.length > 1 && <span className="text-neutral-500 ml-1">+{m.length - 1}</span>}
-    </span>
-  );
-}
 
 function SectorButton({
   label,
@@ -392,11 +394,11 @@ export default function BrandsLanding() {
                 />
               </div>
               <div className="border border-neutral-800 overflow-hidden bg-neutral-900/50">
-                <div className="hidden md:grid grid-cols-[1fr_240px_120px_100px_40px] gap-4 px-5 py-3 bg-neutral-900 border-b border-neutral-800">
+                <div className="hidden md:grid grid-cols-[1fr_240px_100px_100px_40px] gap-4 px-5 py-3 bg-neutral-900 border-b border-neutral-800">
                   <span className="text-sm font-mono text-neutral-400 tracking-wide uppercase">Skill</span>
                   <span className="text-sm font-mono text-neutral-400 tracking-wide uppercase">Capabilities</span>
-                  <span className="text-sm font-mono text-neutral-400 tracking-wide uppercase">Checkout</span>
-                  <span className="text-sm font-mono text-neutral-400 tracking-wide uppercase">Maturity</span>
+                  <span className="text-sm font-mono text-neutral-400 tracking-wide uppercase">Sector</span>
+                  <span className="text-sm font-mono text-neutral-400 tracking-wide uppercase">Tier</span>
                   <span></span>
                 </div>
 
@@ -428,7 +430,7 @@ export default function BrandsLanding() {
                       <Link
                         key={brand.slug}
                         href={`/skills/${brand.slug}`}
-                        className="grid grid-cols-1 md:grid-cols-[1fr_240px_120px_100px_40px] gap-2 md:gap-4 px-5 py-4 hover:bg-neutral-800/40 transition-colors items-center group"
+                        className="grid grid-cols-1 md:grid-cols-[1fr_240px_100px_100px_40px] gap-2 md:gap-4 px-5 py-4 hover:bg-neutral-800/40 transition-colors items-center group"
                         data-testid={`row-brand-${brand.slug}`}
                       >
                         <div className="flex items-center gap-3">
@@ -445,8 +447,8 @@ export default function BrandsLanding() {
                           </div>
                         </div>
                         <CapabilityPills capabilities={brand.capabilities} />
-                        <CheckoutLabel methods={brand.checkoutMethods} />
-                        <MaturityBadge maturity={brand.maturity} />
+                        <SectorLabel sector={brand.sector} />
+                        <TierBadge tier={brand.tier} />
                         <ChevronRight className="w-4 h-4 text-neutral-600 group-hover:text-neutral-400 transition-colors hidden md:block" />
                       </Link>
                     ))}
