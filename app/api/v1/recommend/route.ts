@@ -3,6 +3,7 @@ import { db } from "@/server/db";
 import { categoryKeywords, productCategories, brandIndex, brandCategories } from "@/shared/schema";
 import { sql } from "drizzle-orm";
 import { z } from "zod";
+import { embed } from "@/lib/embeddings/embed";
 
 interface IntakeResult {
   categories: string[];
@@ -32,7 +33,21 @@ interface MerchantResult {
   matched_categories: string[];
   skill_url: string;
   has_skill: boolean;
-  products: unknown[];
+  products: ProductResult[];
+}
+
+interface RankedMerchant extends MerchantResult {
+  _brand_id: number;
+}
+
+interface ProductResult {
+  name: string;
+  price: string;
+  currency: string;
+  in_stock: boolean;
+  image_url: string | null;
+  product_url: string;
+  similarity: number;
 }
 
 const VALID_TIERS = ["ultra_luxury", "luxury", "premium", "mid_range", "value", "budget", "commodity"] as const;
@@ -131,7 +146,7 @@ async function rankMerchants(
   tier: string | null,
   brand: string | null,
   limit: number,
-): Promise<MerchantResult[]> {
+): Promise<RankedMerchant[]> {
   if (categoryIds.length === 0) return [];
 
   const categoryArray = `{${categoryIds.join(",")}}`;
@@ -167,6 +182,7 @@ async function rankMerchants(
   );
 
   return (rows.rows as any[]).map((r, i) => ({
+    _brand_id: parseInt(r.id),
     slug: r.slug,
     name: r.name,
     domain: r.domain,
@@ -179,8 +195,59 @@ async function rankMerchants(
     matched_categories: r.matched_categories || [],
     skill_url: `https://brands.sh/brands/${r.slug}/skill`,
     has_skill: r.has_skill || false,
-    products: [],
+    products: [] as ProductResult[],
   }));
+}
+
+async function attachProducts(
+  merchants: RankedMerchant[],
+  searchText: string,
+  productsPerMerchant: number = 3,
+): Promise<void> {
+  if (merchants.length === 0 || !searchText) return;
+
+  const brandIds = merchants.map((m) => m._brand_id);
+  const brandIdArray = `{${brandIds.join(",")}}`;
+
+  let queryEmbedding: number[];
+  try {
+    queryEmbedding = await embed(searchText);
+  } catch {
+    return;
+  }
+
+  const vecStr = `[${queryEmbedding.join(",")}]`;
+
+  const rows = await db.execute(
+    sql`SELECT brand_id, name, price_cents, currency, in_stock, image_url, product_url,
+               1 - (embedding <=> ${vecStr}::vector) AS similarity
+        FROM product_listings
+        WHERE brand_id = ANY(${brandIdArray}::int[])
+          AND embedding IS NOT NULL
+        ORDER BY embedding <=> ${vecStr}::vector
+        LIMIT ${brandIds.length * productsPerMerchant * 2}`,
+  );
+
+  const productsByBrand = new Map<number, ProductResult[]>();
+  for (const row of rows.rows as any[]) {
+    const brandId = parseInt(row.brand_id);
+    const existing = productsByBrand.get(brandId) || [];
+    if (existing.length >= productsPerMerchant) continue;
+    existing.push({
+      name: row.name,
+      price: `$${(parseInt(row.price_cents) / 100).toFixed(2)}`,
+      currency: row.currency,
+      in_stock: row.in_stock,
+      image_url: row.image_url,
+      product_url: row.product_url,
+      similarity: parseFloat(parseFloat(row.similarity).toFixed(3)),
+    });
+    productsByBrand.set(brandId, existing);
+  }
+
+  for (const merchant of merchants) {
+    merchant.products = productsByBrand.get(merchant._brand_id) || [];
+  }
 }
 
 export async function POST(request: NextRequest) {
@@ -206,12 +273,20 @@ export async function POST(request: NextRequest) {
 
     if (category_ids && category_ids.length > 0) {
       resolvedCategoryIds = category_ids;
-      resolvedCategories = category_ids.map((id) => ({
-        category_id: id,
-        name: "",
-        path: "",
-        relevance: 1.0,
-      }));
+      const catIdArray = `{${category_ids.join(",")}}`;
+      const catRows = await db.execute(
+        sql`SELECT id, name, path FROM product_categories WHERE id = ANY(${catIdArray}::int[])`,
+      );
+      const catMap = new Map((catRows.rows as any[]).map((r) => [r.id, r]));
+      resolvedCategories = category_ids.map((id) => {
+        const row = catMap.get(id);
+        return {
+          category_id: id,
+          name: row?.name || "",
+          path: row?.path || "",
+          relevance: 1.0,
+        };
+      });
     } else if (categories && categories.length > 0) {
       stagesExecuted.push("categories");
       resolvedCategories = await resolveCategories(categories);
@@ -221,7 +296,15 @@ export async function POST(request: NextRequest) {
     stagesExecuted.push("merchants");
     const merchants = await rankMerchants(resolvedCategoryIds, tier ?? null, brand ?? null, merchantLimit);
 
+    const searchText = categories?.join(" ") || resolvedCategories.map((c) => c.name).filter(Boolean).join(" ") || brand || "";
+    if (searchText && merchants.length > 0) {
+      stagesExecuted.push("products");
+      await attachProducts(merchants, searchText);
+    }
+
     const queryTimeMs = Date.now() - startTime;
+
+    const cleanMerchants = merchants.map(({ _brand_id, ...rest }) => rest);
 
     return NextResponse.json({
       query: categories?.join(", ") || category_ids?.join(", ") || "",
@@ -232,8 +315,8 @@ export async function POST(request: NextRequest) {
         intent_type: "find",
       },
       resolved_categories: resolvedCategories,
-      merchants,
-      total_merchant_matches: merchants.length,
+      merchants: cleanMerchants,
+      total_merchant_matches: cleanMerchants.length,
       meta: {
         query_time_ms: queryTimeMs,
         intake_time_ms: null,
@@ -308,7 +391,12 @@ export async function GET(request: NextRequest) {
       merchantLimit,
     );
 
+    stagesExecuted.push("products");
+    await attachProducts(merchants, q);
+
     const queryTimeMs = Date.now() - startTime;
+
+    const cleanMerchants = merchants.map(({ _brand_id, ...rest }) => rest);
 
     return NextResponse.json({
       query: q,
@@ -319,8 +407,8 @@ export async function GET(request: NextRequest) {
         intent_type: intake.intent_type,
       },
       resolved_categories: resolvedCategories,
-      merchants,
-      total_merchant_matches: merchants.length,
+      merchants: cleanMerchants,
+      total_merchant_matches: cleanMerchants.length,
       meta: {
         query_time_ms: queryTimeMs,
         intake_time_ms: intakeTimeMs,

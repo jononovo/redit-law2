@@ -338,7 +338,18 @@ Architecture: Single central rubric → regex detectors + agentic scan → merge
 - Output writes to `brand_index` via `overallScore`, `scoreBreakdown` (jsonb), `recommendations` (jsonb), `skillMd` (text)
 
 **Merchant Index / Recommend API** (`app/api/v1/recommend/route.ts`):
-brands.sh Merchant Index query pipeline. No auth required. Resolves product categories, ranks merchants, returns skill URLs.
+brands.sh Merchant Index query pipeline. No auth required. Resolves product categories, ranks merchants, attaches product search results via pgvector, returns skill URLs.
+- POST accepts `category_ids` or `categories` (text search), `tier`, `brand`, `limit`
+- GET accepts `q` (natural language via Perplexity intake), `tier`, `limit`
+- Products attached via `attachProducts()`: embeds query text with all-MiniLM-L6-v2, does cosine similarity search on `product_listings.embedding` (384-dim vector), returns top 3 per merchant
+- `_brand_id` internal field stripped from response
+
+**Product Listings** (`product_listings` table):
+- pgvector-backed product catalog. `VECTOR(384)` column with IVFFlat index for cosine similarity search.
+- Embedding model: `Xenova/all-MiniLM-L6-v2` (384-dim, quantized ONNX) via `lib/embeddings/embed.ts`
+- Ingestion: `scripts/ingest-shopify-products.ts <domain>` — fetches from Shopify's public `products.json`, generates embeddings, upserts to DB
+- Category resolution: product_type matched against `category_keywords.keywords_tsv` via FTS
+- Currently ingested: Glossier (123 products)
 - `POST /api/v1/recommend` — structured query: `{ category_ids?: number[], categories?: string[], tier?: string, brand?: string, limit?: number }`. Validates with Zod. Returns ranked merchants with ASX scores, match depth, skill URLs.
 - `GET /api/v1/recommend?q=...&tier=...&limit=...` — natural language query. Uses Perplexity intake LLM → FTS category resolution → recursive CTE merchant ranking.
 - Pipeline: intake (NL only) → category FTS resolution → recursive ancestor walk → brand_categories join → depth+score ranking

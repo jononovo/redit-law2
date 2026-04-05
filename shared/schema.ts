@@ -1584,3 +1584,47 @@ export const categoryKeywords = pgTable("category_keywords", {
 
 export type CategoryKeyword = typeof categoryKeywords.$inferSelect;
 export type InsertCategoryKeyword = typeof categoryKeywords.$inferInsert;
+
+const vector384 = customType<{ data: number[] }>({
+  dataType() {
+    return "vector(384)";
+  },
+  toDriver(value: number[]) {
+    return `[${value.join(",")}]`;
+  },
+  fromDriver(value: unknown) {
+    if (typeof value === "string") {
+      return value.replace(/[\[\]]/g, "").split(",").map(Number);
+    }
+    return value as number[];
+  },
+});
+
+export const productListings = pgTable("product_listings", {
+  id: serial("id").primaryKey(),
+  brandId: integer("brand_id").notNull(),
+  name: text("name").notNull(),
+  description: text("description"),
+  priceCents: integer("price_cents").notNull(),
+  currency: text("currency").notNull().default("USD"),
+  inStock: boolean("in_stock").notNull().default(true),
+  imageUrl: text("image_url"),
+  productUrl: text("product_url").notNull(),
+  categoryId: integer("category_id"),
+  brandName: text("brand_name"),
+  upc: text("upc"),
+  gtin: text("gtin"),
+  mpn: text("mpn"),
+  feedSource: text("feed_source"),
+  feedItemId: text("feed_item_id"),
+  embedding: vector384("embedding"),
+  lastSynced: timestamp("last_synced").notNull().defaultNow(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (table) => [
+  uniqueIndex("product_listings_brand_feed_uniq").on(table.brandId, table.feedItemId),
+  index("product_listings_brand_id_idx").on(table.brandId),
+  index("product_listings_category_id_idx").on(table.categoryId),
+]);
+
+export type ProductListing = typeof productListings.$inferSelect;
+export type InsertProductListing = typeof productListings.$inferInsert;
