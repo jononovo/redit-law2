@@ -124,14 +124,33 @@ async function resolveCategories(terms: string[]): Promise<ResolvedCategory[]> {
   if (terms.length === 0) return [];
 
   const searchTerms = terms.join(" ").slice(0, 500);
-  const rows = await db.execute(
-    sql`SELECT category_id, category_name, category_path,
-          ts_rank(keywords_tsv, websearch_to_tsquery('english', ${searchTerms})) AS rank
-        FROM category_keywords
-        WHERE keywords_tsv @@ websearch_to_tsquery('english', ${searchTerms})
+
+  let rows = await db.execute(
+    sql`SELECT ck.category_id, ck.category_name, ck.category_path,
+          ts_rank(ck.keywords_tsv, websearch_to_tsquery('english', ${searchTerms}))
+            * (1.0 + (4 - LEAST(pc.depth, 4)) * 0.15) AS rank
+        FROM category_keywords ck
+        JOIN product_categories pc ON pc.id = ck.category_id
+        WHERE ck.keywords_tsv @@ websearch_to_tsquery('english', ${searchTerms})
         ORDER BY rank DESC
         LIMIT 5`,
   );
+
+  if (rows.rows.length === 0) {
+    const orTerms = searchTerms.trim().split(/\s+/).map((t) => t.replace(/[^a-zA-Z0-9]/g, "")).filter(Boolean).join(" | ");
+    if (orTerms) {
+      rows = await db.execute(
+        sql`SELECT ck.category_id, ck.category_name, ck.category_path,
+              ts_rank(ck.keywords_tsv, to_tsquery('english', ${orTerms}))
+                * (1.0 + (4 - LEAST(pc.depth, 4)) * 0.15) AS rank
+            FROM category_keywords ck
+            JOIN product_categories pc ON pc.id = ck.category_id
+            WHERE ck.keywords_tsv @@ to_tsquery('english', ${orTerms})
+            ORDER BY rank DESC
+            LIMIT 5`,
+      );
+    }
+  }
 
   return (rows.rows as any[]).map((r) => ({
     category_id: r.category_id,
@@ -162,16 +181,29 @@ async function rankMerchants(
           FROM product_categories pc JOIN ancestors a ON pc.id = a.parent_id
           WHERE a.depth > 0
         ),
+        descendants AS (
+          SELECT DISTINCT id, parent_id, depth, name
+          FROM product_categories WHERE id = ANY(${categoryArray}::int[])
+          UNION
+          SELECT pc.id, pc.parent_id, pc.depth, pc.name
+          FROM product_categories pc JOIN descendants d ON pc.parent_id = d.id
+          WHERE pc.depth <= 6
+        ),
+        all_related AS (
+          SELECT id, depth, name FROM ancestors
+          UNION
+          SELECT id, depth, name FROM descendants
+        ),
         matched_merchants AS (
           SELECT bi.id, bi.slug, bi.name, bi.domain, bi.sector, bi.tier,
             COALESCE(bi.overall_score, 0) AS asx_score,
             bi.skill_md IS NOT NULL AS has_skill,
-            MAX(anc.depth) AS match_depth,
-            array_agg(DISTINCT anc.name) AS matched_categories,
+            MAX(ar.depth) AS match_depth,
+            array_agg(DISTINCT ar.name) AS matched_categories,
             CASE WHEN ${brandParam} != '' AND (bi.slug = ${brandParam} OR bi.name ILIKE ${brandParam}) THEN 1 ELSE 0 END AS brand_match
           FROM brand_index bi
           JOIN brand_categories bc ON bc.brand_id = bi.id
-          JOIN ancestors anc ON anc.id = bc.category_id
+          JOIN all_related ar ON ar.id = bc.category_id
           WHERE (${tierParam} = '' OR bi.tier = ${tierParam})
           AND bi.maturity IN ('verified', 'official', 'beta', 'community', 'draft')
           GROUP BY bi.id
