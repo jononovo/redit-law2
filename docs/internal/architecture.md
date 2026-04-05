@@ -84,21 +84,4 @@ Perplexity (classify + audit)
 | Skill distribution Phase 2 | Not built |
 | Shopy CLI (`npx shopy add`) | Not built |
 
-## Documentation Map
-
-- **`tenants/`** — tenant identity, purpose, audience, branding, feature sets (start with `overview.md`)
-- **`scanning/`** — ASX scanner, scan pipeline, scoring rubric, maturity promotion, scan history
-- **`catalog/`** — brand_index table, taxonomy system, recommend API, product search
-- **`platform/`** — multitenant infrastructure, hostname routing, authentication, onboarding
-
-Each subfolder can contain a `research/` subfolder with dated analysis docs. Cross-cutting research lives in `research/` at the root level. See `guide.md` for the research frontmatter convention.
-
-All files have YAML frontmatter — scan it to find the right doc for your task.
-
-## Reading Order
-
-1. `vision.md` — product purpose and direction
-2. This file — technical overview
-3. `scanning/scan-taxonomy-skills-pipeline.md` — core pipeline end-to-end
-4. Subfolder docs as needed for specific features
-5. `guide.md` — only if writing or updating docs
+See `README.md` for folder navigation and reading order.
