@@ -1,6 +1,6 @@
 ---
 name: Internal Documentation Guide
-description: Convention for writing internal developer documentation. Read this before creating or updating any file in docs/internal/.
+description: Convention for writing internal developer documentation. Read this before creating or updating any file in internal/.
 ---
 
 # Internal Documentation Guide
@@ -88,7 +88,7 @@ description: One sentence — what this covers and when to read it.
 
 ## File Placement
 
-Place docs in the matching subfolder (`scanning/`, `catalog/`, `platform/`, `tenants/`). New subfolder only if 2+ docs expected. See `architecture.md` for the folder map.
+Place docs in the matching subfolder inside `internal_docs/` (`scanning/`, `catalog/`, `platform/`, `tenants/`). New subfolder only if 2+ docs expected.
 
 ---
 
@@ -98,10 +98,10 @@ Research docs capture the analysis, industry context, and decision reasoning beh
 
 ### Where they live
 
-Each feature subfolder can have a `research/` subfolder:
+Each feature subfolder in `internal_docs/` can have a `research/` subfolder:
 
 ```
-scanning/
+internal_docs/scanning/
   research/
     260403-scanner-rebuild-research.md
     260403-taxonomy-options-analysis.md
@@ -109,7 +109,7 @@ scanning/
   ...
 ```
 
-Cross-cutting research that spans multiple areas goes in `docs/internal/research/` at the root.
+Cross-cutting research that spans multiple areas goes in `internal_docs/research/` or `currently_building/` if still active.
 
 ### Research frontmatter (required)
 

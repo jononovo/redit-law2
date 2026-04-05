@@ -750,18 +750,19 @@ Schema changes flow through Drizzle ORM and are auto-synced to production on dep
 5. Config: `drizzle.config.ts` points at `DATABASE_URL` with `pg` driver
 6. The `spending_permissions` table exists in both databases but is not tracked in the schema (legacy table)
 
-### Internal Developer Docs (`docs/internal/`)
+### Internal Developer Docs (`internal/`)
 Private technical documentation for the engineering team. Each doc file has YAML frontmatter (`name`, `description`) for quick scanning.
 
-**Entry point:** `vision.md` → `architecture.md` → subfolder docs → `guide.md` (if writing docs)
+**Entry point:** `vision.md` → `architecture.md` → `internal_docs/` subfolder → `guide.md` (if writing docs)
 
 - `vision.md` — product purpose and direction (Tier 3 protected)
-- `architecture.md` — system overview, component map, folder index
+- `architecture.md` — system overview, component map
 - `guide.md` — how to write and update internal docs
-- `tenants/` — tenant identity, purpose, audience, branding (start with `overview.md`)
-- `scanning/` — ASX scanner, scan pipeline, maturity, scan history
-- `catalog/` — brand catalog, taxonomy, recommend API, product search
-- `platform/` — multitenant routing, authentication, onboarding
+- `currently_building/` — active build cycle working bench
+- `internal_docs/tenants/` — tenant identity, purpose, audience, branding
+- `internal_docs/scanning/` — ASX scanner, scan pipeline, maturity, scan history
+- `internal_docs/catalog/` — brand catalog, taxonomy, recommend API, product search
+- `internal_docs/platform/` — multitenant routing, authentication, onboarding
 
 ### Documentation System (`docs/content/`, `app/docs/`)
 Self-hosted documentation at `/docs` with sidebar navigation, audience toggle, and markdown rendering. Multi-tenant aware — each tenant sees its own docs.

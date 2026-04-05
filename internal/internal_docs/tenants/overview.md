@@ -5,7 +5,7 @@ description: Quick reference for all three tenants — purpose, audience, style.
 
 # Tenant Overview
 
-One codebase, three products. Each tenant has its own domain, audience, visual identity, and feature set. They share the same database and infrastructure (see `platform/multitenant-system.md`).
+One codebase, three products. Each tenant has its own domain, audience, visual identity, and feature set. They share the same database and infrastructure (see `../platform/multitenant-system.md`).
 
 ---
 
