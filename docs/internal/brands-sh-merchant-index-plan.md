@@ -7,9 +7,9 @@
 | Document | Relevance |
 |---|---|
 | `brands-sh-product-search-plan.md` | Stage 3: product ingestion, Zvec collections, GTIN, feed strategy |
-| `product-index-taxonomy-plan.md` | GPT taxonomy, `ucp_categories` + `brand_categories` schema |
-| `agent-readiness-and-product-index-service.md` | Three-tier service vision, agent gateway |
-| `agentic-commerce-standard.md` | ASX Score definition, scoring pillars |
+| `docs/build context/Shopy/3. product-index-taxonomy-plan.md` | GPT taxonomy, `product_categories` + `brand_categories` schema |
+| `docs/build context/Product_index/agent-readiness-and-product-index-service.md` | Three-tier service vision, agent gateway |
+| `docs/build context/Product_index/creditclaw-agentic-commerce-strategy.md` | ASX Score definition, scoring pillars |
 
 ---
 
@@ -86,7 +86,7 @@ Query: "{user_query}"
 ```sql
 CREATE TABLE category_keywords (
   id            SERIAL PRIMARY KEY,
-  category_id   INTEGER NOT NULL REFERENCES ucp_categories(id) ON DELETE CASCADE,
+  category_id   INTEGER NOT NULL REFERENCES product_categories(id) ON DELETE CASCADE,
   gpt_id        INTEGER NOT NULL,
   category_name TEXT NOT NULL,
   category_path TEXT NOT NULL,
@@ -124,20 +124,20 @@ Merchants are tagged at varying category depths. The query walks up the tree so 
 ```sql
 WITH RECURSIVE ancestors AS (
   SELECT id, gpt_id, parent_id, depth, name
-  FROM ucp_categories WHERE gpt_id = ANY($1::int[])
+  FROM product_categories WHERE gpt_id = ANY($1::int[])
   UNION ALL
-  SELECT uc.id, uc.gpt_id, uc.parent_id, uc.depth, uc.name
-  FROM ucp_categories uc JOIN ancestors a ON uc.id = a.parent_id
+  SELECT pc.id, pc.gpt_id, pc.parent_id, pc.depth, pc.name
+  FROM product_categories pc JOIN ancestors a ON pc.id = a.parent_id
 ),
 matched_merchants AS (
   SELECT bi.id, bi.slug, bi.name, bi.domain, bi.sector, bi.tier,
-    bi.agent_readiness AS asx_score,
+    bi.overall_score AS asx_score,
     bi.skill_md IS NOT NULL AS has_skill,
     MAX(anc.depth) AS match_depth,
     array_agg(DISTINCT anc.name) AS matched_categories
   FROM brand_index bi
-  JOIN brand_categories bc ON bc.brand_id = bi.id
-  JOIN ancestors anc ON anc.id = bc.category_id
+  JOIN brand_categories bc ON bc.brand_id = bi.id   -- Drizzle: bc.brandId
+  JOIN ancestors anc ON anc.id = bc.category_id     -- Drizzle: bc.categoryId
   WHERE ($2::text IS NULL OR bi.tier = $2)
   AND bi.maturity IN ('verified', 'official', 'beta')
   GROUP BY bi.id
@@ -214,7 +214,7 @@ interface RecommendResponse {
   "merchants": [
     {
       "slug": "coach", "name": "Coach", "domain": "coach.com",
-      "sector": "fashion", "tier": "premium", "asx_score": 72,
+      "sector": "apparel-accessories", "tier": "premium", "asx_score": 72,
       "recommended": true, "rank": 1, "match_depth": 3,
       "matched_categories": ["Handbags"],
       "skill_url": "https://brands.sh/skills/coach/skill.md",
@@ -226,7 +226,7 @@ interface RecommendResponse {
     },
     {
       "slug": "gucci", "name": "Gucci", "domain": "gucci.com",
-      "sector": "luxury", "tier": "luxury", "asx_score": 65,
+      "sector": "apparel-accessories", "tier": "luxury", "asx_score": 65,
       "recommended": true, "rank": 2, "match_depth": 3,
       "matched_categories": ["Handbags"],
       "skill_url": "https://brands.sh/skills/gucci/skill.md",
@@ -234,7 +234,7 @@ interface RecommendResponse {
     },
     {
       "slug": "amazon", "name": "Amazon", "domain": "amazon.com",
-      "sector": "retail", "tier": "marketplace", "asx_score": 91,
+      "sector": "multi-sector", "tier": "value", "asx_score": 91,
       "recommended": true, "rank": 3, "match_depth": 2,
       "matched_categories": ["Handbags"],
       "skill_url": "https://brands.sh/skills/amazon/skill.md",
@@ -396,7 +396,7 @@ Cloudflare — structured:       ~12ms (1 + 1 + 10)
 
 | Component | Status |
 |---|---|
-| `ucp_categories` table | **Exists** |
+| `product_categories` table | **Exists** |
 | `brand_categories` junction table | **Exists** |
 | `brand_index` table | **Exists** |
 | `category_keywords` table | **New** — one table, GIN index |

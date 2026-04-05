@@ -7,8 +7,8 @@
 | Document | Relevance |
 |---|---|
 | `brands-sh-merchant-index-plan.md` | Stages 1-2, API response shape, skill format, deployment overview |
-| `product-index-taxonomy-plan.md` | GPT taxonomy, `product_index` + `product_listings` schema |
-| `agent-readiness-and-product-index-service.md` | Tier 3 vision, catalog enrichment, UCP distribution |
+| `docs/build context/Shopy/3. product-index-taxonomy-plan.md` | GPT taxonomy, `product_categories` + `brand_categories` schema |
+| `docs/build context/Product_index/agent-readiness-and-product-index-service.md` | Tier 3 vision, catalog enrichment, distribution |
 
 ---
 

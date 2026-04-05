@@ -24,7 +24,7 @@ Private technical documentation for the CreditClaw / shopy.sh / brands.sh engine
 |------|---------|---------|
 | `scan-taxonomy-skills-pipeline.md` | **Pipeline Overview** | End-to-end flow: scan → classify → score → taxonomy → SKILL.md → skill.json. Start here for understanding the current system. |
 | `asx-scanner.md` | ASX Scanner | Perplexity-powered scan, rubric v1.1.0, 11 signals, 3 API calls per scan |
-| `metadata-and-taxonomy.md` | Metadata & Taxonomy | 27-sector system, Google Product Taxonomy, tiers, capabilities, skill.json |
+| `metadata-and-taxonomy.md` | Metadata & Taxonomy | 28-sector system, Google Product Taxonomy, tiers, capabilities, skill.json |
 | `product-index.md` | Product Index | Brand catalog, LITE_COLUMNS, filtering, generateStaticParams, search_vector |
 | `multitenant-system.md` | Multitenant | Hostname routing, tenant configs, theming, adding new tenants |
 
