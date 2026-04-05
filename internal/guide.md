@@ -90,6 +90,14 @@ description: One sentence — what this covers and when to read it.
 
 Place docs in the matching subfolder inside `internal_docs/` (`scanning/`, `catalog/`, `platform/`, `tenants/`). New subfolder only if 2+ docs expected.
 
+### Folder README files
+
+Use `_README.md` (with leading underscore) for folder navigation files. The underscore sorts it to the top of file listings and distinguishes it from content docs.
+
+- `internal/_README.md` — main navigation for the whole folder
+- `currently_building/_README.md` — explains the working bench
+- Feature subfolders in `internal_docs/` don't need a `_README.md` — agents scan frontmatter of the docs directly
+
 ---
 
 ## Research Files

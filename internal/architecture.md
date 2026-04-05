@@ -84,4 +84,4 @@ Perplexity (classify + audit)
 | Skill distribution Phase 2 | Not built |
 | Shopy CLI (`npx shopy add`) | Not built |
 
-See `README.md` for folder navigation and reading order.
+See `_README.md` for folder navigation and reading order.
