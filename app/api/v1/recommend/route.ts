@@ -128,7 +128,10 @@ async function resolveCategories(terms: string[]): Promise<ResolvedCategory[]> {
   let rows = await db.execute(
     sql`SELECT ck.category_id, ck.category_name, ck.category_path,
           ts_rank(ck.keywords_tsv, websearch_to_tsquery('english', ${searchTerms}))
-            * (1.0 + (4 - LEAST(pc.depth, 4)) * 0.15) AS rank
+            * (1.0 + (4 - LEAST(pc.depth, 4)) * 0.15)
+            * CASE WHEN lower(ck.category_name) = lower(${searchTerms}) THEN 3.0
+                   WHEN lower(ck.category_name) LIKE '%' || lower(${searchTerms}) || '%' THEN 1.5
+                   ELSE 1.0 END AS rank
         FROM category_keywords ck
         JOIN product_categories pc ON pc.id = ck.category_id
         WHERE ck.keywords_tsv @@ websearch_to_tsquery('english', ${searchTerms})
@@ -142,7 +145,10 @@ async function resolveCategories(terms: string[]): Promise<ResolvedCategory[]> {
       rows = await db.execute(
         sql`SELECT ck.category_id, ck.category_name, ck.category_path,
               ts_rank(ck.keywords_tsv, to_tsquery('english', ${orTerms}))
-                * (1.0 + (4 - LEAST(pc.depth, 4)) * 0.15) AS rank
+                * (1.0 + (4 - LEAST(pc.depth, 4)) * 0.15)
+                * CASE WHEN lower(ck.category_name) = lower(${searchTerms}) THEN 3.0
+                       WHEN lower(ck.category_name) LIKE '%' || lower(${searchTerms}) || '%' THEN 1.5
+                       ELSE 1.0 END AS rank
             FROM category_keywords ck
             JOIN product_categories pc ON pc.id = ck.category_id
             WHERE ck.keywords_tsv @@ to_tsquery('english', ${orTerms})

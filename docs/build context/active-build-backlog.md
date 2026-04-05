@@ -178,26 +178,30 @@ Outstanding:
 
 ### Step 7: Product Search (Stage 3) ✅ (core pipeline)
 
-**Priority:** High — next major build
-**Status:** Core pipeline built, scaling ongoing
+**Priority:** Complete — maintenance/scaling only
+**Status:** Stage 3 complete. All infrastructure built, 8 merchants ingested, all test gates pass.
 **Source:** `docs/internal/brands-sh-product-search-plan.md`
 **Depends on:** Step 6B
 
-Product-level search using pgvector in Postgres. `product_listings` table with all-MiniLM-L6-v2 embeddings (384-dim). Brands-first ingestion via Shopify `products.json`. Products nested in `/api/v1/recommend` response.
+Product-level search using pgvector in Postgres. `product_listings` table with all-MiniLM-L6-v2 embeddings (384-dim). Multiple ingestion methods (Shopify, Firecrawl, XML). Products nested in `/api/v1/recommend` response via LATERAL join (fair per-merchant distribution).
 
 Completed:
 - [x] Schema + pgvector setup (`product_listings` table, `VECTOR(384)`, IVFFlat index)
 - [x] Embedding infrastructure (`@xenova/transformers`, `lib/embeddings/embed.ts`)
-- [x] Shopify ingestion script (`scripts/ingest-shopify-products.ts`)
-- [x] Wire products into recommend API (POST + GET, `attachProducts()`, `_brand_id` stripped)
-- [x] 7 merchants ingested: Glossier (123), Allbirds (937), Everlane (2,500), Chubbies (1,746), Outdoor Voices (367), Brooklinen (305), Casper (203) = **6,181 products total**
-- [x] Vector search verified: cosine similarity, top 3 per merchant, cross-merchant results
+- [x] Shopify ingestion script (`scripts/ingest-shopify-products.ts`) with www subdomain auto-detect
+- [x] Wire products into recommend API (POST + GET, `attachProducts()` via LATERAL join, `_brand_id` stripped)
+- [x] 8 merchants ingested: Everlane (2,500), Chubbies (1,746), Allbirds (937), Mejuri (593), Outdoor Voices (367), Brooklinen (305), Casper (203), Glossier (123) = **6,774 products total**
+- [x] Vector search verified: cosine similarity, top 3 per merchant, fair distribution via LATERAL join
+- [x] Google Shopping XML feed parser (`scripts/ingest-xml-feed.ts`)
+- [x] Firecrawl batch crawler for non-Shopify merchants (`scripts/ingest-firecrawl-batch.ts`, `scripts/harvest-firecrawl-batches.ts`)
+- [x] Refresh scheduler (`scripts/refresh-products.ts`)
+- [x] Category keyword generation via Anthropic Claude (`scripts/generate-category-keywords.ts`)
+- [x] FTS name-match boost (exact match 3x, partial 1.5x) + depth boost + OR fallback
+- [x] Bidirectional CTE (ancestor + descendant walk for comprehensive category coverage)
 
-Outstanding:
-- [ ] Google Shopping XML feed parser (Step 5 of plan)
-- [ ] Sitemap/crawl-based ingestion fallback
-- [ ] Refresh scheduler (weekly re-ingest)
-- [ ] More Shopify merchants (Mejuri had network issues, retry later)
+Scaling (run as needed):
+- [ ] Ingest more non-Shopify merchants via Firecrawl/XML parsers
+- [ ] Continue category keyword generation (1,286/5,638 populated, run `npx tsx scripts/generate-category-keywords.ts 5`)
 - [ ] AI enrichment layer (optional, only if recall < 80%)
 
 ---

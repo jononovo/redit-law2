@@ -1,10 +1,12 @@
 import { db } from "../server/db";
 import { productCategories, categoryKeywords } from "../shared/schema";
-import { sql, eq } from "drizzle-orm";
+import { sql } from "drizzle-orm";
+import Anthropic from "@anthropic-ai/sdk";
 
 const BATCH_SIZE = 15;
-const PERPLEXITY_TIMEOUT_MS = 60_000;
-const KEYWORDS_PER_CATEGORY = 15;
+const KEYWORDS_PER_CATEGORY = 8;
+
+const client = new Anthropic();
 
 interface CategoryRow {
   id: number;
@@ -15,51 +17,29 @@ interface CategoryRow {
 
 async function generateKeywordsForBatch(
   categories: CategoryRow[],
-  apiKey: string,
 ): Promise<Map<number, string[]>> {
   const categoryList = categories
     .map((c) => `${c.id}: ${c.path}`)
     .join("\n");
 
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), PERPLEXITY_TIMEOUT_MS);
-
   try {
-    const res = await fetch("https://api.perplexity.ai/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      signal: controller.signal,
-      body: JSON.stringify({
-        model: "sonar",
-        messages: [
-          {
-            role: "system",
-            content: `You generate search keywords for product categories. For each category ID, produce ${KEYWORDS_PER_CATEGORY} keywords/phrases that a shopper or AI agent might use to search for products in that category. Include synonyms, common misspellings, abbreviations, and related terms. Return valid JSON only — an object where keys are category IDs (as strings) and values are arrays of keyword strings. No explanation.`,
-          },
-          {
-            role: "user",
-            content: `Generate search keywords for these categories:\n${categoryList}`,
-          },
-        ],
-        temperature: 0.3,
-        max_tokens: 4096,
-      }),
+    const response = await client.messages.create({
+      model: "claude-sonnet-4-20250514",
+      max_tokens: 8192,
+      messages: [
+        {
+          role: "user",
+          content: `For each Google Product Category below, generate ${KEYWORDS_PER_CATEGORY} search keywords/phrases that a shopper would use to find products in that category. Include synonyms, abbreviations, and related terms. Return ONLY valid JSON — an object where keys are category IDs (as strings) and values are arrays of lowercase keyword strings. No explanation.
+
+Categories:
+${categoryList}`,
+        },
+      ],
     });
 
-    clearTimeout(timer);
-
-    if (!res.ok) {
-      const errText = await res.text();
-      throw new Error(`Perplexity API ${res.status}: ${errText}`);
-    }
-
-    const data = await res.json();
-    const content = data.choices?.[0]?.message?.content ?? "";
-
-    const jsonMatch = content.match(/\{[\s\S]*\}/);
+    const text =
+      response.content[0].type === "text" ? response.content[0].text : "";
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
       console.error("  No JSON found in response");
       return new Map();
@@ -79,25 +59,16 @@ async function generateKeywordsForBatch(
     }
 
     return result;
-  } catch (err: unknown) {
-    clearTimeout(timer);
-    if (err instanceof Error && err.name === "AbortError") {
-      console.error("  Timeout on batch");
-    } else {
-      console.error("  Batch error:", err);
-    }
+  } catch (err) {
+    console.error("  Batch error:", err);
     return new Map();
   }
 }
 
 async function main() {
-  const apiKey = process.env.PERPLEXITY_API_KEY;
-  if (!apiKey) {
-    console.error("PERPLEXITY_API_KEY not set");
-    process.exit(1);
-  }
+  const maxDepth = parseInt(process.argv[2] || "4");
+  console.log(`Generating keywords for categories up to depth ${maxDepth}`);
 
-  console.log("Fetching all product categories...");
   const allCategories = await db
     .select({
       id: productCategories.id,
@@ -106,36 +77,23 @@ async function main() {
       depth: productCategories.depth,
     })
     .from(productCategories)
-    .orderBy(productCategories.id);
-
-  console.log(`Found ${allCategories.length} categories`);
-
-  const existing = await db
-    .select({ count: sql<number>`count(*)::int` })
-    .from(categoryKeywords);
-  const existingCount = existing[0]?.count ?? 0;
-
-  if (existingCount > 0) {
-    console.log(
-      `category_keywords already has ${existingCount} rows. Skipping already-populated categories.`,
-    );
-  }
+    .orderBy(productCategories.depth, productCategories.name);
 
   const existingIds = new Set<number>();
-  if (existingCount > 0) {
-    const rows = await db
-      .select({ categoryId: categoryKeywords.categoryId })
-      .from(categoryKeywords);
-    for (const r of rows) existingIds.add(r.categoryId);
-  }
+  const existingRows = await db
+    .select({ categoryId: categoryKeywords.categoryId })
+    .from(categoryKeywords);
+  for (const r of existingRows) existingIds.add(r.categoryId);
 
-  const remaining = allCategories.filter((c) => !existingIds.has(c.id));
+  const remaining = allCategories.filter(
+    (c) => !existingIds.has(c.id) && c.depth <= maxDepth,
+  );
   console.log(
-    `${remaining.length} categories need keywords (${existingIds.size} already done)`,
+    `${remaining.length} categories need keywords (${existingIds.size} already done, filtering to depth <= ${maxDepth})`,
   );
 
   if (remaining.length === 0) {
-    console.log("All categories already have keywords. Done.");
+    console.log("All categories at this depth already have keywords. Done.");
     process.exit(0);
   }
 
@@ -147,10 +105,10 @@ async function main() {
     const batchNum = Math.floor(i / BATCH_SIZE) + 1;
     const totalBatches = Math.ceil(remaining.length / BATCH_SIZE);
     console.log(
-      `\nBatch ${batchNum}/${totalBatches} (${batch.length} categories)...`,
+      `\nBatch ${batchNum}/${totalBatches} (${batch.length} categories, depth ${batch[0].depth}-${batch[batch.length - 1].depth})...`,
     );
 
-    const keywordsMap = await generateKeywordsForBatch(batch, apiKey);
+    const keywordsMap = await generateKeywordsForBatch(batch);
 
     const inserts: {
       categoryId: number;
@@ -203,7 +161,7 @@ async function main() {
     );
 
     if (i + BATCH_SIZE < remaining.length) {
-      await new Promise((r) => setTimeout(r, 1000));
+      await new Promise((r) => setTimeout(r, 300));
     }
   }
 

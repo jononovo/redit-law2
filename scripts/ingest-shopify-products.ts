@@ -29,9 +29,38 @@ interface ShopifyProduct {
 
 async function fetchShopifyProducts(domain: string): Promise<ShopifyProduct[]> {
   const products: ShopifyProduct[] = [];
+  let fetchDomain = domain;
+
+  let useWww = false;
+  try {
+    const testRes = await fetch(`https://${domain}/products.json?limit=1`, {
+      headers: { "User-Agent": "brands.sh product indexer" },
+    });
+    if (testRes.ok) {
+      const contentType = testRes.headers.get("content-type") || "";
+      if (!contentType.includes("json")) useWww = true;
+    } else {
+      useWww = true;
+    }
+  } catch {
+    useWww = true;
+  }
+  if (useWww) {
+    const wwwDomain = `www.${domain}`;
+    try {
+      const wwwRes = await fetch(`https://${wwwDomain}/products.json?limit=1`, {
+        headers: { "User-Agent": "brands.sh product indexer" },
+      });
+      const ct = wwwRes.headers.get("content-type") || "";
+      if (wwwRes.ok && ct.includes("json")) {
+        fetchDomain = wwwDomain;
+        console.log(`  Using www subdomain: ${wwwDomain}`);
+      }
+    } catch {}
+  }
 
   for (let page = 1; page <= MAX_PAGES; page++) {
-    const url = `https://${domain}/products.json?limit=${PRODUCTS_PER_PAGE}&page=${page}`;
+    const url = `https://${fetchDomain}/products.json?limit=${PRODUCTS_PER_PAGE}&page=${page}`;
     console.log(`  Fetching page ${page}...`);
 
     const res = await fetch(url, {
@@ -85,10 +114,10 @@ async function main() {
     process.exit(1);
   }
 
-  const domain = domainArg.replace(/^https?:\/\//, "").replace(/\/$/, "");
+  const domain = domainArg.replace(/^https?:\/\//, "").replace(/^www\./, "").replace(/\/$/, "");
 
   const brand = await db.execute(
-    sql`SELECT id, slug, name FROM brand_index WHERE domain = ${domain} LIMIT 1`,
+    sql`SELECT id, slug, name FROM brand_index WHERE domain = ${domain} OR domain = ${"www." + domain} LIMIT 1`,
   );
 
   if (!brand.rows[0]) {
