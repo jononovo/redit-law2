@@ -4,7 +4,7 @@
 
 ## Overview
 
-The metadata system classifies merchants and their products using a structured taxonomy based on the Google Product Taxonomy. This classification powers catalog filtering, agent search, and the `skill.json` machine-readable format. The system uses a three-layer model — Sector → Category → Sub-Category — built on top of Google's ~5,600 category tree plus 43 custom entries for non-Google sectors.
+The metadata system classifies merchants and their products using a structured taxonomy based on the Google Product Taxonomy. This classification powers catalog filtering, agent search, and the `skill.json` machine-readable format. The system uses a three-layer model — Sector → Category → Sub-Category — built on top of Google's ~5,600 category tree plus 43 custom entries for non-Google sectors. 28 total sectors: 21 from Google, 6 custom, plus `multi-sector` (set programmatically for department stores, supermarkets, mega merchants).
 
 For the full end-to-end pipeline (scan → classification → categories → skill output), see `scan-taxonomy-skills-pipeline.md`.
 
@@ -48,9 +48,9 @@ Google Product Taxonomy (~5,595 categories)
 
 ---
 
-## Layer 1: Sectors (27 entries)
+## Layer 1: Sectors (28 entries)
 
-Defined in `lib/procurement-skills/taxonomy/sectors.ts`. A hybrid of Google Product Taxonomy roots and custom additions.
+Defined in `lib/procurement-skills/taxonomy/sectors.ts`. A hybrid of Google Product Taxonomy roots and custom additions. 26 are assignable by the classifier; luxury and multi-sector are set programmatically.
 
 ### Google Product Taxonomy roots (21)
 
@@ -88,15 +88,16 @@ Defined in `lib/procurement-skills/taxonomy/sectors.ts`. A hybrid of Google Prod
 | `events` | 100030 | Concerts, sports, festivals, conferences |
 | `luxury` | 100040 | NOT an assignable sector — tier-driven filter view |
 | `specialty` | 100050 | Fallback for uncategorizable brands |
+| `multi-sector` | 0 | NOT assignable — set programmatically for department_store, supermarket, mega_merchant |
 
 ### Key constants
 
 | Constant | What it contains |
 |----------|-----------------|
-| `SECTOR_ROOT_IDS` | All 27 sectors → root category IDs |
+| `SECTOR_ROOT_IDS` | All 28 sectors → root category IDs |
 | `GOOGLE_ROOT_IDS` | Derived — only the 21 Google-mapped sectors |
-| `ASSIGNABLE_SECTORS` | 26 entries — luxury excluded from assignment |
-| `SECTOR_LABELS` | Display names for all 27 sectors |
+| `ASSIGNABLE_SECTORS` | 26 entries — luxury and multi-sector excluded from assignment |
+| `SECTOR_LABELS` | Display names for all 28 sectors |
 
 ### Luxury is special
 
@@ -154,7 +155,7 @@ Market position classification defined in `lib/procurement-skills/taxonomy/tiers
 | `luxury` | Luxury goods, exclusive brands |
 | `ultra_luxury` | Top-tier luxury, exclusive access |
 
-Tiers affect how agents approach purchasing — a `budget` tier merchant might prioritize coupon checking, while a `premium` merchant might emphasize quality and exclusivity. The `luxury` and `ultra_luxury` tiers also power the `/c/luxury` filter view.
+7 tiers total. Tiers affect how agents approach purchasing — a `budget` tier merchant might prioritize coupon checking, while a `premium` merchant might emphasize quality and exclusivity. The `luxury` and `ultra_luxury` tiers also power the `/c/luxury` filter view.
 
 ---
 

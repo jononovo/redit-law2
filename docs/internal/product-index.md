@@ -1,6 +1,6 @@
 # Product Index (Brand Catalog) — Internal Developer Guide
 
-> Last updated: 2026-04-03
+> Last updated: 2026-04-04
 
 ## Overview
 
@@ -15,14 +15,16 @@ The system was designed for scale — tens of thousands of brands within weeks, 
 ```
 brand_index table (source of truth)
   ↓
-  ├── /skills (catalog UI)           → searchBrands() with LITE_COLUMNS
-  ├── /skills/[vendor] (detail)      → full row fetch by slug
-  ├── /c/[sector] (sector landing)   → filtered by sector column
-  ├── /c/luxury (tier filter)        → tier IN ('ultra_luxury', 'luxury')
-  ├── /api/v1/bot/skills (agent API) → searchBrands() → formatted VendorSkill objects
-  ├── /api/v1/vendors (simple list)  → all brands, minimal fields
-  ├── generateStaticParams           → pre-renders top 1000 verified/official pages
-  └── skill.json / SKILL.md          → serialized from brandData JSONB + skillMd text + brand_categories
+  ├── /skills (catalog UI)                  → searchBrands() with LITE_COLUMNS
+  ├── /skills/[vendor] (detail page)        → full row fetch by slug, server+client component split
+  ├── /c/[sector] (sector landing)          → filtered by sector column
+  ├── /c/luxury (tier filter)               → tier IN ('ultra_luxury', 'luxury')
+  ├── /api/v1/bot/skills (agent catalog)    → searchBrands() → formatted VendorSkill objects
+  ├── /api/v1/vendors (simple list)         → all brands, minimal fields
+  ├── /brands/{slug}/skill (SKILL.md)       → raw markdown, text/markdown, Cache-Control: 86400
+  ├── /brands/{slug}/skill-json (skill.json)→ structured JSON, Cache-Control: 86400
+  ├── generateStaticParams                  → pre-renders top 1000 verified/official pages
+  └── skill.json / SKILL.md                 → serialized from brandData JSONB + skillMd text + brand_categories
 
 brand_categories junction table
   → links brand_index rows to product_categories taxonomy entries
@@ -40,8 +42,11 @@ brand_categories junction table
 | `app/skills/page.tsx` | Server component — initial data fetch + SEO metadata |
 | `app/skills/catalog-client.tsx` | Client component — interactive filtering, pagination, URL sync |
 | `lib/catalog/parse-filters.ts` | URL ↔ filter state parsing (sectors, maturity, capabilities, search) |
-| `app/brands/[slug]/page.tsx` | Brand detail page with `generateStaticParams` |
-| `app/api/v1/bot/skills/route.ts` | Agent-facing search API |
+| `app/skills/[vendor]/page.tsx` | Skill detail — slim server component (data fetch, metadata, ISR `revalidate=3600`) |
+| `app/skills/[vendor]/skill-detail-content.tsx` | Skill detail — client component (renders full page, tenant-aware theming via `useTenant()`) |
+| `app/brands/[slug]/skill/route.ts` | Serves raw SKILL.md markdown for a brand (`text/markdown`) |
+| `app/brands/[slug]/skill-json/route.ts` | Serves skill.json structured data for a brand (`application/json`) |
+| `app/api/v1/bot/skills/route.ts` | Agent-facing catalog search API (list/filter brands, not per-brand skill files) |
 
 ---
 
@@ -53,8 +58,8 @@ brand_categories junction table
 ### Classification columns
 - `sector` — primary sector slug from `lib/procurement-skills/taxonomy/sectors.ts` (27 values, 26 assignable)
 - `subSectors` — text array (freeform strings from Perplexity classification — used for display)
-- `tier` — market position: `commodity`, `value`, `mid_range`, `premium`, `luxury`, `ultra_luxury`, `enterprise`
-- `maturity` — `draft`, `verified`, `official` (controls visibility and trust level)
+- `tier` — market position: `commodity`, `budget`, `value`, `mid_range`, `premium`, `luxury`, `ultra_luxury`
+- `maturity` — `draft`, `beta`, `community`, `verified`, `official` (controls visibility and trust level)
 - `tags`, `carriesBrands` — text arrays for additional classification
 
 ### Capability columns
@@ -139,7 +144,7 @@ The `hasUserInteracted` ref in `catalog-client.tsx` prevents the component from 
 
 ## generateStaticParams
 
-`app/brands/[slug]/page.tsx` pre-renders the top 1000 brand pages at build time:
+`app/skills/[vendor]/page.tsx` pre-renders the top 1000 brand pages at build time:
 
 - Fetches brands with `maturities: ["verified", "official"]` and `lite: true`
 - Wrapped in try/catch — returns empty array on failure so builds don't break

@@ -365,7 +365,7 @@ The skill.json route at `/brands/{slug}/skill-json` assembles the machine-readab
 | `lib/procurement-skills/generator.ts` | SKILL.md markdown generation |
 | `lib/procurement-skills/skill-json.ts` | skill.json builder |
 | `app/brands/[slug]/skill-json/route.ts` | skill.json HTTP route |
-| `lib/procurement-skills/taxonomy/sectors.ts` | 27 sectors, root IDs, helpers |
+| `lib/procurement-skills/taxonomy/sectors.ts` | 28 sectors (26 assignable + luxury + multi-sector), root IDs, helpers |
 | `shared/schema.ts` | product_categories, brand_categories, brand_index tables |
 | `server/storage/brand-index.ts` | brand_index CRUD operations |
 | `server/storage/brand-categories.ts` | brand_categories CRUD operations |

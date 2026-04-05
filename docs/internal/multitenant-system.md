@@ -1,6 +1,6 @@
 # Multitenant System — Internal Developer Guide
 
-> Last updated: 2026-04-02 · Covers: Step 2 implementation + tenant component reorganization
+> Last updated: 2026-04-04
 
 ## Overview
 
@@ -30,9 +30,11 @@ Request → middleware.ts (Edge)
 | File | Runtime | Purpose |
 |------|---------|---------|
 | `middleware.ts` | Edge | Hostname → tenant ID resolution, header/cookie injection |
-| `lib/tenants/types.ts` | Any | `TenantConfig` interface (includes `navigation` for footer config) |
+| `lib/tenants/types.ts` | Any | `TenantConfig` interface (includes `navigation` for header/footer config) |
 | `lib/tenants/config.ts` | Node (server only) | `getTenantConfig()` — reads + caches `config.json` from disk |
+| `lib/tenants/tenant-configs.ts` | Any | Static tenant config map — **must stay in sync with config.json files** |
 | `lib/tenants/tenant-context.tsx` | Client | `TenantProvider` + `useTenant()` hook |
+| `lib/tenants/tenant-hydrator.tsx` | Client | Hydrates tenant config on the client from layout props |
 | `lib/tenants/get-request-tenant.ts` | Server (RSC/API) | `getRequestTenant()` — reads `x-tenant-id` from request headers |
 | `public/tenants/{id}/config.json` | Static | Per-tenant branding, meta, theme, routes, features, navigation, tracking |
 | `app/layout.tsx` | Server | Reads tenant, generates metadata, injects theme vars |
@@ -40,7 +42,7 @@ Request → middleware.ts (Edge)
 | `app/how-it-works/page.tsx` | Server | Tenant router — dynamically loads how-it-works component per tenant |
 | `components/tenants/{id}/` | Client | Per-tenant components (landing, how-it-works, etc.) |
 | `components/footer.tsx` | Client | Shared footer — reads columns/socials from `tenant.navigation.footer` in config.json |
-| `components/nav.tsx` | Client | Shared nav — uses `useTenant()` for branding and routes |
+| `components/nav.tsx` | Client | Shared nav — reads links from `tenant.navigation.header.links`, uses `useTenant()` for branding |
 
 ### Per-tenant component folders
 
@@ -50,8 +52,11 @@ components/tenants/
     landing.tsx          ← CreditClaw homepage
     how-it-works.tsx     ← CreditClaw "how it works" page
   shopy/
-    landing.tsx          ← shopy.sh homepage (minimal: domain scanner + skills table)
-    how-it-works.tsx     ← shopy.sh "how it works" page (terminal demo, scoreboard, features)
+    landing.tsx          ← shopy.sh homepage
+    how-it-works.tsx     ← shopy.sh "how it works" page
+  brands/
+    landing.tsx          ← brands.sh homepage (skill registry, dual-purpose input, sector filter bar)
+    how-it-works.tsx     ← brands.sh "how it works" page
 ```
 
 ### Config-driven footer
@@ -101,9 +106,14 @@ Copy `public/tenants/creditclaw/config.json` as a starting point and update all 
 - `routes.guestLanding` — key used by `app/page.tsx` to load the right landing component
 - `routes.authLanding` — where authenticated users redirect to (usually `/overview`)
 - `features` — feature flag object (keys are checked by components)
+- `navigation.header` — variant (`"light"` or `"dark"`), links array for nav menu items
 - `navigation.footer` — columns and social links for the footer
 
-### 2. Register the domain in middleware
+### 2. Update `lib/tenants/tenant-configs.ts`
+
+This static config map must stay in sync with the `config.json` files. It's used in contexts where reading from disk isn't appropriate. Add the new tenant's config object here.
+
+### 3. Register the domain in middleware
 
 **This is the part people forget.** The middleware runs in Edge runtime, which cannot read the filesystem. So domain → tenant mapping is hardcoded in `middleware.ts`:
 
@@ -111,19 +121,22 @@ Copy `public/tenants/creditclaw/config.json` as a starting point and update all 
 const TENANT_DOMAINS: [string, string[]][] = [
   ["creditclaw", ["creditclaw.com"]],
   ["shopy", ["shopy.sh"]],
+  ["brands", ["brands.sh"]],
   ["new-tenant", ["newtenant.com"]],  // ← add here
 ];
 ```
 
 If you skip this, the new tenant will silently resolve as `creditclaw` (the default).
 
-### 3. Create tenant components
+### 4. Create tenant components
 
 Add a folder in `components/tenants/{tenant-id}/` with at minimum a `landing.tsx`. Then register it in `app/page.tsx`:
 
 ```typescript
 const landingComponents: Record<string, () => Promise<{ default: React.ComponentType }>> = {
   "/creditclaw": () => import("@/components/tenants/creditclaw/landing"),
+  "/shopy": () => import("@/components/tenants/shopy/landing"),
+  "/brands": () => import("@/components/tenants/brands/landing"),
   "/new-tenant": () => import("@/components/tenants/new-tenant/landing"),
 };
 ```
@@ -139,7 +152,7 @@ const howItWorksComponents: Record<string, () => Promise<{ default: React.Compon
 };
 ```
 
-### 4. Add images
+### 5. Add images
 
 Place logos, OG images, and any tenant-specific assets in:
 
@@ -149,7 +162,7 @@ public/tenants/{tenant-id}/images/
 
 Reference them in `config.json` as `/tenants/{tenant-id}/images/filename.png`.
 
-### 5. Local testing
+### 6. Local testing
 
 Add `?tenant=new-tenant` to any URL in the browser. This sets a cookie so subsequent page loads stay on that tenant.
 
@@ -163,13 +176,17 @@ TENANT_OVERRIDE=new-tenant
 
 ## Fragile Areas & Gotchas
 
-### Middleware domain map is a separate source of truth
+### Three sources of truth for tenant config
 
-The biggest fragility in the system. `config.json` has a `domains` array and `middleware.ts` has `TENANT_DOMAINS` — these must stay in sync manually. The middleware can't read config files because Edge runtime has no `fs` access.
+Tenant configuration lives in three places that must stay in sync manually:
 
-**If they drift:** The middleware resolves the wrong tenant, but config.ts loads the "right" config. The result is a mismatch between what the middleware thinks the tenant is and what the server components load. Usually this means the new tenant silently falls back to CreditClaw.
+1. **`public/tenants/{id}/config.json`** — full config read from disk at runtime by `getTenantConfig()`
+2. **`lib/tenants/tenant-configs.ts`** — static config map used where disk reads aren't appropriate
+3. **`middleware.ts` `TENANT_DOMAINS`** — domain → tenant ID mapping (Edge runtime, no `fs` access)
 
-**Possible future fix:** A build-time script that reads all `config.json` files and generates the `TENANT_DOMAINS` constant, imported by middleware.
+If any of these drift, the tenant resolves incorrectly or loads stale config. The middleware is the most critical — if it maps a hostname to the wrong tenant ID, the server loads the wrong config entirely.
+
+**Possible future fix:** A build-time script that reads all `config.json` files and generates both `TENANT_DOMAINS` and `tenant-configs.ts`.
 
 ### Theme CSS variables override the stylesheet
 
@@ -203,8 +220,7 @@ Both `app/page.tsx` and `app/how-it-works/page.tsx` have hardcoded component map
 
 ### Near-term
 
-- **Tenant-aware nav links** — add a `navigation.nav` section to `TenantConfig` so different tenants show different menu items
-- **Build-time domain map generation** — eliminate the middleware/config drift risk
+- **Build-time config generation** — eliminate the three-way sync risk between config.json, tenant-configs.ts, and middleware.ts
 
 ### Medium-term
 
