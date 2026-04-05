@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { storage } from "@/server/storage";
-import { parseBrandFilters } from "@/lib/catalog/parse-filters";
+import { parseSearchParams } from "@/lib/catalog/parse-filters";
 import { buildSkillJson } from "@/lib/procurement-skills/skill-json";
 
 export async function GET(request: NextRequest) {
@@ -15,19 +15,31 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const filters = parseBrandFilters(sp);
+    const filters = parseSearchParams(sp);
+    filters.q = undefined;
 
     if (!filters.maturity?.length) {
       filters.maturity = ["verified", "official", "beta", "community"];
     }
 
-    const [brands, total] = await Promise.all([
-      storage.searchBrands(filters),
+    const [allBrands, total] = await Promise.all([
+      storage.searchBrands({ ...filters, limit: 200 }),
       storage.searchBrandsCount(filters),
     ]);
 
+    const lowerQ = q.toLowerCase();
+    const matched = allBrands.filter(
+      (b) =>
+        b.name.toLowerCase().includes(lowerQ) ||
+        b.domain.toLowerCase().includes(lowerQ) ||
+        b.slug.toLowerCase().includes(lowerQ) ||
+        (b.sector ?? "").toLowerCase().includes(lowerQ),
+    );
+
+    const limited = matched.slice(0, filters.limit);
+
     const results = await Promise.all(
-      brands.map(async (b) => {
+      limited.map(async (b) => {
         let categoryObjects: { id: number; name: string; path: string; depth: number; primary: boolean }[] = [];
         try {
           categoryObjects = await storage.getBrandCategoryObjects(b.id);
@@ -55,7 +67,7 @@ export async function GET(request: NextRequest) {
       {
         $schema: "https://shopy.sh/schemas/registry-search/v1",
         query: q,
-        total,
+        total: matched.length,
         limit: filters.limit,
         offset: filters.offset,
         results,

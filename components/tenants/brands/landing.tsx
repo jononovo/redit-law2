@@ -109,8 +109,6 @@ type BrandRow = {
   tier: string | null;
   logoUrl: string | null;
   capabilities: string[] | null;
-  checkoutMethods: string[] | null;
-  maturity: string | null;
 };
 
 function TierLabel({ tier }: { tier: string | null }) {
@@ -168,47 +166,6 @@ function CapabilityPills({ capabilities }: { capabilities: string[] | null }) {
   );
 }
 
-const CHECKOUT_METHOD_LABELS: Record<string, string> = {
-  native_api: "API",
-  acp: "ACP",
-  x402: "x402",
-  crossmint_world: "Crossmint",
-  self_hosted_card: "Card",
-  browser_automation: "Browser",
-};
-
-function CheckoutLabel({ methods }: { methods: string[] | null }) {
-  const m = methods ?? [];
-  if (m.length === 0) return <span className="text-xs text-neutral-600">—</span>;
-  const primary = CHECKOUT_METHOD_LABELS[m[0]] ?? m[0];
-  return (
-    <span className="text-xs font-medium text-neutral-400" data-testid="text-checkout">
-      {primary}
-      {m.length > 1 && <span className="text-neutral-600 ml-1">+{m.length - 1}</span>}
-    </span>
-  );
-}
-
-const MATURITY_STYLES: Record<string, string> = {
-  official: "text-green-400 border-green-800 bg-green-950",
-  verified: "text-blue-400 border-blue-800 bg-blue-950",
-  beta: "text-amber-400 border-amber-800 bg-amber-950",
-  community: "text-purple-400 border-purple-800 bg-purple-950",
-  draft: "text-neutral-500 border-neutral-700 bg-neutral-900",
-};
-
-function MaturityBadge({ maturity }: { maturity: string | null }) {
-  const m = maturity ?? "draft";
-  const style = MATURITY_STYLES[m] ?? MATURITY_STYLES.draft;
-  return (
-    <span
-      className={`inline-flex items-center px-1.5 py-0.5 text-[10px] font-mono font-semibold uppercase tracking-wider border rounded-none ${style}`}
-      data-testid={`badge-maturity-${m}`}
-    >
-      {m}
-    </span>
-  );
-}
 
 
 function SectorButton({
@@ -483,12 +440,11 @@ export default function BrandsLanding() {
                 />
               </div>
               <div className="border border-neutral-800 overflow-hidden bg-neutral-900/50">
-                <div className="hidden md:grid grid-cols-[1fr_90px_90px_220px_80px_28px] gap-3 px-4 py-3 bg-neutral-900 border-b border-neutral-800">
+                <div className="hidden md:grid grid-cols-[1fr_90px_90px_220px_28px] gap-3 px-4 py-3 bg-neutral-900 border-b border-neutral-800">
                   <span className="text-sm font-mono text-neutral-400 tracking-wide uppercase">Skill</span>
-                  <span className="text-sm font-mono text-neutral-400 tracking-wide uppercase">Checkout</span>
-                  <span className="text-sm font-mono text-neutral-400 tracking-wide uppercase">Maturity</span>
-                  <span className="text-sm font-mono text-neutral-400 tracking-wide uppercase">Capabilities</span>
                   <span className="text-sm font-mono text-neutral-400 tracking-wide uppercase">Sector</span>
+                  <span className="text-sm font-mono text-neutral-400 tracking-wide uppercase">Tier</span>
+                  <span className="text-sm font-mono text-neutral-400 tracking-wide uppercase">Capabilities</span>
                   <span />
                 </div>
 

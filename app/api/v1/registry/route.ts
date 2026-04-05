@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { storage } from "@/server/storage";
-import { parseBrandFilters } from "@/lib/catalog/parse-filters";
+import { parseSearchParams } from "@/lib/catalog/parse-filters";
 
 export async function GET(request: NextRequest) {
   try {
-    const filters = parseBrandFilters(request.nextUrl.searchParams);
+    const filters = parseSearchParams(request.nextUrl.searchParams);
 
     if (!filters.maturity?.length) {
       filters.maturity = ["verified", "official", "beta", "community"];
