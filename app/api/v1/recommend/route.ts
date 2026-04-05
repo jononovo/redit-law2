@@ -251,13 +251,17 @@ async function attachProducts(
   const vecStr = `[${queryEmbedding.join(",")}]`;
 
   const rows = await db.execute(
-    sql`SELECT brand_id, name, price_cents, currency, in_stock, image_url, product_url,
-               1 - (embedding <=> ${vecStr}::vector) AS similarity
-        FROM product_listings
-        WHERE brand_id = ANY(${brandIdArray}::int[])
-          AND embedding IS NOT NULL
-        ORDER BY embedding <=> ${vecStr}::vector
-        LIMIT ${brandIds.length * productsPerMerchant * 2}`,
+    sql`SELECT b.brand_id, p.name, p.price_cents, p.currency, p.in_stock, p.image_url, p.product_url, p.similarity
+        FROM unnest(${brandIdArray}::int[]) AS b(brand_id)
+        CROSS JOIN LATERAL (
+          SELECT name, price_cents, currency, in_stock, image_url, product_url,
+                 1 - (embedding <=> ${vecStr}::vector) AS similarity
+          FROM product_listings
+          WHERE brand_id = b.brand_id AND embedding IS NOT NULL
+          ORDER BY embedding <=> ${vecStr}::vector
+          LIMIT ${productsPerMerchant}
+        ) p
+        ORDER BY b.brand_id, p.similarity DESC`,
   );
 
   const productsByBrand = new Map<number, ProductResult[]>();
