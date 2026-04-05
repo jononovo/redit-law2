@@ -25,6 +25,20 @@ An agent sends a query. We resolve categories, rank merchants, serve products wh
 
 Internal and external agents use the same code paths.
 
+### Open/free tier vs full service
+
+The pipeline splits cleanly into two offerings:
+
+**Full service (intake + Stages 1-2-3):** We run the LLM intake, resolve categories, rank merchants, and return products. The agent sends natural language; we handle everything.
+
+**Bare-bones (Stages 1-2-3 only):** External agents do their own intent analysis, then hit the structured POST directly with category IDs or text terms. They get the same category resolution (via `category_keywords` FTS), the same merchant ranking, and the same product results — just without the intake LLM. This is the free/open path.
+
+The `category_keywords` table is the key enabler for the bare-bones offering. An external agent can query it directly to translate its own extracted terms into category IDs, then pass those IDs to the merchant ranking stage. The intake LLM is a convenience layer on top, not a requirement.
+
+This means the structured POST endpoint should accept both:
+- `category_ids: number[]` — skip Stage 1 entirely, go straight to merchant ranking
+- `categories: string[]` — run Stage 1 FTS to resolve text to IDs, then rank
+
 ---
 
 ## Architecture
@@ -139,7 +153,8 @@ matched_merchants AS (
     bi.overall_score AS asx_score,
     bi.skill_md IS NOT NULL AS has_skill,
     MAX(anc.depth) AS match_depth,
-    array_agg(DISTINCT anc.name) AS matched_categories
+    array_agg(DISTINCT anc.name) AS matched_categories,
+    CASE WHEN $3::text IS NOT NULL AND (bi.slug = $3 OR bi.name ILIKE $3) THEN 1 ELSE 0 END AS brand_match
   FROM brand_index bi
   JOIN brand_categories bc ON bc.brand_id = bi.id   -- Drizzle: bc.brandId
   JOIN ancestors anc ON anc.id = bc.category_id     -- Drizzle: bc.categoryId
@@ -148,11 +163,13 @@ matched_merchants AS (
   GROUP BY bi.id
 )
 SELECT * FROM matched_merchants
-ORDER BY match_depth DESC, asx_score DESC
+ORDER BY brand_match DESC, match_depth DESC, asx_score DESC
 LIMIT 10;
 ```
 
 `$1` = array of `category_id` values from Stage 1 (which are `product_categories.id`, which are Google taxonomy numbers). No translation needed.
+`$2` = tier filter (optional).
+`$3` = brand name from intake (optional). When present, the named brand sorts to the top of results. Uses slug exact match or case-insensitive name match.
 
 As merchant category coverage deepens over time, rankings automatically improve. No query logic changes.
 

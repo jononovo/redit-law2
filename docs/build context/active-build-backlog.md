@@ -177,6 +177,15 @@ Full product catalog crawl, LLM-powered enrichment, Google Product Taxonomy mapp
 | Double encryption for sub-agent keys | `260309-Double-security-Sub-agent-temp-encrypt.md` | Ephemeral sub-agent secret for decryption key access |
 | x402 checkout integration | `x402-checkout-plan_1772644619315.docx` | Payment protocol for agent-initiated purchases |
 
+### Merchant Index — Future Enhancements
+
+These are not blocking for the initial build. Add when warranted.
+
+| Item | Source | Notes |
+|---|---|---|
+| AI re-ranking of top 10 merchant results | `brands-sh-merchant-index-plan.md` | After SQL returns top 10, optionally pass them through a fast LLM to re-rank or surface a different top 3 based on richer context (intent, brand affinity, etc.). SQL always does the initial filtering and ranking — this is a quality layer on top, not a replacement. |
+| Limit keyword generation to populated categories | `brands-sh-merchant-index-plan.md` | Currently generating keywords for all ~5,600 categories. Once merchant coverage is deeper, consider only generating for categories that have at least one tagged merchant. Reduces noise in FTS results and speeds up the quarterly refresh. Low priority — the $3 cost and 30-minute runtime are fine for now. |
+
 ---
 
 ## Dependency Map
