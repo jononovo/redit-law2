@@ -86,3 +86,18 @@ export function buildVendorSkillDraft(
     generatedBy: "agentic_scanner",
   };
 }
+
+export function resolveMaturity(
+  currentMaturity: string | null,
+  hasScore: boolean,
+  hasSkillMd: boolean,
+  hasBrandData: boolean,
+): string {
+  if (currentMaturity && currentMaturity !== "draft") {
+    return currentMaturity;
+  }
+  if (hasScore && hasSkillMd && hasBrandData) {
+    return "community";
+  }
+  return "draft";
+}
