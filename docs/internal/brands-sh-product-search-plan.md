@@ -51,9 +51,9 @@ Step 3: GTIN Extraction
   Store alongside product — critical for future dedup when retailers are added.
   │
   ▼
-Step 4: GPT Category Mapping
-  Map each product to a GPT category ID.
-  If feed includes Google product category → use directly.
+Step 4: Category Mapping
+  Map each product to a product_categories ID (= Google taxonomy number).
+  If feed includes Google product category → use directly (it's the same ID space).
   If not → match product name against category_keywords table (same FTS from Stage 1).
   │
   ▼
@@ -80,7 +80,7 @@ Step 7 (optional): AI Enrichment
 | Feed acquisition | No | HTTP fetch, API client, file parse |
 | Validation | No | Schema validation, URL checks |
 | GTIN extraction | No | Field mapping from feed schema |
-| GPT category mapping | No (usually) | Direct from feed, or FTS fallback |
+| Category mapping | No (usually) | Direct from feed, or FTS fallback |
 | Embedding | No (not LLM) | e5-small-v2 ONNX |
 | Storage | No | Zvec insert |
 | AI enrichment | **Yes (optional, batch)** | LLM generates summaries + intent phrases |
@@ -125,7 +125,7 @@ schema = zvec.CollectionSchema(
         zvec.ScalarSchema("name", zvec.DataType.STRING),
         zvec.ScalarSchema("price_cents", zvec.DataType.INT64),
         zvec.ScalarSchema("in_stock", zvec.DataType.BOOL),
-        zvec.ScalarSchema("gpt_category_id", zvec.DataType.INT64),
+        zvec.ScalarSchema("category_id", zvec.DataType.INT64),
         zvec.ScalarSchema("image_url", zvec.DataType.STRING),
         zvec.ScalarSchema("product_url", zvec.DataType.STRING),
         zvec.ScalarSchema("brand", zvec.DataType.STRING),
@@ -146,7 +146,7 @@ async function searchProducts(query, merchants, categoryIds, maxPerMerchant = 5)
     if (!collectionExists(`merchant_${m.slug}`)) return { ...m, products: [] };
     const results = await loadCollection(`merchant_${m.slug}`).query(
       zvec.VectorQuery("product_embedding", vector=embedding),
-      filters={ gpt_category_id: { $in: categoryIds }, in_stock: true },
+      filters={ category_id: { $in: categoryIds }, in_stock: true },
       topk=maxPerMerchant
     );
     return { ...m, products: results };

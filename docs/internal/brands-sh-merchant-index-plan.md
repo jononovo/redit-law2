@@ -7,7 +7,7 @@
 | Document | Relevance |
 |---|---|
 | `brands-sh-product-search-plan.md` | Stage 3: product ingestion, Zvec collections, GTIN, feed strategy |
-| `docs/build context/Shopy/3. product-index-taxonomy-plan.md` | GPT taxonomy, `product_categories` + `brand_categories` schema |
+| `docs/build context/Shopy/3. product-index-taxonomy-plan.md` | Original taxonomy planning, `product_categories` + `brand_categories` schema |
 | `docs/build context/Product_index/agent-readiness-and-product-index-service.md` | Three-tier service vision, agent gateway |
 | `docs/build context/Product_index/creditclaw-agentic-commerce-strategy.md` | ASX Score definition, scoring pillars |
 
@@ -38,7 +38,7 @@ Intake (natural language only, ~300ms)
   │
   ▼
 Stage 1: Category Resolution (~5ms)
-  Postgres FTS against category_keywords → GPT IDs
+  Postgres FTS against category_keywords → category IDs
   │
   ▼
 Stage 2: Merchant Ranking (~5ms)
@@ -83,11 +83,12 @@ Query: "{user_query}"
 
 ### The Keyword Table (only new data structure)
 
+`product_categories.id` IS the Google taxonomy number (e.g., 166 = "Apparel & Accessories"). The seed script inserts Google IDs directly as the primary key. No separate `gpt_id` column exists or is needed — `category_id` in the keyword table already references the Google taxonomy number via the FK.
+
 ```sql
 CREATE TABLE category_keywords (
   id            SERIAL PRIMARY KEY,
   category_id   INTEGER NOT NULL REFERENCES product_categories(id) ON DELETE CASCADE,
-  gpt_id        INTEGER NOT NULL,
   category_name TEXT NOT NULL,
   category_path TEXT NOT NULL,
   keywords      TEXT[] NOT NULL,
@@ -97,8 +98,10 @@ CREATE TABLE category_keywords (
 );
 
 CREATE INDEX category_keywords_tsv_idx ON category_keywords USING GIN(keywords_tsv);
-CREATE INDEX category_keywords_gpt_id_idx ON category_keywords(gpt_id);
+CREATE INDEX category_keywords_category_id_idx ON category_keywords(category_id);
 ```
+
+`category_name` and `category_path` are denormalized from `product_categories` to avoid a join at query time. Acceptable for a read-heavy lookup table.
 
 ### Keyword Generation (Batch Script, Runs Quarterly)
 
@@ -107,13 +110,15 @@ LLM generates 15-20 keywords per category. ~5,600 categories ÷ 50 per batch = 1
 ### Query
 
 ```sql
-SELECT gpt_id, category_name, category_path,
+SELECT category_id, category_name, category_path,
   ts_rank(keywords_tsv, websearch_to_tsquery('english', $1)) AS rank
 FROM category_keywords
 WHERE keywords_tsv @@ websearch_to_tsquery('english', $1)
 ORDER BY rank DESC
 LIMIT 5;
 ```
+
+Returns `category_id` values that are directly usable as `product_categories.id` (which are the Google taxonomy numbers). These feed straight into Stage 2.
 
 ---
 
@@ -123,10 +128,10 @@ Merchants are tagged at varying category depths. The query walks up the tree so 
 
 ```sql
 WITH RECURSIVE ancestors AS (
-  SELECT id, gpt_id, parent_id, depth, name
-  FROM product_categories WHERE gpt_id = ANY($1::int[])
+  SELECT id, parent_id, depth, name
+  FROM product_categories WHERE id = ANY($1::int[])
   UNION ALL
-  SELECT pc.id, pc.gpt_id, pc.parent_id, pc.depth, pc.name
+  SELECT pc.id, pc.parent_id, pc.depth, pc.name
   FROM product_categories pc JOIN ancestors a ON pc.id = a.parent_id
 ),
 matched_merchants AS (
@@ -147,6 +152,8 @@ ORDER BY match_depth DESC, asx_score DESC
 LIMIT 10;
 ```
 
+`$1` = array of `category_id` values from Stage 1 (which are `product_categories.id`, which are Google taxonomy numbers). No translation needed.
+
 As merchant category coverage deepens over time, rankings automatically improve. No query logic changes.
 
 ---
@@ -165,7 +172,7 @@ interface RecommendResponse {
     intent_type: string;
   };
   resolved_categories: {
-    gpt_id: number;
+    category_id: number;
     name: string;
     path: string;
     relevance: number;
@@ -181,7 +188,7 @@ interface RecommendResponse {
     rank: number;               // 1-10
     match_depth: number;
     matched_categories: string[];
-    skill_url: string;          // https://brands.sh/skills/{slug}/skill.md
+    skill_url: string;          // https://brands.sh/brands/{slug}/skill
     products: {
       name: string;
       brand: string;
@@ -209,7 +216,7 @@ interface RecommendResponse {
   "query": "I want a guci bag but cheaper",
   "intent": { "categories": ["handbags"], "brand": "Gucci", "tier": "value", "intent_type": "alternative" },
   "resolved_categories": [
-    { "gpt_id": 6551, "name": "Handbags", "path": "Apparel & Accessories > Handbags", "relevance": 0.94 }
+    { "category_id": 6551, "name": "Handbags", "path": "Apparel & Accessories > Handbags", "relevance": 0.94 }
   ],
   "merchants": [
     {
@@ -217,7 +224,7 @@ interface RecommendResponse {
       "sector": "apparel-accessories", "tier": "premium", "asx_score": 72,
       "recommended": true, "rank": 1, "match_depth": 3,
       "matched_categories": ["Handbags"],
-      "skill_url": "https://brands.sh/skills/coach/skill.md",
+      "skill_url": "https://brands.sh/brands/coach/skill",
       "products": [
         { "name": "Coach Willow Shoulder Bag", "brand": "Coach", "price_cents": 29500,
           "currency": "USD", "in_stock": true, "image_url": "https://coach.com/images/willow.jpg",
@@ -229,7 +236,7 @@ interface RecommendResponse {
       "sector": "apparel-accessories", "tier": "luxury", "asx_score": 65,
       "recommended": true, "rank": 2, "match_depth": 3,
       "matched_categories": ["Handbags"],
-      "skill_url": "https://brands.sh/skills/gucci/skill.md",
+      "skill_url": "https://brands.sh/brands/gucci/skill",
       "products": []
     },
     {
@@ -237,7 +244,7 @@ interface RecommendResponse {
       "sector": "multi-sector", "tier": "value", "asx_score": 91,
       "recommended": true, "rank": 3, "match_depth": 2,
       "matched_categories": ["Handbags"],
-      "skill_url": "https://brands.sh/skills/amazon/skill.md",
+      "skill_url": "https://brands.sh/brands/amazon/skill",
       "products": [
         { "name": "Kate Spade Madison Satchel", "brand": "Kate Spade", "price_cents": 15900,
           "currency": "USD", "in_stock": true, "image_url": "https://m.media-amazon.com/images/...",
@@ -259,14 +266,23 @@ interface RecommendResponse {
 
 ## Skill Format & Distribution
 
-### Two skill types
+### What already exists
+
+Per-merchant SKILL.md files are already generated and served:
+- **Generator:** `lib/procurement-skills/generator.ts` — builds SKILL.md from `VendorSkill` data
+- **Storage:** `brand_index.skill_md` column (text) — stores generated markdown
+- **Serving:** `app/brands/[slug]/skill/route.ts` → `GET /brands/{slug}/skill` (text/markdown, Cache-Control: 86400)
+- **JSON companion:** `app/brands/[slug]/skill-json/route.ts` → `GET /brands/{slug}/skill-json` (application/json)
+- **Front matter:** Currently uses `creditclaw-shop-{slug}` naming, CreditClaw-specific homepage URLs
+
+### What's new: two skill types
 
 | | Master skill | Per-merchant skill |
 |---|---|---|
 | Purpose | API reference — how to query the index | Store navigation — how to shop at one store |
 | Name | `brands-sh` | `{slug}-shopping` (e.g. `nike-shopping`) |
 | Install | `npx skills add brands-sh/shop --skill brands-sh` | `npx skills add brands-sh/shop --skill nike` |
-| URL | `https://brands.sh/skill.md` | `https://brands.sh/skills/nike/skill.md` |
+| URL | `https://brands.sh/skill.md` | `https://brands.sh/brands/nike/skill` |
 | Count | 1 | 3,000+ |
 
 ### GitHub repo: `brands-sh/shop`
@@ -286,6 +302,14 @@ brands-sh/shop/
 ```
 
 Auto-generated from `brand_index`. CI pushes when merchants update. Installs feed the skills.sh leaderboard via telemetry — free distribution.
+
+### Migration: CreditClaw-scoped → brands.sh-scoped skills
+
+The existing generator produces CreditClaw-branded skills (`creditclaw-shop-{slug}`, `homepage: creditclaw.com/skills/...`). For the `brands-sh/shop` repo, skills need to be tenant-neutral or brands.sh-branded. This is a generator change — the per-merchant SKILL.md body structure stays the same, but the front matter needs updating:
+
+- `name:` → `{slug}-shopping` (not `creditclaw-shop-{slug}`)
+- `homepage:` → `https://brands.sh/skills/{slug}` (not `creditclaw.com`)
+- `requires:` → remove `[creditclaw]` (brands.sh skills are standalone)
 
 ### Description as trigger mechanism
 
@@ -324,12 +348,12 @@ metadata:
   version: "1.2"
   type: commerce-skill
   domain: nike.com
-  sector: fashion
+  sector: apparel-accessories
   tier: premium
   asx_score: 77
   checkout_methods: ["browser_automation"]
   guest_checkout: true
-  gpt_categories: [5322, 166, 988]
+  categories: [5322, 166, 988]
 ---
 ```
 
@@ -340,6 +364,8 @@ Main file has the essential flow. Detailed checkout field mappings go in `refere
 ### Discovery endpoints
 
 **Primary:** Skills served as `skill_url` in the `/api/v1/recommend` response. No separate discovery step needed.
+
+**Already exists:** `GET /brands/{slug}/skill` (SKILL.md) and `GET /brands/{slug}/skill-json` (skill.json) — both served by Next.js with 24h cache.
 
 **Per-sector listing:** `GET /api/v1/registry/skills?sector=luxury`
 
@@ -365,7 +391,7 @@ Add if skills.sh requires it or if adoption warrants it. Not blocking for launch
 | Merchant ranking | Postgres `brand_categories` + `brand_index` SQL |
 | Intake LLM | External API (Haiku / Groq) |
 | Product search | Zvec + e5-small-v2 ONNX (sidecar or in-process) |
-| SKILL.md files | Served by Next.js from `brand_index.skill_md` |
+| SKILL.md files | Already served by Next.js from `brand_index.skill_md` |
 
 ### Phase B: Cloudflare Edge — scale
 
@@ -396,15 +422,19 @@ Cloudflare — structured:       ~12ms (1 + 1 + 10)
 
 | Component | Status |
 |---|---|
-| `product_categories` table | **Exists** |
-| `brand_categories` junction table | **Exists** |
-| `brand_index` table | **Exists** |
+| `product_categories` table (Google taxonomy IDs as PKs) | **Exists** — seeded by `scripts/seed-google-taxonomy.ts` |
+| `brand_categories` junction table | **Exists** — links brands to categories |
+| `brand_index` table | **Exists** — includes `overall_score`, `skill_md`, `sector`, `tier` |
+| SKILL.md generation (`lib/procurement-skills/generator.ts`) | **Exists** — currently CreditClaw-branded |
+| `/brands/{slug}/skill` route (SKILL.md serving) | **Exists** — text/markdown, 24h cache |
+| `/brands/{slug}/skill-json` route | **Exists** — JSON, 24h cache |
 | `category_keywords` table | **New** — one table, GIN index |
 | Keyword generation script | **New** — batch, runs quarterly |
 | `/api/v1/recommend` endpoint | **New** — GET + POST |
 | Intake LLM layer | **New** — one function |
 | `brands-sh/shop` GitHub repo | **New** — auto-generated from DB |
 | Master SKILL.md | **New** — API reference for agents |
+| `.well-known/agent-skills/index.json` | **New** — discovery for CLI tooling |
 
 ---
 
@@ -418,10 +448,11 @@ Phase 1 — Core pipeline (ships in days):
   4. Add natural language GET with intake LLM
 
 Phase 2 — Skills & distribution:
-  5. Write master SKILL.md for brands-sh
-  6. Set up brands-sh/shop GitHub repo with CI auto-generation
-  7. Add /.well-known/agent-skills/index.json (paginated by sector)
-  8. Wire brands.sh catalog search to recommend API
+  5. Update generator.ts for brands.sh-scoped front matter (name, homepage, requires)
+  6. Write master SKILL.md for brands-sh
+  7. Set up brands-sh/shop GitHub repo with CI auto-generation
+  8. Add /.well-known/agent-skills/index.json (paginated by sector)
+  9. Wire brands.sh catalog search to recommend API
 ```
 
 For Phases 3-4 (product ingestion, search, edge deployment), see `brands-sh-product-search-plan.md`.
@@ -432,7 +463,7 @@ For Phases 3-4 (product ingestion, search, edge deployment), see `brands-sh-prod
 
 | Data | Refresh |
 |---|---|
-| GPT taxonomy | On new Google version (~1x/year) |
+| Google taxonomy | On new Google version (~1x/year) |
 | Category keywords | Quarterly or after taxonomy update |
 | Merchant ↔ category mappings | On merchant onboard via `upsertBrandIndex()` |
 | ASX scores | Live — updated per scan |
