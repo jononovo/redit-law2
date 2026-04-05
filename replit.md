@@ -349,7 +349,7 @@ brands.sh Merchant Index query pipeline. No auth required. Resolves product cate
 - Embedding model: `Xenova/all-MiniLM-L6-v2` (384-dim, quantized ONNX) via `lib/embeddings/embed.ts`
 - Ingestion: `scripts/ingest-shopify-products.ts <domain>` — fetches from Shopify's public `products.json`, generates embeddings, upserts to DB
 - Category resolution: product_type matched against `category_keywords.keywords_tsv` via FTS
-- Currently ingested: Glossier (123 products)
+- Currently ingested: 6,181 products across 7 merchants (Everlane 2,500, Chubbies 1,746, Allbirds 937, Outdoor Voices 367, Brooklinen 305, Casper 203, Glossier 123)
 - `POST /api/v1/recommend` — structured query: `{ category_ids?: number[], categories?: string[], tier?: string, brand?: string, limit?: number }`. Validates with Zod. Returns ranked merchants with ASX scores, match depth, skill URLs.
 - `GET /api/v1/recommend?q=...&tier=...&limit=...` — natural language query. Uses Perplexity intake LLM → FTS category resolution → recursive CTE merchant ranking.
 - Pipeline: intake (NL only) → category FTS resolution → recursive ancestor walk → brand_categories join → depth+score ranking

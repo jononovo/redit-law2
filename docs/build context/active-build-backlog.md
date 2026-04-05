@@ -176,21 +176,29 @@ Outstanding:
 
 ---
 
-### Step 7: Product Search (Stage 3)
+### Step 7: Product Search (Stage 3) ✅ (core pipeline)
 
 **Priority:** High — next major build
-**Status:** Detailed plan complete, not started
+**Status:** Core pipeline built, scaling ongoing
 **Source:** `docs/internal/brands-sh-product-search-plan.md`
 **Depends on:** Step 6B
 
-Product-level search using pgvector in Postgres. `product_listings` table with e5-small-v2 embeddings. Brands-first ingestion strategy (Shopify Storefront API, Google Shopping XML). Products nested in `/api/v1/recommend` response.
+Product-level search using pgvector in Postgres. `product_listings` table with all-MiniLM-L6-v2 embeddings (384-dim). Brands-first ingestion via Shopify `products.json`. Products nested in `/api/v1/recommend` response.
 
-Build sequence:
-1. Schema + pgvector setup
-2. Embedding infrastructure (ONNX / @xenova/transformers)
-3. First merchant ingestion (2-3 Shopify brands)
-4. Wire products into recommend API
-5. Scale to more merchants + feed types
+Completed:
+- [x] Schema + pgvector setup (`product_listings` table, `VECTOR(384)`, IVFFlat index)
+- [x] Embedding infrastructure (`@xenova/transformers`, `lib/embeddings/embed.ts`)
+- [x] Shopify ingestion script (`scripts/ingest-shopify-products.ts`)
+- [x] Wire products into recommend API (POST + GET, `attachProducts()`, `_brand_id` stripped)
+- [x] 7 merchants ingested: Glossier (123), Allbirds (937), Everlane (2,500), Chubbies (1,746), Outdoor Voices (367), Brooklinen (305), Casper (203) = **6,181 products total**
+- [x] Vector search verified: cosine similarity, top 3 per merchant, cross-merchant results
+
+Outstanding:
+- [ ] Google Shopping XML feed parser (Step 5 of plan)
+- [ ] Sitemap/crawl-based ingestion fallback
+- [ ] Refresh scheduler (weekly re-ingest)
+- [ ] More Shopify merchants (Mejuri had network issues, retry later)
+- [ ] AI enrichment layer (optional, only if recall < 80%)
 
 ---
 
@@ -241,7 +249,7 @@ Step 7 (Product Search, Stage 3) ←── depends on Step 6B (now unblocked)
 ```
 
 Step 6B core pipeline is built — recommend API works end-to-end. Outstanding: keyword coverage (background task) and merchant count (scan queue).
-Step 7 (Product Search) is the next major build — pgvector embeddings, Shopify ingestion, product results in recommend response.
-Step 4 (Registry/CLI) and Step 7 can run in parallel.
+Step 7 (Product Search) core pipeline is built — 6,181 products across 7 Shopify merchants, vector search in recommend API. Outstanding: more feed types, refresh scheduler.
+Step 4 (Registry/CLI) is the next major build.
 Brand Versioning (4B) should ideally land before Step 5 (premium scan comparison needs version history).
 Sitemap splitting is parked until 1,000+ URLs.
