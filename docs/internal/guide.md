@@ -149,6 +149,15 @@ related:
 - Strategy or go-to-market analysis
 - Any analysis where the *reasoning* is as valuable as the *conclusion*
 
+### Active build cycle
+
+During a build cycle, put all working docs (research, build notes, scratch analysis) in `currently_building/`. Don't scatter in-progress work across permanent folders.
+
+When the build cycle is done:
+- Research docs → move to `{subfolder}/research/` with full frontmatter
+- Operational insights → fold into existing docs or create new ones
+- Stale notes → delete
+
 ---
 
 ## Writing Style

@@ -32,7 +32,10 @@ Each subfolder has operational docs (how things work today) and optionally a `re
 
 | Folder | Covers |
 |--------|--------|
+| `currently_building/` | Active build cycle — scratch research, build notes, in-progress work |
 | `tenants/` | Tenant identity, purpose, audience, branding |
 | `scanning/` | ASX scanner, scan pipeline, maturity, scan history |
 | `catalog/` | Brand catalog, taxonomy, recommend API, product search |
 | `platform/` | Multitenant infrastructure, routing, auth, onboarding |
+
+`currently_building/` is the working bench. It gets cleaned out every 1-2 weeks — finished docs move to permanent folders, stale ones get deleted.
