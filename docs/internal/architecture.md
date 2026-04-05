@@ -46,6 +46,9 @@ Every scan grows the catalog. The catalog powers the registry API, sector pages,
 - Tenant resolved from cookies (set at edge), threaded through server + client
 - Shared DB, tenant is attribution-only (`signup_tenant` on owners)
 - Per-tenant theming, landing pages, and feature flags
+- **CreditClaw** (`creditclaw.com`) — financial rails for AI agents (cards, wallets, spending limits)
+- **shopy.sh** — merchant-facing ASX Score scanner and leaderboard
+- **brands.sh** — developer-facing skill registry ("npm for AI shopping agents")
 
 ## Data Flow
 
