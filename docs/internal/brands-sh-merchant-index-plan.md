@@ -457,20 +457,87 @@ Cloudflare — structured:       ~12ms (1 + 1 + 10)
 
 ## Build Sequence (Phases 1-2)
 
-```
-Phase 1 — Core pipeline (ships in days):
-  1. Create category_keywords table + migration
-  2. Run keyword generation batch script
-  3. Build /api/v1/recommend (structured POST)
-  4. Add natural language GET with intake LLM
+### Phase 1 — Core pipeline
 
-Phase 2 — Skills & distribution:
-  5. Update generator.ts for brands.sh-scoped front matter (name, homepage, requires)
-  6. Write master SKILL.md for brands-sh
-  7. Set up brands-sh/shop GitHub repo with CI auto-generation
-  8. Add /.well-known/agent-skills/index.json (paginated by sector)
-  9. Wire brands.sh catalog search to recommend API
-```
+**Step 1: Create `category_keywords` table + migration**
+- Add Drizzle schema for `category_keywords` in `shared/schema.ts`
+- Run `npm run db:push` to create the table
+- Verify: table exists in DB, FK to `product_categories` works, GIN index created
+
+**Step 2: Keyword generation batch script**
+- Build `scripts/generate-category-keywords.ts`
+- LLM generates 15-20 keywords per category, batched 50 at a time
+- Populates `keywords` array and `keywords_tsv` tsvector
+- Run the script against the live DB
+
+**✅ Verify after steps 1-2:**
+- `SELECT count(*) FROM category_keywords` returns ~5,600 rows
+- `SELECT * FROM category_keywords WHERE keywords_tsv @@ websearch_to_tsquery('english', 'handbags') LIMIT 3` returns relevant categories (e.g., category_id 6551)
+- `SELECT * FROM category_keywords WHERE keywords_tsv @@ websearch_to_tsquery('english', 'running shoes') LIMIT 3` returns sporting goods / footwear categories
+- Confirm FTS returns `category_id` values that exist in `product_categories`
+
+**Step 3: Build `/api/v1/recommend` (structured POST)**
+- Accepts `category_ids: number[]` (skip Stage 1) or `categories: string[]` (run FTS)
+- Optional `tier`, `brand`, `limit` parameters
+- Stage 1: FTS query against `category_keywords` → category IDs
+- Stage 2: Recursive CTE ancestor walking + merchant ranking with brand match
+- Returns `RecommendResponse` shape
+
+**✅ Verify after step 3:**
+- `POST /api/v1/recommend` with `{ "categories": ["handbags"] }` → returns ranked merchants
+- `POST /api/v1/recommend` with `{ "category_ids": [6551] }` → same merchants, skips FTS
+- `POST /api/v1/recommend` with `{ "categories": ["handbags"], "brand": "coach" }` → Coach ranks first
+- `POST /api/v1/recommend` with `{ "categories": ["handbags"], "tier": "luxury" }` → only luxury-tier merchants
+- Empty results return gracefully (empty merchants array, not an error)
+- `meta.query_time_ms` is under 50ms for structured queries
+- Merchants without `skill_md` still appear (has_skill: false)
+
+**Step 4: Add natural language GET with intake LLM**
+- `GET /api/v1/recommend?q=I want a guci bag but cheaper`
+- Intake LLM extracts structured intent, feeds into Stage 1-2
+- Returns same response shape with `meta.intake_time_ms` populated
+
+**✅ Verify after step 4 (full Phase 1 gate):**
+- `GET /api/v1/recommend?q=cheap running shoes` → resolves to sporting goods, returns relevant merchants
+- `GET /api/v1/recommend?q=guci bag` → corrects to Gucci, returns handbag merchants with Gucci boosted
+- `GET /api/v1/recommend?q=something for my wife` → handles vague query gracefully (broad categories, no crash)
+- `meta.stages_executed` reflects which stages ran
+- `meta.intake_time_ms` is under 500ms
+- Structured POST still works (intake not called)
+
+### Phase 2 — Skills & distribution
+
+**Step 5: Front matter discussion (requires sign-off)**
+- Review current generator.ts front matter fields
+- Propose any changes needed for brands.sh-scoped skills vs CreditClaw-scoped
+- **No code changes until changes are discussed and approved**
+
+**Step 6: Write master SKILL.md for brands-sh**
+- API reference skill: how to query `/api/v1/recommend`, parameters, response shape
+- Front matter with description as trigger mechanism
+
+**Step 7: Set up `brands-sh/shop` GitHub repo with CI auto-generation**
+- Repo structure: `{slug}/SKILL.md` + `{slug}/references/checkout-details.md`
+- CI script reads from `brand_index`, generates files, pushes on change
+
+**✅ Verify after steps 6-7:**
+- `npx skills add brands-sh/shop --skill brands-sh` installs the master skill
+- `npx skills add brands-sh/shop --skill nike` installs a per-merchant skill (if Nike is in the index)
+- Generated SKILL.md files are valid markdown with valid YAML front matter
+- Master skill description accurately describes the recommend API
+
+**Step 8: Add `/.well-known/agent-skills/index.json`**
+- Paginated by sector, includes SHA-256 digest per skill
+- Follows agentskills.io discovery spec
+
+**Step 9: Wire brands.sh catalog search to recommend API**
+- brands.sh landing page search uses `/api/v1/recommend` for results
+- Falls back to existing `searchBrands` if recommend is unavailable
+
+**✅ Verify after steps 8-9 (full Phase 2 gate):**
+- `GET https://brands.sh/.well-known/agent-skills/index.json` returns valid JSON with skill entries
+- brands.sh search bar returns results from the recommend API
+- Existing catalog browse (`/skills`, `/c/[sector]`) still works unchanged
 
 For Phases 3-4 (product ingestion, search, edge deployment), see `brands-sh-product-search-plan.md`.
 
