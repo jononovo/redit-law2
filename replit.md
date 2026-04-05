@@ -751,12 +751,14 @@ Schema changes flow through Drizzle ORM and are auto-synced to production on dep
 6. The `spending_permissions` table exists in both databases but is not tracked in the schema (legacy table)
 
 ### Internal Developer Docs (`docs/internal/`)
-Private technical documentation covering implementation details, fragile areas, expansion plans, and operational guides. Not served publicly — for the engineering team only.
-- `README.md` — index of all internal doc pages
-- `multitenant-system.md` — hostname routing, tenant configs, theming, how to add tenants, fragile areas
-- `product-index.md` — brand catalog, LITE_COLUMNS, filtering, generateStaticParams, search_vector
-- `asx-scanner.md` — Perplexity-only pipeline, rubric v2.0.0, 11 signals (Agent Metadata replaces Clean HTML), SKILL.md generation, evidence system
-- `metadata-and-taxonomy.md` — Google Product Taxonomy, UCP, sectors, tiers, capabilities, skill.json
+Private technical documentation covering implementation details, fragile areas, expansion plans, and operational guides. Not served publicly — for the engineering team only. Each file has YAML frontmatter (`name`, `description`) for quick scanning. See `docs/internal/guide.md` for the writing convention.
+
+**Structure:**
+- `README.md` — index with reading order and current system status
+- `guide.md` — how to write and update internal docs (the convention)
+- `scanning/` — ASX scanner, scan pipeline, maturity auto-promotion, scan history plan
+- `catalog/` — brand catalog, taxonomy, merchant index, product search plan
+- `platform/` — multitenant system, infrastructure
 
 ### Documentation System (`docs/content/`, `app/docs/`)
 Self-hosted documentation at `/docs` with sidebar navigation, audience toggle, and markdown rendering. Multi-tenant aware — each tenant sees its own docs.

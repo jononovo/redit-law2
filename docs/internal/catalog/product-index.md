@@ -1,8 +1,9 @@
-# Product Index (Brand Catalog) — Internal Developer Guide
+---
+name: Product Index (Brand Catalog)
+description: The central brand_index table powering the catalog, skill pages, and APIs. Read this before modifying brand storage, catalog filtering, or the skills UI.
+---
 
-> Last updated: 2026-04-04
-
-## Overview
+# Product Index (Brand Catalog)
 
 The Product Index is the central registry of merchants/brands that AI agents can shop from. It powers the `/skills` catalog, individual brand pages at `/skills/[vendor]`, sector landing pages at `/c/[sector]`, and the API that agents query at runtime. Every scan, manual submission, and admin action writes to this single table.
 
@@ -20,7 +21,8 @@ brand_index table (source of truth)
   ├── /c/[sector] (sector landing)          → filtered by sector column
   ├── /c/luxury (tier filter)               → tier IN ('ultra_luxury', 'luxury')
   ├── /api/v1/bot/skills (agent catalog)    → searchBrands() → formatted VendorSkill objects
-  ├── /api/v1/vendors (simple list)         → all brands, minimal fields
+  ├── /api/v1/registry (skill registry)     → paginated list with maturity filter
+  ├── /api/v1/brands (brand list API)       → paginated, filterable, lite mode
   ├── /brands/{slug}/skill (SKILL.md)       → raw markdown, text/markdown, Cache-Control: 86400
   ├── /brands/{slug}/skill-json (skill.json)→ structured JSON, Cache-Control: 86400
   ├── generateStaticParams                  → pre-renders top 1000 verified/official pages
@@ -46,7 +48,7 @@ brand_categories junction table
 | `app/skills/[vendor]/skill-detail-content.tsx` | Skill detail — client component (renders full page, tenant-aware theming via `useTenant()`) |
 | `app/brands/[slug]/skill/route.ts` | Serves raw SKILL.md markdown for a brand (`text/markdown`) |
 | `app/brands/[slug]/skill-json/route.ts` | Serves skill.json structured data for a brand (`application/json`) |
-| `app/api/v1/bot/skills/route.ts` | Agent-facing catalog search API (list/filter brands, not per-brand skill files) |
+| `app/api/v1/bot/skills/route.ts` | Agent-facing catalog search API |
 
 ---
 
@@ -74,7 +76,6 @@ brand_categories junction table
 - `scoreBreakdown` — JSONB with per-signal scores from rubric v1.1
 - `axsRating` — crowd-sourced 1–5 star rating
 - `ratingCount` — number of ratings
-- `ratingSearchAccuracy`, `ratingStockReliability`, `ratingCheckoutCompletion` — sub-ratings
 
 ### Payload columns
 - `brandData` — JSONB blob containing the full `VendorSkill` object (checkout methods, tips, evidence)
@@ -88,21 +89,6 @@ brand_categories junction table
 ### Search infrastructure
 - `search_vector` — `tsvector` column maintained by a database trigger (not Drizzle-managed)
 - GIN indexes on all array columns and `search_vector` (migration 0007)
-- Partial indexes on boolean flags and common filter predicates
-
----
-
-## Related Tables
-
-### product_categories (5,638 rows)
-
-The taxonomy tree. `id` is the taxonomy identifier directly — Google Product Taxonomy numeric IDs for Google categories, 100001+ for custom categories. Seeded by `scripts/seed-google-taxonomy.ts`.
-
-### brand_categories (junction)
-
-Links brands to taxonomy categories. Unique constraint on `(brandId, categoryId)`. Populated by the Perplexity category resolver during scanning. Always cleared and re-inserted on rescan.
-
-See `metadata-and-taxonomy.md` and `scan-taxonomy-skills-pipeline.md` for full taxonomy details.
 
 ---
 
@@ -116,8 +102,6 @@ See `metadata-and-taxonomy.md` and `scan-taxonomy-skills-pipeline.md` for full t
 
 This matters at scale: loading 50 cards per page with full payloads would be ~750KB of JSON. With LITE_COLUMNS it's ~15KB.
 
-The projection also includes a computed `successRate` extracted from `brandData` via SQL: `brandData->'evidence'->>'successRate'`.
-
 ---
 
 ## Filtering System
@@ -125,13 +109,11 @@ The projection also includes a computed `successRate` extracted from `brandData`
 `lib/catalog/parse-filters.ts` converts URL search params into a typed filter object and vice versa:
 
 - `sector` → single sector slug
-- `maturity` → array (default: server applies `DEFAULT_MATURITIES` of `["verified", "official"]`)
+- `maturity` → array (default: server applies `DEFAULT_MATURITIES` of `["verified", "official", "beta", "community"]`)
 - `checkout`, `capability` → array filters matched against array columns using `&&` (overlap) operator
 - `q` → full-text search against `search_vector`
 - `sort` → `score`, `rating`, `name`, `newest`
 - `page`, `limit` → pagination
-
-The `hasUserInteracted` ref in `catalog-client.tsx` prevents the component from rewriting the URL on mount — only user-initiated filter changes trigger URL updates.
 
 ### Facet navigation
 
@@ -150,11 +132,9 @@ The `hasUserInteracted` ref in `catalog-client.tsx` prevents the component from 
 - Wrapped in try/catch — returns empty array on failure so builds don't break
 - Pages use `revalidate = 3600` (1 hour ISR)
 
-At 10K+ brands, only the top 1000 are pre-rendered. The rest are rendered on-demand and cached.
-
 ---
 
-## Fragile Areas & Gotchas
+## Gotchas
 
 ### search_vector is trigger-managed, not Drizzle-managed
 
@@ -166,29 +146,12 @@ The `brandData` column stores the full `VendorSkill` object, but there's no JSON
 
 ### Slug collisions on upsert
 
-`upsertBrandIndex` generates slugs from brand names. If two brands share a similar name, it tries appending `-1` through `-5`. After 5 collisions it throws. At scale with tens of thousands of brands, generic names (e.g., "The Store") could hit this limit.
+`upsertBrandIndex` generates slugs from brand names. If two brands share a similar name, it tries appending `-1` through `-5`. After 5 collisions it throws.
 
 ### Domain is the unique key, not slug
 
 The `domain` column has a unique constraint and is used as the conflict target for upserts. The `slug` is generated but not the dedup key. This means rescanning the same domain updates the existing row, but the slug stays stable (it's not regenerated on update).
 
-### Array column GIN indexes need maintenance
+### Pagination sort stability
 
-GIN indexes on array columns (`subSectors`, `tags`, `capabilities`, etc.) can bloat over time with heavy writes. PostgreSQL's autovacuum handles this, but at very high write volumes (thousands of scans per day), manual `REINDEX` may be needed.
-
----
-
-## Expansion Plans
-
-### Near-term
-- **Category-based filtering** — filter catalog by taxonomy category (brand_categories), not just sector
-- **Category landing pages** — `/c/electronics/audio` drill-down pages
-
-### Medium-term
-- **Product-level index** — `product_listings` table for individual products with GTIN/UPC/MPN, cross-referenced to brands and taxonomy categories
-- **Incremental re-scan** — only re-run signals that are likely to have changed
-- **Bulk import API** — allow merchants to submit their own catalog data via CSV/API
-
-### Longer-term
-- **Real-time score updates** — webhook-driven score recalculation when merchants update their sites
-- **Federated search** — agents query the product index across multiple CreditClaw/shopy instances
+The default brands API sort (`overallScore DESC`) is not stable — brands with identical scores can appear on adjacent pages in different order across requests. A secondary sort key (like `slug`) would fix this but hasn't been added yet. This is a known minor issue.

@@ -1,10 +1,17 @@
-# Scan History — Technical Plan
+---
+name: "Plan: Scan History"
+description: Append-only log of every scan to track score changes over time. Not yet built. Read this before implementing the scan history feature.
+---
 
-*Simple append-only log of every scan. Tracks score changes over time and preserves previous SKILL.md / skill.json content for reference.*
+# Plan: Scan History
+
+**Status:** Not built. Schema designed, implementation pending.
+
+Simple append-only log of every scan. Tracks score changes over time and preserves previous SKILL.md / skill.json content for reference.
 
 ---
 
-## Why This Exists
+## Why It Exists
 
 When the scanner re-scans a domain, it overwrites the `brand_index` row. The previous score, SKILL.md, and skill.json are gone. We need a log so we can:
 
@@ -129,8 +136,6 @@ WHERE brand_slug = $1
 ORDER BY created_at ASC;
 ```
 
-Returns a timeline: `[{score: 36, date: "2026-03-28"}, {score: 58, date: "2026-04-01"}, {score: 71, date: "2026-04-05"}]`
-
 ### API endpoint
 
 `GET /api/v1/brands/{slug}/history`
@@ -141,59 +146,13 @@ Response:
   "slug": "nike",
   "current_score": 71,
   "scans": [
-    {
-      "score": 36,
-      "scan_tier": "free",
-      "maturity": "draft",
-      "created_at": "2026-03-28T12:00:00Z"
-    },
-    {
-      "score": 58,
-      "scan_tier": "free",
-      "maturity": "beta",
-      "created_at": "2026-04-01T12:00:00Z"
-    },
-    {
-      "score": 71,
-      "scan_tier": "free",
-      "maturity": "verified",
-      "created_at": "2026-04-05T12:00:00Z"
-    }
+    { "score": 36, "scan_tier": "free", "maturity": "draft", "created_at": "2026-03-28T12:00:00Z" },
+    { "score": 71, "scan_tier": "free", "maturity": "verified", "created_at": "2026-04-05T12:00:00Z" }
   ]
 }
 ```
 
-No auth required. Cached: 10 min TTL. The `skill_md` and `skill_json` fields are excluded from the list response to keep it lightweight — they can be fetched individually if needed.
-
-### Previous SKILL.md for a specific scan
-
-`GET /api/v1/brands/{slug}/history/{id}`
-
-Returns full detail for one scan entry including `skill_md` and `skill_json`. This is for reference only — "what did the SKILL.md look like after the March 28 scan?"
-
----
-
-## Scale
-
-| Brands | Avg scans/brand | Rows | Table size estimate |
-|---|---|---|---|
-| 100 | 3 | 300 | ~5 MB |
-| 1,000 | 5 | 5,000 | ~50 MB |
-| 10,000 | 5 | 50,000 | ~500 MB |
-
-The `skill_md` and `skill_json` columns are the heaviest (5-15 KB per row combined). At 50K rows this is manageable. If it grows past that, the text columns can be moved to object storage — but that's a long way off.
-
-The two indexes (`brand_id + created_at DESC` and `brand_slug + created_at DESC`) cover all query patterns.
-
----
-
-## What This Enables
-
-1. **Score trending** on brand detail pages — simple line chart showing score over time
-2. **Scan count** — "this brand has been scanned 4 times"
-3. **Historical SKILL.md reference** — see how the skill evolved
-4. **Scan tier tracking** — when premium scans land, you can see free vs premium results side by side
-5. **Model cost visibility** — `model_used` column shows which LLM was used per scan
+No auth required. Cached: 10 min TTL.
 
 ---
 

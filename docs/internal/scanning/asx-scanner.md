@@ -1,8 +1,9 @@
-# ASX Score Scanner — Internal Developer Guide
+---
+name: ASX Score Scanner
+description: How the scanner evaluates a domain's AI-readiness. Read this before modifying the scan pipeline, rubric, or scoring engine.
+---
 
-> Last updated: 2026-04-04
-
-## Overview
+# ASX Score Scanner
 
 The ASX (Agentic Shopping Experience) Score Scanner evaluates how "AI-ready" a retail website is. It combines a Perplexity-powered site audit (40+ signals) with a Perplexity-powered brand classification to produce a 0–100 score, per-signal breakdown, improvement recommendations, a generated SKILL.md file, and structured product category assignments.
 
@@ -32,13 +33,17 @@ User submits domain → POST /api/v1/scan
   buildVendorSkillDraft()  ── VendorSkill object
   generateVendorSkill()    ── SKILL.md markdown
   ↓
+  resolveMaturity() ── auto-promote draft → community if score + skillMd + brandData present
+  ↓
+  upsertBrandIndex() ── write to brand_index (domain as unique key)
+  ↓
   resolveProductCategories(domain, sector, brandType, sectors) ── Perplexity sonar (sequential)
     │  Depth and scope vary by brand type:
     │    focused types (brand/retailer/etc) → up to 2 sectors, L3 categories
     │    department_store/supermarket → multi-sector, L1+L2 categories
     │    mega_merchant → L1 root categories only (no Perplexity call)
     ↓
-  upsertBrandIndex() ── write to brand_index (domain as unique key)
+  setBrandCategories() ── write to brand_categories junction table
   ↓
   Return score + breakdown + recommendations to client
 ```
@@ -56,7 +61,7 @@ User submits domain → POST /api/v1/scan
 | `lib/agentic-score/resolve-categories.ts` | Perplexity category resolution (post-upsert) |
 | `lib/agentic-score/scoring-engine.ts` | Score computation from evidence |
 | `lib/agentic-score/rubric.ts` | ASX rubric — 11 signals, point values, thresholds |
-| `lib/agentic-score/scan-utils.ts` | VendorSkill builder, domain utilities |
+| `lib/agentic-score/scan-utils.ts` | VendorSkill builder, domain utilities, `resolveMaturity()` |
 | `lib/procurement-skills/generator.ts` | SKILL.md markdown generation |
 | `server/storage/brand-index.ts` | `upsertBrandIndex()` — persistence |
 | `server/storage/brand-categories.ts` | Category junction CRUD |
@@ -183,7 +188,7 @@ The scoring engine in `scoring-engine.ts` converts these values to numeric score
 
 ---
 
-## Fragile Areas & Gotchas
+## Gotchas
 
 ### Perplexity API dependency
 
@@ -212,6 +217,10 @@ A brand_index row younger than 30 days returns cached results. There's no invali
 
 The `SCORING_RUBRIC` data structure must not be modified without coordinating across the score computation, evidence collection, and display code. Changes to point values or signal names break historical score comparisons.
 
+### Two scan entry points must stay in sync
+
+Both `app/api/v1/scan/route.ts` (user-triggered) and `lib/scan-queue/process-next.ts` (background queue) run the same pipeline. Changes to one must be reflected in the other — they share `buildVendorSkillDraft`, `generateVendorSkill`, `resolveMaturity`, and `upsertBrandIndex`, but the orchestration code is duplicated.
+
 ---
 
 ## Expansion Plans
@@ -222,7 +231,7 @@ The `SCORING_RUBRIC` data structure must not be modified without coordinating ac
 
 ### Medium-term
 - **Batch scanning** — CLI tool or admin API to scan thousands of domains from a CSV
-- **Score history** — track score changes over time per domain (currently each scan overwrites)
+- **Score history** — track score changes over time per domain (see `scan-history-plan.md`)
 - **Signal-level evidence viewer** — show exactly what the scanner found for each signal
 
 ### Longer-term
