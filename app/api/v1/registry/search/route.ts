@@ -16,30 +16,19 @@ export async function GET(request: NextRequest) {
 
   try {
     const filters = parseSearchParams(sp);
-    filters.q = undefined;
+    filters.q = q;
 
-    if (!filters.maturity?.length) {
-      filters.maturity = ["verified", "official", "beta", "community"];
+    if (!filters.maturities?.length) {
+      filters.maturities = ["verified", "official", "beta", "community"];
     }
 
-    const [allBrands, total] = await Promise.all([
-      storage.searchBrands({ ...filters, limit: 200 }),
+    const [brands, total] = await Promise.all([
+      storage.searchBrands(filters),
       storage.searchBrandsCount(filters),
     ]);
 
-    const lowerQ = q.toLowerCase();
-    const matched = allBrands.filter(
-      (b) =>
-        b.name.toLowerCase().includes(lowerQ) ||
-        b.domain.toLowerCase().includes(lowerQ) ||
-        b.slug.toLowerCase().includes(lowerQ) ||
-        (b.sector ?? "").toLowerCase().includes(lowerQ),
-    );
-
-    const limited = matched.slice(0, filters.limit);
-
     const results = await Promise.all(
-      limited.map(async (b) => {
+      brands.map(async (b) => {
         let categoryObjects: { id: number; name: string; path: string; depth: number; primary: boolean }[] = [];
         try {
           categoryObjects = await storage.getBrandCategoryObjects(b.id);
@@ -67,7 +56,7 @@ export async function GET(request: NextRequest) {
       {
         $schema: "https://shopy.sh/schemas/registry-search/v1",
         query: q,
-        total: matched.length,
+        total,
         limit: filters.limit,
         offset: filters.offset,
         results,

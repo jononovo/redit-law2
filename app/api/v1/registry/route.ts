@@ -6,8 +6,8 @@ export async function GET(request: NextRequest) {
   try {
     const filters = parseSearchParams(request.nextUrl.searchParams);
 
-    if (!filters.maturity?.length) {
-      filters.maturity = ["verified", "official", "beta", "community"];
+    if (!filters.maturities?.length) {
+      filters.maturities = ["verified", "official", "beta", "community"];
     }
 
     const [brands, total] = await Promise.all([

@@ -83,7 +83,10 @@ function buildConditions(filters: BrandSearchFilters) {
   const conditions = [];
 
   if (filters.q) {
-    conditions.push(sql`search_vector @@ plainto_tsquery('english', ${filters.q})`);
+    const pattern = `%${filters.q}%`;
+    conditions.push(
+      sql`(${brandIndex.name} ILIKE ${pattern} OR ${brandIndex.domain} ILIKE ${pattern} OR ${brandIndex.slug} ILIKE ${pattern} OR ${brandIndex.sector} ILIKE ${pattern})`,
+    );
   }
   if (filters.sectors?.length) {
     conditions.push(inArray(brandIndex.sector, filters.sectors));
