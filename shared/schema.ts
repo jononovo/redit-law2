@@ -1,4 +1,4 @@
-import { pgTable, serial, text, timestamp, integer, boolean, index, bigint, jsonb, numeric, uniqueIndex } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, timestamp, integer, boolean, index, bigint, jsonb, numeric, uniqueIndex, customType } from "drizzle-orm/pg-core";
 import { z } from "zod";
 import { GUARDRAIL_DEFAULTS } from "@/lib/guardrails/defaults";
 
@@ -1562,3 +1562,25 @@ export const brandCategories = pgTable("brand_categories", {
   index("brand_categories_category_idx").on(table.categoryId),
   uniqueIndex("brand_categories_brand_category_uniq").on(table.brandId, table.categoryId),
 ]);
+
+const tsvector = customType<{ data: string }>({
+  dataType() {
+    return "tsvector";
+  },
+});
+
+export const categoryKeywords = pgTable("category_keywords", {
+  id: serial("id").primaryKey(),
+  categoryId: integer("category_id").notNull(),
+  categoryName: text("category_name").notNull(),
+  categoryPath: text("category_path").notNull(),
+  keywords: text("keywords").array().notNull(),
+  keywordsTsv: tsvector("keywords_tsv"),
+  generatedAt: timestamp("generated_at").notNull().defaultNow(),
+}, (table) => [
+  uniqueIndex("category_keywords_category_id_uniq").on(table.categoryId),
+  index("category_keywords_tsv_idx").using("gin", table.keywordsTsv),
+]);
+
+export type CategoryKeyword = typeof categoryKeywords.$inferSelect;
+export type InsertCategoryKeyword = typeof categoryKeywords.$inferInsert;
