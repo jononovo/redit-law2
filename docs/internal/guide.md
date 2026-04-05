@@ -88,7 +88,66 @@ description: One sentence — what this covers and when to read it.
 
 ## File Placement
 
-Place docs in the matching subfolder (`scanning/`, `catalog/`, `platform/`). New subfolder only if 2+ docs expected. See `architecture.md` for the folder map.
+Place docs in the matching subfolder (`scanning/`, `catalog/`, `platform/`, `tenants/`). New subfolder only if 2+ docs expected. See `architecture.md` for the folder map.
+
+---
+
+## Research Files
+
+Research docs capture the analysis, industry context, and decision reasoning behind features. They're the deepest layer of progressive disclosure — an agent reads the operational doc first, then dives into research only when they need first-principles understanding.
+
+### Where they live
+
+Each feature subfolder can have a `research/` subfolder:
+
+```
+scanning/
+  research/
+    260403-scanner-rebuild-research.md
+    260403-taxonomy-options-analysis.md
+  asx-scanner.md
+  ...
+```
+
+Cross-cutting research that spans multiple areas goes in `docs/internal/research/` at the root.
+
+### Research frontmatter (required)
+
+```yaml
+---
+name: Scanner Rebuild Research
+description: Analysis of broken scanner pipeline and alternative approaches. Led to Perplexity migration.
+date: 2026-04-03
+status: concluded | ongoing | superseded
+outcome: One sentence — what was decided or built as a result.
+related:
+  - scanning/asx-scanner.md
+---
+```
+
+| Field | Purpose |
+|-------|---------|
+| `name` | Short title |
+| `description` | What was researched and why |
+| `date` | When the research was done (YYYY-MM-DD) |
+| `status` | `concluded` (decision made), `ongoing` (still open), `superseded` (replaced by newer research) |
+| `outcome` | What we decided / what was built as a result |
+| `related` | Which operational docs this research informed |
+
+### Research vs. operational docs
+
+- **Operational docs** describe how things work *today* — they stay current
+- **Research docs** are point-in-time snapshots — they capture what we knew and decided *at that moment*
+- Research docs are **not updated** when the feature evolves. They're historical records.
+- If research becomes outdated, set `status: superseded` and add a note pointing to newer research
+
+### When to write a research doc
+
+- Deep industry analysis that informed a feature decision
+- Technology comparison (we evaluated X, Y, Z and chose Y because...)
+- Systematic testing or audit of existing behavior
+- Strategy or go-to-market analysis
+- Any analysis where the *reasoning* is as valuable as the *conclusion*
 
 ---
 

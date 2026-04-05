@@ -91,7 +91,9 @@ Perplexity (classify + audit)
 - **`catalog/`** — brand_index table, taxonomy system, recommend API, product search
 - **`platform/`** — multitenant infrastructure, hostname routing, authentication, onboarding
 
-Each file has YAML frontmatter with `name` and `description`. Scan the frontmatter to find the right doc for your task.
+Each subfolder can contain a `research/` subfolder with dated analysis docs. Cross-cutting research lives in `research/` at the root level. See `guide.md` for the research frontmatter convention.
+
+All files have YAML frontmatter — scan it to find the right doc for your task.
 
 ## Reading Order
 
