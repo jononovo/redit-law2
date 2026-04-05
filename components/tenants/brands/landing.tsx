@@ -8,6 +8,8 @@ import { useRouter } from "next/navigation";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { ArrowRight, ChevronLeft, ChevronRight, Terminal, Loader2, Search } from "lucide-react";
 import { CAPABILITY_LABELS } from "@/lib/procurement-skills/taxonomy/capabilities";
+import { BRAND_TIER_LABELS } from "@/lib/procurement-skills/taxonomy/tiers";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ASSIGNABLE_SECTORS } from "@/lib/procurement-skills/taxonomy/sectors";
 import { ScanProgress } from "@/components/scan-progress";
 import { useDomainScan } from "@/hooks/use-domain-scan";
@@ -103,62 +105,41 @@ type BrandRow = {
   name: string;
   domain: string;
   sector: string;
+  tier: string | null;
   logoUrl: string | null;
   capabilities: string[] | null;
-  checkoutMethods: string[] | null;
-  maturity: string | null;
 };
 
-const CHECKOUT_SHORT_LABELS: Record<string, string> = {
-  native_api: "API",
-  browser_automation: "Browser",
-  x402: "x402",
-  acp: "ACP",
-  self_hosted_card: "Card",
-  crossmint_world: "Crossmint",
-};
-
-function CheckoutLabel({ methods }: { methods: string[] | null }) {
-  const m = methods ?? [];
-  if (m.length === 0) return <span className="text-xs text-neutral-600">—</span>;
-  const shown = m.slice(0, 2);
-  const remaining = m.length - shown.length;
+function TierLabel({ tier }: { tier: string | null }) {
+  if (!tier) return <span className="text-xs text-neutral-600">—</span>;
+  const label = (BRAND_TIER_LABELS as Record<string, string>)[tier] ?? tier;
   return (
-    <div className="flex flex-wrap gap-1" data-testid="pills-checkout">
-      {shown.map((method) => (
-        <span
-          key={method}
-          className="inline-flex items-center px-1.5 py-0.5 text-[10px] font-medium text-neutral-300 bg-neutral-800 border border-neutral-700 rounded-none"
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span
+            className="text-xs font-medium text-neutral-400 cursor-help"
+            data-testid={`text-tier-${tier}`}
+          >
+            {label}
+          </span>
+        </TooltipTrigger>
+        <TooltipContent
+          side="top"
+          className="max-w-[240px] text-xs leading-relaxed bg-neutral-900 text-neutral-300 border border-neutral-700"
         >
-          {CHECKOUT_SHORT_LABELS[method] ?? method}
-        </span>
-      ))}
-      {remaining > 0 && (
-        <span className="inline-flex items-center px-1.5 py-0.5 text-[10px] font-medium text-neutral-500 bg-neutral-900 border border-neutral-800 rounded-none">
-          +{remaining}
-        </span>
-      )}
-    </div>
+          Tier reflects the brand's typical price positioning, from Budget to Ultra Luxury.
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   );
 }
 
-const MATURITY_STYLES: Record<string, string> = {
-  official: "text-green-400 border-green-800 bg-green-950",
-  verified: "text-blue-400 border-blue-800 bg-blue-950",
-  beta: "text-amber-400 border-amber-800 bg-amber-950",
-  community: "text-neutral-400 border-neutral-700 bg-neutral-900",
-  draft: "text-neutral-500 border-neutral-800 bg-neutral-900",
-};
-
-function MaturityBadge({ maturity }: { maturity: string | null }) {
-  if (!maturity) return <span className="text-xs text-neutral-600">—</span>;
-  const style = MATURITY_STYLES[maturity] ?? MATURITY_STYLES.draft;
+function SectorLabel({ sector }: { sector: string }) {
+  const label = SECTOR_SHORT_LABELS[sector] ?? sector;
   return (
-    <span
-      className={`inline-flex items-center px-1.5 py-0.5 text-[10px] font-medium border rounded-none ${style}`}
-      data-testid={`badge-maturity-${maturity}`}
-    >
-      {maturity}
+    <span className="text-xs font-medium text-neutral-400" data-testid="text-sector">
+      {label}
     </span>
   );
 }
@@ -458,10 +439,10 @@ export default function BrandsLanding() {
                 />
               </div>
               <div className="border border-neutral-800 overflow-hidden bg-neutral-900/50">
-                <div className="hidden md:grid grid-cols-[1fr_120px_80px_220px_28px] gap-3 px-4 py-3 bg-neutral-900 border-b border-neutral-800">
+                <div className="hidden md:grid grid-cols-[1fr_90px_90px_220px_28px] gap-3 px-4 py-3 bg-neutral-900 border-b border-neutral-800">
                   <span className="text-sm font-mono text-neutral-400 tracking-wide uppercase">Skill</span>
-                  <span className="text-sm font-mono text-neutral-400 tracking-wide uppercase">Checkout</span>
-                  <span className="text-sm font-mono text-neutral-400 tracking-wide uppercase">Status</span>
+                  <span className="text-sm font-mono text-neutral-400 tracking-wide uppercase">Sector</span>
+                  <span className="text-sm font-mono text-neutral-400 tracking-wide uppercase">Tier</span>
                   <span className="text-sm font-mono text-neutral-400 tracking-wide uppercase">Capabilities</span>
                   <span />
                 </div>
@@ -499,7 +480,7 @@ export default function BrandsLanding() {
                       <Link
                         key={brand.slug}
                         href={`/skills/${brand.slug}`}
-                        className="grid grid-cols-1 md:grid-cols-[1fr_120px_80px_220px_28px] gap-2 md:gap-3 px-4 py-3 hover:bg-neutral-800/40 transition-colors items-center group"
+                        className="grid grid-cols-1 md:grid-cols-[1fr_90px_90px_220px_28px] gap-2 md:gap-3 px-4 py-3 hover:bg-neutral-800/40 transition-colors items-center group"
                         data-testid={`row-brand-${brand.slug}`}
                       >
                         <div className="flex items-center gap-3">
@@ -515,12 +496,12 @@ export default function BrandsLanding() {
                             <span className="text-xs text-neutral-500 ml-2 hidden sm:inline">{brand.domain}</span>
                           </div>
                         </div>
-                        <div className="hidden md:block"><CheckoutLabel methods={brand.checkoutMethods} /></div>
-                        <div className="hidden md:block"><MaturityBadge maturity={brand.maturity} /></div>
+                        <div className="hidden md:block"><SectorLabel sector={brand.sector} /></div>
+                        <div className="hidden md:block"><TierLabel tier={brand.tier} /></div>
                         <div className="flex items-center gap-2 md:hidden">
-                          <CheckoutLabel methods={brand.checkoutMethods} />
+                          <SectorLabel sector={brand.sector} />
                           <span className="text-neutral-700">·</span>
-                          <MaturityBadge maturity={brand.maturity} />
+                          <TierLabel tier={brand.tier} />
                         </div>
                         <CapabilityPills capabilities={brand.capabilities} />
                         <ChevronRight className="w-4 h-4 text-neutral-600 group-hover:text-neutral-400 transition-colors hidden md:block" />
