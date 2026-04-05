@@ -1,6 +1,6 @@
 ---
 name: How to Use This Folder
-description: Navigation guide for internal/. Start here if you're new.
+description: Navigation guide for project_brain/. Start here if you're new.
 ---
 
 # How to Use This Folder

@@ -1,6 +1,6 @@
 ---
 name: Internal Documentation Guide
-description: Convention for writing internal developer documentation. Read this before creating or updating any file in internal/.
+description: Convention for writing internal developer documentation. Read this before creating or updating any file in project_brain/.
 ---
 
 # Internal Documentation Guide
@@ -94,7 +94,7 @@ Place docs in the matching subfolder inside `internal_docs/` (`scanning/`, `cata
 
 Use `_README.md` (with leading underscore) for folder navigation files. The underscore sorts it to the top of file listings and distinguishes it from content docs.
 
-- `internal/_README.md` — main navigation for the whole folder
+- `project_brain/_README.md` — main navigation for the whole folder
 - `currently_building/_README.md` — explains the working bench
 - Feature subfolders in `internal_docs/` don't need a `_README.md` — agents scan frontmatter of the docs directly
 

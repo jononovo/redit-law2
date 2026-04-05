@@ -750,7 +750,7 @@ Schema changes flow through Drizzle ORM and are auto-synced to production on dep
 5. Config: `drizzle.config.ts` points at `DATABASE_URL` with `pg` driver
 6. The `spending_permissions` table exists in both databases but is not tracked in the schema (legacy table)
 
-### Internal Developer Docs (`internal/`)
+### Internal Developer Docs (`project_brain/`)
 Private technical documentation for the engineering team. Each doc file has YAML frontmatter (`name`, `description`) for quick scanning.
 
 **Entry point:** `vision.md` → `architecture.md` → `internal_docs/` subfolder → `how-to-write-docs-guide.md` (if writing docs)
