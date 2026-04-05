@@ -753,11 +753,11 @@ Schema changes flow through Drizzle ORM and are auto-synced to production on dep
 ### Internal Developer Docs (`internal/`)
 Private technical documentation for the engineering team. Each doc file has YAML frontmatter (`name`, `description`) for quick scanning.
 
-**Entry point:** `vision.md` → `architecture.md` → `internal_docs/` subfolder → `guide.md` (if writing docs)
+**Entry point:** `vision.md` → `architecture.md` → `internal_docs/` subfolder → `how-to-write-docs-guide.md` (if writing docs)
 
 - `vision.md` — product purpose and direction (Tier 3 protected)
 - `architecture.md` — system overview, component map
-- `guide.md` — how to write and update internal docs
+- `how-to-write-docs-guide.md` — how to write and update internal docs
 - `currently_building/` — active build cycle working bench
 - `internal_docs/tenants/` — tenant identity, purpose, audience, branding
 - `internal_docs/scanning/` — ASX scanner, scan pipeline, maturity, scan history

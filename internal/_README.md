@@ -10,7 +10,7 @@ description: Navigation guide for internal/. Start here if you're new.
 1. **`vision.md`** — what we're building and why
 2. **`architecture.md`** — system overview, all components, current status
 3. **`internal_docs/` subfolder for your task** — dive into the relevant feature area
-4. **`guide.md`** — only if you're writing or updating docs
+4. **`how-to-write-docs-guide.md`** — only if you're writing or updating docs
 
 ## Structure
 
@@ -26,7 +26,7 @@ description: Navigation guide for internal/. Start here if you're new.
 |------|---------|
 | `vision.md` | Product purpose and direction (Tier 3 protected) |
 | `architecture.md` | System components, data flow, status |
-| `guide.md` | How to write and update docs in this folder |
+| `how-to-write-docs-guide.md` | How to write and update docs in this folder |
 
 ## Folders
 
