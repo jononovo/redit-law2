@@ -13,6 +13,59 @@ This folder contains concise technical documentation for agents and developers w
 
 Write a new doc when a feature has **logic that isn't obvious from the code** — business rules, multi-step pipelines, implicit dependencies, or "why we did it this way" decisions. Do not document simple CRUD endpoints, color changes, or features whose behavior is fully self-evident from reading the code.
 
+## Update Policy — Three Tiers
+
+Not all updates carry the same risk. A wrong file path is easy to fix. A wrong statement about why a feature exists can mislead every future developer who reads it. These docs are the institutional memory of the project — they encode intentional decisions, growth positioning, and deliberate constraints that aren't visible in the code.
+
+Before updating any internal doc, determine which tier your change falls into and follow the corresponding requirements.
+
+### Tier 1: Factual corrections
+
+- **What:** File paths changed, function renamed, a new column was added, a bug fix expanded an index, typo fixes, updated counts or version numbers
+- **Risk:** Low — these are verifiable facts
+- **Requirements:**
+  - Verify the specific fact you're changing against the current codebase
+  - Keep the change scoped to the fact itself — don't rewrite surrounding context
+- **Examples:** "File moved from `lib/foo.ts` to `lib/bar/foo.ts`" / "Table now has 29 brands instead of 28" / "Function was renamed from `buildSkill` to `buildVendorSkillDraft`"
+
+### Tier 2: Behavioral and architectural changes
+
+- **What:** How features interact, data flows, pipeline steps, what triggers what, architectural diagrams, gotchas, fragile areas
+- **Risk:** Medium — inaccurate descriptions of how things work will send future developers down wrong paths
+- **Requirements before editing:**
+  1. **Read every file in the subfolder** where the doc lives — you need the full context of how this feature area is documented, not just the one file you're editing
+  2. **Do deep code analysis** of the actual implementation — trace the code paths, verify the data flows, confirm the architectural claims
+  3. **Cross-check related docs** — if your change affects something described in another subfolder's docs, read those too
+  4. **Verify your update is accurate** — don't write what you think the code does, write what it actually does after reading it
+- **Do not:**
+  - Update architecture descriptions based on a surface-level code scan
+  - Remove or change gotchas/fragile areas unless you've verified the issue no longer exists
+  - Assume something is broken just because it looks unusual — many patterns are intentional
+
+### Tier 3: Intentional and strategic statements
+
+- **What:** Why a feature exists, what problem it solves, growth positioning ("we built it this way because..."), deliberate constraints ("we intentionally don't do X because..."), statements about future direction, milestone-gated decisions, the purpose or objective of a feature
+- **Risk:** High — these statements encode the owner's product decisions and long-term strategy. An agent analyzing the code might conclude "this should be refactored" when in fact it was deliberately positioned for a future expansion. Changing these statements can cause cascading misunderstandings across the entire team.
+- **Requirements:**
+  - **Do not modify without explicit owner approval** — if you believe a strategic statement is outdated or incorrect, flag it for the owner rather than changing it yourself
+  - This includes: "Why It Exists" sections, expansion plans, statements about deliberate limitations, milestone gates, and any language about positioning or growth strategy
+- **Examples of what NOT to change on your own:**
+  - "We chose Postgres over a dedicated vector DB because we want to keep infrastructure simple at this stage" — this is a deliberate positioning decision
+  - "Category keywords are partially populated — we expand coverage as needed, not all at once" — this is an intentional constraint
+  - "Maturity auto-promotion uses a deliberately low bar" — this encodes a product decision about visibility vs. quality
+
+### Summary
+
+| Tier | What changes | Required before editing |
+|------|-------------|----------------------|
+| **1 — Factual** | File paths, counts, names, typos | Verify the specific fact |
+| **2 — Behavioral** | Architecture, data flows, interactions, gotchas | Read full subfolder + deep code analysis |
+| **3 — Strategic** | Purpose, intent, positioning, constraints, direction | Owner approval required |
+
+When in doubt about which tier a change falls into, treat it as the higher tier.
+
+---
+
 ## When to Update a Doc
 
 Update an existing doc when you:
@@ -22,6 +75,8 @@ Update an existing doc when you:
 - Implement something that was previously listed as a plan
 
 Do not update docs for cosmetic changes, minor refactors that don't change behavior, or bug fixes that don't reveal new information about the system.
+
+Always follow the tier requirements above before making any update.
 
 ---
 
