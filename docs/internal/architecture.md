@@ -83,9 +83,10 @@ Perplexity (classify + audit)
 
 ## Documentation Map
 
+- **`tenants/`** — tenant identity, purpose, audience, branding, feature sets (start with `overview.md`)
 - **`scanning/`** — ASX scanner, scan pipeline, scoring rubric, maturity promotion, scan history
 - **`catalog/`** — brand_index table, taxonomy system, recommend API, product search
-- **`platform/`** — multitenant routing, tenant configs, theming
+- **`platform/`** — multitenant infrastructure, hostname routing, authentication, onboarding
 
 Each file has YAML frontmatter with `name` and `description`. Scan the frontmatter to find the right doc for your task.
 

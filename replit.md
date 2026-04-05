@@ -758,9 +758,10 @@ Private technical documentation for the engineering team. Each doc file has YAML
 - `vision.md` — product purpose and direction (Tier 3 protected)
 - `architecture.md` — system overview, component map, folder index
 - `guide.md` — how to write and update internal docs
+- `tenants/` — tenant identity, purpose, audience, branding (start with `overview.md`)
 - `scanning/` — ASX scanner, scan pipeline, maturity, scan history
 - `catalog/` — brand catalog, taxonomy, recommend API, product search
-- `platform/` — multitenant routing, theming, infrastructure
+- `platform/` — multitenant routing, authentication, onboarding
 
 ### Documentation System (`docs/content/`, `app/docs/`)
 Self-hosted documentation at `/docs` with sidebar navigation, audience toggle, and markdown rendering. Multi-tenant aware — each tenant sees its own docs.
