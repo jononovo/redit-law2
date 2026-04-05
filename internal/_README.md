@@ -33,6 +33,7 @@ description: Navigation guide for internal/. Start here if you're new.
 | Folder | Covers |
 |--------|--------|
 | `currently_building/` | Active build cycle — scratch research, build notes, in-progress work |
+| `future/` | Ideas, rough plans, strategy docs not yet tied to a build cycle |
 | `internal_docs/tenants/` | Tenant identity, purpose, audience, branding |
 | `internal_docs/scanning/` | ASX scanner, scan pipeline, maturity, scan history |
 | `internal_docs/catalog/` | Brand catalog, taxonomy, recommend API, product search |
