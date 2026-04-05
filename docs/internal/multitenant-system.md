@@ -4,7 +4,7 @@
 
 ## Overview
 
-One Next.js codebase serves multiple brands (CreditClaw, shopy.sh, future tenants) from a single deployment. Tenant identity is resolved from the incoming hostname at the edge, then threaded through the entire request lifecycle — server metadata, client context, theming, and attribution.
+One Next.js codebase serves three tenants — CreditClaw (`creditclaw.com`), shopy (`shopy.sh`), and brands (`brands.sh`) — from a single deployment. Tenant identity is resolved from the incoming hostname at the edge, then threaded through the entire request lifecycle — server metadata, client context, theming, and attribution.
 
 There is **no data isolation**. All tenants share the same database. Tenant is attribution-only (the `signup_tenant` column on `owners`).
 
