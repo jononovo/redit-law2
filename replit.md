@@ -751,14 +751,16 @@ Schema changes flow through Drizzle ORM and are auto-synced to production on dep
 6. The `spending_permissions` table exists in both databases but is not tracked in the schema (legacy table)
 
 ### Internal Developer Docs (`docs/internal/`)
-Private technical documentation covering implementation details, fragile areas, expansion plans, and operational guides. Not served publicly — for the engineering team only. Each file has YAML frontmatter (`name`, `description`) for quick scanning. See `docs/internal/guide.md` for the writing convention.
+Private technical documentation for the engineering team. Each doc file has YAML frontmatter (`name`, `description`) for quick scanning.
 
-**Structure:**
-- `README.md` — index with reading order and current system status
-- `guide.md` — how to write and update internal docs (the convention)
-- `scanning/` — ASX scanner, scan pipeline, maturity auto-promotion, scan history plan
-- `catalog/` — brand catalog, taxonomy, merchant index, product search plan
-- `platform/` — multitenant system, infrastructure
+**Entry point:** `vision.md` → `architecture.md` → subfolder docs → `guide.md` (if writing docs)
+
+- `vision.md` — product purpose and direction (Tier 3 protected)
+- `architecture.md` — system overview, component map, folder index
+- `guide.md` — how to write and update internal docs
+- `scanning/` — ASX scanner, scan pipeline, maturity, scan history
+- `catalog/` — brand catalog, taxonomy, recommend API, product search
+- `platform/` — multitenant routing, theming, infrastructure
 
 ### Documentation System (`docs/content/`, `app/docs/`)
 Self-hosted documentation at `/docs` with sidebar navigation, audience toggle, and markdown rendering. Multi-tenant aware — each tenant sees its own docs.

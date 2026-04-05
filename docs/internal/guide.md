@@ -86,18 +86,9 @@ description: One sentence — what this covers and when to read it.
 
 ---
 
-## Folder Structure
+## File Placement
 
-```
-docs/internal/
-  guide.md              ← this file
-  README.md             ← index with reading order
-  scanning/             ← scanner, pipeline, maturity, scan history
-  catalog/              ← brand catalog, taxonomy, merchant index, product search
-  platform/             ← multitenant, onboarding, auth
-```
-
-New doc → place in matching subfolder. New subfolder → only if 2+ docs expected.
+Place docs in the matching subfolder (`scanning/`, `catalog/`, `platform/`). New subfolder only if 2+ docs expected. See `architecture.md` for the folder map.
 
 ---
 
