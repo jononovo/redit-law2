@@ -153,13 +153,44 @@ Completed in two sessions (April 3, 2026):
 
 ---
 
-### Step 7: Tier 3 Product Index
+### Step 6B: Merchant Index (Stages 1-2) ✅
 
-**Priority:** Future — no detailed build plan yet
-**Status:** Vision only
-**Source:** `agent-readiness-and-product-index-service.md` (Tier 3 section)
+**Priority:** High — prerequisite for product search
+**Status:** Core pipeline built
+**Source:** `docs/internal/brands-sh-merchant-index-plan.md`
+**Depends on:** Step 6
 
-Full product catalog crawl, LLM-powered enrichment, Google Product Taxonomy mapping per product, distribution to Shopify Catalog MCP and Google UCP, vector search layer, CreditClaw Agent Gateway.
+Completed:
+- [x] `category_keywords` table with GIN-indexed tsvector, unique constraint on category_id
+- [x] Keyword generation batch script (`scripts/generate-category-keywords.ts`) — resumable, 15 per batch via Perplexity, atomic transactions, proper English stemming
+- [x] ~1,051 of 5,638 categories populated with LLM-generated keywords
+- [x] `POST /api/v1/recommend` — structured queries with category_ids or text terms, Zod validation, tier/brand filtering
+- [x] `GET /api/v1/recommend?q=...` — natural language intake via Perplexity Sonar → FTS → recursive CTE merchant ranking
+- [x] Recursive ancestor CTE with UNION dedup and depth guard
+- [x] Brand match boost (mentioned brand sorts to top)
+
+Outstanding:
+- [ ] Finish keyword population (run script more times — background task, not a code change)
+- [ ] Grow merchant count via scan queue (19 merchants currently)
+- [ ] Phase 2: Skills distribution (front matter discussion needed, master SKILL.md, brands-sh/shop GitHub repo)
+
+---
+
+### Step 7: Product Search (Stage 3)
+
+**Priority:** High — next major build
+**Status:** Detailed plan complete, not started
+**Source:** `docs/internal/brands-sh-product-search-plan.md`
+**Depends on:** Step 6B
+
+Product-level search using pgvector in Postgres. `product_listings` table with e5-small-v2 embeddings. Brands-first ingestion strategy (Shopify Storefront API, Google Shopping XML). Products nested in `/api/v1/recommend` response.
+
+Build sequence:
+1. Schema + pgvector setup
+2. Embedding infrastructure (ONNX / @xenova/transformers)
+3. First merchant ingestion (2-3 Shopify brands)
+4. Wire products into recommend API
+5. Scale to more merchants + feed types
 
 ---
 
@@ -191,9 +222,9 @@ These are not blocking for the initial build. Add when warranted.
 ## Dependency Map
 
 ```
-Step 2 (Multitenant) ←── independent, can start now
+Step 2 (Multitenant) ←── ✅ COMPLETE
   ↓
-Step 3 (shopy.sh Pages) ←── depends on Step 2
+Step 3 (shopy.sh Pages) ←── ✅ COMPLETE
   ↓
 Step 4 (Registry API + CLI + Master Skill) ←── depends on Step 3
 
@@ -204,12 +235,13 @@ Step 5 (Premium Scan) ←── independent of Steps 2-4, can start now
 
 Step 6 (Google Product Taxonomy) ←── ✅ COMPLETE
   ↓
-Step 7 (Tier 3 Product Index) ←── depends on Step 6 (now unblocked)
+Step 6B (Merchant Index, Stages 1-2) ←── ✅ CORE PIPELINE BUILT (keyword pop + merchant count ongoing)
+  ↓
+Step 7 (Product Search, Stage 3) ←── depends on Step 6B (now unblocked)
 ```
 
-Steps 2, 4B, and 5 can all run in parallel.
-Step 6 is complete — taxonomy tables, category resolution, and sector system are all in place.
-Step 7 (Tier 3 Product Index) is now unblocked by Step 6 completion.
-Master Skill ships with Step 4 (registry API).
+Step 6B core pipeline is built — recommend API works end-to-end. Outstanding: keyword coverage (background task) and merchant count (scan queue).
+Step 7 (Product Search) is the next major build — pgvector embeddings, Shopify ingestion, product results in recommend response.
+Step 4 (Registry/CLI) and Step 7 can run in parallel.
 Brand Versioning (4B) should ideally land before Step 5 (premium scan comparison needs version history).
 Sitemap splitting is parked until 1,000+ URLs.

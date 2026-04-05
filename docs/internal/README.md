@@ -28,18 +28,32 @@ Private technical documentation for the CreditClaw / shopy.sh / brands.sh engine
 | `product-index.md` | Product Index | Brand catalog, LITE_COLUMNS, filtering, generateStaticParams, search_vector |
 | `multitenant-system.md` | Multitenant | Hostname routing, tenant configs, theming, adding new tenants |
 
-### Build plans for new features
+### Merchant Index & Product Search (the recommend pipeline)
 
-| File | Feature | Summary |
-|------|---------|---------|
-| `brands-sh-merchant-index-plan.md` | **Merchant Index** | Query pipeline (Stages 1-2): category resolution via pre-computed keywords, merchant ranking with ancestor walking, API response shape, skill format & distribution via `brands-sh/shop` GitHub repo, deployment (Replit → Cloudflare edge). Build phases 1-2. |
-| `brands-sh-product-search-plan.md` | **Product Search** | Stage 3: brand-first feed strategy, 7-step ingestion pipeline (feed → validate → GTIN → category map → embed → store), per-merchant Zvec vector collections, optional AI enrichment layer, edge deployment. Build phases 3-4. |
+| File | Feature | Status | Summary |
+|------|---------|--------|---------|
+| `brands-sh-merchant-index-plan.md` | **Merchant Index** | Stages 1-2 BUILT, Phase 2 pending | Category resolution via FTS, merchant ranking with ancestor CTE, intake LLM, `/api/v1/recommend` endpoint. Skills distribution pending front matter discussion. |
+| `brands-sh-product-search-plan.md` | **Product Search** | Not started | Stage 3: brand-first feed strategy, Shopify/Google Shopping ingestion, pgvector embeddings in Postgres, product results nested in recommend response. |
+
+### Current status of the Merchant Index pipeline
+
+**What's working today:**
+- `POST /api/v1/recommend` — structured queries with category IDs or text terms, tier/brand filtering, Zod validation
+- `GET /api/v1/recommend?q=...` — natural language queries via Perplexity Sonar intake → FTS category resolution → recursive CTE merchant ranking
+- ~1,051 of 5,638 categories have LLM-generated keywords (script is resumable)
+- 19 merchants in the database (all `draft` maturity)
+
+**What's next:**
+1. Finish keyword population (keep running the batch script)
+2. Grow merchant count (more scans via scan queue)
+3. Phase 2 skills distribution (needs front matter discussion)
+4. Stage 3 product search (see product search plan)
 
 ## Reading order for new developers / agents
 
-1. **This README** — orientation
+1. **This README** — orientation and current status
 2. **`scan-taxonomy-skills-pipeline.md`** — understand how the current scan → skill pipeline works
 3. **`product-index.md`** — understand the brand_index table, columns, filtering, search_vector
-4. **`brands-sh-merchant-index-plan.md`** — the merchant recommendation index build plan (what to build next)
-5. **`brands-sh-product-search-plan.md`** — the product search build plan (builds on top of the merchant index)
+4. **`brands-sh-merchant-index-plan.md`** — the merchant recommendation index (Stages 1-2 built, what's outstanding)
+5. **`brands-sh-product-search-plan.md`** — Stage 3 product search (next major build)
 6. Other files as needed for specific features
