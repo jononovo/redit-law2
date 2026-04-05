@@ -6,9 +6,15 @@ date: 2026-04-05
 
 # Build Backlog
 
+
+
 ## Cleanup
 
 - **Clean out `public/` folder** — platform skill files (`SKILL.md`, `skill.json`, `_meta.json`), platform-specific folders (`amazon/`, `shopify/`, `bigcommerce/`, `magento/`, `squarespace/`, `wix/`, `woocommerce/`, `generic/`), legacy agent docs (`agents/`), `Plugins/`, and loose markdown guides (`CHECKOUT-GUIDE.md`, `SHOPPING-GUIDE.md`, `HEARTBEAT.md`, `MANAGEMENT.md`, `MY-STORE.md`, `STRIPE-X402-WALLET.md`, `WEBHOOK.md`) are cluttering the folder. The valuable content (`tenants/`, `assets/`) is getting buried. Move or archive non-essential files.
+
+- **Drizzle folder has lots of files - are they necessary?** - there's a ton of files in there that are really big and I think might just be part of like some one time use but if they're not, and if they're important, then we can keep them. Here's an example: drizzle/0009_replace_readiness_with_asx_score.sql
+
+  
 
 ## Unbuilt Features
 
