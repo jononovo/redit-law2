@@ -88,7 +88,7 @@ description: One sentence — what this covers and when to read it.
 
 ## File Placement
 
-Place docs in the matching subfolder inside `internal_docs/` (`scanning/`, `catalog/`, `platform/`, `tenants/`). New subfolder only if 2+ docs expected.
+Place docs in the matching numbered subfolder inside `internal_docs/` (e.g., `01-agentic-shopping-score/`, `03-brands-index/`, `07-platform-management/`). New subfolder only if 2+ docs expected.
 
 ### Folder README files
 
