@@ -22,6 +22,8 @@ description: Navigation guide for project_knowledge/. Start here if you're new.
 
 Not every subfolder has a `_README.md` or `_research/` folder — but when they exist, use them.
 
+**Writing or updating docs?** Read `_how-to-write-docs-guide.md` first — it covers frontmatter format, update tiers, file placement, and research doc conventions.
+
 ## Structure
 
 - Root-level files are entry points (vision, architecture, guide)
