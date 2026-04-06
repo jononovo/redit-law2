@@ -6,12 +6,12 @@ export const mcmaster_carr: VendorSkill = {
   logoUrl: "/assets/images/vendors/mcmaster-carr.svg",
   sector: "business-industrial",
   url: "https://www.mcmaster.com",
-  checkoutMethods: ["self_hosted_card"],
+  checkoutMethods: ["browser_automation"],
   capabilities: ["price_lookup", "stock_check", "order_tracking", "bulk_pricing"],
   maturity: "draft",
   methodConfig: {
-    self_hosted_card: {
-      locatorFormat: "url:{product_url}",
+    browser_automation: {
+    }",
       requiresAuth: true,
       notes: "Account required. McMaster-Carr is notoriously difficult to browse without an account.",
     },

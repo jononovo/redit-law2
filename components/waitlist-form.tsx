@@ -95,7 +95,7 @@ export function WaitlistForm() {
               Ready to put your bot&apos;s spending on autopilot?
           </h2>
           <p className="text-xl text-neutral-400 mb-12 font-medium max-w-xl mx-auto">
-              Join the waitlist for bot wallets, or jump in now with self-hosted cards and full spending controls.
+              Join the waitlist for bot wallets with full spending controls.
           </p>
 
           {showConfirmation ? (

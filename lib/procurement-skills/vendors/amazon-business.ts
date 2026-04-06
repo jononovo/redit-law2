@@ -6,12 +6,12 @@ export const amazon_business: VendorSkill = {
   logoUrl: "/assets/images/vendors/amazon-business.svg",
   sector: "specialty",
   url: "https://business.amazon.com",
-  checkoutMethods: ["self_hosted_card"],
+  checkoutMethods: ["browser_automation"],
   capabilities: ["price_lookup", "bulk_pricing", "tax_exemption", "po_numbers", "order_tracking", "business_invoicing", "account_creation"],
   maturity: "beta",
   methodConfig: {
-    self_hosted_card: {
-      locatorFormat: "url:{product_url}",
+    browser_automation: {
+    }",
       requiresAuth: true,
       notes: "Requires Amazon Business account. Owner must set up account beforehand. Tax exemption certs can be uploaded in account settings.",
     },

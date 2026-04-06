@@ -6,12 +6,12 @@ export const grainger: VendorSkill = {
   logoUrl: "/assets/images/vendors/grainger.svg",
   sector: "business-industrial",
   url: "https://www.grainger.com",
-  checkoutMethods: ["self_hosted_card"],
+  checkoutMethods: ["browser_automation"],
   capabilities: ["price_lookup", "stock_check", "bulk_pricing", "tax_exemption", "po_numbers", "order_tracking", "business_invoicing", "account_creation"],
   maturity: "draft",
   methodConfig: {
-    self_hosted_card: {
-      locatorFormat: "url:{product_url}",
+    browser_automation: {
+    }",
       requiresAuth: true,
       notes: "Account required for pricing. Guest browsing shows 'Sign in for price' on many items.",
     },

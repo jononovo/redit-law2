@@ -13,7 +13,7 @@ export async function GET() {
     "",
     "## About",
     "",
-    "CreditClaw provides prepaid wallets, multi-rail payment support (Stripe, crypto, self-hosted cards), spending controls, and a bot-facing API for autonomous purchases, invoicing, checkout pages, and sales. It is built for anyone who operates AI agents that need to make purchases or payments as part of their workflow.",
+    "CreditClaw provides prepaid wallets, multi-rail payment support (Stripe, crypto, encrypted cards), spending controls, and a bot-facing API for autonomous purchases, invoicing, checkout pages, and sales. It is built for anyone who operates AI agents that need to make purchases or payments as part of their workflow.",
     "",
     `- Main site: ${baseUrl}`,
     `- Dashboard: ${baseUrl}/app`,

@@ -13,11 +13,6 @@ import {
   type ReconciliationLog, type InsertReconciliationLog,
   type PairingCode, type InsertPairingCode,
   type WaitlistEntry, type InsertWaitlistEntry,
-  type Rail4Card, type InsertRail4Card,
-  type ObfuscationEvent, type InsertObfuscationEvent,
-  type ObfuscationState, type InsertObfuscationState,
-  type ProfileAllowanceUsage,
-  type CheckoutConfirmation, type InsertCheckoutConfirmation,
   type PrivyWallet, type InsertPrivyWallet,
   type PrivyGuardrail, type InsertPrivyGuardrail,
   type PrivyTransaction, type InsertPrivyTransaction,
@@ -25,7 +20,6 @@ import {
   type CrossmintGuardrail, type InsertCrossmintGuardrail,
   type CrossmintTransaction, type InsertCrossmintTransaction,
   type MasterGuardrail, type InsertMasterGuardrail,
-  type Rail4Guardrail, type InsertRail4Guardrail,
   type Rail5Guardrail, type InsertRail5Guardrail,
   type ProcurementControl, type InsertProcurementControl,
   type UnifiedApproval, type InsertUnifiedApproval,
@@ -174,47 +168,10 @@ export interface IStorage {
   privyGetDailySpend(walletId: number): Promise<number>;
   privyGetMonthlySpend(walletId: number): Promise<number>;
 
-  createRail4Card(data: InsertRail4Card): Promise<Rail4Card>;
-  getRail4CardByCardId(cardId: string): Promise<Rail4Card | null>;
-  getRail4CardByBotId(botId: string): Promise<Rail4Card | null>;
-  getRail4CardsByBotId(botId: string): Promise<Rail4Card[]>;
-  countCardsByBotId(botId: string): Promise<number>;
-  getRail4CardsByOwnerUid(ownerUid: string): Promise<Rail4Card[]>;
-  updateRail4CardByCardId(cardId: string, data: Partial<InsertRail4Card>): Promise<Rail4Card | null>;
-  updateRail4Card(botId: string, data: Partial<InsertRail4Card>): Promise<Rail4Card | null>;
-  deleteRail4CardByCardId(cardId: string): Promise<void>;
-  deleteRail4Card(botId: string): Promise<void>;
-
-  createObfuscationEvent(data: InsertObfuscationEvent): Promise<ObfuscationEvent>;
-  getObfuscationEventsByCardId(cardId: string, limit?: number): Promise<ObfuscationEvent[]>;
-  getObfuscationEventsByBotId(botId: string, limit?: number): Promise<ObfuscationEvent[]>;
-  getPendingObfuscationEvents(cardId: string): Promise<ObfuscationEvent[]>;
-  completeObfuscationEvent(id: number, occurredAt: Date): Promise<ObfuscationEvent | null>;
-  updateObfuscationEventConfirmation(id: number, confirmationId: string): Promise<void>;
-
-  getObfuscationState(cardId: string): Promise<ObfuscationState | null>;
-  createObfuscationState(data: InsertObfuscationState): Promise<ObfuscationState>;
-  updateObfuscationState(cardId: string, data: Partial<InsertObfuscationState>): Promise<ObfuscationState | null>;
-  getActiveObfuscationStates(): Promise<ObfuscationState[]>;
-
-  getProfileAllowanceUsage(cardId: string, profileIndex: number, windowStart: Date): Promise<ProfileAllowanceUsage | null>;
-  upsertProfileAllowanceUsage(cardId: string, profileIndex: number, windowStart: Date, addCents: number): Promise<ProfileAllowanceUsage>;
-
-  createCheckoutConfirmation(data: InsertCheckoutConfirmation): Promise<CheckoutConfirmation>;
-  getCheckoutConfirmation(confirmationId: string): Promise<CheckoutConfirmation | null>;
-  updateCheckoutConfirmationStatus(confirmationId: string, status: string): Promise<CheckoutConfirmation | null>;
-  getPendingConfirmationsByBotIds(botIds: string[]): Promise<CheckoutConfirmation[]>;
-  getPendingConfirmationsByCardIds(cardIds: string[]): Promise<CheckoutConfirmation[]>;
-
   getMasterGuardrails(ownerUid: string): Promise<MasterGuardrail | null>;
   upsertMasterGuardrails(ownerUid: string, data: Partial<InsertMasterGuardrail>): Promise<MasterGuardrail>;
-  getMasterDailySpend(ownerUid: string): Promise<{ rail1: number; rail2: number; rail4: number; total: number }>;
-  getMasterMonthlySpend(ownerUid: string): Promise<{ rail1: number; rail2: number; rail4: number; total: number }>;
-
-  getRail4Guardrails(cardId: string): Promise<Rail4Guardrail | null>;
-  upsertRail4Guardrails(cardId: string, data: Partial<InsertRail4Guardrail>): Promise<Rail4Guardrail>;
-  getRail4DailySpendCents(cardId: string): Promise<number>;
-  getRail4MonthlySpendCents(cardId: string): Promise<number>;
+  getMasterDailySpend(ownerUid: string): Promise<{ rail1: number; rail2: number; total: number }>;
+  getMasterMonthlySpend(ownerUid: string): Promise<{ rail1: number; rail2: number; total: number }>;
 
   getRail5Guardrails(cardId: string): Promise<Rail5Guardrail | null>;
   upsertRail5Guardrails(cardId: string, data: Partial<InsertRail5Guardrail>): Promise<Rail5Guardrail>;

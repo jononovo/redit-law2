@@ -92,16 +92,15 @@ Central catalog and storage layer. Owns the `brand_index` table, catalog UI, tax
 
 Outbound financial rails — how users fund wallets and how their agents spend money at external merchants. Inbound payment methods (how shoppers pay at our checkouts) are in Module 9 (Agent Shops).
 
-**Key folders:** `lib/payments/`, `lib/rail1/`, `lib/rail2/`, `lib/rail4/`, `lib/rail5/`, `lib/crypto-onramp/`, `lib/card/`, `lib/obfuscation-engine/`, `lib/obfuscation-merchants/`
-**API routes:** `app/api/v1/wallet/`, `app/api/v1/wallets/`, `app/api/v1/stripe-wallet/`, `app/api/v1/card-wallet/`, `app/api/v1/billing/`, `app/api/v1/rail4/`, `app/api/v1/rail5/`, `app/api/v1/cards/`
+**Key folders:** `lib/payments/`, `lib/rail1/`, `lib/rail2/`, `lib/rail5/`, `lib/crypto-onramp/`, `lib/card/`
+**API routes:** `app/api/v1/wallet/`, `app/api/v1/wallets/`, `app/api/v1/stripe-wallet/`, `app/api/v1/card-wallet/`, `app/api/v1/billing/`, `app/api/v1/rail5/`, `app/api/v1/cards/`
 **Tables:** `owners` (wallet balances)
 
 | Rail | Method | Implementation | Status |
 |------|--------|---------------|--------|
 | Rail 1 | Stripe Crypto Onramp | `lib/rail1/`, `lib/crypto-onramp/` — Privy server wallets on Base, fiat → USDC | Live |
 | Rail 2 | Crossmint Wallet | `lib/rail2/` — Crossmint API for wallet creation, balance, transfers, onramp | Not complete |
-| Rail 4 | Obfuscated Self-Hosted Cards | `lib/rail4/`, `lib/obfuscation-engine/` — retired, still in codebase | Retired |
-| Rail 5 | Direct Wallet Debit | `lib/rail5/` — atomic balance deduction at purchase time | Live |
+| Rail 5 | Encrypted Cards | `lib/rail5/` — end-to-end encrypted cards with sub-agent checkout | Live |
 
 | Component | Key functions / files | Purpose |
 |-----------|----------------------|---------|
@@ -261,7 +260,7 @@ This module owns the research and evolution of these standards. When new protoco
 | 1. Agentic Shopping Score | Running — scan engine, queue, maturity promotion all live |
 | 2. Agent Shopping Skills | Running — SKILL.md + skill.json generated per scan |
 | 3. Brands Index | Running — recommend API with all 3 stages live |
-| 4. Payment Tools | Partially live — Rail 1, 5 live. Rail 2 not complete. Rail 4 retired. Stripe Issuing/Connect not built. |
+| 4. Payment Tools | Partially live — Rail 1, 5 live. Rail 2 not complete. Stripe Issuing/Connect not built. |
 | 5. Agent Interaction | Running — webhooks, guardrails, approvals, orders live |
 | 6. Agent Plugins | Partial — OpenClaw plugin exists |
 | 7. Platform Management | Running |

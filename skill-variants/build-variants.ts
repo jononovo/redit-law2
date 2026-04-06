@@ -63,7 +63,6 @@ function generateSkillFilesTable(files: string[], urlPrefix: string): string {
     "shopping.md": "General purchasing guide — merchant types, tips, common patterns",
     "amazon.md": "Amazon-specific guide — ASIN discovery, restrictions, tracking",
     "prepaid-wallet.md": "Pre-paid Wallet — purchase flow, merchant formats, order tracking",
-    "self-hosted-card.md": "Self-Hosted Card — checkout flow, approval, multi-card handling",
     "description.md": "High-level vendor description and maturity summary",
   };
 

@@ -20,7 +20,7 @@ Search and filter available procurement skills.
 |---|---|---|
 | `search` | string | Filter vendors by name or slug (case-insensitive) |
 | `category` | string | Filter by category: `retail`, `office`, `hardware`, `electronics`, `industrial`, `specialty` |
-| `checkout` | string | Comma-separated checkout methods: `native_api`, `acp`, `x402`, `crossmint_world`, `self_hosted_card`, `browser_automation` |
+| `checkout` | string | Comma-separated checkout methods: `native_api`, `acp`, `x402`, `crossmint_world`, `browser_automation` |
 | `capability` | string | Comma-separated required capabilities (all must match): `price_lookup`, `stock_check`, `programmatic_checkout`, `business_invoicing`, `bulk_pricing`, `tax_exemption`, `account_creation`, `order_tracking`, `returns`, `po_numbers` |
 | `maturity` | string | Comma-separated maturity levels: `verified`, `beta`, `community`, `draft` |
 
@@ -34,7 +34,7 @@ Search and filter available procurement skills.
       "name": "Amazon",
       "category": "retail",
       "url": "https://amazon.com",
-      "checkout_methods": ["crossmint_world", "self_hosted_card"],
+      "checkout_methods": ["crossmint_world", "native_api"],
       "capabilities": ["price_lookup", "stock_check", "order_tracking"],
       "maturity": "verified",
       "agent_friendliness": 85,
@@ -149,7 +149,7 @@ Response (truncated):
 # Amazon — Procurement Skill
 
 ## Overview
-Amazon is a retail vendor supporting crossmint_world and self_hosted_card checkout methods...
+Amazon is a retail vendor supporting crossmint_world and browser_automation checkout methods...
 
 ## Checkout Methods
 ...

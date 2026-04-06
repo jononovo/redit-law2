@@ -82,7 +82,6 @@ function formatCents(cents: number | null | undefined, currency = "USD"): string
 const RAIL_LABELS: Record<string, string> = {
   rail1: "Rail 1 — Stripe Wallet",
   rail2: "Rail 2 — Card Wallet",
-  rail4: "Rail 4 — Self-Hosted Card",
   rail5: "Rail 5 — Sub-Agent Card",
 };
 

@@ -2,7 +2,7 @@
 
 Stripe Wallets (Rail 1) and Card Wallets (Rail 2) need to be funded before your bot can make purchases. CreditClaw supports several funding methods.
 
-> **Note**: Sub-Agent Cards (Rail 4) and Self-Hosted Cards (Rail 5) use your existing credit/debit cards directly and don't require separate funding.
+> **Note**: Sub-Agent Cards (Rail 5) use your existing credit/debit cards directly and don't require separate funding.
 
 ## Opening the Fund Wallet Sheet
 

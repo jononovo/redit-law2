@@ -6,7 +6,7 @@ export const shopify: VendorSkill = {
   logoUrl: "/assets/images/vendors/shopify.svg",
   sector: "software",
   url: "https://www.shopify.com",
-  checkoutMethods: ["native_api", "self_hosted_card"],
+  checkoutMethods: ["native_api"],
   capabilities: ["price_lookup", "stock_check", "programmatic_checkout"],
   maturity: "verified",
   methodConfig: {
@@ -15,9 +15,7 @@ export const shopify: VendorSkill = {
       searchEndpoint: "/api/v1/card-wallet/bot/search",
       requiresAuth: false,
       notes: "Variant lookup required before purchase. Use the search endpoint with the product URL.",
-    },
-    self_hosted_card: {
-      locatorFormat: "url:{product_url}",
+    },",
       requiresAuth: false,
       notes: "Works with any Shopify store checkout. Guest checkout usually available.",
     },

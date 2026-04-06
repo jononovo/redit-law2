@@ -18,7 +18,7 @@ Wallets hold the funds your bots use to make purchases. CreditClaw supports seve
 
 - **Stripe Wallet** — A USDC wallet for x402 protocol purchases, funded via Stripe or Link
 - **Shop Wallet** — A USDC wallet for shopping at merchants like Amazon and Shopify
-- **Self-Hosted Cards** — Use your own credit or debit card with encryption and split-knowledge security
+- **Sub-Agent Cards** — Use your own credit or debit card with end-to-end encryption
 
 ### Rails
 

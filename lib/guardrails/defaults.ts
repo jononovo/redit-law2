@@ -24,14 +24,6 @@ export const GUARDRAIL_DEFAULTS = {
     autoPauseOnZero: true,
   },
 
-  rail4: {
-    maxPerTxCents: 500,
-    dailyBudgetCents: 1000,
-    monthlyBudgetCents: 5000,
-    recurringAllowed: false,
-    autoPauseOnZero: false,
-  },
-
   rail5: {
     maxPerTxCents: 5000,
     dailyBudgetCents: 10000,

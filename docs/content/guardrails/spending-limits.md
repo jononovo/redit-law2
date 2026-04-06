@@ -23,7 +23,6 @@ CreditClaw ships with conservative defaults so your bot is protected from the mo
 | Stripe/USDC Wallet | $5.00 | $10.00 | $50.00 |
 | Card Wallet | $5.00 | $10.00 | $50.00 |
 | Sub-Agent Card | $50.00 | $100.00 | $500.00 |
-| Self-Hosted Card | $5.00 | $10.00 | $50.00 |
 
 These defaults are intentionally low. You can raise them at any time once you are comfortable with your bot's behavior.
 

@@ -4,7 +4,6 @@ import { inferRequiredRails } from "./skill-json";
 const RAIL_LABELS: Record<string, string> = {
   stripe_wallet: "Stripe Wallet (Privy + x402)",
   card_wallet: "Card Wallet (CrossMint)",
-  self_hosted: "Self-Hosted Card (Rail 4)",
 };
 
 export function generatePaymentsMd(vendor: VendorSkill): string {

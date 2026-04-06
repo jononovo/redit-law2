@@ -6,7 +6,7 @@
 
 ---
 
-## Phase 1: Pure Deletes
+## Phase 1: Pure Deletes ✅ COMPLETED
 
 Files and directories that are entirely self-contained Rail 4 code. Nothing outside Rail 4 imports from them. Deleting them cannot break any other feature.
 
@@ -48,7 +48,7 @@ After Phase 1 deletes, run `npx next build` (or start the dev server) and confir
 
 ---
 
-## Phase 2: Surgical Edits to Shared Code
+## Phase 2: Surgical Edits to Shared Code ✅ COMPLETED
 
 Files that contain both Rail 4 and non-Rail 4 code. Each edit removes only the Rail 4 portions.
 
@@ -106,7 +106,7 @@ Files that contain both Rail 4 and non-Rail 4 code. Each edit removes only the R
 
 ---
 
-## Phase 3: Checkout Confirmation Table Consumers
+## Phase 3: Checkout Confirmation Table Consumers ✅ COMPLETED (verified via grep)
 
 The `checkoutConfirmations` table is being removed (Phase 2 schema). Verify all consumers are already deleted by Phases 1-2:
 
@@ -122,7 +122,7 @@ No remaining consumers. Safe to drop from schema.
 
 ---
 
-## Phase 4: Vendor/Taxonomy Data
+## Phase 4: Vendor/Taxonomy Data ✅ COMPLETED
 
 `self_hosted_card` appears as a checkout method in the procurement skills system. This is a taxonomy value, not Rail 4 runtime code, but should be cleaned up for consistency.
 
@@ -139,7 +139,7 @@ No remaining consumers. Safe to drop from schema.
 
 ---
 
-## Phase 5: Documentation Cleanup
+## Phase 5: Documentation Cleanup ✅ COMPLETED
 
 | File | Action |
 |------|--------|

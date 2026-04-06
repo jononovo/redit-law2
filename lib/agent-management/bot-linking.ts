@@ -59,26 +59,6 @@ const RAIL_CONFIGS: Record<string, () => BotLinkingConfig> = {
     webhookActionUnlink: "wallet_unlinked",
     entityIdKey: "wallet_id",
   }),
-  rail4: () => ({
-    rail: "rail4",
-    entityType: "card",
-    getEntity: async (id) => {
-      const c = await storage.getRail4CardByCardId(String(id));
-      return c ? { ownerUid: c.ownerUid, botId: c.botId || null, status: c.status } : null;
-    },
-    linkBot: async (id, botId) => {
-      await storage.updateRail4CardByCardId(String(id), { botId, status: "active" } as any);
-      return storage.getRail4CardByCardId(String(id));
-    },
-    unlinkBot: async (id) => {
-      await storage.updateRail4CardByCardId(String(id), { botId: null } as any);
-      return storage.getRail4CardByCardId(String(id));
-    },
-    countEntitiesByBotId: (botId) => storage.countCardsByBotId(botId),
-    webhookActionLink: "card_linked",
-    webhookActionUnlink: "card_removed",
-    entityIdKey: "card_id",
-  }),
   rail5: () => ({
     rail: "rail5",
     entityType: "card",

@@ -6,14 +6,12 @@ import "@/lib/approvals/callbacks";
 const RAIL_LABELS: Record<string, string> = {
   rail1: "USDC Wallet",
   rail2: "Commerce Wallet",
-  rail4: "Self-Hosted Card",
   rail5: "Sub-Agent Card",
 };
 
 const RAIL_DESCRIPTIONS: Record<string, string> = {
   rail1: "This transaction uses your USDC wallet on Base chain.",
   rail2: "This transaction uses your CrossMint commerce wallet.",
-  rail4: "Approving will allow the bot to use your self-hosted card details for this purchase.",
   rail5: "Approving will allow the bot to spawn a sub-agent that decrypts and uses the card. The sub-agent is deleted after checkout.",
 };
 

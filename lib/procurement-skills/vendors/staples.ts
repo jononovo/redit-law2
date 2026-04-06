@@ -6,12 +6,12 @@ export const staples: VendorSkill = {
   logoUrl: "/assets/images/vendors/staples.svg",
   sector: "office-supplies",
   url: "https://www.staples.com",
-  checkoutMethods: ["self_hosted_card"],
+  checkoutMethods: ["browser_automation"],
   capabilities: ["price_lookup", "stock_check", "bulk_pricing", "tax_exemption", "po_numbers", "order_tracking", "business_invoicing"],
   maturity: "beta",
   methodConfig: {
-    self_hosted_card: {
-      locatorFormat: "url:{product_url}",
+    browser_automation: {
+    }",
       requiresAuth: false,
       notes: "Guest checkout available for basic orders. Business account needed for PO numbers and tax exemption.",
     },

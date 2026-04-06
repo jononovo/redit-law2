@@ -6,12 +6,12 @@ export const lowes: VendorSkill = {
   logoUrl: "/assets/images/vendors/lowes.svg",
   sector: "home-garden",
   url: "https://www.lowes.com",
-  checkoutMethods: ["self_hosted_card"],
+  checkoutMethods: ["browser_automation"],
   capabilities: ["price_lookup", "stock_check", "order_tracking"],
   maturity: "beta",
   methodConfig: {
-    self_hosted_card: {
-      locatorFormat: "url:{product_url}",
+    browser_automation: {
+    }",
       requiresAuth: false,
       notes: "Guest checkout available. Similar to Home Depot flow.",
     },

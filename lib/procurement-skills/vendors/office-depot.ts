@@ -6,12 +6,12 @@ export const office_depot: VendorSkill = {
   logoUrl: "/assets/images/vendors/office-depot.svg",
   sector: "office-supplies",
   url: "https://www.officedepot.com",
-  checkoutMethods: ["self_hosted_card"],
+  checkoutMethods: ["browser_automation"],
   capabilities: ["price_lookup", "stock_check", "tax_exemption", "po_numbers", "order_tracking", "business_invoicing"],
   maturity: "draft",
   methodConfig: {
-    self_hosted_card: {
-      locatorFormat: "url:{product_url}",
+    browser_automation: {
+    }",
       requiresAuth: false,
       notes: "Guest checkout available. Business accounts unlock tax exemption and PO numbers.",
     },

@@ -87,7 +87,6 @@ export const CHECKOUT_ICONS: Record<CheckoutMethod, React.ReactNode> = {
   acp: <CreditCard className="w-3 h-3" />,
   x402: <Globe className="w-3 h-3" />,
   crossmint_world: <Globe className="w-3 h-3" />,
-  self_hosted_card: <CreditCard className="w-3 h-3" />,
   browser_automation: <Monitor className="w-3 h-3" />,
 };
 

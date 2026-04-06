@@ -39,7 +39,7 @@ The approval mode is configured at the account level through **Master Guardrails
 3. If using "Auto-approve under threshold," set the dollar threshold
 4. Save your changes
 
-The approval mode applies to all wallets and cards on your account — Rail 1, Rail 2, Rail 4, and Rail 5.
+The approval mode applies to all wallets and cards on your account — Rail 1, Rail 2, and Rail 5.
 
 ## How Approvals Work
 

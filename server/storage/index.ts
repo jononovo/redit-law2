@@ -2,12 +2,10 @@ import { coreMethods } from "./core";
 import { webhookMethods } from "./webhooks";
 import { notificationMethods } from "./notifications";
 import { paymentLinkMethods } from "./payment-links";
-import { rail4Methods } from "./rail4";
 import { rail1Methods } from "./rail1";
 import { rail2Methods } from "./rail2";
 import { ownerMethods } from "./owners";
 import { masterGuardrailMethods } from "./master-guardrails";
-import { rail4GuardrailMethods } from "./rail4-guardrails";
 import { rail5GuardrailMethods } from "./rail5-guardrails";
 import { procurementControlMethods } from "./procurement-controls";
 import { rail5Methods } from "./rail5";
@@ -34,12 +32,10 @@ export const storage: IStorage = {
   ...webhookMethods,
   ...notificationMethods,
   ...paymentLinkMethods,
-  ...rail4Methods,
   ...rail1Methods,
   ...rail2Methods,
   ...ownerMethods,
   ...masterGuardrailMethods,
-  ...rail4GuardrailMethods,
   ...rail5GuardrailMethods,
   ...procurementControlMethods,
   ...rail5Methods,

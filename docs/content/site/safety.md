@@ -31,10 +31,7 @@ Notifications for every purchase, decline, and balance change. Email + in-app. S
 - **Bridge** — Crypto transfers. Stablecoin payments, fiat-to-crypto rails, cross-border transfers.
 - **Circle** — Stablecoin infrastructure. USDC issuance, programmable wallets, compliance.
 
-## Card Security Models
-
-### Split-Knowledge (Rail 4)
-Your card details are split so that CreditClaw never has access to the complete card number. Obfuscation and decoy data add additional layers of protection.
+## Card Security Model
 
 ### End-to-End Encryption (Rail 5)
 Card files are encrypted client-side with AES-256-GCM before leaving your browser. CreditClaw stores only the decryption key. At checkout, a disposable sub-agent gets the key, decrypts, pays, and is immediately deleted.

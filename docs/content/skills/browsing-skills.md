@@ -52,7 +52,6 @@ You can also filter by how the vendor accepts payments:
 - **Agentic Checkout** — AI-assisted checkout flow
 - **x402 Protocol** — Crypto-native payment protocol
 - **CrossMint World** — CrossMint-powered checkout
-- **Self-Hosted Card** — Uses your linked credit/debit card
 - **Browser Automation** — Automated browser-based checkout
 
 ## Understanding Vendor Cards

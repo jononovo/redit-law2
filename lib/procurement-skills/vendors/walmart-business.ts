@@ -6,12 +6,12 @@ export const walmart_business: VendorSkill = {
   logoUrl: "/assets/images/vendors/walmart-business.svg",
   sector: "specialty",
   url: "https://business.walmart.com",
-  checkoutMethods: ["self_hosted_card"],
+  checkoutMethods: ["browser_automation"],
   capabilities: ["price_lookup", "bulk_pricing", "tax_exemption", "po_numbers", "business_invoicing", "account_creation"],
   maturity: "draft",
   methodConfig: {
-    self_hosted_card: {
-      locatorFormat: "url:{product_url}",
+    browser_automation: {
+    }",
       requiresAuth: true,
       notes: "Requires Walmart Business account. Supports tax exemption and purchase orders.",
     },

@@ -14,21 +14,21 @@ export const GET = withBotApi("/api/v1/bot/wallet/spending", async (_request, { 
 
   const masterGuardrails = bot.ownerUid ? await storage.getMasterGuardrails(bot.ownerUid) : null;
 
-  const rail4Cards = await storage.getRail4CardsByBotId(bot.botId);
-  const activeCard = rail4Cards.find(c => c.status === "active");
+  const rail5Cards = await storage.getRail5CardsByBotId(bot.botId);
+  const activeCard = rail5Cards.find(c => c.status === "active");
 
   let guardrailData;
   if (activeCard) {
-    const guard = await storage.getRail4Guardrails(activeCard.cardId);
+    const guard = await storage.getRail5Guardrails(activeCard.cardId);
     guardrailData = {
       approval_mode: masterGuardrails?.approvalMode ?? GUARDRAIL_DEFAULTS.master.approvalMode,
       limits: {
-        per_transaction_usd: (guard?.maxPerTxCents ?? GUARDRAIL_DEFAULTS.rail4.maxPerTxCents) / 100,
-        daily_usd: (guard?.dailyBudgetCents ?? GUARDRAIL_DEFAULTS.rail4.dailyBudgetCents) / 100,
-        monthly_usd: (guard?.monthlyBudgetCents ?? GUARDRAIL_DEFAULTS.rail4.monthlyBudgetCents) / 100,
+        per_transaction_usd: (guard?.maxPerTxCents ?? GUARDRAIL_DEFAULTS.rail5.maxPerTxCents) / 100,
+        daily_usd: (guard?.dailyBudgetCents ?? GUARDRAIL_DEFAULTS.rail5.dailyBudgetCents) / 100,
+        monthly_usd: (guard?.monthlyBudgetCents ?? GUARDRAIL_DEFAULTS.rail5.monthlyBudgetCents) / 100,
         ask_approval_above_usd: masterGuardrails?.requireApprovalAbove != null ? masterGuardrails.requireApprovalAbove / 100 : null,
       },
-      recurring_allowed: guard?.recurringAllowed ?? GUARDRAIL_DEFAULTS.rail4.recurringAllowed,
+      recurring_allowed: guard?.recurringAllowed ?? GUARDRAIL_DEFAULTS.rail5.recurringAllowed,
       notes: guard?.notes ?? null,
       updated_at: guard?.updatedAt?.toISOString() ?? new Date().toISOString(),
     };
@@ -36,12 +36,12 @@ export const GET = withBotApi("/api/v1/bot/wallet/spending", async (_request, { 
     guardrailData = {
       approval_mode: masterGuardrails?.approvalMode ?? GUARDRAIL_DEFAULTS.master.approvalMode,
       limits: {
-        per_transaction_usd: GUARDRAIL_DEFAULTS.rail4.maxPerTxCents / 100,
-        daily_usd: GUARDRAIL_DEFAULTS.rail4.dailyBudgetCents / 100,
-        monthly_usd: GUARDRAIL_DEFAULTS.rail4.monthlyBudgetCents / 100,
+        per_transaction_usd: GUARDRAIL_DEFAULTS.rail5.maxPerTxCents / 100,
+        daily_usd: GUARDRAIL_DEFAULTS.rail5.dailyBudgetCents / 100,
+        monthly_usd: GUARDRAIL_DEFAULTS.rail5.monthlyBudgetCents / 100,
         ask_approval_above_usd: masterGuardrails?.requireApprovalAbove != null ? masterGuardrails.requireApprovalAbove / 100 : null,
       },
-      recurring_allowed: GUARDRAIL_DEFAULTS.rail4.recurringAllowed,
+      recurring_allowed: GUARDRAIL_DEFAULTS.rail5.recurringAllowed,
       notes: null,
       updated_at: new Date().toISOString(),
     };
@@ -49,7 +49,7 @@ export const GET = withBotApi("/api/v1/bot/wallet/spending", async (_request, { 
 
   let procurement;
   if (bot.ownerUid) {
-    const procRules = await storage.getProcurementControlsByScope(bot.ownerUid, "rail4", null);
+    const procRules = await storage.getProcurementControlsByScope(bot.ownerUid, "rail5", null);
     procurement = {
       approved_categories: (procRules?.allowlistedCategories as string[]) || [],
       blocked_categories: (procRules?.blocklistedCategories as string[]) || PROCUREMENT_DEFAULTS.blockedCategories,

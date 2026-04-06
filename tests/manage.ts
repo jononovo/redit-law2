@@ -1,10 +1,6 @@
 import {
   cleanupTestData,
   listTestBots,
-  listTestCards,
-  listPendingConfirmations,
-  getConfirmation,
-  generateConfirmationUrl,
   getWalletBalance,
   fundWallet,
   closePool,
@@ -26,77 +22,10 @@ const commands: Record<string, () => Promise<void>> = {
         console.log(`  ${b.bot_id} | ${b.bot_name} | ${b.owner_email} | status: ${b.wallet_status} | balance: $${(b.balance_cents / 100).toFixed(2)} | active cards: ${b.active_cards}`);
       }
     }
-
-    console.log("\n--- Test Cards ---");
-    const cards = await listTestCards();
-    if (cards.length === 0) {
-      console.log("  No test cards found.");
-    } else {
-      for (const c of cards) {
-        console.log(`  ${c.card_id} | ${c.card_name} | status: ${c.status} | bot: ${c.bot_id || "none"} | profile: ${c.real_profile_index}`);
-      }
-    }
-
-    console.log("\n--- Pending Confirmations ---");
-    const confs = await listPendingConfirmations();
-    if (confs.length === 0) {
-      console.log("  No pending confirmations.");
-    } else {
-      for (const c of confs) {
-        const url = generateConfirmationUrl(c.confirmation_id);
-        console.log(`  ${c.confirmation_id} | $${(c.amount_cents / 100).toFixed(2)} | ${c.merchant_name} | ${c.item_name}`);
-        console.log(`    bot: ${c.bot_id} | card: ${c.card_id} | expires: ${c.expires_at}`);
-        console.log(`    link: ${url}`);
-      }
-    }
   },
 
   async cleanup() {
     await cleanupTestData();
-  },
-
-  async confirmations() {
-    const p = getPool();
-    const res = await p.query(
-      `SELECT * FROM checkout_confirmations WHERE bot_id LIKE 'test_bot_%' ORDER BY created_at DESC LIMIT 20`
-    );
-    if (res.rows.length === 0) {
-      console.log("No test confirmations found.");
-      return;
-    }
-    for (const c of res.rows) {
-      console.log(`  ${c.confirmation_id} | status: ${c.status} | $${(c.amount_cents / 100).toFixed(2)} | ${c.merchant_name}: ${c.item_name}`);
-      console.log(`    bot: ${c.bot_id} | card: ${c.card_id} | created: ${c.created_at} | expires: ${c.expires_at}`);
-      if (c.status === "pending") {
-        console.log(`    link: ${generateConfirmationUrl(c.confirmation_id)}`);
-      }
-      console.log("");
-    }
-  },
-
-  async confirm() {
-    const confId = process.argv[3];
-    if (!confId) {
-      console.error("Usage: npx tsx tests/manage.ts confirm <confirmation_id>");
-      return;
-    }
-    const conf = await getConfirmation(confId);
-    if (!conf) {
-      console.error(`Confirmation ${confId} not found.`);
-      return;
-    }
-    console.log(`Confirmation: ${confId}`);
-    console.log(`  Status: ${conf.status}`);
-    console.log(`  Amount: $${(conf.amount_cents / 100).toFixed(2)}`);
-    console.log(`  Merchant: ${conf.merchant_name}`);
-    console.log(`  Item: ${conf.item_name}`);
-    console.log(`  Bot: ${conf.bot_id}`);
-    console.log(`  Card: ${conf.card_id}`);
-    console.log(`  Created: ${conf.created_at}`);
-    console.log(`  Expires: ${conf.expires_at}`);
-    if (conf.status === "pending") {
-      console.log(`\n  Approval link: ${generateConfirmationUrl(confId)}`);
-    }
   },
 
   async balance() {
@@ -162,10 +91,8 @@ const commands: Record<string, () => Promise<void>> = {
     console.log("CreditClaw Test Manager");
     console.log("");
     console.log("Commands:");
-    console.log("  list              List all test bots, cards, and pending confirmations");
-    console.log("  cleanup           Remove all test data (test_bot_*, test_card_*)");
-    console.log("  confirmations     List all test checkout confirmations");
-    console.log("  confirm <id>      Show details of a specific confirmation");
+    console.log("  list              List all test bots");
+    console.log("  cleanup           Remove all test data (test_bot_*)");
     console.log("  balance [bot_id]  Show wallet balance(s)");
     console.log("  fund <bot_id> <$> Add funds to a test bot wallet");
     console.log("  logs [bot_id]     Show recent API access logs");
