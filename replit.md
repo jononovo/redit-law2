@@ -614,13 +614,14 @@ Standalone module for spending USDC on products/services. Provider-agnostic stru
 - Future providers (direct merchant APIs, browser checkout agents) slot in as siblings under `lib/procurement/`.
 
 ### Agent Management (`lib/agent-management/`)
-Bot linking/unlinking is centralized in `lib/agent-management/bot-linking.ts`. A single `linkBotToEntity(rail, entityId, botId, ownerUid)` / `unlinkBotFromEntity(rail, entityId, ownerUid)` function handles all four rails with uniform rules:
-- **Max 3 entities per bot** enforced across all rails (was previously only Rail 4)
-- **Ownership validation** — entity and bot must both belong to the authenticated user
-- **Bot existence check** — bot must exist before linking
-- **Webhook firing** — `rails.updated` with `wallet_linked`/`wallet_unlinked` (Rails 1/2) or `card_linked`/`card_removed` (Rails 4/5) on every link/unlink (was previously inconsistent)
-- Rail configs are declarative objects specifying storage methods, entity types, webhook actions, and count queries
-- Route files are thin wrappers: auth + call shared function + return result
+Bot/agent-facing API infrastructure consolidated into a feature folder:
+- `auth.ts` — authenticates bot requests via Bearer API key (prefix lookup + bcrypt verify).
+- `crypto.ts` — API key generation, hashing, verification, claim tokens, card IDs, webhook secrets.
+- `rate-limit.ts` — token-bucket rate limiter with per-endpoint config (19 endpoints).
+- `agent-api/middleware.ts` — `withBotApi()` wrapper: auth → rate limit → handler → access log → webhook retry.
+- `agent-api/status-builders.ts` — `buildRail{1,2,4,5}Detail()` functions for `/bot/status` and `/bot/check/*` responses.
+- `bot-linking.ts` — centralized `linkBotToEntity(rail, entityId, botId, ownerUid)` / `unlinkBotFromEntity(rail, entityId, ownerUid)` for all four rails. Max 3 entities per bot, ownership validation, bot existence check, webhook firing (`rails.updated`). Rail configs are declarative objects. Route files are thin wrappers.
+- **Bot Status API:** `GET /api/v1/bot/status` (cross-rail), `GET /api/v1/bot/check/rail{1,2,4,5}` (per-rail detail), `POST /api/v1/bot/check/rail4/test` (dry-run preflight). `GET /api/v1/bots/rails` (owner-facing rail connections).
 
 ### Shared Wallet/Card UI (`components/wallet/`)
 All wallet and card page UI is consolidated into `components/wallet/` to eliminate duplication across Rails 1, 2, 4, and 5. Setup wizards are NOT in this folder — they remain in their original locations.
@@ -675,21 +676,6 @@ Rail 1 (`stripe-wallet/page.tsx`, ~313 lines) and Rail 2 (`card-wallet/page.tsx`
 - `/onboarding`: Guided setup wizard
 
 
-### Agent Management (`lib/agent-management/`)
-Bot/agent-facing API infrastructure consolidated into a feature folder:
-- `auth.ts` — authenticates bot requests via Bearer API key (prefix lookup + bcrypt verify).
-- `crypto.ts` — API key generation, hashing, verification, claim tokens, card IDs, webhook secrets.
-- `rate-limit.ts` — token-bucket rate limiter with per-endpoint config (19 endpoints).
-- `agent-api/middleware.ts` — `withBotApi()` wrapper: auth → rate limit → handler → access log → webhook retry.
-- `agent-api/status-builders.ts` — `buildRail{1,2,4,5}Detail()` functions for `/bot/status` and `/bot/check/*` responses.
-
-### Bot Status & Check API
-- **Unified Status:** `GET /api/v1/bot/status` — cross-rail status, balances, master guardrails, default rail.
-- **Per-Rail Detail:** `GET /api/v1/bot/check/rail{1,2,4,5}` — deep operational info per rail (guardrails, allowances, approval mode, domain/merchant rules).
-- **Preflight:** `POST /api/v1/bot/check/rail4/test` — dry-run validation for Rail 4 purchases (no side effects).
-- **Shared builders:** `lib/agent-management/agent-api/status-builders.ts` — reusable functions for building per-rail detail responses.
-- **Owner Rail Management:** `GET /api/v1/bots/rails` — owner-facing aggregated rail connections per bot.
-
 ### Feedback / Support Widget
 In-app feedback dialog accessible from the profile dropdown in the dashboard header. Authenticated users can submit bug reports, feature requests, billing questions, technical support requests, and general feedback.
 - **Frontend:** `components/dashboard/feedback-dialog.tsx` — Dialog component using existing UI primitives (Dialog, Select, Textarea, Button). Manages own form state and submission.
@@ -698,9 +684,6 @@ In-app feedback dialog accessible from the profile dropdown in the dashboard hea
 - **No database storage** — feedback goes straight to email. `replyTo` is set to the user's email for direct replies.
 - **Security:** All user-supplied content is HTML-escaped before email insertion. Message length capped at 5000 chars.
 - **Config:** `SUPPORT_EMAIL` env var (defaults to `support@creditclaw.com`).
-
-### API Endpoints
-CreditClaw provides distinct API endpoints for each rail and for master guardrails, facilitating wallet management, transactions, approvals, and guardrail configuration. Bot-facing APIs allow for purchase requests, status polling, and skill discovery. Owner-facing APIs manage cards, guardrails, and approvals.
 
 ## External Dependencies
 - **Firebase Auth:** User authentication and authorization.
@@ -757,20 +740,6 @@ Schema changes flow through Drizzle ORM and are auto-synced to production on dep
 4. **Never make manual SQL changes** to the database without updating `shared/schema.ts` to match. Manual DDL causes naming drift (PostgreSQL uses `_key` for unique constraints, Drizzle expects `_unique`) which blocks non-interactive deployments.
 5. Config: `drizzle.config.ts` points at `DATABASE_URL` with `pg` driver
 6. The `spending_permissions` table exists in both databases but is not tracked in the schema (legacy table)
-
-### Internal Developer Docs (`project_knowledge/`)
-Private technical documentation for the engineering team. Each doc file has YAML frontmatter (`name`, `description`) for quick scanning.
-
-**Entry point:** `vision.md` → `architecture.md` → `internal_docs/` subfolder → `how-to-write-docs-guide.md` (if writing docs)
-
-- `vision.md` — product purpose and direction (Tier 3 protected)
-- `architecture.md` — system overview, component map
-- `how-to-write-docs-guide.md` — how to write and update internal docs
-- `currently_building/` — active build cycle working bench
-- `internal_docs/tenants/` — tenant identity, purpose, audience, branding
-- `internal_docs/scanning/` — ASX scanner, scan pipeline, maturity, scan history
-- `internal_docs/catalog/` — brand catalog, taxonomy, recommend API, product search
-- `internal_docs/platform/` — multitenant routing, authentication, onboarding
 
 ### Documentation System (`docs/content/`, `app/docs/`)
 Self-hosted documentation at `/docs` with sidebar navigation, audience toggle, and markdown rendering. Multi-tenant aware — each tenant sees its own docs.
