@@ -156,7 +156,8 @@ Auth, bot lifecycle, admin tooling.
 
 | Component | Key functions / files | Purpose |
 |-----------|----------------------|---------|
-| Auth | `lib/auth/` | Session management, owner authentication |
+| Auth (Owners) | `lib/auth/session.ts`, `lib/auth/auth-context.tsx`, `lib/firebase/` | Firebase Auth — httpOnly `__session` cookie, verified server-side via `adminAuth.verifySessionCookie()` |
+| Auth (Bots) | `lib/agent-management/auth.ts` | Bearer API token via `authenticateBot()` middleware |
 | Bot Management | `lib/agent-management/` | Bot registration, claim tokens, bot-owner linking |
 | Pairing | `app/api/v1/pairing-codes/` | One-time codes for bot → owner pairing |
 | Feature Flags | `lib/feature-flags/` | Runtime feature toggles |
