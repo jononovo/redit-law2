@@ -73,7 +73,7 @@ The invoices system (`app/(dashboard)/invoices/`, `app/api/v1/invoices/`) is a *
 
 The core dead feature: Stripe `chargeCustomer` funding, payment links, topup requests.
 
-### A1. DELETE entire files (11 files):
+### A1. DELETE entire files (10 files):
 
 **Dead API routes (7 files):**
 | # | File | What it does | Verified callers (all dead) |
@@ -93,12 +93,7 @@ The core dead feature: Stripe `chargeCustomer` funding, payment links, topup req
 | 9 | `components/dashboard/payment-links.tsx` | Only: `overview/page.tsx` line 10 (editing in A2) |
 | 10 | `components/onboarding/steps/fund-wallet.tsx` | NONE — orphan file. Not imported by `onboarding-wizard.tsx` or anything else. |
 
-**Dead storage (1 file):**
-| # | File | Verified callers (all dead) |
-|---|------|---------------------------|
-| 11 | `server/storage/payment-links.ts` | Every method only called by dead routes: `create-link/route.ts`, `links/route.ts`, `payment-links/route.ts`, `payment-links/[id]/route.ts`, `webhooks/stripe/route.ts` (Phase B deletion) |
-
-### A2. EDIT files to fix broken imports (8 files):
+### A2. EDIT files to fix broken imports (9 files):
 
 | # | File | What to remove | What to KEEP |
 |---|------|---------------|-------------|
@@ -107,12 +102,13 @@ The core dead feature: Stripe `chargeCustomer` funding, payment links, topup req
 | 3 | `lib/notifications.ts` | `notifyTopupCompleted` function (line 137+). `notifyPaymentReceived` function (line 159+). `"topup_request"`, `"topup_completed"`, `"payment_received"` from `NotificationType` union. | `notifyBalanceLow` (Rail 5 confirm). `notifyPurchase` (Rail 5 confirm). `NotificationType` union with remaining live types. |
 | 4 | `lib/email.ts` | `sendTopupRequestEmail` function (line 252+). | All other email functions. |
 | 5 | `server/storage/core.ts` | `createTopupRequest` method (line 299). `topupRequests` from import (line 3). `InsertTopupRequest`/`TopupRequest` types from import (line 9). | All wallet/transaction methods (`creditWallet`, `debitWallet`, etc.). All reconciliation methods. All `paymentMethods` methods (billing, out of scope). |
-| 6 | `server/storage/index.ts` | `import { paymentLinkMethods } from "./payment-links"` (line 4). `...paymentLinkMethods` spread (line 34). | All other imports and method spreads. |
-| 7 | `server/storage/types.ts` | `PaymentLink`, `InsertPaymentLink` type imports (line 12). `TopupRequest`, `InsertTopupRequest` type imports (line 7). `createTopupRequest` signature (line 84). All payment-link method signatures (lines 108-114). | All wallet/transaction method signatures. All reconciliation signatures. All `paymentMethods` signatures. |
-| 8 | `shared/schema.ts` | `paymentLinks` table definition. `topupRequests` table definition. `topupRequestSchema` (Zod). `fundWalletRequestSchema` (Zod). `createPaymentLinkSchema` (Zod). Related insert/select type exports for deleted tables. | `wallets`, `transactions`, `paymentMethods`, `reconciliationLogs` table definitions. All related insert/select types for kept tables. |
+| 6 | `server/storage/payment-links.ts` | Remove the 7 payment-link methods: `createPaymentLink`, `getPaymentLinksByBotId`, `getPaymentLinkByStripeSession`, `getPaymentLinkByPaymentLinkId`, `getPaymentLinksByOwnerUid`, `updatePaymentLinkStatus`, `completePaymentLink`. Remove `paymentLinks` table import and `PaymentLink`/`InsertPaymentLink` type imports. Update the `PaymentLinkMethods` Pick type to only include the kept methods. Rename file or Pick type to reflect new scope. | **CRITICAL — DO NOT DELETE THIS FILE.** It also contains 6 LIVE methods: `createPairingCode` (used by `pairing-codes/route.ts`), `getPairingCodeByCode` (used by `pairing-codes/status/route.ts`), `claimPairingCode` (used by `bots/register/route.ts`), `getRecentPairingCodeCount` (used by `pairing-codes/route.ts`), `addWaitlistEntry` (used by `waitlist/route.ts`), `getWaitlistEntryByEmail` (used by `waitlist/route.ts`, `addWaitlistEntry` itself). Also keep the `pairingCodes` and `waitlistEntries` table imports. |
+| 7 | `server/storage/index.ts` | Rename import if file is renamed (e.g. `paymentLinkMethods` → new name). | Keep the import/spread — the file still provides live pairing code and waitlist methods. |
+| 8 | `server/storage/types.ts` | `PaymentLink`, `InsertPaymentLink` type imports (line 12). `TopupRequest`, `InsertTopupRequest` type imports (line 7). `createTopupRequest` signature (line 84). All 7 payment-link method signatures (lines 108-114). | All wallet/transaction method signatures. All reconciliation signatures. All `paymentMethods` signatures. Pairing code signatures (lines 116-119). Waitlist signatures (lines 121-122). |
+| 9 | `shared/schema.ts` | `paymentLinks` table definition (line 138). `topupRequests` table definition (line 67). `topupRequestSchema` Zod (line 208). `fundWalletRequestSchema` Zod (line 196). `createPaymentLinkSchema` Zod (line 255). `TopupRequest`/`InsertTopupRequest` types (lines 223-224). `PaymentLink`/`InsertPaymentLink` types (lines 233-234). | `wallets`, `transactions`, `paymentMethods`, `reconciliationLogs`, `pairingCodes`, `waitlistEntries` table definitions. All related insert/select types for kept tables. |
 
 ### A3. Database (after schema edit):
-Run `drizzle-kit push` to drop `payment_links` and `topup_requests` tables (0 rows each).
+Run `npx drizzle-kit push --force` to drop `payment_links` and `topup_requests` tables (0 rows each).
 
 ### A4. Build test:
 - `npx next build` to verify no broken imports
@@ -192,7 +188,7 @@ Remove all documentation references to the dead payment-links, topup-request, an
 
 ## Execution Order
 
-1. **Phase A** — Core dead feature removal (11 deletions, 8 edits, DB push)
+1. **Phase A** — Core dead feature removal (10 deletions, 9 edits, DB push)
 2. **Build test** — `npx next build`
 3. **Phase B** — Dead webhook route + event types + rate limits (1 deletion, 5 edits)
 4. **Build test** — `npx next build`
@@ -251,11 +247,19 @@ Remove all documentation references to the dead payment-links, topup-request, an
 23. Confirmed `STRIPE_WEBHOOK_SECRET` (without `_ONRAMP`) only used by dead webhook route
 24. Found `dashboard-overview.md` internal doc references PaymentLinksPanel + "Add Funds card" → ADDED to Phase D
 
+### Round 4 — Phase A file-by-file re-read of actual source code:
+25. **CRITICAL FIX: `server/storage/payment-links.ts` CANNOT be deleted.** The file contains 6 LIVE methods alongside the 7 dead payment-link methods: `createPairingCode` (used by `pairing-codes/route.ts`), `getPairingCodeByCode` (used by `pairing-codes/status/route.ts`), `claimPairingCode` (used by `bots/register/route.ts`), `getRecentPairingCodeCount` (used by `pairing-codes/route.ts`), `addWaitlistEntry` (used by `waitlist/route.ts`), `getWaitlistEntryByEmail` (used by `waitlist/route.ts` and `addWaitlistEntry`). Moved from A1 (DELETE) to A2 (EDIT) — remove only the 7 payment-link methods, keep all 6 pairing/waitlist methods.
+26. Phase A file counts corrected: DELETE 11→10, EDIT 8→9.
+27. Verified all 10 deletion targets by reading full source — all confirmed dead, no hidden live code in any of them.
+28. Verified all 9 edit targets by reading the relevant sections — confirmed every removal is surgical and every "KEEP" item is truly untouched.
+29. Confirmed `server/storage/index.ts` line 4 imports from `payment-links.ts` and line 34 spreads `paymentLinkMethods` — since file is now edited (not deleted), the import/spread stays, just points to the trimmed file.
+30. Confirmed `server/storage/types.ts` has pairing code signatures (lines 116-119) and waitlist signatures (lines 121-122) that must be preserved.
+
 ---
 
 ## Files Summary
 
-### Phase A — DELETE (11 files):
+### Phase A — DELETE (10 files):
 1. `app/api/v1/wallet/fund/route.ts`
 2. `app/api/v1/bot/payments/create-link/route.ts`
 3. `app/api/v1/bot/payments/links/route.ts`
@@ -266,17 +270,17 @@ Remove all documentation references to the dead payment-links, topup-request, an
 8. `components/dashboard/fund-modal.tsx`
 9. `components/dashboard/payment-links.tsx`
 10. `components/onboarding/steps/fund-wallet.tsx`
-11. `server/storage/payment-links.ts`
 
-### Phase A — EDIT (8 files):
+### Phase A — EDIT (9 files):
 1. `app/(dashboard)/overview/page.tsx`
 2. `lib/stripe.ts`
 3. `lib/notifications.ts`
 4. `lib/email.ts`
 5. `server/storage/core.ts`
-6. `server/storage/index.ts`
-7. `server/storage/types.ts`
-8. `shared/schema.ts`
+6. `server/storage/payment-links.ts` (**NOT deleted** — contains live pairing code + waitlist methods)
+7. `server/storage/index.ts`
+8. `server/storage/types.ts`
+9. `shared/schema.ts`
 
 ### Phase B — DELETE (1 file):
 1. `app/api/v1/webhooks/stripe/route.ts`
