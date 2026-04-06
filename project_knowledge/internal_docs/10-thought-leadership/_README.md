@@ -1,11 +1,11 @@
 ---
 name: Thought Leadership
-description: Module 8 — Standards and open protocols we define and maintain. ASX rubric, SKILL.md spec, open brands index.
+description: Module 10 — Standards and open protocols we define and maintain. ASX rubric, SKILL.md spec, open brands index.
 ---
 
 # Thought Leadership
 
-Docs for Module 8. This module is about the standards we create, publish, and evolve — not feature code, but the frameworks that drive product direction.
+Docs for Module 10. This module is about the standards we create, publish, and evolve — not feature code, but the frameworks that drive product direction.
 
 ## Standards we own
 

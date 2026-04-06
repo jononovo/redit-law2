@@ -38,16 +38,16 @@ Ten modules — each maps to a section in `architecture.md` and a folder under `
 
 | Folder | Module | Covers |
 |--------|--------|--------|
-| `internal_docs/scanning/` | 1. Agentic Shopping Score | Scan engine, scoring rubric, scan queue, maturity |
-| `internal_docs/skills/` | 2. Agent Shopping Skills | SKILL.md generation, skill.json, registry API |
-| `internal_docs/catalog/` | 3. Brands Index | Brand catalog, recommend API, product search, categories |
-| `internal_docs/payment/` | 4. Payment Tools | Wallets, outbound payment rails (funding + spending) |
-| `internal_docs/agent-interaction/` | 5. Agent Interaction | Webhooks, polling, approvals, guardrails, orders |
-| `internal_docs/agent-plugins/` | 6. Agent Plugins | Per-platform plugins (OpenClaw, etc.), browser extension |
-| `internal_docs/platform/` | 7. Platform Management | Auth, bot lifecycle, pairing, feature flags, admin |
-| `internal_docs/tenants/` | 8. Multi-tenant Structure | Tenant routing, onboarding, landing pages, theming |
-| `internal_docs/agent-shops/` | 9. Agent Shops | Checkout pages, shops, seller profiles, procurement controls, inbound payments |
-| `internal_docs/thought-leadership/` | 10. Thought Leadership | Standards (ASX rubric, SKILL.md spec, open brands index) |
+| `internal_docs/01-agentic-shopping-score/` | 1. Agentic Shopping Score | Scan engine, scoring rubric, scan queue, maturity |
+| `internal_docs/02-agent-shopping-skills/` | 2. Agent Shopping Skills | SKILL.md generation, skill.json, registry API |
+| `internal_docs/03-brands-index/` | 3. Brands Index | Brand catalog, recommend API, product search, categories |
+| `internal_docs/04-payment-tools/` | 4. Payment Tools | Wallets, outbound payment rails (funding + spending) |
+| `internal_docs/05-agent-interaction/` | 5. Agent Interaction | Webhooks, polling, approvals, guardrails, orders |
+| `internal_docs/06-agent-plugins/` | 6. Agent Plugins | Per-platform plugins (OpenClaw, etc.), browser extension |
+| `internal_docs/07-platform-management/` | 7. Platform Management | Auth, bot lifecycle, pairing, feature flags, admin |
+| `internal_docs/08-multi-tenant-structure/` | 8. Multi-tenant Structure | Tenant routing, onboarding, landing pages, theming |
+| `internal_docs/09-agent-shops/` | 9. Agent Shops | Checkout pages, shops, seller profiles, procurement controls, inbound payments |
+| `internal_docs/10-thought-leadership/` | 10. Thought Leadership | Standards (ASX rubric, SKILL.md spec, open brands index) |
 
 Other folders:
 

@@ -39,7 +39,7 @@ Evaluates a domain's AI-readiness. Outputs a 0–100 score across three pillars:
 | Maturity Promotion | `resolveMaturity()` | Auto-promotes `draft` → `community`; manual tiers protected |
 | Domain Normalization | `normalizeDomain()` in `lib/agentic-score/fetch.ts` | Canonical domain normalizer — single source for all normalization |
 
-**Docs:** `internal_docs/scanning/`
+**Docs:** `internal_docs/01-agentic-shopping-score/`
 
 ---
 
@@ -57,7 +57,7 @@ Generates machine-readable and LLM-readable instructions for how an agent should
 | Registry API | `/api/v1/registry` routes | List, search, fetch skills programmatically |
 | Taxonomy Mapping | `taxonomy.ts` | Maps brands to Google Product Taxonomy for skill metadata |
 
-**Docs:** `internal_docs/skills/`
+**Docs:** `internal_docs/02-agent-shopping-skills/`
 
 ---
 
@@ -82,7 +82,7 @@ Central catalog. Powers sector pages, registry, and the recommend API that agent
 2. **Merchant Ranking** — recursive SQL over `brand_index` + `brand_categories` → ranked by brand match → match depth → ASX score
 3. **Product Search** — embedding vector → pgvector cosine similarity against `product_listings` → top 3 per merchant
 
-**Docs:** `internal_docs/catalog/`
+**Docs:** `internal_docs/03-brands-index/`
 
 ---
 
@@ -107,7 +107,7 @@ Outbound financial rails — how users fund wallets and how their agents spend m
 | Wallet Funding | `app/api/v1/stripe-wallet/onramp/` | Fiat → USDC via Stripe Onramp |
 | x402 Signing (outbound) | `app/api/v1/stripe-wallet/bot/sign` | Our agents sign x402 payments to pay external services |
 
-**Docs:** `internal_docs/payment/`
+**Docs:** `internal_docs/04-payment-tools/`
 
 ---
 
@@ -128,7 +128,7 @@ How external agents communicate with CreditClaw. Webhooks, polling, spending con
 | Orders | `lib/orders/`, `app/api/v1/orders/` | Order lifecycle and tracking |
 | Feedback | `lib/feedback/aggregate.ts` | Agent feedback aggregation |
 
-**Docs:** `internal_docs/agent-interaction/`
+**Docs:** `internal_docs/05-agent-interaction/`
 
 ---
 
@@ -142,7 +142,7 @@ Per-platform integrations. Each agent platform (OpenClaw, etc.) gets its own plu
 |--------|----------|---------|
 | OpenClaw | `public/Plugins/OpenClaw/src/` — `api.ts`, `index.ts`, `fill-card.ts`, `decrypt.ts` | Plugin for OpenClaw bots — card fill, API integration |
 
-**Docs:** `internal_docs/agent-plugins/`
+**Docs:** `internal_docs/06-agent-plugins/`
 
 ---
 
@@ -162,7 +162,7 @@ Auth, bot lifecycle, admin tooling.
 | Feature Flags | `lib/feature-flags/` | Runtime feature toggles |
 | Admin | `app/admin123/`, `app/api/v1/admin/` | Internal admin dashboard and APIs |
 
-**Docs:** `internal_docs/platform/`
+**Docs:** `internal_docs/07-platform-management/`
 
 ---
 
@@ -186,7 +186,7 @@ Single codebase, three tenants, hostname-based routing.
 - **shopy.sh** — merchant-facing ASX Score scanner and leaderboard
 - **brands.sh** — developer-facing skill registry
 
-**Docs:** `internal_docs/tenants/`
+**Docs:** `internal_docs/08-multi-tenant-structure/`
 
 ---
 
@@ -214,7 +214,7 @@ Merchant storefronts, checkout experiences, and inbound payment methods — how 
 | QR Pay | `lib/qr-pay/eip681.ts`, `app/api/v1/qr-pay/` | USDC transfer via QR code (EIP-681) |
 | Payment Links | `app/api/v1/payment-links/`, `app/api/v1/bot/payments/create-link/` | Bot-generated Stripe Checkout URLs |
 
-**Docs:** `internal_docs/agent-shops/`
+**Docs:** `internal_docs/09-agent-shops/`
 
 ---
 
@@ -231,7 +231,7 @@ Standards and open protocols we define, maintain, and evangelize. Not feature co
 
 This module owns the research and evolution of these standards. When new protocols emerge (ACP, UCP, A2A), evaluation and positioning happens here.
 
-**Docs:** `internal_docs/thought-leadership/`
+**Docs:** `internal_docs/10-thought-leadership/`
 
 ---
 

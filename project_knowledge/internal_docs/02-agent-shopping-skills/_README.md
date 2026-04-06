@@ -19,4 +19,4 @@ Docs for Module 2. Covers skill file generation, the machine-readable skill.json
 
 - **Module 1 (Scanning)** triggers skill generation after every scan
 - **Module 3 (Brands Index)** hosts the skills and serves them via registry API
-- **Module 8 (Thought Leadership)** owns the SKILL.md spec itself
+- **Module 10 (Thought Leadership)** owns the SKILL.md spec itself
