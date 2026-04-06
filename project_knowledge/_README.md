@@ -9,7 +9,7 @@ description: Navigation guide for project_knowledge/. Start here if you're new.
 
 1. **`vision.md`** — what we're building and why
 2. **`architecture.md`** — system overview, all components, current status
-3. **`tenants_vision/`** — per-tenant vision and context docs
+3. **`tenants_vision/`** — one file per tenant (vision + identity + brand + design + key files)
 4. **`internal_docs/` subfolder for your task** — dive into the relevant feature area
 5. **`_how-to-write-docs-guide.md`** — only if you're writing or updating docs
 
@@ -60,7 +60,7 @@ Other folders:
 
 | Folder | Purpose |
 |--------|---------|
-| `tenants_vision/` | Per-tenant vision and context — `creditclaw-vision.md`, `creditclaw-context.md`, `shopy-vision.md`, `shopy-context.md` (Tier 3 protected) |
+| `tenants_vision/` | One file per tenant — `creditclaw.md`, `shopy.md`, `brands.md` — each contains vision, identity, brand, design language, and key files (Tier 3 protected) |
 | `currently_building/` | Active build cycle — scratch research, build notes, in-progress work |
 | `future/` | Ideas, rough plans, strategy docs not yet tied to a build cycle |
 
