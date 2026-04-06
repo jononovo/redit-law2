@@ -97,7 +97,7 @@ Outbound financial rails — how users fund wallets and how their agents spend m
 | Rail | Method | Implementation | Status |
 |------|--------|---------------|--------|
 | Rail 1 | Stripe Crypto Onramp | `lib/rail1/`, `lib/crypto-onramp/` — Privy server wallets on Base, fiat → USDC | Live |
-| Rail 2 | Crossmint Wallet | `lib/rail2/` — Crossmint API for wallet creation, balance, transfers, onramp | Live |
+| Rail 2 | Crossmint Wallet | `lib/rail2/` — Crossmint API for wallet creation, balance, transfers, onramp | Not complete |
 | Rail 4 | Obfuscated Self-Hosted Cards | `lib/rail4/`, `lib/obfuscation-engine/` — retired, still in codebase | Retired |
 | Rail 5 | Direct Wallet Debit | `lib/rail5/` — atomic balance deduction at purchase time | Live |
 
@@ -258,7 +258,7 @@ This module owns the research and evolution of these standards. When new protoco
 | 1. Agentic Shopping Score | Running — scan engine, queue, maturity promotion all live |
 | 2. Agent Shopping Skills | Running — SKILL.md + skill.json generated per scan |
 | 3. Brands Index | Running — recommend API with all 3 stages live |
-| 4. Payment Tools | Partially live — Rail 1, 2, 5 live. Rail 4 retired. Stripe Issuing/Connect not built. |
+| 4. Payment Tools | Partially live — Rail 1, 5 live. Rail 2 not complete. Rail 4 retired. Stripe Issuing/Connect not built. |
 | 5. Agent Interaction | Running — webhooks, guardrails, approvals, orders live |
 | 6. Agent Plugins | Partial — OpenClaw plugin exists |
 | 7. Platform Management | Running |
