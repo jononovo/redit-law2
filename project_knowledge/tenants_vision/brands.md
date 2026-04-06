@@ -45,14 +45,16 @@ Dark, terminal-influenced, data-forward. CLI aesthetic.
 `components/tenants/brands/landing.tsx`
 
 - CLI hint (`npx shopy add <brand>`)
-- Searchable, filterable brand registry table (Skill | Capabilities | Checkout | Maturity columns)
+- Searchable, filterable brand registry table (Sector + Tier columns)
 - "Create Skill" domain scanner
+- Terminal/CLI aesthetic
 - No ScoreBadge — scores live on shopy.sh
 - Imports shared label maps from `lib/procurement-skills/taxonomy/`
 
 ## Skill Detail Pages
 
 `app/skills/[vendor]/page.tsx` — ISR-enabled (`revalidate=3600`).
+- Shows SKILL.md + skill.json + score breakdown
 - Null-safe — gracefully renders when `brandData` is missing, falls back to `brand.*` fields
 - Sections (search/checkout/shipping/deals/tips) only render when vendor data exists
 - Skill preview panel with expand/collapse + download
@@ -79,3 +81,4 @@ Dark, terminal-influenced, data-forward. CLI aesthetic.
 | `app/c/[sector]/page.tsx` | Sector landing pages |
 | `lib/tenants/tenant-configs.ts` | Tenant config (brands section) |
 | `public/tenants/brands/config.json` | Dynamic config |
+| `app/api/v1/registry/` | Registry API routes |
