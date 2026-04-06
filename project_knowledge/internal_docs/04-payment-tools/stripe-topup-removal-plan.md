@@ -12,10 +12,21 @@ The codebase has two completely separate "wallet" concepts:
 
 | System | Status | What it does |
 |--------|--------|-------------|
-| **Rail 1 — Privy/USDC crypto wallet** | ✅ LIVE | Auto-created on signup. Funded via Stripe Crypto Onramp. Real payment infra. Lives in `lib/crypto-onramp/`, `app/api/v1/stripe-wallet/`. |
+| **Rail 1 — Privy/USDC crypto wallet** | ✅ LIVE | Auto-created on signup. Funded via Stripe Crypto Onramp. Lives in `lib/crypto-onramp/`, `app/api/v1/stripe-wallet/`. |
 | **Ledger wallet (wallets/transactions tables)** | ⚠️ PARTIALLY LIVE | Postgres cents-based ledger. The **funding side** (Stripe `chargeCustomer`, payment methods, fund modal, payment links) is dead. But Rail 5 checkout, x402, qr-pay, and base-pay all actively use the balance/debit/credit as a spending budget. |
 
 **Goal:** Remove the dead Stripe-based funding mechanism for the ledger wallet. Do NOT touch Rail 1 or the spending-budget usage of the wallets/transactions tables.
+
+### Webhook clarification
+
+There are THREE separate Stripe webhook routes:
+1. `app/api/v1/stripe-wallet/webhooks/stripe/route.ts` — **LIVE Rail 1.** Handles `crypto.onramp_session.updated` for Stripe Crypto Onramp. Uses `STRIPE_WEBHOOK_SECRET_ONRAMP`. Do NOT touch.
+2. `app/api/v1/webhooks/stripe/route.ts` — **DEAD.** Handles `checkout.session.completed` ONLY for the old bot payment-link fulfillment flow (crediting ledger wallet). Uses `STRIPE_WEBHOOK_SECRET`. This is the one being removed.
+3. `app/api/v1/webhooks/route.ts`, `health/`, `retry-pending/` — **LIVE.** The outbound webhook delivery system (sending events TO bots). Completely different system. Do NOT touch.
+
+### Invoices clarification
+
+The invoices system (`app/(dashboard)/invoices/`, `app/api/v1/invoices/`) is a **modern, live feature** built as part of the selling/shop system. It uses checkout pages, sales tables, and Rail 1 USDC wallets. The word "payment link" in the invoices page is just a UI label for the invoice's checkout URL — it does NOT use the dead `paymentLinks` table. **Do NOT touch invoices.**
 
 ---
 
@@ -26,198 +37,171 @@ The codebase has two completely separate "wallet" concepts:
 - `app/api/v1/stripe-wallet/` — all routes (onramp session, webhooks, balance, transactions, list)
 - `app/api/v1/checkout/[id]/pay/stripe-onramp/route.ts`
 - The `stripe` object export from `lib/stripe.ts` (used by Rail 1)
-- `lib/payments/components/fund-wallet-sheet.tsx` — this is the LIVE Rail 1 funding UI (NOT the dead FundModal)
+- `lib/payments/components/fund-wallet-sheet.tsx` — LIVE Rail 1 funding UI (NOT the dead FundModal)
 
-### Rail 5 + x402 + qr-pay + base-pay — Spending Budget (uses wallets/transactions tables)
+### Rail 5 + x402 + qr-pay + base-pay — Spending Budget
 - `app/api/v1/bot/rail5/checkout/route.ts` — balance check against wallets table
 - `app/api/v1/bot/rail5/confirm/route.ts` — debit from wallets table
 - `app/api/v1/bots/register/route.ts` — creates wallet row on bot claim
 - `app/api/v1/bot/wallet/check/route.ts` — balance check endpoint
 - `app/api/v1/bot/wallet/transactions/route.ts` — bot API to view own transaction history (LIVE)
 - `app/api/v1/bot/status/route.ts` — includes wallet info
-- `lib/x402/checkout.ts` — `creditWalletFromX402()` credits wallet
-- `lib/qr-pay/ledger.ts` — `creditWalletFromQrPay()` credits wallet
-- `lib/base-pay/ledger.ts` — `creditWalletFromBasePay()` credits wallet
-- `notifyBalanceLow`, `notifyPurchase` in `lib/notifications.ts` — called by Rail 5 confirm
+- `lib/x402/checkout.ts`, `lib/qr-pay/ledger.ts`, `lib/base-pay/ledger.ts` — credit wallet
+- `notifyBalanceLow`, `notifyPurchase` in `lib/notifications.ts`
 
-### Dashboard endpoints that display LIVE wallet data
-- **`app/api/v1/wallet/balance/route.ts`** — ⚠️ KEEP! Shows the ledger wallet spending budget on overview page (line 82). This IS the Rail 5 spending budget balance.
-- **`app/api/v1/wallet/transactions/route.ts`** — ⚠️ KEEP! Shows purchase history on `app/(dashboard)/transactions/page.tsx`. Transactions are actively created by Rail 5, x402, qr-pay, base-pay.
+### Dashboard endpoints showing LIVE wallet data
+- **`app/api/v1/wallet/balance/route.ts`** — KEEP! Shows spending budget on overview page.
+- **`app/api/v1/wallet/transactions/route.ts`** — KEEP! Shows purchase history on transactions page.
 - **`app/(dashboard)/transactions/page.tsx`** — KEEP! Live transaction history page.
 
-### Wallets & Transactions Tables (schema)
-- `wallets` table in `shared/schema.ts` — KEEP (8 real rows, active spending budget)
-- `transactions` table in `shared/schema.ts` — KEEP (active purchase/credit ledger)
-- All storage methods used by live systems: `creditWallet`, `debitWallet`, `getWalletByBotId`, `getWalletByOwnerUid`, `createWallet`, `getTransactionsByWalletId`, `createTransaction`, etc.
+### Tables to KEEP
+- `wallets` (8 rows, active spending budget)
+- `transactions` (active purchase/credit ledger)
+- `payment_methods` (used by billing routes, out of scope)
+- `reconciliation_logs` (used by live reconciliation system)
 
-### Billing Routes (separate system — out of scope)
-- `app/api/v1/billing/setup-intent/route.ts` — uses `getOrCreateCustomer`, `createSetupIntent`
-- `app/api/v1/billing/payment-method/route.ts` — uses `getPaymentMethodDetails`
-- `app/api/v1/billing/payment-method/[id]/route.ts` — uses `detachPaymentMethod`
-- `payment_methods` table — used by billing routes. **Keep for now, investigate separately.**
-- All `paymentMethods`-related storage methods in `core.ts` — tied to billing routes, keep.
-
-### Reconciliation System (NOT Stripe-specific, keep)
-- **`app/api/v1/admin/reconciliation/run/route.ts`** — ⚠️ KEEP! This checks wallet ledger integrity (stored balance vs sum of transactions). It's a generic health check that works regardless of how money enters the wallet. Used by live OpsHealth dashboard component.
-- **`components/dashboard/ops-health.tsx`** — KEEP! Renders reconciliation on admin dashboard.
-- **`reconciliation_logs` table** — KEEP! Used by reconciliation system.
-- **`createReconciliationLog` storage method** — KEEP!
-- **`getWalletsByOwnerUid`, `getTransactionSumByWalletId` storage methods** — KEEP! Used by reconciliation.
+### Other systems — out of scope
+- Billing routes (`app/api/v1/billing/`) + `paymentMethods` storage methods
+- Reconciliation system (`admin/reconciliation/`, `ops-health.tsx`, `reconciliation_logs` table)
+- `payment-setup.tsx` (tied to billing routes)
+- Invoices system (modern, live, uses checkout pages not paymentLinks table)
 
 ---
 
-## Phase 1: API Routes to DELETE (entire files)
+## Phase A: Remove Dead Feature Files + Fix Imports
 
-| Route | Why dead | Verified callers |
-|-------|----------|-----------------|
-| `app/api/v1/wallet/fund/route.ts` | Core Stripe `chargeCustomer` funding. | Called by: `fund-modal.tsx` (dead), `fund-wallet.tsx` onboarding step (dead/unused). No live callers. |
-| `app/api/v1/bot/payments/create-link/route.ts` | Creates Stripe payment links for bots to request money. | 0 rows in payment_links. Only reference: rate-limit.ts config entry. |
-| `app/api/v1/bot/payments/links/route.ts` | Bot API to list its own payment links. | 0 rows. Only reference: rate-limit.ts config entry. |
-| `app/api/v1/bot/wallet/topup-request/route.ts` | Bot requests owner to top up via email. | 0 rows in topup_requests. References: rate-limit.ts config, activity-log.tsx label map. |
-| `app/api/v1/payment-links/route.ts` | Lists payment links for dashboard. | Called by: `payment-links.tsx` component (dead). |
-| `app/api/v1/payment-links/[id]/route.ts` | Gets single payment link by ID. | Called by: `payment/success/page.tsx` (dead). |
-| `app/api/v1/webhooks/stripe/route.ts` | Handles `checkout.session.completed` for payment link fulfillment. | **Verified: handles ONLY the dead payment-link flow.** No other event types. Entire file can be deleted. |
+The core dead feature: Stripe `chargeCustomer` funding, payment links, topup requests.
 
-### Pages to DELETE:
-| Page | Why dead |
-|------|----------|
-| `app/payment/success/page.tsx` | Payment link success page — tied to dead create-link flow |
+### A1. DELETE entire files (12 files):
 
----
+**Dead API routes (7 files):**
+| # | File | What it does |
+|---|------|-------------|
+| 1 | `app/api/v1/wallet/fund/route.ts` | Stripe chargeCustomer funding endpoint |
+| 2 | `app/api/v1/bot/payments/create-link/route.ts` | Bot creates Stripe payment link |
+| 3 | `app/api/v1/bot/payments/links/route.ts` | Bot lists its own payment links |
+| 4 | `app/api/v1/bot/wallet/topup-request/route.ts` | Bot requests owner to top up via email |
+| 5 | `app/api/v1/payment-links/route.ts` | Dashboard lists payment links |
+| 6 | `app/api/v1/payment-links/[id]/route.ts` | Get single payment link by ID |
+| 7 | `app/payment/success/page.tsx` | Payment link success page |
 
-## Phase 2: Frontend Components to DELETE or EDIT
+**Dead frontend components (3 files):**
+| # | File | Import verification |
+|---|------|-------------------|
+| 8 | `components/dashboard/fund-modal.tsx` | Only imported by `overview/page.tsx` (will be edited) |
+| 9 | `components/dashboard/payment-links.tsx` | Only imported by `overview/page.tsx` (will be edited) |
+| 10 | `components/onboarding/steps/fund-wallet.tsx` | Orphan — NOT imported by wizard |
 
-### DELETE entirely:
-| Component | Why dead | Import verification |
-|-----------|----------|-------------------|
-| `components/dashboard/fund-modal.tsx` | Modal for funding via Stripe `chargeCustomer`. | Only imported by `overview/page.tsx` — will be edited. |
-| `components/dashboard/payment-links.tsx` | Payment links panel. 0 rows. | Only imported by `overview/page.tsx` — will be edited. |
-| `components/onboarding/steps/fund-wallet.tsx` | Old onboarding step for Stripe funding. | NOT imported by `onboarding-wizard.tsx` (confirmed). Orphan file. |
+**Dead storage + schema (2 files):**
+| # | File | What it does |
+|---|------|-------------|
+| 11 | `server/storage/payment-links.ts` | All payment-link storage methods |
 
-### DO NOT DELETE:
-| Component | Why |
-|-----------|-----|
-| `components/dashboard/payment-setup.tsx` | Used by `settings/page.tsx`. Tied to billing routes (out of scope). Keep. |
-| `components/dashboard/ops-health.tsx` | Reconciliation is generic ledger health, not Stripe-specific. Keep. |
-| `components/dashboard/activity-log.tsx` | Shows API access logs. Has label entries for dead endpoints but that's harmless — just a display map. Keep as-is or clean label entries. |
+### A2. EDIT files to fix broken imports (7 files):
 
-### EDIT:
-| File | Change | Details |
-|------|--------|---------|
-| `app/(dashboard)/overview/page.tsx` | Remove dead imports + UI | Remove `FundModal` import (line 6), `PaymentLinksPanel` import (line 10). Remove `fundOpen` state (line 62). Remove "Add Funds" dark card (lines 283-297) that opens FundModal. Remove `<PaymentLinksPanel />` render (line 463). Remove `<FundModal>` render (lines 471-475). **KEEP:** `wallet/balance` fetch (line 82), balance stat display (lines 270-273), `FundWalletSheet` (line 28, Rail 1). |
+| # | File | Change |
+|---|------|--------|
+| 1 | `app/(dashboard)/overview/page.tsx` | Remove `FundModal` import + `fundOpen` state + "Add Funds" dark card (lines 283-297) + `<FundModal>` render (lines 471-475). Remove `PaymentLinksPanel` import + `<PaymentLinksPanel />` render (line 463). **KEEP:** `wallet/balance` fetch, balance stat, `FundWalletSheet` (Rail 1). |
+| 2 | `lib/stripe.ts` | Remove `chargeCustomer()` function. **KEEP:** `stripe` object, `getOrCreateCustomer`, `createSetupIntent`, `getPaymentMethodDetails`, `detachPaymentMethod`. |
+| 3 | `lib/notifications.ts` | Remove `notifyTopupCompleted` and `notifyPaymentReceived`. **KEEP:** `notifyBalanceLow`, `notifyPurchase`. |
+| 4 | `lib/email.ts` | Remove `sendTopupRequestEmail`. **KEEP:** all other email functions. |
+| 5 | `server/storage/core.ts` | Remove `createTopupRequest` method. **KEEP:** all wallet/transaction/reconciliation methods, all paymentMethods methods. |
+| 6 | `server/storage/index.ts` | Remove `payment-links` import/export. |
+| 7 | `server/storage/types.ts` | Remove payment-link method signatures from IStorage interface. Remove `createTopupRequest` signature. |
 
----
+### A3. Schema + DB (shared/schema.ts + drizzle push):
 
-## Phase 3: lib/ Functions to DELETE or EDIT
-
-### In `lib/stripe.ts`:
-- **DELETE:** `chargeCustomer()` function — only caller is dead `wallet/fund/route.ts`
-- **KEEP:** `stripe` object (used by Rail 1, billing routes, onramp)
-- **KEEP:** `getOrCreateCustomer`, `createSetupIntent`, `getPaymentMethodDetails`, `detachPaymentMethod` (used by billing routes)
-
-### In `lib/notifications.ts`:
-- **DELETE:** `notifyTopupCompleted` — only caller is dead `wallet/fund/route.ts`
-- **DELETE:** `notifyPaymentReceived` — only caller is dead `webhooks/stripe/route.ts`
-- **KEEP:** `notifyBalanceLow` — called by live Rail 5 confirm route
-- **KEEP:** `notifyPurchase` — called by live Rail 5 confirm route
-
-### In `lib/email.ts`:
-- **DELETE:** `sendTopupRequestEmail` — only caller is dead `bot/wallet/topup-request/route.ts`
-- **KEEP:** All other email functions
-
-### In `lib/agent-management/rate-limit.ts`:
-- **EDIT:** Remove rate limit entries for dead endpoints:
-  - `"/api/v1/bot/wallet/topup-request"` (line 11)
-  - `"/api/v1/bot/payments/create-link"` (line 13)
-  - `"/api/v1/bot/payments/links"` (line 14) — verify if this route also exists / is dead
-
----
-
-## Phase 4: Storage Layer Cleanup
-
-### In `server/storage/payment-links.ts`:
-- **DELETE:** Entire file — all payment link storage methods. 0 rows in table, dead flow.
-
-### In `server/storage/index.ts`:
-- **EDIT:** Remove `payment-links` import/export
-
-### In `server/storage/types.ts`:
-- **EDIT:** Remove payment-link method signatures from `IStorage` interface
-
-### In `server/storage/core.ts`:
-- **DELETE:** `createTopupRequest` method — only caller is dead topup-request route
-- **KEEP:** All `paymentMethods` methods (tied to billing routes, out of scope)
-- **KEEP:** `creditWallet` — used by live x402/qr-pay/base-pay/webhook flows
-- **KEEP:** `createReconciliationLog`, `getWalletsByOwnerUid`, `getTransactionSumByWalletId` — used by live reconciliation
-- **KEEP:** All other wallet/transaction methods
-
----
-
-## Phase 5: Schema Cleanup (shared/schema.ts)
-
-### Tables to DROP (via drizzle-kit push):
-| Table | Rows | Why dead |
-|-------|------|----------|
-| `payment_links` | 0 | Dead bot payment link flow |
-| `topup_requests` | 0 | Dead topup request flow |
-
-### Tables to KEEP:
-| Table | Rows | Why live |
-|-------|------|---------|
-| `wallets` | 8 | Rail 5 + x402/qr-pay/base-pay spending budget |
-| `transactions` | 1 | Active purchase/credit ledger |
-| `payment_methods` | 0 | Used by billing routes (out of scope) |
-| `reconciliation_logs` | 3 | Used by live reconciliation system |
-
-### Zod Schemas to DELETE from `shared/schema.ts`:
-- `topupRequestSchema` — only used by dead topup-request route
-- `fundWalletRequestSchema` — only used by dead fund route
-- `createPaymentLinkSchema` — only used by dead create-link route
-
-### Table definitions to DELETE from `shared/schema.ts`:
+**Remove from `shared/schema.ts`:**
 - `paymentLinks` table definition
 - `topupRequests` table definition
+- `topupRequestSchema` (Zod)
+- `fundWalletRequestSchema` (Zod)
+- `createPaymentLinkSchema` (Zod)
 
-### Schemas & Table definitions to KEEP:
+**KEEP in `shared/schema.ts`:**
 - `wallets`, `transactions`, `paymentMethods`, `reconciliationLogs` table definitions
 - All related insert/select types
 
+**After schema edit:** Run `drizzle-kit push` to drop `payment_links` and `topup_requests` tables.
+
+### A4. Build test:
+- `npx next build` to verify no broken imports
+- Verify overview page loads, transactions page loads
+
 ---
 
-## Phase 6: Documentation, Config & Residual String Cleanup
+## Phase B: Clean Up Dead Webhook Event Types & Rate Limits
 
-### Documentation:
-- Update `replit.md` to reflect removed routes/components
-- `docs/content/api/endpoints/wallets.md` — remove topup-request endpoint docs (lines 145-193)
-- `docs/content/api/endpoints/checkout-pages.md` — remove "List Payment Links" and "Create Payment Link" sections (lines 134+)
-- `docs/content/api/introduction.md` — remove "Stripe payment links" reference (line 30)
-- `docs/content/site/homepage.md` — update "payment links" mention (line 16) if needed
-- `docs/content/api/webhooks/events.md` — remove topup-request reference (line 461)
-- `project_knowledge/architecture.md` — remove Payment Links row from table (line 217) and references (lines 200, 268)
-- `project_knowledge/testing.md` — remove topup-request and payment-links test commands
-- `project_knowledge/tenants_vision/creditclaw.md` — update payment links reference (line 80)
+Remove residual references to webhook events and rate-limit entries that only existed for the dead flows.
 
-### Residual string references (harmless but should clean):
-- `components/dashboard/activity-log.tsx` — remove label entries for `/api/v1/bot/wallet/topup-request` (line 23) and `/api/v1/bot/wallet/transactions` — wait, transactions is LIVE. Only remove topup-request label.
-- `components/dashboard/webhook-log.tsx` — remove label `"wallet.topup.completed"` (line 25). This webhook event type was only fired by the dead fund route.
-- `components/dashboard/notification-popover.tsx` — remove emoji cases for `"topup_completed"` (line 32) and `"topup_request"` (line 36). These notification types were only created by dead flows.
-- `lib/webhooks/delivery.ts` — remove `"wallet.topup.completed"` and `"wallet.payment.received"` from WebhookEventType union (lines 17, 21). These events were only fired by dead routes.
-- `lib/agent-management/bot-messaging/expiry.ts` — remove expiry entries for `"wallet.topup.completed"` and `"wallet.payment.received"` (lines 7, 11).
-- `app/api/v1/bot/wallet/check/route.ts` — `pending_topups: 0` hardcoded (line 55). Safe to remove field or keep as backwards-compatible stub.
-- `lib/agent-management/rate-limit.ts` — remove entries for dead endpoints (topup-request, create-link, payments/links)
+### B1. DELETE entire file (1 file):
+| # | File | Why |
+|---|------|-----|
+| 1 | `app/api/v1/webhooks/stripe/route.ts` | Only handles `checkout.session.completed` for dead payment-link flow. Confirmed: no other event types. The LIVE Stripe webhook is at `stripe-wallet/webhooks/stripe/route.ts` (Rail 1 onramp). |
+
+### B2. EDIT files (5 files):
+
+| # | File | Change |
+|---|------|--------|
+| 1 | `lib/webhooks/delivery.ts` | Remove `"wallet.topup.completed"` and `"wallet.payment.received"` from `WebhookEventType` union. These events were only fired by dead routes (fund/route.ts and webhooks/stripe/route.ts). |
+| 2 | `lib/agent-management/bot-messaging/expiry.ts` | Remove expiry entries for `"wallet.topup.completed"` and `"wallet.payment.received"`. |
+| 3 | `lib/agent-management/rate-limit.ts` | Remove rate-limit entries for: `"/api/v1/bot/wallet/topup-request"`, `"/api/v1/bot/payments/create-link"`, `"/api/v1/bot/payments/links"`. |
+| 4 | `components/dashboard/webhook-log.tsx` | Remove label `"wallet.topup.completed": "Top-up Completed"`. |
+| 5 | `components/dashboard/notification-popover.tsx` | Remove emoji cases for `"topup_completed"` and `"topup_request"`. |
+
+### B3. Optional (backwards-compatible stub):
+- `app/api/v1/bot/wallet/check/route.ts` — has `pending_topups: 0` hardcoded (line 55). Can remove or keep as backwards-compatible stub for existing bot integrations. **Recommend: keep for now.**
+
+### B4. KEEP (do not confuse with dead webhook):
+- `app/api/v1/webhooks/route.ts` — LIVE outbound webhook delivery system
+- `app/api/v1/webhooks/health/route.ts` — LIVE webhook health check
+- `app/api/v1/webhooks/retry-pending/route.ts` — LIVE webhook retry
+- `app/api/v1/stripe-wallet/webhooks/stripe/route.ts` — LIVE Rail 1 onramp webhook
+
+---
+
+## Phase C: Dashboard UI Cleanup
+
+Remove dead UI labels in dashboard components that reference removed features. These are cosmetic — the components themselves are live, but they have label/emoji entries for features that no longer exist.
+
+| # | File | Change |
+|---|------|--------|
+| 1 | `components/dashboard/activity-log.tsx` | Remove label entry for `"/api/v1/bot/wallet/topup-request": "Top-up Request"` (line 23). **KEEP** the transactions label — that endpoint is live. |
+
+---
+
+## Phase D: Documentation Cleanup
+
+Remove all documentation references to the dead payment-links, topup-request, and Stripe wallet funding features.
+
+### D1. API docs:
+| # | File | Change |
+|---|------|--------|
+| 1 | `docs/content/api/endpoints/wallets.md` | Remove topup-request endpoint docs (lines 145-193) |
+| 2 | `docs/content/api/endpoints/checkout-pages.md` | Remove "List Payment Links" and "Create Payment Link" sections (lines 134+) |
+| 3 | `docs/content/api/introduction.md` | Remove "Stripe payment links" reference (line 30) |
+| 4 | `docs/content/api/webhooks/events.md` | Remove topup-request reference (line 461) |
+| 5 | `docs/content/site/homepage.md` | Update "payment links" mention (line 16) |
+
+### D2. Internal docs:
+| # | File | Change |
+|---|------|--------|
+| 6 | `project_knowledge/architecture.md` | Remove Payment Links row from table (line 217) and references (lines 200, 268) |
+| 7 | `project_knowledge/testing.md` | Remove topup-request and payment-links test commands |
+| 8 | `project_knowledge/tenants_vision/creditclaw.md` | Update payment links reference (line 80) |
+| 9 | `replit.md` | Update to reflect removed routes/components |
 
 ---
 
 ## Execution Order
 
-1. Phase 1 — Delete dead API routes + pages (6 route files + 1 page)
-2. Phase 2 — Frontend cleanup (delete 3 components, edit overview page)
-3. Phase 3 — lib/ function cleanup (edit stripe.ts, notifications.ts, email.ts, rate-limit.ts)
-4. Phase 4 — Storage layer (delete payment-links.ts, edit index.ts, types.ts, core.ts)
-5. Phase 5 — Schema + DB (remove 2 table defs + 3 Zod schemas, drizzle push to drop tables)
-6. Phase 6 — Docs
-7. **Build test:** `npx next build` to verify no broken imports
-8. **Runtime test:** Verify overview page loads, transactions page loads, Rail 5 checkout works
+1. **Phase A** — Core dead feature removal (12 deletions, 7 edits, schema + DB push)
+2. **Build test** — `npx next build` to verify no broken imports
+3. **Phase B** — Webhook event type + rate-limit cleanup (1 deletion, 5 edits)
+4. **Build test** — verify build still clean
+5. **Phase C** — Dashboard UI label cleanup (1 edit)
+6. **Phase D** — Documentation cleanup (9 file edits)
+7. **Final verification** — Overview page loads, transactions page loads, app builds clean
 
 ---
 
@@ -225,68 +209,93 @@ The codebase has two completely separate "wallet" concepts:
 
 | Risk | Mitigation |
 |------|-----------|
-| Accidentally breaking Rail 1 crypto onramp | Completely separate codepath. No shared functions being removed. `stripe` object, `FundWalletSheet` all preserved. |
-| Breaking Rail 5 spending budget | `wallets`/`transactions` tables, all Rail 5 routes, `creditWallet`/`debitWallet` all explicitly preserved. |
-| Breaking dashboard balance/transactions display | `wallet/balance` and `wallet/transactions` routes are KEPT. Overview balance stat preserved. Transactions page preserved. |
-| Breaking billing/payment-method management | `payment_methods` table, billing routes, all billing storage methods are out of scope, not touched. |
-| Breaking reconciliation/ops health | Reconciliation system is NOT Stripe-specific. Routes, component, table, storage methods all preserved. |
-| Broken import after file deletion | Each deleted file's importers are mapped above. All will be edited or are also being deleted. |
+| Breaking Rail 1 crypto onramp | Completely separate codepath. `stripe` object, `FundWalletSheet`, onramp webhook all preserved. |
+| Breaking Rail 5 spending budget | `wallets`/`transactions` tables, all Rail 5 routes, `creditWallet`/`debitWallet` all preserved. |
+| Breaking dashboard balance/transactions | `wallet/balance` and `wallet/transactions` routes are KEPT. Balance stat and transactions page preserved. |
+| Breaking live Stripe webhook (onramp) | Dead webhook is at `webhooks/stripe/`, live onramp webhook is at `stripe-wallet/webhooks/stripe/`. Different paths, different secrets (`STRIPE_WEBHOOK_SECRET` vs `STRIPE_WEBHOOK_SECRET_ONRAMP`). |
+| Breaking outbound webhook system | The delivery system (`webhooks/route.ts`, `health/`, `retry-pending/`) is untouched. Only removing 2 dead event types from the type union. |
+| Breaking billing routes | `payment_methods` table, billing routes, all billing storage methods are out of scope. |
+| Breaking reconciliation | Not Stripe-specific. Routes, component, table, storage methods all preserved. |
+| Breaking invoices | Invoices use checkout URLs, not the `paymentLinks` table. Completely separate. |
+| Broken import after file deletion | Every deleted file's importers are mapped — all will be edited or are also being deleted. |
 
 ---
 
-## Corrections Log (from double-check review)
+## Corrections Log
 
-### Errors caught and fixed:
-1. **`wallet/balance/route.ts` was incorrectly marked for deletion.** It shows the live ledger wallet spending budget, fetched by overview page line 82. **KEPT.**
-2. **`wallet/transactions/route.ts` was incorrectly marked for deletion.** It shows live purchase history, used by `transactions/page.tsx`. Transactions are actively created by Rail 5, x402, qr-pay, base-pay. **KEPT.**
-3. **Reconciliation system was incorrectly marked for deletion.** It's NOT Stripe-specific — it checks generic wallet ledger integrity (stored balance vs transaction sum). Used by live OpsHealth component. **KEPT** (routes, component, table, storage methods).
-4. **Missing from original plan:** `app/api/v1/payment-links/route.ts` and `[id]/route.ts` — dead routes serving the payment links panel and success page. **ADDED to deletion list.**
-5. **Missing from original plan:** `components/onboarding/steps/fund-wallet.tsx` — orphan file, not imported by wizard. **ADDED to deletion list.**
-6. **Missing from original plan:** Rate limit entries for dead endpoints in `rate-limit.ts`. **ADDED.**
-7. **`payment-setup.tsx` was incorrectly marked for deletion.** It's used by settings page and tied to billing routes (out of scope). **KEPT.**
-8. **`reconciliation_logs` table was incorrectly marked for dropping.** Used by live reconciliation system. **KEPT.**
-9. **Storage methods `getWalletsByOwnerUid` and `getTransactionSumByWalletId` were implicitly going to be deleted.** They're used by reconciliation. **KEPT.**
+### Round 1 (initial double-check):
+1. `wallet/balance/route.ts` incorrectly marked for deletion → KEPT (live spending budget)
+2. `wallet/transactions/route.ts` incorrectly marked for deletion → KEPT (live purchase history)
+3. Reconciliation system incorrectly marked for deletion → KEPT (generic ledger health)
+4. Missing: `payment-links/route.ts` and `[id]/route.ts` → ADDED
+5. Missing: `fund-wallet.tsx` orphan → ADDED
+6. Missing: Rate limit entries → ADDED
+7. `payment-setup.tsx` incorrectly marked for deletion → KEPT (billing system)
+8. `reconciliation_logs` table incorrectly marked for dropping → KEPT
+9. Storage methods for reconciliation incorrectly scoped → KEPT
+
+### Round 2 (user questions + deeper sweep):
+10. Missing: `bot/payments/links/route.ts` — dead bot API to list payment links → ADDED
+11. Found residual string references in webhook-log, notification-popover, delivery.ts, expiry.ts → ADDED to Phase B
+12. Confirmed `webhooks/stripe/route.ts` is legacy duplicate — live onramp webhook is at `stripe-wallet/webhooks/stripe/route.ts`
+13. Confirmed invoices system is modern/live — "payment link" in invoices UI is just a label for checkout URL
+14. Restructured into Phases A/B/C/D per user request
 
 ---
 
 ## Files Summary
 
-### DELETE (entire files) — 12 files:
-1. `app/api/v1/wallet/fund/route.ts` — dead Stripe chargeCustomer funding
-2. `app/api/v1/bot/payments/create-link/route.ts` — dead Stripe payment link creation
-3. `app/api/v1/bot/payments/links/route.ts` — dead bot API to list payment links
-4. `app/api/v1/bot/wallet/topup-request/route.ts` — dead topup request
-5. `app/api/v1/payment-links/route.ts` — dead dashboard payment links API
-6. `app/api/v1/payment-links/[id]/route.ts` — dead payment link by ID
-7. `app/api/v1/webhooks/stripe/route.ts` — only handles dead payment-link flow
-8. `app/payment/success/page.tsx` — dead payment link success page
-9. `components/dashboard/fund-modal.tsx` — dead Stripe funding modal
-10. `components/dashboard/payment-links.tsx` — dead payment links panel
-11. `components/onboarding/steps/fund-wallet.tsx` — orphan onboarding step
-12. `server/storage/payment-links.ts` — dead payment link storage
+### Phase A — DELETE (12 files):
+1. `app/api/v1/wallet/fund/route.ts`
+2. `app/api/v1/bot/payments/create-link/route.ts`
+3. `app/api/v1/bot/payments/links/route.ts`
+4. `app/api/v1/bot/wallet/topup-request/route.ts`
+5. `app/api/v1/payment-links/route.ts`
+6. `app/api/v1/payment-links/[id]/route.ts`
+7. `app/payment/success/page.tsx`
+8. `components/dashboard/fund-modal.tsx`
+9. `components/dashboard/payment-links.tsx`
+10. `components/onboarding/steps/fund-wallet.tsx`
+11. `server/storage/payment-links.ts`
 
-### EDIT (surgical removal) — 14 files:
-1. `app/(dashboard)/overview/page.tsx` — remove FundModal, PaymentLinksPanel, "Add Funds" card
-2. `lib/stripe.ts` — remove `chargeCustomer()`
-3. `lib/notifications.ts` — remove `notifyTopupCompleted`, `notifyPaymentReceived`
-4. `lib/email.ts` — remove `sendTopupRequestEmail`
-5. `lib/agent-management/rate-limit.ts` — remove dead endpoint entries (topup-request, create-link, payments/links)
-6. `server/storage/core.ts` — remove `createTopupRequest`
-7. `server/storage/index.ts` — remove payment-links import
-8. `server/storage/types.ts` — remove payment-link method signatures
-9. `shared/schema.ts` — remove `paymentLinks`/`topupRequests` table defs + 3 Zod schemas
-10. `components/dashboard/activity-log.tsx` — remove topup-request label entry
-11. `components/dashboard/webhook-log.tsx` — remove `wallet.topup.completed` label
-12. `components/dashboard/notification-popover.tsx` — remove `topup_completed` and `topup_request` emoji cases
-13. `lib/webhooks/delivery.ts` — remove `wallet.topup.completed` and `wallet.payment.received` from event type union
-14. `lib/agent-management/bot-messaging/expiry.ts` — remove expiry entries for dead webhook events
-15. Docs: `docs/content/api/endpoints/wallets.md`, `checkout-pages.md`, `introduction.md`, `events.md`, `homepage.md`
-16. Docs: `project_knowledge/architecture.md`, `testing.md`, `tenants_vision/creditclaw.md`
+### Phase A — EDIT (7 files):
+1. `app/(dashboard)/overview/page.tsx`
+2. `lib/stripe.ts`
+3. `lib/notifications.ts`
+4. `lib/email.ts`
+5. `server/storage/core.ts`
+6. `server/storage/index.ts`
+7. `server/storage/types.ts`
+8. `shared/schema.ts`
+
+### Phase B — DELETE (1 file):
+1. `app/api/v1/webhooks/stripe/route.ts`
+
+### Phase B — EDIT (5 files):
+1. `lib/webhooks/delivery.ts`
+2. `lib/agent-management/bot-messaging/expiry.ts`
+3. `lib/agent-management/rate-limit.ts`
+4. `components/dashboard/webhook-log.tsx`
+5. `components/dashboard/notification-popover.tsx`
+
+### Phase C — EDIT (1 file):
+1. `components/dashboard/activity-log.tsx`
+
+### Phase D — EDIT (9 files):
+1. `docs/content/api/endpoints/wallets.md`
+2. `docs/content/api/endpoints/checkout-pages.md`
+3. `docs/content/api/introduction.md`
+4. `docs/content/api/webhooks/events.md`
+5. `docs/content/site/homepage.md`
+6. `project_knowledge/architecture.md`
+7. `project_knowledge/testing.md`
+8. `project_knowledge/tenants_vision/creditclaw.md`
+9. `replit.md`
 
 ### KEEP (explicitly preserved):
 - `lib/crypto-onramp/` — entire Rail 1 system
 - `lib/payments/components/fund-wallet-sheet.tsx` — Rail 1 funding UI
-- `app/api/v1/stripe-wallet/` — Rail 1 routes
+- `app/api/v1/stripe-wallet/` — Rail 1 routes + onramp webhook
 - `app/api/v1/wallet/balance/route.ts` — live spending budget display
 - `app/api/v1/wallet/transactions/route.ts` — live transaction history
 - `app/(dashboard)/transactions/page.tsx` — live transactions page
@@ -295,10 +304,12 @@ The codebase has two completely separate "wallet" concepts:
 - `app/api/v1/bot/wallet/transactions/route.ts` — live bot transaction history
 - `app/api/v1/admin/reconciliation/` — live ledger health check
 - `app/api/v1/billing/` — payment method management (out of scope)
+- `app/api/v1/webhooks/route.ts`, `health/`, `retry-pending/` — live outbound webhook system
 - `components/dashboard/ops-health.tsx` — live reconciliation UI
 - `components/dashboard/payment-setup.tsx` — tied to billing (out of scope)
-- `components/dashboard/activity-log.tsx` — live, label entries harmless
 - `wallets` + `transactions` + `payment_methods` + `reconciliation_logs` tables
 - `creditWallet`, `debitWallet`, and all wallet/transaction storage methods
 - `lib/stripe.ts` — `stripe` object + all non-`chargeCustomer` functions
 - `lib/notifications.ts` — `notifyBalanceLow`, `notifyPurchase`
+- `app/(dashboard)/invoices/` — modern selling feature, not related
+- `lib/payments/types.ts`, `methods.ts` — "topup" mode here is Rail 1 funding, not the dead system
