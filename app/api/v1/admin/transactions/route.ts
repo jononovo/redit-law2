@@ -20,8 +20,7 @@ export async function GET(request: NextRequest) {
       (SELECT count(*) FROM transactions)::int +
       (SELECT count(*) FROM privy_transactions)::int +
       (SELECT count(*) FROM crossmint_transactions)::int +
-      (SELECT count(*) FROM rail5_checkouts)::int +
-      (SELECT count(*) FROM checkout_confirmations)::int
+      (SELECT count(*) FROM rail5_checkouts)::int
     AS total
   `);
   const total = Number(countResult.rows[0]?.total ?? 0);
