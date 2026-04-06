@@ -8,7 +8,6 @@ import {
   type WebhookDelivery, type InsertWebhookDelivery,
   type NotificationPreference, type InsertNotificationPreference,
   type Notification, type InsertNotification,
-  type ReconciliationLog, type InsertReconciliationLog,
   type PairingCode, type InsertPairingCode,
   type WaitlistEntry, type InsertWaitlistEntry,
   type PrivyWallet, type InsertPrivyWallet,
@@ -61,8 +60,6 @@ export interface IStorage {
   createWallet(data: InsertWallet): Promise<Wallet>;
   getWalletByBotId(botId: string): Promise<Wallet | null>;
   getWalletByOwnerUid(ownerUid: string): Promise<Wallet | null>;
-  creditWallet(walletId: number, amountCents: number): Promise<Wallet>;
-
   createTransaction(data: InsertTransaction): Promise<Transaction>;
   getTransactionsByWalletId(walletId: number, limit?: number): Promise<Transaction[]>;
 
@@ -75,7 +72,6 @@ export interface IStorage {
 
   getBotsByApiKeyPrefix(prefix: string): Promise<Bot[]>;
   debitWallet(walletId: number, amountCents: number): Promise<Wallet | null>;
-  getDailySpend(walletId: number): Promise<number>;
   getMonthlySpend(walletId: number): Promise<number>;
 
   createAccessLog(data: InsertApiAccessLog): Promise<void>;
@@ -95,9 +91,6 @@ export interface IStorage {
   markNotificationsRead(ids: number[], ownerUid: string): Promise<void>;
   markAllNotificationsRead(ownerUid: string): Promise<void>;
 
-  getWalletsByOwnerUid(ownerUid: string): Promise<Wallet[]>;
-  getTransactionSumByWalletId(walletId: number): Promise<number>;
-  createReconciliationLog(data: InsertReconciliationLog): Promise<ReconciliationLog>;
   getFailedWebhookCount24h(botIds: string[]): Promise<number>;
 
   createPairingCode(data: InsertPairingCode): Promise<PairingCode>;
