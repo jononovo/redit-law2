@@ -34,13 +34,24 @@ description: Navigation guide for project_knowledge/. Start here if you're new.
 
 ## Folders
 
-| Folder | Covers |
-|--------|--------|
+Eight modules — each maps to a section in `architecture.md` and a folder under `internal_docs/`.
+
+| Folder | Module | Covers |
+|--------|--------|--------|
+| `internal_docs/scanning/` | 1. Agentic Shopping Score | Scan engine, scoring rubric, scan queue, maturity |
+| `internal_docs/skills/` | 2. Agent Shopping Skills | SKILL.md generation, skill.json, registry API |
+| `internal_docs/catalog/` | 3. Brands Index | Brand catalog, recommend API, product search, categories |
+| `internal_docs/payment/` | 4. Payment Tools | Wallets, payment rails, guardrails, approvals, orders |
+| `internal_docs/platform/` | 5. Platform Management | Auth, bot lifecycle, pairing, feature flags, admin |
+| `internal_docs/tenants/` | 6. Multi-tenant Structure | Tenant routing, onboarding, landing pages, theming |
+| `internal_docs/agent-shops/` | 7. Agent Shops | Checkout pages, shops, seller profiles, procurement controls |
+| `internal_docs/thought-leadership/` | 8. Thought Leadership | Standards (ASX rubric, SKILL.md spec, open brands index) |
+
+Other folders:
+
+| Folder | Purpose |
+|--------|---------|
 | `currently_building/` | Active build cycle — scratch research, build notes, in-progress work |
 | `future/` | Ideas, rough plans, strategy docs not yet tied to a build cycle |
-| `internal_docs/tenants/` | Tenant identity, purpose, audience, branding |
-| `internal_docs/scanning/` | ASX scanner, scan pipeline, maturity, scan history |
-| `internal_docs/catalog/` | Brand catalog, taxonomy, recommend API, product search |
-| `internal_docs/platform/` | Multitenant infrastructure, routing, auth, onboarding |
 
 `currently_building/` is the working bench. Gets cleaned out every 1-2 weeks — finished docs move to `internal_docs/`, stale ones get deleted.
