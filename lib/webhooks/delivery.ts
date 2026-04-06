@@ -14,11 +14,9 @@ const WEBHOOK_TIMEOUT_MS = 10000;
 
 export type WebhookEventType =
   | "wallet.activated"
-  | "wallet.topup.completed"
   | "wallet.spend.authorized"
   | "wallet.spend.declined"
   | "wallet.balance.low"
-  | "wallet.payment.received"
   | "purchase.approved"
   | "purchase.rejected"
   | "purchase.expired"

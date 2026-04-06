@@ -1,7 +1,7 @@
 import { coreMethods } from "./core";
 import { webhookMethods } from "./webhooks";
 import { notificationMethods } from "./notifications";
-import { paymentLinkMethods } from "./payment-links";
+import { pairingWaitlistMethods } from "./payment-links";
 import { rail1Methods } from "./rail1";
 import { rail2Methods } from "./rail2";
 import { ownerMethods } from "./owners";
@@ -31,7 +31,7 @@ export const storage: IStorage = {
   ...coreMethods,
   ...webhookMethods,
   ...notificationMethods,
-  ...paymentLinkMethods,
+  ...pairingWaitlistMethods,
   ...rail1Methods,
   ...rail2Methods,
   ...ownerMethods,

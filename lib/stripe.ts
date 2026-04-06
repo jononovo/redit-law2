@@ -34,27 +34,6 @@ export async function createSetupIntent(customerId: string): Promise<Stripe.Setu
   });
 }
 
-export async function chargeCustomer(
-  customerId: string,
-  paymentMethodId: string,
-  amountCents: number,
-  description: string,
-): Promise<Stripe.PaymentIntent> {
-  return stripe.paymentIntents.create({
-    customer: customerId,
-    payment_method: paymentMethodId,
-    amount: amountCents,
-    currency: "usd",
-    description,
-    confirm: true,
-    off_session: true,
-    automatic_payment_methods: {
-      enabled: true,
-      allow_redirects: "never",
-    },
-  });
-}
-
 export async function getPaymentMethodDetails(pmId: string): Promise<{
   last4: string | null;
   brand: string | null;

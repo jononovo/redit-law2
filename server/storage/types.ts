@@ -4,12 +4,10 @@ import {
   type Wallet, type InsertWallet,
   type Transaction, type InsertTransaction,
   type PaymentMethod, type InsertPaymentMethod,
-  type TopupRequest, type InsertTopupRequest,
   type ApiAccessLog, type InsertApiAccessLog,
   type WebhookDelivery, type InsertWebhookDelivery,
   type NotificationPreference, type InsertNotificationPreference,
   type Notification, type InsertNotification,
-  type PaymentLink, type InsertPaymentLink,
   type ReconciliationLog, type InsertReconciliationLog,
   type PairingCode, type InsertPairingCode,
   type WaitlistEntry, type InsertWaitlistEntry,
@@ -80,9 +78,6 @@ export interface IStorage {
   getDailySpend(walletId: number): Promise<number>;
   getMonthlySpend(walletId: number): Promise<number>;
 
-
-  createTopupRequest(data: InsertTopupRequest): Promise<TopupRequest>;
-
   createAccessLog(data: InsertApiAccessLog): Promise<void>;
   getAccessLogsByBotIds(botIds: string[], limit?: number): Promise<ApiAccessLog[]>;
 
@@ -104,14 +99,6 @@ export interface IStorage {
   getTransactionSumByWalletId(walletId: number): Promise<number>;
   createReconciliationLog(data: InsertReconciliationLog): Promise<ReconciliationLog>;
   getFailedWebhookCount24h(botIds: string[]): Promise<number>;
-
-  createPaymentLink(data: InsertPaymentLink): Promise<PaymentLink>;
-  getPaymentLinksByBotId(botId: string, limit?: number, status?: string): Promise<PaymentLink[]>;
-  getPaymentLinkByStripeSession(sessionId: string): Promise<PaymentLink | null>;
-  getPaymentLinkByPaymentLinkId(paymentLinkId: string): Promise<PaymentLink | null>;
-  getPaymentLinksByOwnerUid(ownerUid: string, limit?: number): Promise<PaymentLink[]>;
-  updatePaymentLinkStatus(id: number, status: string, paidAt?: Date): Promise<PaymentLink | null>;
-  completePaymentLink(id: number): Promise<PaymentLink | null>;
 
   createPairingCode(data: InsertPairingCode): Promise<PairingCode>;
   getPairingCodeByCode(code: string): Promise<PairingCode | null>;

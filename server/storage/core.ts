@@ -1,12 +1,11 @@
 import { db } from "@/server/db";
 import {
-  bots, wallets, transactions, paymentMethods, topupRequests, apiAccessLogs,
+  bots, wallets, transactions, paymentMethods, apiAccessLogs,
   reconciliationLogs,
   type InsertBot, type Bot,
   type Wallet, type InsertWallet,
   type Transaction, type InsertTransaction,
   type PaymentMethod, type InsertPaymentMethod,
-  type TopupRequest, type InsertTopupRequest,
   type ApiAccessLog, type InsertApiAccessLog,
   type ReconciliationLog, type InsertReconciliationLog,
 } from "@/shared/schema";
@@ -23,7 +22,7 @@ type CoreMethods = Pick<IStorage,
   | "getPaymentMethod" | "getPaymentMethods" | "getPaymentMethodById"
   | "addPaymentMethod" | "deletePaymentMethodById" | "setDefaultPaymentMethod"
   | "getBotsByApiKeyPrefix" | "debitWallet" | "getDailySpend" | "getMonthlySpend"
-  | "createTopupRequest" | "createAccessLog" | "getAccessLogsByBotIds"
+  | "createAccessLog" | "getAccessLogsByBotIds"
   | "getWalletsByOwnerUid" | "getTransactionSumByWalletId" | "createReconciliationLog"
   | "freezeWallet" | "unfreezeWallet" | "getWalletsWithBotsByOwnerUid"
 >;
@@ -293,12 +292,6 @@ export const coreMethods: CoreMethods = {
         gte(transactions.createdAt, firstOfMonth)
       ));
     return Number(result[0]?.total || 0);
-  },
-
-
-  async createTopupRequest(data: InsertTopupRequest): Promise<TopupRequest> {
-    const [req] = await db.insert(topupRequests).values(data).returning();
-    return req;
   },
 
   async createAccessLog(data: InsertApiAccessLog): Promise<void> {
