@@ -34,18 +34,20 @@ description: Navigation guide for project_knowledge/. Start here if you're new.
 
 ## Folders
 
-Eight modules — each maps to a section in `architecture.md` and a folder under `internal_docs/`.
+Ten modules — each maps to a section in `architecture.md` and a folder under `internal_docs/`.
 
 | Folder | Module | Covers |
 |--------|--------|--------|
 | `internal_docs/scanning/` | 1. Agentic Shopping Score | Scan engine, scoring rubric, scan queue, maturity |
 | `internal_docs/skills/` | 2. Agent Shopping Skills | SKILL.md generation, skill.json, registry API |
 | `internal_docs/catalog/` | 3. Brands Index | Brand catalog, recommend API, product search, categories |
-| `internal_docs/payment/` | 4. Payment Tools | Wallets, payment rails, guardrails, approvals, orders |
-| `internal_docs/platform/` | 5. Platform Management | Auth, bot lifecycle, pairing, feature flags, admin |
-| `internal_docs/tenants/` | 6. Multi-tenant Structure | Tenant routing, onboarding, landing pages, theming |
-| `internal_docs/agent-shops/` | 7. Agent Shops | Checkout pages, shops, seller profiles, procurement controls |
-| `internal_docs/thought-leadership/` | 8. Thought Leadership | Standards (ASX rubric, SKILL.md spec, open brands index) |
+| `internal_docs/payment/` | 4. Payment Tools | Wallets, payment rails |
+| `internal_docs/agent-interaction/` | 5. Agent Interaction | Webhooks, polling, approvals, guardrails, orders |
+| `internal_docs/agent-plugins/` | 6. Agent Plugins | Per-platform plugins (OpenClaw, etc.), browser extension |
+| `internal_docs/platform/` | 7. Platform Management | Auth, bot lifecycle, pairing, feature flags, admin |
+| `internal_docs/tenants/` | 8. Multi-tenant Structure | Tenant routing, onboarding, landing pages, theming |
+| `internal_docs/agent-shops/` | 9. Agent Shops | Checkout pages, shops, seller profiles, procurement controls |
+| `internal_docs/thought-leadership/` | 10. Thought Leadership | Standards (ASX rubric, SKILL.md spec, open brands index) |
 
 Other folders:
 

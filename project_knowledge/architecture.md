@@ -1,6 +1,6 @@
 ---
 name: System Architecture
-description: Technical overview of all eight modules. Read after vision.md. Maps every lib/ folder and API route to its parent module.
+description: Technical overview of all ten modules. Read after vision.md. Maps every lib/ folder and API route to its parent module.
 ---
 
 # System Architecture
@@ -12,11 +12,13 @@ description: Technical overview of all eight modules. Read after vision.md. Maps
 | 1 | Agentic Shopping Score | Scan engine, scoring rubric, scan queue |
 | 2 | Agent Shopping Skills per Brand | SKILL.md generation, skill.json, registry API |
 | 3 | Brands Index for Agentic Shopping | `brand_index`, recommend API, product vector search, categories |
-| 4 | Payment Tools for Agents | Wallets, all payment rails, guardrails, approvals, orders |
-| 5 | Platform Management | Auth, bot lifecycle, pairing, feature flags, admin |
-| 6 | Multi-tenant Structure | Tenant routing, onboarding, landing pages, per-tenant theming |
-| 7 | Agent Shops | Checkout pages, shop storefronts, seller profiles, procurement controls |
-| 8 | Thought Leadership | Standards we define and maintain (ASX rubric, SKILL.md spec, open brands index) |
+| 4 | Payment Tools for Agents | Wallets, all payment rails |
+| 5 | Agent Interaction | Webhooks, polling, approvals, guardrails, orders, agent communication patterns |
+| 6 | Agent Plugins | Per-platform plugins (OpenClaw, etc.), browser extension |
+| 7 | Platform Management | Auth, bot lifecycle, pairing, feature flags, admin |
+| 8 | Multi-tenant Structure | Tenant routing, onboarding, landing pages, per-tenant theming |
+| 9 | Agent Shops | Checkout pages, shop storefronts, seller profiles, procurement controls |
+| 10 | Thought Leadership | Standards we define and maintain (ASX rubric, SKILL.md spec, open brands index) |
 
 ---
 
@@ -86,11 +88,11 @@ Central catalog. Powers sector pages, registry, and the recommend API that agent
 
 ## 4. Payment Tools for Agents
 
-All financial rails. Wallets, payment methods, spending controls, order lifecycle.
+Financial rails only — wallets and payment methods. Spending controls and order lifecycle are in Module 5 (Agent Interaction).
 
-**Key folders:** `lib/payments/`, `lib/x402/`, `lib/base-pay/`, `lib/crypto-onramp/`, `lib/qr-pay/`, `lib/card/`, `lib/guardrails/`, `lib/approvals/`, `lib/orders/`, `lib/rail1/`, `lib/rail2/`, `lib/rail4/`, `lib/rail5/`, `lib/obfuscation-engine/`, `lib/obfuscation-merchants/`
-**API routes:** `app/api/v1/wallet/`, `app/api/v1/wallets/`, `app/api/v1/stripe-wallet/`, `app/api/v1/card-wallet/`, `app/api/v1/billing/`, `app/api/v1/base-pay/`, `app/api/v1/qr-pay/`, `app/api/v1/rail4/`, `app/api/v1/rail5/`, `app/api/v1/orders/`, `app/api/v1/invoices/`, `app/api/v1/approvals/`, `app/api/v1/master-guardrails/`, `app/api/v1/payment-links/`, `app/api/v1/cards/`
-**Tables:** `owners` (wallet balances), `orders`, `invoices`
+**Key folders:** `lib/payments/`, `lib/x402/`, `lib/base-pay/`, `lib/crypto-onramp/`, `lib/qr-pay/`, `lib/card/`, `lib/rail1/`, `lib/rail2/`, `lib/rail4/`, `lib/rail5/`, `lib/obfuscation-engine/`, `lib/obfuscation-merchants/`
+**API routes:** `app/api/v1/wallet/`, `app/api/v1/wallets/`, `app/api/v1/stripe-wallet/`, `app/api/v1/card-wallet/`, `app/api/v1/billing/`, `app/api/v1/base-pay/`, `app/api/v1/qr-pay/`, `app/api/v1/rail4/`, `app/api/v1/rail5/`, `app/api/v1/payment-links/`, `app/api/v1/cards/`
+**Tables:** `owners` (wallet balances)
 
 | Rail | Method | Implementation | Status |
 |------|--------|---------------|--------|
@@ -105,16 +107,48 @@ All financial rails. Wallets, payment methods, spending controls, order lifecycl
 
 | Component | Key functions / files | Purpose |
 |-----------|----------------------|---------|
-| Guardrails | `lib/guardrails/`, `app/api/v1/master-guardrails/` | Per-transaction limits, category blocking, approval modes |
-| Approvals | `lib/approvals/`, `app/api/v1/approvals/` | Human-in-the-loop approval for agent purchases |
-| Orders | `lib/orders/`, `app/api/v1/orders/` | Order lifecycle and tracking |
 | Payment Methods Registry | `lib/payments/methods.ts` | Central definition of all supported payment methods |
 
 **Docs:** `internal_docs/payment/`
 
 ---
 
-## 5. Platform Management
+## 5. Agent Interaction
+
+How external agents communicate with CreditClaw. Webhooks, polling, spending controls, and the human↔agent approval loop.
+
+**Key folders:** `lib/webhooks/`, `lib/webhook-tunnel/`, `lib/guardrails/`, `lib/approvals/`, `lib/orders/`, `lib/feedback/`
+**API routes:** `app/api/v1/webhooks/`, `app/api/v1/approvals/`, `app/api/v1/orders/`, `app/api/v1/invoices/`, `app/api/v1/master-guardrails/`, `app/api/v1/feedback/`
+**Tables:** `orders`, `invoices`
+
+| Component | Key functions / files | Purpose |
+|-----------|----------------------|---------|
+| Webhook Delivery | `lib/webhooks/delivery.ts`, `lib/webhooks/index.ts` | Outbound event notifications to agent platforms |
+| Webhook Tunnel | `lib/webhook-tunnel/cloudflare.ts`, `provisioning.ts` | Cloudflare tunnel provisioning for webhook endpoints |
+| Guardrails | `lib/guardrails/`, `app/api/v1/master-guardrails/` | Per-transaction limits, category blocking, approval modes |
+| Approvals | `lib/approvals/`, `app/api/v1/approvals/` | Human-in-the-loop approval for agent purchases |
+| Orders | `lib/orders/`, `app/api/v1/orders/` | Order lifecycle and tracking |
+| Feedback | `lib/feedback/aggregate.ts` | Agent feedback aggregation |
+
+**Docs:** `internal_docs/agent-interaction/`
+
+---
+
+## 6. Agent Plugins
+
+Per-platform integrations. Each agent platform (OpenClaw, etc.) gets its own plugin with platform-specific APIs, auth, and packaging.
+
+**Key folders:** `public/Plugins/OpenClaw/`
+
+| Plugin | Key files | Purpose |
+|--------|----------|---------|
+| OpenClaw | `public/Plugins/OpenClaw/src/` — `api.ts`, `index.ts`, `fill-card.ts`, `decrypt.ts` | Plugin for OpenClaw bots — card fill, API integration |
+
+**Docs:** `internal_docs/agent-plugins/`
+
+---
+
+## 7. Platform Management
 
 Auth, bot lifecycle, admin tooling.
 
@@ -134,7 +168,7 @@ Auth, bot lifecycle, admin tooling.
 
 ---
 
-## 6. Multi-tenant Structure
+## 8. Multi-tenant Structure
 
 Single codebase, three tenants, hostname-based routing.
 
@@ -158,7 +192,7 @@ Single codebase, three tenants, hostname-based routing.
 
 ---
 
-## 7. Agent Shops
+## 9. Agent Shops
 
 Merchant storefronts and checkout experiences that agents interact with during purchases.
 
@@ -177,7 +211,7 @@ Merchant storefronts and checkout experiences that agents interact with during p
 
 ---
 
-## 8. Thought Leadership
+## 10. Thought Leadership
 
 Standards and open protocols we define, maintain, and evangelize. Not feature code — but drives product direction and research.
 
@@ -204,11 +238,11 @@ This module owns the research and evolution of these standards. When new protoco
 | `product_listings` | 3. Brands Index | Product data with pgvector embeddings |
 | `category_keywords` | 3. Brands Index | Keyword → taxonomy ID for FTS |
 | `scan_queue` | 1. Shopping Score | Pending/processing/completed scan jobs |
-| `owners` | 5. Platform | User accounts, wallet balances, `signup_tenant` |
-| `bots` | 5. Platform | Registered AI agents |
-| `pairing_codes` | 5. Platform | One-time bot → owner pairing codes |
-| `orders` | 4. Payment Tools | Order lifecycle |
-| `invoices` | 4. Payment Tools | Payment records |
+| `owners` | 7. Platform | User accounts, wallet balances, `signup_tenant` |
+| `bots` | 7. Platform | Registered AI agents |
+| `pairing_codes` | 7. Platform | One-time bot → owner pairing codes |
+| `orders` | 5. Agent Interaction | Order lifecycle |
+| `invoices` | 5. Agent Interaction | Payment records |
 
 ## System Status
 
@@ -218,7 +252,9 @@ This module owns the research and evolution of these standards. When new protoco
 | 2. Agent Shopping Skills | Running — SKILL.md + skill.json generated per scan |
 | 3. Brands Index | Running — recommend API with all 3 stages live |
 | 4. Payment Tools | Partially live — Rail 1, 2, 5, x402, Base Pay, QR, Links live. Rail 4 retired. Stripe Issuing/Connect not built. |
-| 5. Platform Management | Running |
-| 6. Multi-tenant Structure | Running — 3 tenants active |
-| 7. Agent Shops | Running — checkout pages, shops, seller profiles live |
-| 8. Thought Leadership | Active — ASX rubric v2.0.0, SKILL.md spec published |
+| 5. Agent Interaction | Running — webhooks, guardrails, approvals, orders live |
+| 6. Agent Plugins | Partial — OpenClaw plugin exists |
+| 7. Platform Management | Running |
+| 8. Multi-tenant Structure | Running — 3 tenants active |
+| 9. Agent Shops | Running — checkout pages, shops, seller profiles live |
+| 10. Thought Leadership | Active — ASX rubric v2.0.0, SKILL.md spec published |
