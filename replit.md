@@ -1,28 +1,36 @@
-# CreditClaw.com
+# Multi-Tenant Platform — CreditClaw · shopy.sh · brands.sh
 
 ## Overview
-CreditClaw is a prepaid spending controls platform designed for AI agents within the OpenClaw ecosystem. It enables owners to fund bot wallets using their credit cards and enforce strict spending limits (per-transaction, daily, monthly caps, category blocking, approval modes). The platform offers a consumer landing page for immediate sign-up, a waitlist for virtual card issuance, and a dashboard for managing wallets, transactions, and spending controls. Its core purpose is to provide a secure and controlled financial environment for AI agents, focusing on a prepaid model. It also supports bots receiving payments via links and features a "Split-Knowledge Card Model" for enhanced transaction privacy. The project aims to become the leading financial control and payment solution for AI agents.
+One codebase, three tenants. The infrastructure layer for AI-powered commerce:
 
-## Brand Guide
-See `docs/brand.md` for the full brand identity reference — covers color palette, typography, UI design system, and form validation patterns. All new UI work should align with the styles and CSS classes documented there.
+- **CreditClaw** (`creditclaw.com`) — Financial rails for AI agents. Wallet funding, virtual card issuance, spending controls, approval workflows. Agents can't hold bank accounts — CreditClaw bridges that gap.
+- **shopy.sh** — Consumer-facing ASX Score scanner and leaderboard. Measures how "agent-friendly" a merchant's website is (0–100). Free scans drive catalog growth.
+- **brands.sh** — Developer-facing skill registry. Hosts SKILL.md files that teach agents how to shop at specific stores.
 
-## Dashboard Overview Page
-The `/overview` page includes:
-- **Approvals section** (above cards, only shown if approvals exist): Shows up to 5 recent approvals using `ApprovalList` with `showRailBadge`. Has a "See all" link to `/transactions`. Approve/reject actions work in-place.
-- **Cards & Wallets section** (below "My Bots") with per-card titles ("Agent Wallet" / "My Card") and info tooltips matching sidebar descriptions. Shows:
-- **Privy Wallet (Rail 1)**: Full interactive `CryptoWalletItem` with action bar (Fund, Freeze, Guardrails, Activity → navigates to `/stripe-wallet`)
-- **Rail 5 Sub-Agent Card**: Full interactive `CreditCardItem` with action bar. If no card exists, shows placeholder `CardVisual` with semi-transparent overlay and "Add Your Card" button that opens `Rail5SetupWizard` in-place.
-- Uses separate hook instances for each rail: `useWalletActions`, `useBotLinking`, `useGuardrails` (Rail 1 only), `useTransfer` (Rail 1 only)
-- All required dialogs (GuardrailDialog, LinkBotDialog, UnlinkBotDialog, TransferDialog, FundWalletSheet, FreezeDialog, Rail5SetupWizard) are rendered on the overview page
+Tenants share the same database, codebase, and deployment. Routing is hostname-based via middleware. See `project_knowledge/_README.md` for full architecture and internal docs.
 
-## User Preferences
-- **Design theme:** "Fun Consumer" — 3D clay/claymation aesthetic, coral lobster mascot, bright pastels (orange/blue/purple)
-- **Font:** Plus Jakarta Sans
-- **Border radius:** 1rem rounded corners
-- **Framework:** Next.js 16 with App Router only
-- **No framer-motion** (lightweight build)
-- **No Vite, no standalone React** — everything runs through Next.js
+## Tenant Theming
+Each tenant has its own config at `public/tenants/{tenantId}/config.json` (source of truth) and `lib/tenants/tenant-configs.ts` (client bundle). Configs define branding, meta tags, theme tokens, routes, features, and tracking.
+
+- **CreditClaw** — "Fun Consumer" theme: 3D clay/claymation aesthetic, coral lobster mascot, bright pastels (orange/blue/purple), Plus Jakarta Sans, 1rem rounded corners
+- **shopy.sh** — Monospace section labels, no rounded corners on cards, no shadows, `gap-px bg-neutral-200` grid dividers, dark sections, green accent in terminal contexts
+- **brands.sh** — Skill-registry framing, shared label maps from `lib/procurement-skills/taxonomy/`
+
+When building UI, check which tenant(s) the feature applies to and follow the appropriate design language.
+
+## Project Conventions
+- **Framework:** Next.js 16 with App Router only. No Vite, no standalone React.
+- **No framer-motion** — lightweight build
 - All interactive components marked with `"use client"` directive
+- **Font:** Plus Jakarta Sans (CreditClaw tenant)
+
+## Development Principles
+
+**Separation of concerns** — each file, function, and module should have one clear responsibility. If a file is doing two unrelated things, split it. Cross-cutting logic (guardrails, approvals, webhooks) lives in its own `lib/{feature}/` folder and should not contain rail-specific business logic.
+
+**Finish what you start** — when you're in context on a feature, complete it fully. Don't leave partial implementations with "we can finish this later" — that context is expensive to rebuild. Wire up the API, the storage, the UI, the error handling, and the edge cases in the same session. A feature that's 90% done is 0% shippable.
+
+**Descriptive file and variable names** — always lean towards longer, more descriptive names over short generic ones. `dashboard-overview.md` not `overview.md`. `evaluateCardGuardrails()` not `evaluate()`. `brand-versioning-technical-plan.md` not `plan.md`. Generic names are hard to search, hard to distinguish, and hard to maintain.
 
 ## Modularization Guidelines
 
