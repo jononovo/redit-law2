@@ -1,0 +1,27 @@
+{
+  "name": "shopy",
+  "version": "0.0.1",
+  "description": "Install shopping skills for AI agents. The CLI for shopy.sh — the open standard for agentic commerce.",
+  "bin": {
+    "shopy": "./bin/index.js"
+  },
+  "keywords": [
+    "ai",
+    "agents",
+    "shopping",
+    "commerce",
+    "agentic",
+    "skills",
+    "cli"
+  ],
+  "author": "shopy.sh",
+  "license": "MIT",
+  "homepage": "https://shopy.sh",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/shopysh/cli"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
