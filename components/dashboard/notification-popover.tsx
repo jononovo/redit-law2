@@ -29,12 +29,8 @@ function typeIcon(type: string) {
       return "⚠️";
     case "suspicious":
       return "🚨";
-    case "topup_completed":
-      return "💰";
     case "wallet_activated":
       return "🎉";
-    case "topup_request":
-      return "📩";
     default:
       return "🔔";
   }

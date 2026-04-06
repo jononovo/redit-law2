@@ -24,8 +24,8 @@ export const GET = withBotApi("/api/v1/bot/wallet/check", async (_request, { bot
 
   const monthlySpent = await storage.getMonthlySpend(wallet.id);
 
-  const rail5Cards = await storage.getRail5CardsByBotId(bot.botId);
-  const activeCard = rail5Cards.find(c => c.status === "active");
+  const rail5Card = await storage.getRail5CardByBotId(bot.botId);
+  const activeCard = rail5Card?.status === "active" ? rail5Card : null;
 
   let spendingLimits;
   if (activeCard) {
