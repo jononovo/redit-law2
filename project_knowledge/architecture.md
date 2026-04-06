@@ -160,6 +160,7 @@ Auth, bot lifecycle, admin tooling.
 | Bot Management | `lib/agent-management/` | Bot registration, claim tokens, bot-owner linking |
 | Pairing | `app/api/v1/pairing-codes/` | One-time codes for bot → owner pairing |
 | Feature Flags | `lib/feature-flags/` | Runtime feature toggles |
+| Feedback & Support | `lib/feedback/aggregate.ts`, `app/api/v1/feedback/` | In-app feedback/support widget and aggregation |
 | Admin | `app/admin123/`, `app/api/v1/admin/` | Internal admin dashboard and APIs |
 
 **Docs:** `internal_docs/07-platform-management/`
