@@ -5,7 +5,7 @@ description: How the multi-tenant system works. Domain resolution, config loadin
 
 # Multi-Tenant System
 
-Three tenants — **CreditClaw** (`creditclaw`), **shopy.sh** (`shopy`), **brands.sh** (`brands`) — share one Next.js codebase, one database, one deployment. Middleware resolves the tenant from the request domain, and the entire app adapts: landing page, nav, footer, theme, routes, feature flags, meta tags.
+Three tenants — **CreditClaw** (`creditclaw`), **shopy.sh** (`shopy`), **brands.sh** (`brands`) — share one Next.js codebase, one database, one deployment. Middleware resolves the tenant from the request domain, and the entire app adapts: landing page, nav, footer, theme, routes, meta tags.
 
 ## Tenant Resolution
 
@@ -47,7 +47,6 @@ Two sources of truth (must stay in sync):
 - `meta` — title, description, ogImage, twitterImage, url
 - `theme` — primaryColor, primaryForeground, accentColor, secondaryColor (HSL strings without `hsl()` wrapper)
 - `routes` — `guestLanding` (key used to select which landing component to import on `/`), `authLanding` (post-login redirect target)
-- `features` — `Record<string, boolean>` feature flags
 - `navigation` — header config + footer config (see sections below)
 - `tracking` — optional `gaId`
 - `pricing` — optional pricing page config (headline, plans, credits)
@@ -126,18 +125,6 @@ All footers share: `bg-neutral-900` background, Privacy Policy + Terms links, co
 **brands.sh footer columns:**
 - Catalog: Browse Skills, Sectors, How It Works
 - Developers: API Reference, SKILL.md Standard, CLI
-
-## Feature Flags
-
-`tenant.features` — flags defined in config but **not yet consumed at runtime** (no code currently reads `tenant.features`). Intended for future conditional rendering of tenant-specific UI modules.
-
-| Flag | creditclaw | shopy | brands |
-|------|-----------|-------|--------|
-| `showScanner` | — | `true` | — |
-| `showCatalog` | — | — | `true` |
-| `showStandard` | — | `true` | — |
-| `showGuide` | — | `true` | — |
-| `showLeaderboard` | — | — | `true` |
 
 ## Route-Level Separation
 

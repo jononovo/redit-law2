@@ -100,10 +100,6 @@ If any drift, the tenant resolves incorrectly or loads stale config. A build-tim
 
 Keep configs lean — large data blobs in `config.json` inflate the HTML payload.
 
-### Feature flags are unchecked strings
-
-`features` in `config.json` is `Record<string, boolean>` with no validation. Typos fail silently.
-
 ### Tenant router pages must register every tenant
 
 Both `app/page.tsx` and `app/how-it-works/page.tsx` have hardcoded component maps. Forget to register a new tenant → falls back to CreditClaw.
@@ -116,7 +112,6 @@ Both `app/page.tsx` and `app/how-it-works/page.tsx` have hardcoded component map
 - **Build-time config generation** — eliminate three-way sync risk
 
 ### Medium-term
-- **Tenant-scoped feature flags** — validated keys, runtime overrides
 - **Tenant-aware email templates** — signup/notification emails with tenant branding
 
 ### Longer-term

@@ -183,7 +183,6 @@ Single codebase, three tenants, hostname-based routing.
 | Client Hook | `useTenant()` — client-side only | Provides tenant context to React components |
 | Theming | Per-tenant theme tokens | Colors, typography, landing page content |
 | Landing Pages | Per-tenant in `app/` | Each tenant has its own landing/onboarding flow |
-| Feature Flags | Tenant-scoped flags | Controls which features are visible per tenant |
 
 **Tenants:**
 - **CreditClaw** (`creditclaw.com`) — financial rails for AI agents

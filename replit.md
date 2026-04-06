@@ -660,7 +660,7 @@ Vitest-based automated test suite. Run with `npx vitest run`. Config in `vitest.
 
 ### Multitenant Architecture
 The app supports multiple tenants (CreditClaw, shopy.sh, brands.sh) via hostname-based routing:
-- **Tenant configs**: `public/tenants/{tenantId}/config.json` — branding, meta, theme, routes, features, tracking (source of truth). Also mirrored in `lib/tenants/tenant-configs.ts` as static imports for client-side use.
+- **Tenant configs**: `public/tenants/{tenantId}/config.json` — branding, meta, theme, routes, navigation, tracking (source of truth). Also mirrored in `lib/tenants/tenant-configs.ts` as static imports for client-side use.
 - **Types**: `lib/tenants/types.ts` — `TenantConfig` interface
 - **Config loader (server)**: `lib/tenants/config.ts` — `getTenantConfig()` with caching (uses filesystem, server-only)
 - **Config loader (client)**: `lib/tenants/tenant-configs.ts` — `getStaticTenantConfig()` + `TENANT_THEMES` (bundled statically, no fs dependency)

@@ -32,13 +32,6 @@
     "authLanding": "/overview"
   },
 
-  "features": {
-    "showScanner": true,
-    "showCatalog": false,
-    "showStandard": true,
-    "showGuide": true
-  },
-
   "navigation": {
     "header": {
       "variant": "light",
