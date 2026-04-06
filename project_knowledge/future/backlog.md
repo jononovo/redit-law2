@@ -12,6 +12,12 @@ date: 2026-04-06
 
 - **Drizzle folder has lots of files - are they necessary?** — there's a ton of files in there that are really big and I think might just be part of like some one time use but if they're not, and if they're important, then we can keep them. Here's an example: drizzle/0009_replace_readiness_with_asx_score.sql
 
+- ** is this folder necessary in this file: .agents ** - it looks like this was randomly built by someone for some purpose, but I'm not sure what. 
+And we've only one micro file in it pointing to another file I'm very suspicious. 
+What is this folder normally used for? Research online. Then we'll figure out what it should be used for and if we should keep it change it or remove it.
+
+-  ** next task...
+
 ## Unbuilt Features
 
 - **Skill distribution Phase 2** — pending front matter discussion
