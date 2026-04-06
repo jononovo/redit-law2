@@ -255,6 +255,20 @@ Remove all documentation references to the dead payment-links, topup-request, an
 29. Confirmed `server/storage/index.ts` line 4 imports from `payment-links.ts` and line 34 spreads `paymentLinkMethods` — since file is now edited (not deleted), the import/spread stays, just points to the trimmed file.
 30. Confirmed `server/storage/types.ts` has pairing code signatures (lines 116-119) and waitlist signatures (lines 121-122) that must be preserved.
 
+### Round 5 — Phase A execution simulation (tracing resulting code):
+31. **Verified overview/page.tsx removal safety**: `fundOpen`/`setFundOpen` only referenced at lines 62, 285, 472, 473 — all within the dead Add Funds card and FundModal render. No other code uses them. `Wallet` icon confirmed still needed at line 399 (empty wallet state) — must NOT be removed from lucide-react import line 11.
+32. **Verified all 3 Zod schemas + 2 table definitions + 4 type exports in schema.ts only imported by dead files** (being deleted) or dead storage (being edited). No live code imports any of them.
+33. **Schema.ts adjacency risk identified and documented**: When removing `fundWalletRequestSchema` (lines 196-199) and `topupRequestSchema` (lines 208-211), the LIVE `claimBotRequestSchema` (lines 192-194, used by `bots/claim/route.ts`) and `purchaseRequestSchema` (lines 201-206, currently unused but not dead enough to remove) sit between them. Must remove by exact block, not line range. Similarly, `waitlistEmailSchema` (lines 250-253, used by `waitlist/route.ts`) sits right before `createPaymentLinkSchema` (lines 255-259). Must not clip it.
+34. **Verified `chargeCustomer` only imported by dead `fund/route.ts`** (line 3). No other file imports it.
+35. **Verified `notifyTopupCompleted` only imported by dead `fund/route.ts`** (line 7), `notifyPaymentReceived` only imported by dead `webhooks/stripe/route.ts` (line 6), `sendTopupRequestEmail` only imported by dead `topup-request/route.ts` (line 5). All importers being deleted.
+36. **Verified `payment-links.ts` drizzle-orm import cleanup needed**: After removing payment-link methods, `desc` and `inArray` become unused (only used by the dead methods). Remaining pairing/waitlist methods only use `eq`, `and`, `sql`, `gte`. Must trim import to avoid TypeScript warnings.
+37. **Verified `payment-links.ts` Pick type update**: After removing 7 payment-link method names from the Pick, it picks only 6 pairing/waitlist methods. The `paymentLinkMethods` export name becomes misleading but functionally correct — can rename to `pairingAndWaitlistMethods` for clarity.
+38. **Verified `addWaitlistEntry` uses `this.getWaitlistEntryByEmail(...)` (line 131)** — `this` works because it refers to the exported const object, and `getWaitlistEntryByEmail` remains on that object after the edit.
+39. **Verified `IStorage` interface will still be fully satisfied**: After removing 7 payment-link signatures + `createTopupRequest` from IStorage, and removing those same 8 implementations from the storage files, the spread in `index.ts` still provides all required methods.
+40. **Verified both `payment_links` and `topup_requests` tables are empty** (0 rows each via SQL query). `drizzle-kit push --force` will safely drop them.
+41. **Verified drizzle migration snapshots**: `drizzle/0000_late_giant_girl.sql` references these tables but is immutable history. Not touched.
+42. **Verified `core.ts` import cleanup**: Line 3 has `topupRequests` table import and line 9 has `type TopupRequest, type InsertTopupRequest` — both removed cleanly without affecting surrounding imports (`bots, wallets, transactions, paymentMethods, apiAccessLogs` on same line stay).
+
 ---
 
 ## Files Summary
