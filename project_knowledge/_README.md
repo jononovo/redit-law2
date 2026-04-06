@@ -9,8 +9,9 @@ description: Navigation guide for project_knowledge/. Start here if you're new.
 
 1. **`vision.md`** — what we're building and why
 2. **`architecture.md`** — system overview, all components, current status
-3. **`internal_docs/` subfolder for your task** — dive into the relevant feature area
-4. **`how-to-write-docs-guide.md`** — only if you're writing or updating docs
+3. **`tenants_vision/`** — per-tenant vision and context docs
+4. **`internal_docs/` subfolder for your task** — dive into the relevant feature area
+5. **`_how-to-write-docs-guide.md`** — only if you're writing or updating docs
 
 ## Structure
 
@@ -25,12 +26,8 @@ description: Navigation guide for project_knowledge/. Start here if you're new.
 | File | Purpose |
 |------|---------|
 | `vision.md` | Overall product vision — all three tenants (Tier 3 protected) |
-| `architecture.md` | System components, data flow, status |
-| `creditclaw-vision.md` | CreditClaw-specific goal and direction (Tier 3 protected) |
-| `creditclaw-context.md` | Ecosystem, competition, technology (OpenClaw, skills, x402) |
-| `shopy-vision.md` | shopy.sh + brands.sh combined goal and direction (Tier 3 protected) |
-| `shopy-context.md` | Standards landscape (ACP, UCP, Google Taxonomy, MCP) |
-| `how-to-write-docs-guide.md` | How to write and update docs in this folder |
+| `architecture.md` | System components, data flow, status, future plans |
+| `_how-to-write-docs-guide.md` | How to write and update docs in this folder |
 
 ## Folders
 
@@ -39,8 +36,8 @@ Ten modules — each maps to a section in `architecture.md` and a folder under `
 | Folder | Module | Covers |
 |--------|--------|--------|
 | `internal_docs/01-agentic-shopping-score/` | 1. Agentic Shopping Score | Scan engine, scoring rubric, scan queue, maturity |
-| `internal_docs/02-agent-shopping-skills/` | 2. Agent Shopping Skills | SKILL.md generation, skill.json, registry API |
-| `internal_docs/03-brands-index/` | 3. Brands Index | Brand catalog, recommend API, product search, categories |
+| `internal_docs/02-agent-shopping-skills/` | 2. Agent Shopping Skills | SKILL.md generation, skill.json, registry API, recommend API pipeline |
+| `internal_docs/03-brands-index/` | 3. Brands Index | Brand catalog, taxonomy, catalog UI, brand claims |
 | `internal_docs/04-payment-tools/` | 4. Payment Tools | Wallets, outbound payment rails (funding + spending) |
 | `internal_docs/05-agent-interaction/` | 5. Agent Interaction | Webhooks, polling, approvals, guardrails, orders |
 | `internal_docs/06-agent-plugins/` | 6. Agent Plugins | Per-platform plugins (OpenClaw, etc.), browser extension |
@@ -53,7 +50,8 @@ Other folders:
 
 | Folder | Purpose |
 |--------|---------|
+| `tenants_vision/` | Per-tenant vision and context — `creditclaw-vision.md`, `creditclaw-context.md`, `shopy-vision.md`, `shopy-context.md` (Tier 3 protected) |
 | `currently_building/` | Active build cycle — scratch research, build notes, in-progress work |
-| `future/` | Ideas, rough plans, strategy docs not yet tied to a build cycle |
+| `future/` | Ideas, rough plans, strategy docs not yet tied to a build cycle — backlog, bugs, CLI plan, premium scan, brand versioning |
 
 `currently_building/` is the working bench. Gets cleaned out every 1-2 weeks — finished docs move to `internal_docs/`, stale ones get deleted.

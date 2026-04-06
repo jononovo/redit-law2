@@ -45,10 +45,10 @@ Evaluates a domain's AI-readiness. Outputs a 0–100 score across three pillars:
 
 ## 2. Agent Shopping Skills per Brand
 
-Generates machine-readable and LLM-readable instructions for how an agent should shop at a specific store.
+Generates machine-readable and LLM-readable instructions for how an agent should shop at a specific store. Also owns the Recommend API — the merchant discovery pipeline that agents call to find where to buy.
 
-**Key folders:** `lib/procurement-skills/`
-**API routes:** `app/api/v1/registry/`, `app/api/v1/vendors/`
+**Key folders:** `lib/procurement-skills/`, `lib/embeddings/`
+**API routes:** `app/api/v1/registry/`, `app/api/v1/vendors/`, `app/api/v1/recommend/`
 
 | Component | Key functions / files | Purpose |
 |-----------|----------------------|---------|
@@ -56,33 +56,35 @@ Generates machine-readable and LLM-readable instructions for how an agent should
 | skill.json Builder | `buildSkillJson()` | Machine-readable JSON — taxonomy links, access tiers, score breakdowns |
 | Registry API | `/api/v1/registry` routes | List, search, fetch skills programmatically |
 | Taxonomy Mapping | `taxonomy.ts` | Maps brands to Google Product Taxonomy for skill metadata |
-
-**Docs:** `internal_docs/02-agent-shopping-skills/`
-
----
-
-## 3. Brands Index for Agentic Shopping
-
-Central catalog. Powers sector pages, registry, and the recommend API that agents call to find merchants.
-
-**Key folders:** `lib/catalog/`, `lib/embeddings/`, `lib/brand-claims/`
-**API routes:** `app/api/v1/recommend/`, `app/api/v1/brands/`
-**Tables:** `brand_index`, `brand_categories`, `product_listings`, `category_keywords`, `brand_claims`
-
-| Component | Key functions / files | Purpose |
-|-----------|----------------------|---------|
-| Brand Index | `brand_index` table, `LITE_COLUMNS` projection | One row per domain. Central source for all catalog views |
 | Recommend API | `app/api/v1/recommend/route.ts` | Three-stage merchant discovery for agents (see below) |
 | Product Search | `lib/embeddings/`, `product_listings` table | pgvector cosine similarity search, lateral join by brand |
-| Brand Claims | `lib/brand-claims/`, `brand_claims` table | Ownership claims linking brands to user accounts |
-| Category Keywords | `category_keywords` table | Keyword → taxonomy ID mapping for full-text search |
 
 **Recommend API stages:**
 1. **Category Resolution** — Perplexity Sonar extracts intent → Postgres FTS against `category_keywords` → top 5 categories
 2. **Merchant Ranking** — recursive SQL over `brand_index` + `brand_categories` → ranked by brand match → match depth → ASX score
 3. **Product Search** — embedding vector → pgvector cosine similarity against `product_listings` → top 3 per merchant
 
-**Docs:** `internal_docs/03-brands-index/`
+**Docs:** `internal_docs/02-agent-shopping-skills/` — skill generation, merchant-index pipeline, research folder
+
+---
+
+## 3. Brands Index for Agentic Shopping
+
+Central catalog and storage layer. Owns the `brand_index` table, catalog UI, taxonomy system, and brand claims. The Recommend API (Module 2) queries this data but is documented and maintained there.
+
+**Key folders:** `lib/catalog/`, `lib/brand-claims/`
+**API routes:** `app/api/v1/brands/`
+**Tables:** `brand_index`, `brand_categories`, `product_listings`, `category_keywords`, `brand_claims`
+
+| Component | Key functions / files | Purpose |
+|-----------|----------------------|---------|
+| Brand Index | `brand_index` table, `LITE_COLUMNS` projection | One row per domain. Central source for all catalog views |
+| Catalog UI | `/skills`, `/skills/[vendor]`, `/c/[sector]` | Public browsing pages for the brand registry |
+| Brand Claims | `lib/brand-claims/`, `brand_claims` table | Ownership claims linking brands to user accounts |
+| Category Keywords | `category_keywords` table | Keyword → taxonomy ID mapping for full-text search |
+| Taxonomy | 28 sectors, 7 tiers, 8 capabilities, 5,638 product categories | Classification system for all brands |
+
+**Docs:** `internal_docs/03-brands-index/` — brand_index structure, taxonomy system, research folder
 
 ---
 
@@ -267,3 +269,18 @@ This module owns the research and evolution of these standards. When new protoco
 | 8. Multi-tenant Structure | Running — 3 tenants active |
 | 9. Agent Shops | Running — checkout pages, shops, seller profiles, x402/Base Pay/QR Pay/Payment Links live |
 | 10. Thought Leadership | Active — ASX rubric v2.0.0, SKILL.md spec published |
+
+---
+
+## Future Plans
+
+The `project_knowledge/future/` folder contains strategy docs and plans not yet tied to an active build cycle:
+
+| File / Folder | What it covers |
+|---------------|----------------|
+| `backlog.md` | Prioritized feature backlog |
+| `bugs.md` | Known issues and bugs |
+| `shopy-cli.md` | CLI tool plan for shopy.sh |
+| `scan-history-plan.md` | Scan history and re-scan tracking |
+| `brand-versioning-technical-plan.md` | Version control for brand_index changes |
+| `premium-scan/` | Premium scan tier design docs |
