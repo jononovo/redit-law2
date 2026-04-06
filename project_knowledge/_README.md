@@ -13,13 +13,21 @@ description: Navigation guide for project_knowledge/. Start here if you're new.
 4. **`internal_docs/` subfolder for your task** — dive into the relevant feature area
 5. **`_how-to-write-docs-guide.md`** — only if you're writing or updating docs
 
+## How to navigate a subfolder
+
+1. **Read `_README.md`** if present — it gives context on the module and lists key code paths
+2. **Scan frontmatter** of every `.md` file in the folder — each has `name` and `description` in YAML frontmatter, so you can find the right doc without reading full files
+3. **Read the relevant doc** for the work you're doing
+4. **Check `_research/`** if you need deeper context — contains dated analysis docs, decision reasoning, and industry research that informed the feature
+
+Not every subfolder has a `_README.md` or `_research/` folder — but when they exist, use them.
+
 ## Structure
 
 - Root-level files are entry points (vision, architecture, guide)
 - `currently_building/` is the active working bench
 - `internal_docs/` contains permanent feature documentation organized by area
-- Every file has YAML frontmatter with `name` and `description` — scan frontmatter to find the right doc
-- Subfolders inside `internal_docs/` can contain a `research/` folder with dated analysis docs
+- `_completed/` subfolders hold archived plans that have been built
 
 ## Root files
 
