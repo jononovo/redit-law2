@@ -12,12 +12,12 @@ description: Technical overview of all ten modules. Read after vision.md. Maps e
 | 1 | Agentic Shopping Score | Scan engine, scoring rubric, scan queue |
 | 2 | Agent Shopping Skills per Brand | SKILL.md generation, skill.json, registry API |
 | 3 | Brands Index for Agentic Shopping | `brand_index`, recommend API, product vector search, categories |
-| 4 | Payment Tools for Agents | Wallets, all payment rails |
+| 4 | Payment Tools for Agents | Wallets, outbound payment rails (funding + spending) |
 | 5 | Agent Interaction | Webhooks, polling, approvals, guardrails, orders, agent communication patterns |
 | 6 | Agent Plugins | Per-platform plugins (OpenClaw, etc.), browser extension |
 | 7 | Platform Management | Auth, bot lifecycle, pairing, feature flags, admin |
 | 8 | Multi-tenant Structure | Tenant routing, onboarding, landing pages, per-tenant theming |
-| 9 | Agent Shops | Checkout pages, shop storefronts, seller profiles, procurement controls |
+| 9 | Agent Shops | Checkout pages, shop storefronts, seller profiles, procurement controls, inbound payment methods |
 | 10 | Thought Leadership | Standards we define and maintain (ASX rubric, SKILL.md spec, open brands index) |
 
 ---
@@ -88,26 +88,24 @@ Central catalog. Powers sector pages, registry, and the recommend API that agent
 
 ## 4. Payment Tools for Agents
 
-Financial rails only — wallets and payment methods. Spending controls and order lifecycle are in Module 5 (Agent Interaction).
+Outbound financial rails — how users fund wallets and how their agents spend money at external merchants. Inbound payment methods (how shoppers pay at our checkouts) are in Module 9 (Agent Shops).
 
-**Key folders:** `lib/payments/`, `lib/x402/`, `lib/base-pay/`, `lib/crypto-onramp/`, `lib/qr-pay/`, `lib/card/`, `lib/rail1/`, `lib/rail2/`, `lib/rail4/`, `lib/rail5/`, `lib/obfuscation-engine/`, `lib/obfuscation-merchants/`
-**API routes:** `app/api/v1/wallet/`, `app/api/v1/wallets/`, `app/api/v1/stripe-wallet/`, `app/api/v1/card-wallet/`, `app/api/v1/billing/`, `app/api/v1/base-pay/`, `app/api/v1/qr-pay/`, `app/api/v1/rail4/`, `app/api/v1/rail5/`, `app/api/v1/payment-links/`, `app/api/v1/cards/`
+**Key folders:** `lib/payments/`, `lib/rail1/`, `lib/rail2/`, `lib/rail4/`, `lib/rail5/`, `lib/crypto-onramp/`, `lib/card/`, `lib/obfuscation-engine/`, `lib/obfuscation-merchants/`
+**API routes:** `app/api/v1/wallet/`, `app/api/v1/wallets/`, `app/api/v1/stripe-wallet/`, `app/api/v1/card-wallet/`, `app/api/v1/billing/`, `app/api/v1/rail4/`, `app/api/v1/rail5/`, `app/api/v1/cards/`
 **Tables:** `owners` (wallet balances)
 
 | Rail | Method | Implementation | Status |
 |------|--------|---------------|--------|
 | Rail 1 | Stripe Crypto Onramp | `lib/rail1/`, `lib/crypto-onramp/` — Privy server wallets on Base, fiat → USDC | Live |
-| Rail 2 | Card Wallet | `lib/rail2/`, `lib/card/` — Stripe SetupIntents, card-linked wallets | Live |
+| Rail 2 | Crossmint Wallet | `lib/rail2/` — Crossmint API for wallet creation, balance, transfers, onramp | Live |
 | Rail 4 | Obfuscated Self-Hosted Cards | `lib/rail4/`, `lib/obfuscation-engine/` — retired, still in codebase | Retired |
 | Rail 5 | Direct Wallet Debit | `lib/rail5/` — atomic balance deduction at purchase time | Live |
-| x402 | Agent Pay | `lib/x402/` — HTTP 402, EIP-3009/EIP-712 signatures on Base (USDC) | Live |
-| Base Pay | One-tap USDC | `lib/base-pay/` — direct Base wallet payment | Live |
-| QR Pay | QR Code USDC | `lib/qr-pay/` — direct USDC transfer via QR | Live |
-| Payment Links | Stripe Checkout | `app/api/v1/payment-links/` — bots generate Stripe Checkout URLs | Live |
 
 | Component | Key functions / files | Purpose |
 |-----------|----------------------|---------|
 | Payment Methods Registry | `lib/payments/methods.ts` | Central definition of all supported payment methods |
+| Wallet Funding | `app/api/v1/stripe-wallet/onramp/` | Fiat → USDC via Stripe Onramp |
+| x402 Signing (outbound) | `app/api/v1/stripe-wallet/bot/sign` | Our agents sign x402 payments to pay external services |
 
 **Docs:** `internal_docs/payment/`
 
@@ -194,10 +192,10 @@ Single codebase, three tenants, hostname-based routing.
 
 ## 9. Agent Shops
 
-Merchant storefronts and checkout experiences that agents interact with during purchases.
+Merchant storefronts, checkout experiences, and inbound payment methods — how the world pays our merchants.
 
-**Key folders:** `lib/procurement/`, `lib/procurement-controls/`, `lib/shipping/`
-**API routes:** `app/api/v1/checkout/`, `app/api/v1/checkout-pages/`, `app/api/v1/shop/`, `app/api/v1/seller-profile/`, `app/api/v1/procurement-controls/`, `app/api/v1/sales/`, `app/api/v1/merchant-accounts/`, `app/api/v1/shipping-addresses/`
+**Key folders:** `lib/procurement/`, `lib/procurement-controls/`, `lib/shipping/`, `lib/x402/`, `lib/base-pay/`, `lib/qr-pay/`
+**API routes:** `app/api/v1/checkout/`, `app/api/v1/checkout-pages/`, `app/api/v1/shop/`, `app/api/v1/seller-profile/`, `app/api/v1/procurement-controls/`, `app/api/v1/sales/`, `app/api/v1/merchant-accounts/`, `app/api/v1/shipping-addresses/`, `app/api/v1/base-pay/`, `app/api/v1/qr-pay/`, `app/api/v1/payment-links/`
 
 | Component | Key functions / files | Purpose |
 |-----------|----------------------|---------|
@@ -206,6 +204,15 @@ Merchant storefronts and checkout experiences that agents interact with during p
 | Seller Profiles | `app/api/v1/seller-profile/` | Merchant profile management |
 | Procurement Controls | `lib/procurement-controls/evaluate.ts` | Allow/blocklists, merchant evaluation for agent purchases |
 | Shipping | `lib/shipping/` | Shipping address management and validation |
+
+**Inbound payment methods** (how shoppers/agents pay at our checkouts):
+
+| Method | Implementation | Purpose |
+|--------|---------------|---------|
+| x402 (receive) | `lib/x402/receive.ts`, `lib/x402/checkout.ts`, `app/api/v1/checkout/[id]/pay/x402/` | Autonomous agent payments via HTTP 402 |
+| Base Pay | `lib/base-pay/verify.ts`, `lib/base-pay/sale.ts`, `app/api/v1/checkout/[id]/pay/base-pay/` | One-tap USDC from Base wallet |
+| QR Pay | `lib/qr-pay/eip681.ts`, `app/api/v1/qr-pay/` | USDC transfer via QR code (EIP-681) |
+| Payment Links | `app/api/v1/payment-links/`, `app/api/v1/bot/payments/create-link/` | Bot-generated Stripe Checkout URLs |
 
 **Docs:** `internal_docs/agent-shops/`
 
@@ -251,10 +258,10 @@ This module owns the research and evolution of these standards. When new protoco
 | 1. Agentic Shopping Score | Running — scan engine, queue, maturity promotion all live |
 | 2. Agent Shopping Skills | Running — SKILL.md + skill.json generated per scan |
 | 3. Brands Index | Running — recommend API with all 3 stages live |
-| 4. Payment Tools | Partially live — Rail 1, 2, 5, x402, Base Pay, QR, Links live. Rail 4 retired. Stripe Issuing/Connect not built. |
+| 4. Payment Tools | Partially live — Rail 1, 2, 5 live. Rail 4 retired. Stripe Issuing/Connect not built. |
 | 5. Agent Interaction | Running — webhooks, guardrails, approvals, orders live |
 | 6. Agent Plugins | Partial — OpenClaw plugin exists |
 | 7. Platform Management | Running |
 | 8. Multi-tenant Structure | Running — 3 tenants active |
-| 9. Agent Shops | Running — checkout pages, shops, seller profiles live |
+| 9. Agent Shops | Running — checkout pages, shops, seller profiles, x402/Base Pay/QR Pay/Payment Links live |
 | 10. Thought Leadership | Active — ASX rubric v2.0.0, SKILL.md spec published |
