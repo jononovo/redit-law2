@@ -24,8 +24,12 @@ description: Navigation guide for project_knowledge/. Start here if you're new.
 
 | File | Purpose |
 |------|---------|
-| `vision.md` | Product purpose and direction (Tier 3 protected) |
+| `vision.md` | Overall product vision — all three tenants (Tier 3 protected) |
 | `architecture.md` | System components, data flow, status |
+| `creditclaw-vision.md` | CreditClaw-specific goal and direction (Tier 3 protected) |
+| `creditclaw-context.md` | Ecosystem, competition, technology (OpenClaw, skills, x402) |
+| `shopy-vision.md` | shopy.sh + brands.sh combined goal and direction (Tier 3 protected) |
+| `shopy-context.md` | Standards landscape (ACP, UCP, Google Taxonomy, MCP) |
 | `how-to-write-docs-guide.md` | How to write and update docs in this folder |
 
 ## Folders
