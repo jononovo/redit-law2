@@ -14,8 +14,8 @@ export const GET = withBotApi("/api/v1/bot/wallet/spending", async (_request, { 
 
   const masterGuardrails = bot.ownerUid ? await storage.getMasterGuardrails(bot.ownerUid) : null;
 
-  const rail5Cards = await storage.getRail5CardsByBotId(bot.botId);
-  const activeCard = rail5Cards.find(c => c.status === "active");
+  const rail5Card = await storage.getRail5CardByBotId(bot.botId);
+  const activeCard = rail5Card?.status === "active" ? rail5Card : null;
 
   let guardrailData;
   if (activeCard) {

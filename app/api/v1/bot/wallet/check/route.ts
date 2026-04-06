@@ -52,6 +52,5 @@ export const GET = withBotApi("/api/v1/bot/wallet/check", async (_request, { bot
     balance_usd: wallet.balanceCents / 100,
     card_status: wallet.balanceCents > 0 ? "active" : "empty",
     spending_limits: spendingLimits,
-    pending_topups: 0,
   });
 });
