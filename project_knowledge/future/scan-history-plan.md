@@ -1,11 +1,16 @@
 ---
 name: "Plan: Scan History"
-description: Append-only log of every scan to track score changes over time. Not yet built. Read this before implementing the scan history feature.
+description: Append-only log of every scan to track score changes over time. Not yet built.
+date: 2026-04-06
 ---
 
 # Plan: Scan History
 
-**Status:** Not built. Schema designed, implementation pending.
+**Status:** Not built. Zero implementation exists — no table in schema, no storage method, no API endpoint.
+
+**Also tracked in:** `premium-scan/outstanding.md` — scan history is a prerequisite for premium scan (score comparison needs version history).
+
+**Relationship to brand versioning:** `future/brand-versioning-technical-plan.md` proposes `brand_versions` + `brand_version_files` tables which overlap with this. If brand versioning is built first, scan history may be absorbed into it rather than being a separate table. Decide before building.
 
 Simple append-only log of every scan. Tracks score changes over time and preserves previous SKILL.md / skill.json content for reference.
 
