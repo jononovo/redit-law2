@@ -1,6 +1,6 @@
 import { storage } from "@/server/storage";
 import { db } from "@/server/db";
-import { scanQueue } from "@/shared/schema";
+import { scanQueue, brandIndex } from "@/shared/schema";
 import { eq, asc, and, sql } from "drizzle-orm";
 import { normalizeDomain, domainToSlug } from "@/lib/agentic-score";
 import { SCORING_RUBRIC } from "@/lib/agentic-score/rubric";
@@ -240,8 +240,9 @@ export async function getQueueStats() {
   return { entries, pending, scanning, completed, failed, total: entries.length };
 }
 
-export async function addToQueue(domains: string[]): Promise<{ added: number; skipped: string[] }> {
+export async function addToQueue(domains: string[], allowRescans = false): Promise<{ added: number; skipped: string[]; duplicates: string[] }> {
   const skipped: string[] = [];
+  const duplicates: string[] = [];
   let added = 0;
 
   for (const raw of domains) {
@@ -256,22 +257,35 @@ export async function addToQueue(domains: string[]): Promise<{ added: number; sk
       continue;
     }
 
-    const existing = await db
+    const existingInQueue = await db
       .select()
       .from(scanQueue)
-      .where(and(eq(scanQueue.domain, domain), eq(scanQueue.status, "pending")))
+      .where(eq(scanQueue.domain, domain))
       .limit(1);
 
-    if (existing.length > 0) {
-      skipped.push(domain);
+    if (existingInQueue.length > 0) {
+      duplicates.push(domain);
       continue;
+    }
+
+    if (!allowRescans) {
+      const existingBrand = await db
+        .select()
+        .from(brandIndex)
+        .where(eq(brandIndex.domain, domain))
+        .limit(1);
+
+      if (existingBrand.length > 0) {
+        duplicates.push(domain);
+        continue;
+      }
     }
 
     await db.insert(scanQueue).values({ domain, status: "pending", priority: 0 });
     added++;
   }
 
-  return { added, skipped };
+  return { added, skipped, duplicates };
 }
 
 export async function clearCompleted(): Promise<number> {

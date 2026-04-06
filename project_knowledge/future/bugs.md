@@ -12,7 +12,9 @@ date: 2026-04-05
 
 - **Wrong CLI directions** - on the brands.sh landing page there is "npx shopy add lululemon", but it's wrong and I think we decided on something like "npx skills brands-sh/shop lululemon" or something like that. We also added a URL based version ( which were not publicizing as they go to for now because we want people to list the skills via the skills.sh site.)
 
-- 
+- **Vendor Skills Page not showing skills created/shown in brands.sh** - this is completely empty here: https://creditclaw.com/skills 
+
+- **Next bug..
 
 
 

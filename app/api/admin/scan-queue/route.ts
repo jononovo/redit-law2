@@ -43,6 +43,7 @@ export async function POST(request: NextRequest) {
   }
 
   const domains: string[] = body.domains;
+  const allowRescans: boolean = body.allowRescans === true;
   if (!Array.isArray(domains) || domains.length === 0) {
     return NextResponse.json(
       { error: "domains must be a non-empty array of strings" },
@@ -50,6 +51,6 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const result = await addToQueue(domains);
+  const result = await addToQueue(domains, allowRescans);
   return NextResponse.json(result);
 }
