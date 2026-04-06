@@ -186,7 +186,7 @@ Single codebase, three tenants, hostname-based routing.
 - **shopy.sh** — merchant-facing ASX Score scanner and leaderboard
 - **brands.sh** — developer-facing skill registry
 
-**Docs:** `internal_docs/08-multi-tenant-structure/`
+**Docs:** `internal_docs/08-multi-tenant/`
 
 ---
 
