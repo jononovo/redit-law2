@@ -667,7 +667,6 @@ The app supports multiple tenants (CreditClaw, shopy.sh, brands.sh) via hostname
 - **Middleware**: `middleware.ts` — resolves hostname → tenantId, sets `x-tenant-id` header + `tenant-id` cookie
 - **Root layout** (`app/layout.tsx`): Uses `cookies()` to read `tenant-id` cookie set by middleware. Resolves tenant config server-side for correct SSR (no flash of wrong tenant). Also includes inline `<script>` for CSS theme variables on client-side navigations. Wraps children in `TenantProvider`.
 - **Client context**: `lib/tenants/tenant-context.tsx` — `TenantProvider` + `useTenant()` hook for client components
-- **Server helper (deprecated)**: `lib/tenants/get-request-tenant.ts` — `getRequestTenant()` reads from headers. Pages should use `cookies()` directly with `export const dynamic = "force-dynamic"` instead.
 - **Tenant-aware pages**: Pages needing server-side tenant routing (home, guide, standard, how-it-works) use `cookies()` + `force-dynamic`. The root layout also uses `cookies()` making child pages dynamic by default, but `revalidate` on individual pages enables ISR caching.
 - **Tenant components**: `components/tenants/{id}/` — per-tenant landing pages, how-it-works pages, etc.
 - **Nav**: Uses `useTenant()` for logo, name, tagline, routes

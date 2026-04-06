@@ -35,7 +35,6 @@ Request → middleware.ts (Edge)
 | `lib/tenants/config.ts` | Node (server only) | `getTenantConfig()` — reads + caches `config.json` from disk |
 | `lib/tenants/tenant-configs.ts` | Any | Static tenant config map — **must stay in sync with config.json files** |
 | `lib/tenants/tenant-context.tsx` | Client | `TenantProvider` + `useTenant()` hook |
-| `lib/tenants/get-request-tenant.ts` | Server (RSC/API) | `getRequestTenant()` — reads `x-tenant-id` from request headers |
 | `public/tenants/{id}/config.json` | Static | Per-tenant branding, meta, theme, routes, features, navigation, tracking |
 | `app/layout.tsx` | Server | Reads tenant, generates metadata, injects theme vars |
 | `app/page.tsx` | Server | Tenant router — dynamically loads landing component per tenant |
