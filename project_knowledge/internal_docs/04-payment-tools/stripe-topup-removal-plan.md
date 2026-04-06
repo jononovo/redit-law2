@@ -72,6 +72,7 @@ The codebase has two completely separate "wallet" concepts:
 |-------|----------|-----------------|
 | `app/api/v1/wallet/fund/route.ts` | Core Stripe `chargeCustomer` funding. | Called by: `fund-modal.tsx` (dead), `fund-wallet.tsx` onboarding step (dead/unused). No live callers. |
 | `app/api/v1/bot/payments/create-link/route.ts` | Creates Stripe payment links for bots to request money. | 0 rows in payment_links. Only reference: rate-limit.ts config entry. |
+| `app/api/v1/bot/payments/links/route.ts` | Bot API to list its own payment links. | 0 rows. Only reference: rate-limit.ts config entry. |
 | `app/api/v1/bot/wallet/topup-request/route.ts` | Bot requests owner to top up via email. | 0 rows in topup_requests. References: rate-limit.ts config, activity-log.tsx label map. |
 | `app/api/v1/payment-links/route.ts` | Lists payment links for dashboard. | Called by: `payment-links.tsx` component (dead). |
 | `app/api/v1/payment-links/[id]/route.ts` | Gets single payment link by ID. | Called by: `payment/success/page.tsx` (dead). |
@@ -183,11 +184,27 @@ The codebase has two completely separate "wallet" concepts:
 
 ---
 
-## Phase 6: Documentation & Config Cleanup
+## Phase 6: Documentation, Config & Residual String Cleanup
 
+### Documentation:
 - Update `replit.md` to reflect removed routes/components
-- Update any API documentation in `docs/` that references the fund endpoint, payment links, or topup requests
-- Clean activity-log.tsx label map entries for dead endpoints (optional, harmless)
+- `docs/content/api/endpoints/wallets.md` — remove topup-request endpoint docs (lines 145-193)
+- `docs/content/api/endpoints/checkout-pages.md` — remove "List Payment Links" and "Create Payment Link" sections (lines 134+)
+- `docs/content/api/introduction.md` — remove "Stripe payment links" reference (line 30)
+- `docs/content/site/homepage.md` — update "payment links" mention (line 16) if needed
+- `docs/content/api/webhooks/events.md` — remove topup-request reference (line 461)
+- `project_knowledge/architecture.md` — remove Payment Links row from table (line 217) and references (lines 200, 268)
+- `project_knowledge/testing.md` — remove topup-request and payment-links test commands
+- `project_knowledge/tenants_vision/creditclaw.md` — update payment links reference (line 80)
+
+### Residual string references (harmless but should clean):
+- `components/dashboard/activity-log.tsx` — remove label entries for `/api/v1/bot/wallet/topup-request` (line 23) and `/api/v1/bot/wallet/transactions` — wait, transactions is LIVE. Only remove topup-request label.
+- `components/dashboard/webhook-log.tsx` — remove label `"wallet.topup.completed"` (line 25). This webhook event type was only fired by the dead fund route.
+- `components/dashboard/notification-popover.tsx` — remove emoji cases for `"topup_completed"` (line 32) and `"topup_request"` (line 36). These notification types were only created by dead flows.
+- `lib/webhooks/delivery.ts` — remove `"wallet.topup.completed"` and `"wallet.payment.received"` from WebhookEventType union (lines 17, 21). These events were only fired by dead routes.
+- `lib/agent-management/bot-messaging/expiry.ts` — remove expiry entries for `"wallet.topup.completed"` and `"wallet.payment.received"` (lines 7, 11).
+- `app/api/v1/bot/wallet/check/route.ts` — `pending_topups: 0` hardcoded (line 55). Safe to remove field or keep as backwards-compatible stub.
+- `lib/agent-management/rate-limit.ts` — remove entries for dead endpoints (topup-request, create-link, payments/links)
 
 ---
 
@@ -234,29 +251,37 @@ The codebase has two completely separate "wallet" concepts:
 
 ## Files Summary
 
-### DELETE (entire files) — 9 files:
+### DELETE (entire files) — 12 files:
 1. `app/api/v1/wallet/fund/route.ts` — dead Stripe chargeCustomer funding
-2. `app/api/v1/bot/payments/create-link/route.ts` — dead Stripe payment links
-3. `app/api/v1/bot/wallet/topup-request/route.ts` — dead topup request
-4. `app/api/v1/payment-links/route.ts` — dead payment links API
-5. `app/api/v1/payment-links/[id]/route.ts` — dead payment link by ID
-6. `app/api/v1/webhooks/stripe/route.ts` — only handles dead payment-link flow
-7. `app/payment/success/page.tsx` — dead payment link success page
-8. `components/dashboard/fund-modal.tsx` — dead Stripe funding modal
-9. `components/dashboard/payment-links.tsx` — dead payment links panel
-10. `components/onboarding/steps/fund-wallet.tsx` — orphan onboarding step
-11. `server/storage/payment-links.ts` — dead payment link storage
+2. `app/api/v1/bot/payments/create-link/route.ts` — dead Stripe payment link creation
+3. `app/api/v1/bot/payments/links/route.ts` — dead bot API to list payment links
+4. `app/api/v1/bot/wallet/topup-request/route.ts` — dead topup request
+5. `app/api/v1/payment-links/route.ts` — dead dashboard payment links API
+6. `app/api/v1/payment-links/[id]/route.ts` — dead payment link by ID
+7. `app/api/v1/webhooks/stripe/route.ts` — only handles dead payment-link flow
+8. `app/payment/success/page.tsx` — dead payment link success page
+9. `components/dashboard/fund-modal.tsx` — dead Stripe funding modal
+10. `components/dashboard/payment-links.tsx` — dead payment links panel
+11. `components/onboarding/steps/fund-wallet.tsx` — orphan onboarding step
+12. `server/storage/payment-links.ts` — dead payment link storage
 
-### EDIT (surgical removal) — 8 files:
+### EDIT (surgical removal) — 14 files:
 1. `app/(dashboard)/overview/page.tsx` — remove FundModal, PaymentLinksPanel, "Add Funds" card
 2. `lib/stripe.ts` — remove `chargeCustomer()`
 3. `lib/notifications.ts` — remove `notifyTopupCompleted`, `notifyPaymentReceived`
 4. `lib/email.ts` — remove `sendTopupRequestEmail`
-5. `lib/agent-management/rate-limit.ts` — remove dead endpoint entries
+5. `lib/agent-management/rate-limit.ts` — remove dead endpoint entries (topup-request, create-link, payments/links)
 6. `server/storage/core.ts` — remove `createTopupRequest`
 7. `server/storage/index.ts` — remove payment-links import
 8. `server/storage/types.ts` — remove payment-link method signatures
 9. `shared/schema.ts` — remove `paymentLinks`/`topupRequests` table defs + 3 Zod schemas
+10. `components/dashboard/activity-log.tsx` — remove topup-request label entry
+11. `components/dashboard/webhook-log.tsx` — remove `wallet.topup.completed` label
+12. `components/dashboard/notification-popover.tsx` — remove `topup_completed` and `topup_request` emoji cases
+13. `lib/webhooks/delivery.ts` — remove `wallet.topup.completed` and `wallet.payment.received` from event type union
+14. `lib/agent-management/bot-messaging/expiry.ts` — remove expiry entries for dead webhook events
+15. Docs: `docs/content/api/endpoints/wallets.md`, `checkout-pages.md`, `introduction.md`, `events.md`, `homepage.md`
+16. Docs: `project_knowledge/architecture.md`, `testing.md`, `tenants_vision/creditclaw.md`
 
 ### KEEP (explicitly preserved):
 - `lib/crypto-onramp/` — entire Rail 1 system
