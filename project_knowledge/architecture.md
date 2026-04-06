@@ -274,13 +274,4 @@ This module owns the research and evolution of these standards. When new protoco
 
 ## Future Plans
 
-The `project_knowledge/future/` folder contains strategy docs and plans not yet tied to an active build cycle:
-
-| File / Folder | What it covers |
-|---------------|----------------|
-| `backlog.md` | Prioritized feature backlog |
-| `bugs.md` | Known issues and bugs |
-| `shopy-cli.md` | CLI tool plan for shopy.sh |
-| `scan-history-plan.md` | Scan history and re-scan tracking |
-| `brand-versioning-technical-plan.md` | Version control for brand_index changes |
-| `premium-scan/` | Premium scan tier design docs |
+The `project_knowledge/future/` folder holds ideas, strategy docs, and rough plans that aren't tied to an active build cycle yet. Check there for backlog items, known bugs, and feature explorations before starting new work.

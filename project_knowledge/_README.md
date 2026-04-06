@@ -52,6 +52,6 @@ Other folders:
 |--------|---------|
 | `tenants_vision/` | Per-tenant vision and context — `creditclaw-vision.md`, `creditclaw-context.md`, `shopy-vision.md`, `shopy-context.md` (Tier 3 protected) |
 | `currently_building/` | Active build cycle — scratch research, build notes, in-progress work |
-| `future/` | Ideas, rough plans, strategy docs not yet tied to a build cycle — backlog, bugs, CLI plan, premium scan, brand versioning |
+| `future/` | Ideas, rough plans, strategy docs not yet tied to a build cycle |
 
 `currently_building/` is the working bench. Gets cleaned out every 1-2 weeks — finished docs move to `internal_docs/`, stale ones get deleted.
