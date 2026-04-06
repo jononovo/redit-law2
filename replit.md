@@ -32,6 +32,8 @@ When building UI, check which tenant(s) the feature applies to and follow the ap
 
 **Descriptive file and variable names** — always lean towards longer, more descriptive names over short generic ones. `dashboard-overview.md` not `overview.md`. `evaluateCardGuardrails()` not `evaluate()`. `brand-versioning-technical-plan.md` not `plan.md`. Generic names are hard to search, hard to distinguish, and hard to maintain.
 
+**Testing** — write automated tests for critical business logic (pure functions, scoring, payment calculations, validation rules). Tests go in `tests/` — see `tests/_README.md` for guidelines and current coverage.
+
 ## Modularization Guidelines
 
 New features should follow a feature-first folder structure. Each rail lives under `lib/rail{N}/` with files grouped by responsibility, not by layer.
