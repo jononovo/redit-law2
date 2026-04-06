@@ -653,13 +653,8 @@ In-app feedback dialog accessible from the profile dropdown in the dashboard hea
 - **Perplexity API:** Site audit and evidence gathering for ASX Score Scanner (via sonar-deep-research model).
 - **react-markdown + remark-gfm + @tailwindcss/typography:** Markdown rendering for documentation pages.
 
-### Testing (`tests/`, `docs/testing.md`)
-Two layers of testing:
-- **Automated unit tests** (`tests/`): Vitest-based test suite. Run with `npx vitest run`. Config in `vitest.config.ts` with `@/` path alias.
-  - `tests/x402/receive.test.ts` — x402 header parsing (`parseXPaymentHeader`), payment validation (`validateX402Payment`), dedupe keys (29 tests)
-  - `tests/rail1/x402-utils.test.ts` — EIP-712 typed data building, nonce generation, x402 payment header encoding, USDC formatting utilities (19 tests)
-  - `tests/guardrails/evaluate.test.ts` — guardrail evaluation for both USDC rails (`evaluateGuardrails`) and card rails (`evaluateCardGuardrails`), covering per-tx limits, daily/monthly budgets, approval thresholds (18 tests)
-- **Manual integration tests** (`docs/testing.md`): curl-based test suite covering bot registration, wallet ops, purchases, guardrails, checkout pages, x402 endpoints. Sections 1-12 cover core API, Section 13 covers checkout & x402, Section 14 references the automated tests.
+### Testing (`tests/`)
+Vitest-based automated test suite. Run with `npx vitest run`. Config in `vitest.config.ts` with `@/` path alias. See `tests/_README.md` for coverage map, guidelines on when/how to add tests, and known gaps. Manual curl-based integration tests are in `project_knowledge/testing.md`.
 
 ### Multitenant Architecture
 The app supports multiple tenants (CreditClaw, shopy.sh, brands.sh) via hostname-based routing:
