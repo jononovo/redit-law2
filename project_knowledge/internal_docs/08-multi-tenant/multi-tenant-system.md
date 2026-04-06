@@ -28,7 +28,7 @@ Once resolved, tenant ID is:
 - Set as `x-tenant-id` request header (available to server components, though most currently read the cookie directly)
 - Persisted to `tenant-id` cookie (`path=/`, `sameSite=lax`)
 
-**Note:** two resolution implementations exist — `middleware.ts` uses a hardcoded `TENANT_DOMAINS` map, while `lib/tenants/config.ts` has a `resolveTenantId()` that reads domain lists from config JSON files. These must stay in sync.
+Tenant resolution lives solely in `middleware.ts` via its hardcoded `TENANT_DOMAINS` map.
 
 **Matcher:** all routes except `/_next/static`, `/_next/image`, `/favicon.ico`, `/assets/`.
 
@@ -191,7 +191,7 @@ Each tenant has its own OG images at `tenant.meta.ogImage` and `tenant.meta.twit
 | `middleware.ts` | Tenant resolution from domain/cookie/param |
 | `lib/tenants/types.ts` | `TenantConfig` interface |
 | `lib/tenants/tenant-configs.ts` | Static configs + `TENANT_THEMES` |
-| `lib/tenants/config.ts` | `getTenantConfig()` — reads `public/tenants/{id}/config.json` |
+| `lib/tenants/config.ts` | `getTenantConfig()` — reads + caches `public/tenants/{id}/config.json` |
 | `lib/tenants/tenant-context.tsx` | `TenantProvider` + `useTenant()` hook |
 | `public/tenants/{id}/config.json` | Dynamic config per tenant |
 | `app/layout.tsx` | Theme injection script, metadata, `TenantProvider` |

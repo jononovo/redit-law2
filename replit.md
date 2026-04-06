@@ -662,7 +662,7 @@ Vitest-based automated test suite. Run with `npx vitest run`. Config in `vitest.
 The app supports multiple tenants (CreditClaw, shopy.sh, brands.sh) via hostname-based routing:
 - **Tenant configs**: `public/tenants/{tenantId}/config.json` — branding, meta, theme, routes, features, tracking (source of truth). Also mirrored in `lib/tenants/tenant-configs.ts` as static imports for client-side use.
 - **Types**: `lib/tenants/types.ts` — `TenantConfig` interface
-- **Config loader (server)**: `lib/tenants/config.ts` — `getTenantConfig()`, `resolveTenantId()` with caching (uses filesystem, server-only)
+- **Config loader (server)**: `lib/tenants/config.ts` — `getTenantConfig()` with caching (uses filesystem, server-only)
 - **Config loader (client)**: `lib/tenants/tenant-configs.ts` — `getStaticTenantConfig()` + `TENANT_THEMES` (bundled statically, no fs dependency)
 - **Middleware**: `middleware.ts` — resolves hostname → tenantId, sets `x-tenant-id` header + `tenant-id` cookie
 - **Root layout** (`app/layout.tsx`): Uses `cookies()` to read `tenant-id` cookie set by middleware. Resolves tenant config server-side for correct SSR (no flash of wrong tenant). Also includes inline `<script>` for CSS theme variables on client-side navigations. Wraps children in `TenantProvider`.
