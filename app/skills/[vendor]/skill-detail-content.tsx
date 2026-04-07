@@ -18,7 +18,7 @@ import {
   VendorSector,
   SkillMaturity,
   VendorSkill,
-} from "@/lib/procurement-skills/types";
+} from "@/lib/brand-engine/procurement-skills/types";
 import {
   ArrowLeft,
   Star,

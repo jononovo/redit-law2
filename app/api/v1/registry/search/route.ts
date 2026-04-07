@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { storage } from "@/server/storage";
-import { parseSearchParams } from "@/lib/catalog/parse-filters";
-import { buildSkillJson } from "@/lib/procurement-skills/skill-json";
+import { parseSearchParams } from "@/lib/brand-engine/catalog/parse-filters";
+import { buildSkillJson } from "@/lib/brand-engine/procurement-skills/skill-json";
 
 export async function GET(request: NextRequest) {
   const sp = request.nextUrl.searchParams;

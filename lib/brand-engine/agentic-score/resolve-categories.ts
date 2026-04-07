@@ -1,10 +1,10 @@
 import { db } from "@/server/db";
 import { productCategories } from "@/shared/schema";
 import { eq, lte, like, and, or, inArray } from "drizzle-orm";
-import { SECTOR_ROOT_IDS, SECTOR_LABELS, GOOGLE_ROOT_IDS, hasSectorRoot } from "@/lib/procurement-skills/taxonomy/sectors";
-import type { VendorSector } from "@/lib/procurement-skills/taxonomy/sectors";
-import type { BrandType } from "@/lib/procurement-skills/taxonomy/brand-types";
-import { MULTI_SECTOR_TYPES } from "@/lib/procurement-skills/taxonomy/brand-types";
+import { SECTOR_ROOT_IDS, SECTOR_LABELS, GOOGLE_ROOT_IDS, hasSectorRoot } from "@/lib/brand-engine/procurement-skills/taxonomy/sectors";
+import type { VendorSector } from "@/lib/brand-engine/procurement-skills/taxonomy/sectors";
+import type { BrandType } from "@/lib/brand-engine/procurement-skills/taxonomy/brand-types";
+import { MULTI_SECTOR_TYPES } from "@/lib/brand-engine/procurement-skills/taxonomy/brand-types";
 
 export interface ResolvedCategory {
   categoryId: number;

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth/session";
 import { storage } from "@/server/storage";
-import { canAutoVerifyClaim, extractEmailDomain } from "@/lib/brand-claims/domain";
+import { canAutoVerifyClaim, extractEmailDomain } from "@/lib/brand-engine/brand-claims/domain";
 
 export async function POST(
   _req: NextRequest,

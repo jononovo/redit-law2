@@ -5,7 +5,7 @@ import { Nav } from "@/components/nav";
 import { Footer } from "@/components/footer";
 import { storage } from "@/server/storage";
 import { getScoreColor } from "@/app/skills/vendor-card";
-import type { ASXScoreBreakdown, ASXRecommendation, PillarScore } from "@/lib/agentic-score";
+import type { ASXScoreBreakdown, ASXRecommendation, PillarScore } from "@/lib/brand-engine/agentic-score";
 import {
   Layers,
   Zap,

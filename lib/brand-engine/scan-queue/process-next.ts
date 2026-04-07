@@ -2,22 +2,22 @@ import { storage } from "@/server/storage";
 import { db } from "@/server/db";
 import { scanQueue, brandIndex } from "@/shared/schema";
 import { eq, asc, and, sql } from "drizzle-orm";
-import { normalizeDomain, domainToSlug } from "@/lib/agentic-score";
-import { SCORING_RUBRIC } from "@/lib/agentic-score/rubric";
-import { computeScoreFromRubric } from "@/lib/agentic-score/scoring-engine";
-import { auditSite, auditToEvidence } from "@/lib/agentic-score/audit-site";
-import { classifyBrand } from "@/lib/agentic-score/classify-brand";
+import { normalizeDomain, domainToSlug } from "@/lib/brand-engine/agentic-score";
+import { SCORING_RUBRIC } from "@/lib/brand-engine/agentic-score/rubric";
+import { computeScoreFromRubric } from "@/lib/brand-engine/agentic-score/scoring-engine";
+import { auditSite, auditToEvidence } from "@/lib/brand-engine/agentic-score/audit-site";
+import { classifyBrand } from "@/lib/brand-engine/agentic-score/classify-brand";
 import {
   buildVendorSkillDraft,
   mergeArrayField,
   domainToLabel,
   resolveMaturity,
-} from "@/lib/agentic-score/scan-utils";
-import { generateVendorSkill } from "@/lib/procurement-skills/generator";
-import { resolveProductCategories } from "@/lib/agentic-score/resolve-categories";
-import type { VendorSector } from "@/lib/procurement-skills/taxonomy/sectors";
-import type { BrandType } from "@/lib/procurement-skills/taxonomy/brand-types";
-import type { VendorSkill } from "@/lib/procurement-skills/types";
+} from "@/lib/brand-engine/agentic-score/scan-utils";
+import { generateVendorSkill } from "@/lib/brand-engine/procurement-skills/generator";
+import { resolveProductCategories } from "@/lib/brand-engine/agentic-score/resolve-categories";
+import type { VendorSector } from "@/lib/brand-engine/procurement-skills/taxonomy/sectors";
+import type { BrandType } from "@/lib/brand-engine/procurement-skills/taxonomy/brand-types";
+import type { VendorSkill } from "@/lib/brand-engine/procurement-skills/types";
 
 export interface ProcessResult {
   success: boolean;
@@ -129,7 +129,7 @@ export async function processNextInQueue(): Promise<ProcessResult | null> {
 
     let finalSector: string = resolvedSector;
 
-    let categoryResult: { categories: import("@/lib/agentic-score/resolve-categories").ResolvedCategory[]; resolvedSector: VendorSector } | null = null;
+    let categoryResult: { categories: import("@/lib/brand-engine/agentic-score/resolve-categories").ResolvedCategory[]; resolvedSector: VendorSector } | null = null;
     try {
       categoryResult = await resolveProductCategories(
         domain,

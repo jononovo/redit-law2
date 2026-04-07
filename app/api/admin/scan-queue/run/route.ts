@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth/session";
-import { processNextInQueue } from "@/lib/scan-queue/process-next";
-import { getSchedulerStatus } from "@/lib/scan-queue/scheduler";
+import { processNextInQueue } from "@/lib/brand-engine/scan-queue/process-next";
+import { getSchedulerStatus } from "@/lib/brand-engine/scan-queue/scheduler";
 
 async function requireAdmin() {
   const user = await getCurrentUser();

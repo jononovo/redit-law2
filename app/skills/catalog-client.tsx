@@ -37,7 +37,7 @@ import {
   VendorSector,
   BrandTier,
   SkillMaturity,
-} from "@/lib/procurement-skills/types";
+} from "@/lib/brand-engine/procurement-skills/types";
 import type { BrandIndex } from "@/shared/schema";
 import { VendorCard, MATURITY_CONFIG, SECTOR_ICONS, CHECKOUT_ICONS, getScoreColor, getSuccessRate } from "@/app/skills/vendor-card";
 

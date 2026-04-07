@@ -1,6 +1,6 @@
-import type { VendorSkill, VendorCapability } from "@/lib/procurement-skills/types";
-import type { VendorSector } from "@/lib/procurement-skills/taxonomy/sectors";
-import { ASSIGNABLE_SECTORS } from "@/lib/procurement-skills/taxonomy/sectors";
+import type { VendorSkill, VendorCapability } from "@/lib/brand-engine/procurement-skills/types";
+import type { VendorSector } from "@/lib/brand-engine/procurement-skills/taxonomy/sectors";
+import { ASSIGNABLE_SECTORS } from "@/lib/brand-engine/procurement-skills/taxonomy/sectors";
 import type { SiteAudit } from "./audit-site";
 
 export const VALID_SECTORS: VendorSector[] = [...ASSIGNABLE_SECTORS];

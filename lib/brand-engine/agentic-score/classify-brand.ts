@@ -1,9 +1,9 @@
-import type { VendorSector } from "@/lib/procurement-skills/taxonomy/sectors";
-import { ASSIGNABLE_SECTORS } from "@/lib/procurement-skills/taxonomy/sectors";
-import type { BrandTier } from "@/lib/procurement-skills/taxonomy/tiers";
-import type { BrandType } from "@/lib/procurement-skills/taxonomy/brand-types";
-import { VALID_BRAND_TYPES } from "@/lib/procurement-skills/taxonomy/brand-types";
-import type { VendorCapability } from "@/lib/procurement-skills/types";
+import type { VendorSector } from "@/lib/brand-engine/procurement-skills/taxonomy/sectors";
+import { ASSIGNABLE_SECTORS } from "@/lib/brand-engine/procurement-skills/taxonomy/sectors";
+import type { BrandTier } from "@/lib/brand-engine/procurement-skills/taxonomy/tiers";
+import type { BrandType } from "@/lib/brand-engine/procurement-skills/taxonomy/brand-types";
+import { VALID_BRAND_TYPES } from "@/lib/brand-engine/procurement-skills/taxonomy/brand-types";
+import type { VendorCapability } from "@/lib/brand-engine/procurement-skills/types";
 import { VALID_CAPABILITIES } from "./scan-utils";
 
 const PERPLEXITY_TIMEOUT_MS = 25_000;

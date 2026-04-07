@@ -1,4 +1,4 @@
-import type { BrandSearchFilters } from "@/server/storage/brand-index";
+import type { BrandSearchFilters } from "@/server/storage/brand-engine/brand-index";
 
 function parseCSV(param: string | null | undefined): string[] | undefined {
   if (!param) return undefined;

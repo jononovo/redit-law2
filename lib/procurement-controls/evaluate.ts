@@ -1,5 +1,5 @@
 import type { ProcurementRules, ProcurementRequest, ProcurementDecision } from "./types";
-import { normalizeDomain } from "@/lib/agentic-score/fetch";
+import { normalizeDomain } from "@/lib/brand-engine/agentic-score/fetch";
 
 export function mergeProcurementRules(master: ProcurementRules, rail: ProcurementRules): ProcurementRules {
   return {
