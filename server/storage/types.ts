@@ -37,10 +37,10 @@ import {
   type BrandFeedback, type InsertBrandFeedback,
 } from "@/shared/schema";
 
-import type { OrderFilters } from "./orders";
-import type { SaleFilters } from "./sales";
-import type { InvoiceFilters } from "./invoices";
-import type { BrandSearchFilters } from "./brand-index";
+import type { OrderFilters } from "./agent-interaction/orders";
+import type { SaleFilters } from "./agent-shops/sales";
+import type { InvoiceFilters } from "./agent-shops/invoices";
+import type { BrandSearchFilters } from "./brand-engine/brand-index";
 
 export interface IStorage {
   getOwnerByUid(uid: string): Promise<Owner | null>;
