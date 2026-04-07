@@ -1,7 +1,8 @@
 # Orders Page Cleanup — Technical Plan
 
-## Goal
-Remove the duplicate standalone `/orders` page. The `/transactions` page already has an Orders tab rendering the identical `OrdersPanel` component. Consolidate to one entry point and add URL-based tab selection so external links can deep-link to the Orders tab.
+## Goals
+1. Remove the duplicate standalone `/orders` page — the `/transactions` page already has an Orders tab rendering the identical `OrdersPanel` component with strictly more functionality (guardrails wizard button).
+2. Fix broken order detail links — `orders-panel.tsx` and `order-list.tsx` navigate to `/app/orders/${id}` but the actual route is `/orders/${id}`. These links currently 404.
 
 ## Current State
 
@@ -10,21 +11,31 @@ Remove the duplicate standalone `/orders` page. The `/transactions` page already
 | Transactions | `/transactions` | `RailPageTabs` with 3 tabs: **Transactions**, **Orders** (OrdersPanel + guardrails button), **Approvals** |
 | Orders | `/orders` | Standalone `OrdersPanel` (no guardrails button, no tabs) |
 
-Both call the same API (`/api/v1/orders`) and render the same component. The `/transactions` version is strictly better — it includes the guardrails wizard button and sits alongside transaction/approval context.
+Both call the same API (`/api/v1/orders`) and render the same `OrdersPanel` component.
+
+### Bug: Broken Order Detail Links
+- `components/wallet/orders-panel.tsx` line 214: `router.push('/app/orders/${order.id}')` — wrong path
+- `components/wallet/order-list.tsx` line 101: `router.push('/app/orders/${order.id}')` — wrong path
+- Actual route: `app/(dashboard)/orders/[order_id]/page.tsx` → URL `/orders/[order_id]`
+- No middleware rewrites `/app/` prefixed paths. These clicks 404.
 
 ### Files Involved
 
-- `app/(dashboard)/orders/page.tsx` — standalone orders page (DELETE)
-- `app/(dashboard)/transactions/page.tsx` — tabbed page, needs URL-param tab selection
-- `components/dashboard/sidebar.tsx` — line 52: `{ icon: Package, label: "Orders", href: "/orders" }`
-- `components/wallet/rail-page-tabs.tsx` — presentational tab wrapper (no URL sync)
-- `app/robots.ts` — line 26: includes `/orders` in sitemap/robots config
+**Delete:**
+- `app/(dashboard)/orders/page.tsx` — standalone orders page
+
+**Modify:**
+- `app/(dashboard)/transactions/page.tsx` — add URL-param tab selection
+- `components/dashboard/sidebar.tsx` — line 52: update nav link
+- `components/wallet/orders-panel.tsx` — line 214: fix order detail link
+- `components/wallet/order-list.tsx` — line 101: fix order detail link
+- `app/robots.ts` — line 26: remove `/orders` from disallow list
 
 ### What Does NOT Change
 
-- `app/(dashboard)/orders/[order_id]/page.tsx` — order detail page stays (it's not a duplicate)
+- `app/(dashboard)/orders/[order_id]/page.tsx` — order detail page stays
 - `/api/v1/orders` — API route stays
-- `components/wallet/orders-panel.tsx` — component stays
+- `components/wallet/orders-panel.tsx` — component stays (only link fix)
 - `server/storage/agent-interaction/orders.ts` — storage stays
 - `features/agent-interaction/orders/create.ts` — `recordOrder()` stays
 
@@ -32,20 +43,44 @@ Both call the same API (`/api/v1/orders`) and render the same component. The `/t
 
 ## Changes
 
-### 1. Add URL-param tab selection to `/transactions` page
+### 1. Fix broken order detail links
+
+**File:** `components/wallet/orders-panel.tsx` (line 214)
+
+Change:
+```
+router.push(`/app/orders/${order.id}`)
+```
+To:
+```
+router.push(`/orders/${order.id}`)
+```
+
+**File:** `components/wallet/order-list.tsx` (line 101)
+
+Change:
+```
+router.push(`/app/orders/${order.id}`)
+```
+To:
+```
+router.push(`/orders/${order.id}`)
+```
+
+### 2. Add URL-param tab selection to `/transactions` page
 
 **File:** `app/(dashboard)/transactions/page.tsx`
 
 Currently tab state is initialized with `useState("transactions")` and never reads from the URL. Update to:
 
-- Read `?tab=` from `useSearchParams()` on mount
-- Initialize `activeTab` from the URL param if present, default to `"transactions"`
-- Valid tab IDs: `transactions`, `orders`, `approvals`
-- When tab changes, update the URL param with `router.replace` (no navigation, just URL sync)
+- Import `useSearchParams` from `next/navigation`
+- Read `?tab=` on mount, validate against known tab IDs (`transactions`, `orders`, `approvals`)
+- Initialize `activeTab` from the URL param if valid, default to `"transactions"`
+- On tab change, update the URL search param via `router.replace` (shallow, no page reload)
 
-This way `/transactions?tab=orders` opens directly to the Orders tab.
+This way `/transactions?tab=orders` opens directly to the Orders tab. The sidebar "Orders" link will use this.
 
-### 2. Update sidebar nav link
+### 3. Update sidebar nav link
 
 **File:** `components/dashboard/sidebar.tsx` (line 52)
 
@@ -58,43 +93,44 @@ To:
 { icon: Package, label: "Orders", href: "/transactions?tab=orders" }
 ```
 
-The sidebar entry stays visible — users still see "Orders" in the nav — but it now deep-links to the Orders tab on the transactions page.
+The sidebar entry stays visible — users still see "Orders" in the nav — it just deep-links to the Orders tab.
 
-### 3. Delete standalone orders page
+### 4. Delete standalone orders page
 
 **File:** `app/(dashboard)/orders/page.tsx` — DELETE
 
-The order detail page at `app/(dashboard)/orders/[order_id]/page.tsx` is unaffected and stays.
+The order detail page at `app/(dashboard)/orders/[order_id]/page.tsx` is unaffected — it's in a subdirectory. Deleting the parent `page.tsx` does not affect subdirectory routes in Next.js App Router.
 
-### 4. Update robots.ts
+### 5. Update robots.ts
 
-**File:** `app/robots.ts`
+**File:** `app/robots.ts` (line 26)
 
-Remove `/orders` from the explicit routes list (or replace with `/transactions?tab=orders` if it's an allow-list).
+Remove `/orders` from the disallow list. It's a disallow list for crawlers — the route will no longer exist as a standalone page, so there's nothing to disallow. The `/transactions` route is already disallowed (line 22), which covers the Orders tab.
 
-### 5. Check for other links to `/orders`
+### 6. Sweep for stale links
 
-Grep for `href="/orders"` or `push("/orders")` across the codebase. Update any hits to `/transactions?tab=orders`. Based on research, the sidebar is the only navigation link — but verify at execution time.
+Grep for `href="/orders"` or `push("/orders")` or `"/orders"` across the codebase. Update any hits that point to the list page (not the detail page). Based on research, only the sidebar link matches — but verify at execution time.
 
-### 6. Update replit.md
+### 7. Update replit.md
 
-Document that `/orders` no longer exists as a standalone page. Update the existing note about consolidation.
+Document that `/orders` no longer exists as a standalone page. Note the order detail page (`/orders/[order_id]`) is unchanged.
 
 ---
 
 ## Execution Order
 
-1. Add `useSearchParams` tab sync to `transactions/page.tsx`
-2. Update sidebar link
-3. Delete `orders/page.tsx`
-4. Update `robots.ts`
-5. Grep for stale `/orders` links
-6. Update `replit.md`
-7. Restart and verify
+1. Fix broken order detail links in `orders-panel.tsx` and `order-list.tsx`
+2. Add `useSearchParams` tab sync to `transactions/page.tsx`
+3. Update sidebar link in `sidebar.tsx`
+4. Delete `app/(dashboard)/orders/page.tsx`
+5. Update `robots.ts`
+6. Sweep for stale `/orders` links
+7. Update `replit.md`
+8. Restart and verify
 
 ## Risk
 
-**Low.** No data model changes. No API changes. No storage changes. Just removing a duplicate page and updating one nav link. The order detail page (`/orders/[order_id]`) is completely unaffected.
+**Low.** No data model changes, no API changes, no storage changes. The order detail page (`/orders/[order_id]`) is completely unaffected. The link fix (step 1) is a pure bugfix. The page removal (steps 2–5) consolidates identical UI to one location.
 
 ## Estimated Effort
 
