@@ -1,11 +1,11 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { detectCardBrand, getMaxDigits, formatCardNumber, getCardPlaceholder, type CardBrand } from "@/lib/card/card-brand";
-import { useTemporaryValid, type CardFieldErrors } from "@/lib/card/hooks";
-import { useCipherScramble } from "@/lib/card/cipher-effects";
-import { BrandLogo } from "@/lib/card/brand-logo";
-import "@/lib/card/card.css";
+import { detectCardBrand, getMaxDigits, formatCardNumber, getCardPlaceholder, type CardBrand } from "@/lib/payment-rails/card/card-brand";
+import { useTemporaryValid, type CardFieldErrors } from "@/lib/payment-rails/card/hooks";
+import { useCipherScramble } from "@/lib/payment-rails/card/cipher-effects";
+import { BrandLogo } from "@/lib/payment-rails/card/brand-logo";
+import "@/lib/payment-rails/card/card.css";
 
 export function Rail5InteractiveCard({
   cardNumber,

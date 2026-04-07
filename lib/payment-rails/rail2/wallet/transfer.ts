@@ -1,4 +1,4 @@
-import { crossmintFetch } from "@/lib/rail2/client";
+import { crossmintFetch } from "@/lib/payment-rails/rail2/client";
 
 export async function sendUsdcTransfer(
   walletAddress: string,

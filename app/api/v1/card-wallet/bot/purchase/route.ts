@@ -6,7 +6,7 @@ import { evaluateGuardrails } from "@/lib/guardrails/evaluate";
 import { evaluateProcurementControls } from "@/lib/procurement-controls/evaluate";
 import { evaluateMasterGuardrails } from "@/lib/guardrails/master";
 import { evaluateApprovalDecision } from "@/lib/guardrails/approval";
-import { usdToMicroUsdc } from "@/lib/rail2/client";
+import { usdToMicroUsdc } from "@/lib/payment-rails/rail2/client";
 import { createApproval } from "@/lib/approvals/service";
 
 async function handler(request: NextRequest, botId: string) {

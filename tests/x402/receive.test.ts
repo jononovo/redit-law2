@@ -4,7 +4,7 @@ import {
   validateX402Payment,
   buildX402DedupeKey,
   type X402PaymentParams,
-} from "@/lib/x402/receive";
+} from "@/lib/payment-rails/x402/receive";
 
 const USDC_CONTRACT = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
 

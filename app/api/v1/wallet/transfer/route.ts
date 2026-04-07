@@ -3,8 +3,8 @@ import { z } from "zod";
 import { getSessionUser } from "@/lib/auth/session";
 import { storage } from "@/server/storage";
 import { db } from "@/server/db";
-import { sendUsdcTransfer as privySendUsdc } from "@/lib/rail1/wallet/transfer";
-import { sendUsdcTransfer as crossmintSendUsdc } from "@/lib/rail2/wallet/transfer";
+import { sendUsdcTransfer as privySendUsdc } from "@/lib/payment-rails/rail1/wallet/transfer";
+import { sendUsdcTransfer as crossmintSendUsdc } from "@/lib/payment-rails/rail2/wallet/transfer";
 import { evaluateGuardrails } from "@/lib/guardrails/evaluate";
 import { isAddress } from "viem";
 import {

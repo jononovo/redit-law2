@@ -1,4 +1,4 @@
-import { crossmintFetch, USDC_CONTRACT_ADDRESS } from "@/lib/rail2/client";
+import { crossmintFetch, USDC_CONTRACT_ADDRESS } from "@/lib/payment-rails/rail2/client";
 
 export async function createOnrampOrder(params: {
   walletAddress: string;

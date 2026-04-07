@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { storage } from "@/server/storage";
 import { privyBotSignSchema } from "@/shared/schema";
-import { signTypedData } from "@/lib/rail1/wallet/sign";
-import { buildTransferWithAuthorizationTypedData, generateNonce, buildXPaymentHeader, usdToMicroUsdc, microUsdcToUsd } from "@/lib/rail1/x402";
+import { signTypedData } from "@/lib/payment-rails/rail1/wallet/sign";
+import { buildTransferWithAuthorizationTypedData, generateNonce, buildXPaymentHeader, usdToMicroUsdc, microUsdcToUsd } from "@/lib/payment-rails/rail1/x402";
 import { authenticateBot } from "@/lib/agent-management/auth";
 import { evaluateGuardrails } from "@/lib/guardrails/evaluate";
 import { evaluateProcurementControls } from "@/lib/procurement-controls/evaluate";

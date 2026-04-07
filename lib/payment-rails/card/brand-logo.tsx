@@ -1,7 +1,7 @@
 "use client";
 
 import { CreditCard } from "lucide-react";
-import type { CardBrand } from "@/lib/card/card-brand";
+import type { CardBrand } from "@/lib/payment-rails/card/card-brand";
 
 export function BrandLogo({ brand }: { brand: CardBrand }) {
   const size = "w-14 h-10";

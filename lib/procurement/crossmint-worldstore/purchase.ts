@@ -1,4 +1,4 @@
-import { crossmintFetch } from "@/lib/rail2/client";
+import { crossmintFetch } from "@/lib/payment-rails/rail2/client";
 import type { ShippingAddress, PurchaseResult } from "../types";
 
 export type { ShippingAddress, PurchaseResult };

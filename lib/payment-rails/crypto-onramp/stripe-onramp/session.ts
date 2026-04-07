@@ -1,4 +1,4 @@
-import { stripe } from "@/lib/stripe";
+import { stripe } from "@/lib/payment-rails/stripe";
 import type { OnrampSessionResult } from "../types";
 
 export async function createStripeOnrampSession(params: {

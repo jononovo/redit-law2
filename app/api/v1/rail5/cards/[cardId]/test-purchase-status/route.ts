@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth/session";
 import { storage } from "@/server/storage";
-import { RAIL5_TEST_CHECKOUT_PAGE_ID } from "@/lib/rail5";
+import { RAIL5_TEST_CHECKOUT_PAGE_ID } from "@/lib/payment-rails/rail5";
 
 export async function GET(
   request: NextRequest,

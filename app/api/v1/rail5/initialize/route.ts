@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth/session";
 import { storage } from "@/server/storage";
 import { rail5InitializeSchema } from "@/shared/schema";
-import { generateRail5CardId } from "@/lib/rail5";
+import { generateRail5CardId } from "@/lib/payment-rails/rail5";
 
 const CARD_COLORS = ["purple", "dark", "blue", "primary"] as const;
 

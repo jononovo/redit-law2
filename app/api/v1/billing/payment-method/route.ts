@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth/session";
-import { getPaymentMethodDetails } from "@/lib/stripe";
+import { getPaymentMethodDetails } from "@/lib/payment-rails/stripe";
 import { storage } from "@/server/storage";
 
 export async function GET() {

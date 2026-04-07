@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { withBotApi } from "@/lib/agent-management/agent-api/middleware";
 import { storage } from "@/server/storage";
 import { rail5CheckoutRequestSchema } from "@/shared/schema";
-import { generateRail5CheckoutId, buildSpawnPayload, buildCheckoutSteps } from "@/lib/rail5";
+import { generateRail5CheckoutId, buildSpawnPayload, buildCheckoutSteps } from "@/lib/payment-rails/rail5";
 import { evaluateMasterGuardrails, centsToMicroUsdc } from "@/lib/guardrails/master";
 import { evaluateCardGuardrails } from "@/lib/guardrails/evaluate";
 import { evaluateApprovalDecision } from "@/lib/guardrails/approval";

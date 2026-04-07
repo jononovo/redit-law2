@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { wt } from "@/lib/wizard-typography";
 import { useToast } from "@/hooks/use-toast";
 import { authFetch } from "@/lib/auth-fetch";
-import { downloadEncryptedFile } from "@/lib/card/onboarding-rail5/encrypt";
+import { downloadEncryptedFile } from "@/lib/payment-rails/card/onboarding-rail5/encrypt";
 import { RAIL5_CARD_DELIVERED } from "@/lib/agent-management/bot-messaging/templates";
 import { type Step7Props } from "../types";
 

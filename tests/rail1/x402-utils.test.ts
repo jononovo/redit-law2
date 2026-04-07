@@ -6,7 +6,7 @@ import {
   formatUsdc,
   usdToMicroUsdc,
   microUsdcToUsd,
-} from "@/lib/rail1/x402";
+} from "@/lib/payment-rails/rail1/x402";
 
 const USDC_CONTRACT = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
 
