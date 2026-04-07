@@ -1,1 +1,0 @@
-ALTER TABLE "bots" ADD COLUMN "openclaw_hooks_token" text;
