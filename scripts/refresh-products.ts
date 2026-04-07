@@ -50,8 +50,6 @@ async function main() {
         console.error(`  Failed: ${err.message?.slice(0, 100)}`);
         failed++;
       }
-    } else if (source === "firecrawl") {
-      console.log(`  Skipping firecrawl source (manual refresh only)`);
     } else if (source === "xml") {
       console.log(`  Skipping XML source (needs feed URL)`);
     }

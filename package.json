@@ -12,7 +12,6 @@
     "@base-org/account-ui": "^1.0.1",
     "@crossmint/client-sdk-react-ui": "^2.6.15",
     "@hookform/resolvers": "^3.10.0",
-    "@mendable/firecrawl-js": "^1.21.1",
     "@neondatabase/serverless": "^1.0.2",
     "@privy-io/node": "^0.8.0",
     "@radix-ui/react-accordion": "^1.2.12",

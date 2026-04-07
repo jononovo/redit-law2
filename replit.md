@@ -124,7 +124,7 @@ Served at: `GET /brands/{slug}/skill` (text/markdown, 24h cache) and `GET /brand
 2. **Merchant Ranking** — recursive CTE over `brand_categories` + `brand_index` → ranked by brand match → match depth → ASX score
 3. **Product Search** — pgvector cosine similarity against `product_listings` → top 3 per merchant
 
-Product listings (Module 2 — Product Index): `VECTOR(384)` column, `Xenova/all-MiniLM-L6-v2` embeddings via `features/product-index/embeddings/embed.ts`, IVFFlat index. Ingestion via Shopify JSON, Firecrawl batch, Google Shopping XML, or weekly refresh scripts.
+Product listings (Module 2 — Product Index): `VECTOR(384)` column, `Xenova/all-MiniLM-L6-v2` embeddings via `features/product-index/embeddings/embed.ts`, IVFFlat index. Ingestion via Shopify JSON, Google Shopping XML, or weekly refresh scripts.
 
 ## Scan Queue
 

@@ -1,6 +1,0 @@
-ALTER TABLE rail5_checkouts RENAME TO rail5_transactions;
-
-ALTER INDEX rail5_checkouts_checkout_id_idx RENAME TO rail5_transactions_checkout_id_idx;
-ALTER INDEX rail5_checkouts_card_id_idx RENAME TO rail5_transactions_card_id_idx;
-ALTER INDEX rail5_checkouts_bot_id_idx RENAME TO rail5_transactions_bot_id_idx;
-ALTER INDEX rail5_checkouts_status_idx RENAME TO rail5_transactions_status_idx;
