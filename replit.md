@@ -215,7 +215,7 @@ Uses CrossMint smart wallets on Base chain, USDC funding via fiat onramp, and Am
 - **Cross-rail shopping gate**: CrossMint Orders API requires `payerAddress` to be the CrossMint wallet. Shopping from a Privy (Rail 1) wallet would require a pre-transfer step (Privy→CrossMint) before order creation. This is a known limitation — not yet implemented.
 - Future providers (direct merchant APIs, browser checkout agents) slot in as siblings under `features/agent-interaction/procurement/`.
 
-#### Crypto Onramp (`features/payment-rails/crypto-onramp/`)
+#### Crypto Onramp (`features/payment-rails/crypto-onramp/`) — Active (Rail 1)
 
 Server-side Stripe Crypto Onramp logic. Client-side UI is now in `features/agent-shops/payments/`. Legacy client components retained with `-legacy` suffix for reference.
 - **`types.ts`** — `WalletTarget`, `OnrampSessionResult`, `OnrampWebhookEvent`, `OnrampProvider`
