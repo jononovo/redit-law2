@@ -457,7 +457,7 @@ The platform's inbound commerce engine. Every wallet holder becomes a seller via
 
 **Core primitives:** `checkout_pages` (public payment URLs, 3 page types: product/event/digital_product), `sales` (transaction records), `seller_profiles` (per-owner identity + shop slug), `invoices` (create/send/track/collect).
 
-**5 checkout payment methods:** x402 (autonomous agent payments via EIP-3009), Base Pay (one-tap USDC), Stripe Onramp (card/bank→USDC), USDC Direct, Testing mode.
+**4 checkout payment methods:** x402 (autonomous agent payments via EIP-3009), Base Pay (one-tap USDC), USDC Direct, Testing mode. (Stripe Onramp is a wallet funding method under Module 3, not a checkout method.)
 
 **Key tables:** `checkout_pages`, `sales`, `seller_profiles`, `invoices`, `base_pay_payments`
 **Key code:** `server/storage/sales.ts`, `server/storage/seller-profiles.ts`, `server/storage/invoices.ts`, `features/payment-rails/x402/receive.ts`, `features/payment-rails/x402/checkout.ts`, `features/agent-shops/base-pay/`, `features/agent-shops/invoice-email.ts`, `features/agent-shops/invoice-pdf.ts`
