@@ -29,7 +29,7 @@ Good: 3 tests for the formatter, 15 tests for the approval system.
 | Brand claims | `brand-claims/domain.test.ts` | 23 | Domain matching, free email blocking |
 | Brand claims DB | `brand-claims/api.test.ts` | 4 | Table structure, constraints |
 | Maturity | `maturity/resolve-maturity.test.ts` | 12 | Draft → community promotion rules |
-| Registry API | `registry/api.test.ts` | 17 | Discovery API query params, filtering, response shape |
+| Brand Registry API | `brand-registry-api/api.test.ts` | 17 | Discovery API query params, filtering, response shape |
 
 | Product Index Recommend Pipeline | `product-index-recommend-pipeline/product-index-recommend-pipeline.test.ts` | 19 | Data integrity, category FTS, merchant ranking, vector search, e2e pipeline |
 
