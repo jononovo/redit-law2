@@ -181,7 +181,7 @@ Outbound payment rails — how users fund wallets and how their agents spend mon
 
 Custodial USDC wallets on Base chain. Both rails share the same funding → spending → reconciliation pattern, inter-wallet transfers, and guardrail enforcement. They differ by provider.
 
-### Rail 1 — Stripe Wallet (Live)
+### Rail 1 — Crypto Wallet (Live)
 
 Uses Privy server wallets on Base chain, USDC funding via Stripe Crypto Onramp, and x402 payment protocol. **Modularized under `features/payment-rails/rail1/`:**
   - `client.ts` — Privy client singleton, authorization signature helper, app ID/secret getters.
@@ -232,7 +232,7 @@ CreditClaw supports USDC transfers between wallets across all rails and to exter
 - **On-chain Execution:** Privy wallets use REST API (`POST /v1/wallets/{id}/rpc` with ERC-20 transfer calldata, gas sponsored); CrossMint wallets use token transfer endpoint (`POST /wallets/{locator}/tokens/base:usdc/transfers`)
 - **Atomic DB Updates:** Source debit, destination credit, and transaction ledger entries are wrapped in a single Drizzle `db.transaction()` for consistency
 - **Transaction Type:** `"transfer"` with metadata containing `direction` ("inbound"/"outbound"), `transfer_tier`, `counterparty_address`, `counterparty_wallet_id`, `counterparty_rail`, `tx_hash`
-- **Frontend:** Transfer button on both Stripe Wallet and Card Wallet pages, dialog with destination picker (own wallets across both rails or external address), amount input in USD
+- **Frontend:** Transfer button on both Crypto Wallet and Card Wallet pages, dialog with destination picker (own wallets across both rails or external address), amount input in USD
 - **Lib Functions:** `sendUsdcTransfer` in `features/payment-rails/rail1/wallet/transfer.ts` (Privy) and `features/payment-rails/rail2/wallet/transfer.ts` (CrossMint)
 
 ## Self-Hosted Cards (Rail 5) — Live
@@ -281,7 +281,7 @@ See `internal_docs/05-agent-interaction/guardrails.md` for enforcement flow, spe
 **Centralized Dashboard API** (used by ALL rail dashboard pages):
 - `GET /api/v1/approvals?rail=<rail>` — returns pending unified approvals for the authenticated owner, filtered by rail. Extracts rail-specific display fields from `metadata` JSONB (Rail 1: `resource_url`; Rail 2: `product_name`, `shipping_address`).
 - `POST /api/v1/approvals/decide` — accepts `{ approval_id, decision }` (approval_id is the `ua_...` string), verifies ownership, calls `resolveApproval()` with stored HMAC token.
-- All rail dashboard pages (Stripe Wallet, Card Wallet, Self-Hosted Cards) use these centralized endpoints. No rail-specific approval endpoints remain.
+- All rail dashboard pages (Crypto Wallet, Card Wallet, Self-Hosted Cards) use these centralized endpoints. No rail-specific approval endpoints remain.
 
 **Metadata JSONB**: Rail-specific display data is stored in the `metadata` column of `unified_approvals` when checkout routes call `createApproval()`:
 - Rail 1: `{ recipient_address, resource_url }`
@@ -319,7 +319,7 @@ All transaction tables (`rail5_transactions`, `privy_transactions`, `crossmint_t
 
 **Card Color Persistence:** Each card (Rail 5) stores its own `card_color` (`purple`, `dark`, `blue`, `primary`). New cards get a random color on creation. Users can change it from the card detail page (color picker circles below card visual). `resolveCardColor(color, cardId)` in `components/wallet/types.ts` provides a fallback — if `card_color` is null (e.g. a card created before this feature), it derives a stable color from a hash of the card ID. Card deletion uses the unified endpoint `DELETE /api/v1/cards/:cardId?rail=rail5`.
 
-**Shared Wallet/Card UI (`components/wallet/`):** All wallet and card page UI is consolidated into `components/wallet/` to eliminate duplication across Rails 1, 2, and 5. Setup wizards are NOT in this folder — they remain in their original locations. Key components: `card-visual.tsx` (Rail 5), `crypto-card-visual.tsx` (Rails 1/2), `credit-card-item.tsx` (unified card+action bar), `credit-card-list-page.tsx` (full page shell — pages pass a config object), `rail-page-tabs.tsx` (shared tab shell), `transaction-list.tsx`, `order-list.tsx`, `approval-list.tsx`. Shared hooks under `hooks/` (wallet actions, bot linking, transfers, guardrails). Shared dialogs under `dialogs/`. `types.ts` defines `NormalizedCard` with per-rail normalizers.
+**Shared Wallet/Card UI (`components/wallet/`):** All wallet and card page UI is consolidated into `components/wallet/` to eliminate duplication across Rails 1, 2, and 5. Setup wizards are NOT in this folder — they remain in their original locations. Key components: `card-visual.tsx` (Rail 5), `crypto-card-visual.tsx` (Rails 1/2), `credit-card-item.tsx` (unified card+action bar), `credit-card-list-page.tsx` (full page shell — pages pass a config object), `rail-page-tabs.tsx` (shared tab shell), `transaction-list.tsx`, `order-list.tsx`, `approval-list.tsx` (pending-only, used on overview dashboard), `approval-history-panel.tsx` (full history with filters — used on all rail pages and `/transactions`). Shared hooks under `hooks/` (wallet actions, bot linking, transfers, guardrails). Shared dialogs under `dialogs/`. `types.ts` defines `NormalizedCard` with per-rail normalizers.
 
 Rail 5 (`sub-agent-cards/page.tsx`) is ~43 lines — a pure config object passed to `CreditCardListPage`. Adding transaction/approval tabs = add endpoint URLs to the config object.
 
@@ -330,7 +330,7 @@ Rail 5 (`sub-agent-cards/page.tsx`) is ~43 lines — a pure config object passed
 
 **Transaction vs Order:** A *transaction* is a financial movement (deposit, transfer, debit, reconciliation) — it's about the money. An *order* is a confirmed purchase (product, vendor, shipping, tracking) — it's about what was bought. An order typically has a corresponding transaction (via `transactionId` FK), but not every transaction creates an order (deposits, transfers don't).
 
-Individual rail pages (`/stripe-wallet`, `/card-wallet`, `/sub-agent-cards`) also use `RailPageTabs` to show rail-specific transactions, orders, and approvals alongside their wallet/card management.
+Individual rail pages (`/stripe-wallet`, `/card-wallet`, `/sub-agent-cards`) use `RailPageTabs` to show rail-specific transactions, orders, and approvals alongside their wallet/card management. All three rail pages use `ApprovalHistoryPanel` (with `defaultRail` prop) for full approval history — not just pending. The rail filter is hidden on rail-specific pages since it's redundant. Pending approval count is reported back to the parent via `onPendingCount` callback for the tab badge.
 
 ---
 
@@ -511,7 +511,7 @@ Server-side QR/copy-paste crypto top-up logic (Phase 3). Credits whatever USDC a
 - `/claim`: Bot claim page
 - `/skills`: Vendor procurement skills catalog (public)
 - `/solutions/card-wallet`: Card Wallet landing page (public)
-- `/solutions/stripe-wallet`: Stripe Wallet landing page (public)
+- `/solutions/stripe-wallet`: Crypto Wallet landing page (public)
 - `/overview`: Dashboard overview
 - `/stripe-wallet`: Rail 1 dashboard
 - `/card-wallet`: Rail 2 dashboard

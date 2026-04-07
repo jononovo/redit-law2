@@ -10,7 +10,7 @@ import { useAuth } from "@/features/platform-management/auth/auth-context";
 import { authFetch } from "@/features/platform-management/auth-fetch";
 import { useToast } from "@/hooks/use-toast";
 import { CrossmintProvider, CrossmintEmbeddedCheckout } from "@crossmint/client-sdk-react-ui";
-import type { Rail2WalletInfo, Rail2TransactionInfo, Rail2ApprovalInfo } from "@/components/wallet/types";
+import type { Rail2WalletInfo, Rail2TransactionInfo } from "@/components/wallet/types";
 import { microUsdcToDisplay } from "@/components/wallet/types";
 import { useWalletActions } from "@/components/wallet/hooks/use-wallet-actions";
 import { useBotLinking } from "@/components/wallet/hooks/use-bot-linking";
@@ -25,7 +25,7 @@ import { UnlinkBotDialog } from "@/components/wallet/dialogs/unlink-bot-dialog";
 import { RailPageTabs } from "@/components/wallet/rail-page-tabs";
 import { TransactionList, type TransactionRow } from "@/components/wallet/transaction-list";
 import { OrderList, type OrderRow } from "@/components/wallet/order-list";
-import { ApprovalList } from "@/components/wallet/approval-list";
+import { ApprovalHistoryPanel } from "@/components/wallet/approval-history-panel";
 import { WalletSelector } from "@/components/wallet/wallet-selector";
 import type { CardGuardrailForm } from "@/components/wallet/dialogs/guardrail-dialog";
 
@@ -72,7 +72,7 @@ export default function CardWalletPage() {
   const { toast } = useToast();
   const [wallets, setWallets] = useState<Rail2WalletInfo[]>([]);
   const [transactions, setTransactions] = useState<Rail2TransactionInfo[]>([]);
-  const [approvals, setApprovals] = useState<Rail2ApprovalInfo[]>([]);
+  const [pendingApprovalCount, setPendingApprovalCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [selectedWallet, setSelectedWallet] = useState<Rail2WalletInfo | null>(null);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
@@ -143,15 +143,20 @@ export default function CardWalletPage() {
     } catch {}
   }, [selectedWallet]);
 
-  const fetchApprovals = useCallback(async () => {
+  const fetchPendingApprovalCount = useCallback(async () => {
     try {
       const res = await authFetch("/api/v1/approvals?rail=rail2");
       if (res.ok) {
         const data = await res.json();
-        setApprovals(data.approvals || []);
+        setPendingApprovalCount((data.approvals || []).length);
       }
     } catch {}
   }, []);
+
+  const handleDecisionComplete = useCallback(() => {
+    fetchPendingApprovalCount();
+    fetchTransactions();
+  }, [fetchPendingApprovalCount, fetchTransactions]);
 
   const walletActions = useWalletActions({
     railPrefix: "card-wallet",
@@ -186,10 +191,10 @@ export default function CardWalletPage() {
     if (user) {
       fetchWallets();
       botLinking.fetchBots();
-      fetchApprovals();
       fetchOrders();
+      fetchPendingApprovalCount();
     }
-  }, [user, fetchWallets, botLinking.fetchBots, fetchApprovals, fetchOrders]);
+  }, [user, fetchWallets, botLinking.fetchBots, fetchOrders, fetchPendingApprovalCount]);
 
   useEffect(() => {
     fetchTransactions();
@@ -370,14 +375,8 @@ export default function CardWalletPage() {
           {
             id: "approvals",
             label: "Approvals",
-            badge: approvals.length,
-            content: (
-              <ApprovalList
-                approvals={approvals}
-                variant="commerce"
-                onDecide={(id, decision) => walletActions.handleApprovalDecision(id, decision, { onSuccess: () => { fetchApprovals(); fetchTransactions(); } })}
-              />
-            ),
+            badge: pendingApprovalCount,
+            content: <ApprovalHistoryPanel defaultRail="rail2" onPendingCount={setPendingApprovalCount} onDecisionComplete={handleDecisionComplete} />,
           },
         ]}
       />

@@ -19,7 +19,7 @@ export interface ApprovalRow {
 }
 
 const RAIL_LABELS: Record<string, string> = {
-  rail1: "Stripe Wallet",
+  rail1: "Crypto Wallet",
   rail2: "Card Wallet",
   rail5: "Sub-Agent",
 };

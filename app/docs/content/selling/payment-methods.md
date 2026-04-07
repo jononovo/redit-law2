@@ -6,7 +6,7 @@ CreditClaw checkout pages support multiple payment methods so buyers can pay in 
 
 ### Card / Bank (Stripe Onramp)
 
-The most familiar payment method for human buyers. Powered by Stripe, this option lets buyers pay with a credit card, debit card, or bank account. The payment is converted to USDC and deposited into your Stripe Wallet.
+The most familiar payment method for human buyers. Powered by Stripe, this option lets buyers pay with a credit card, debit card, or bank account. The payment is converted to USDC and deposited into your Crypto Wallet.
 
 **How it works for buyers:**
 1. Buyer selects "Card / Bank" on the checkout page
@@ -71,7 +71,7 @@ When creating or editing a checkout page, you can enable or disable each method 
 
 ## How Sellers Receive Funds
 
-Regardless of which payment method a buyer uses, all funds are deposited as USDC into the Stripe Wallet you selected when creating the checkout page. You can view incoming payments in the <a href="/sales" target="_blank">Sales</a> section of the dashboard, or read the [Sales Tracking](/docs/selling/sales-tracking) docs.
+Regardless of which payment method a buyer uses, all funds are deposited as USDC into the Crypto Wallet you selected when creating the checkout page. You can view incoming payments in the <a href="/sales" target="_blank">Sales</a> section of the dashboard, or read the [Sales Tracking](/docs/selling/sales-tracking) docs.
 
 ## Next Steps
 

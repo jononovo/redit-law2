@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
 
     const existingWallet = await storage.privyGetWalletByBotId(bot_id);
     if (existingWallet) {
-      return NextResponse.json({ error: "Bot already has a Stripe Wallet" }, { status: 409 });
+      return NextResponse.json({ error: "Bot already has a Crypto Wallet" }, { status: 409 });
     }
 
     const { id: privyWalletId, address } = await createServerWallet();

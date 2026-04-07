@@ -42,7 +42,7 @@ You can adjust the master budget from **Settings** in the dashboard.
 
 To change spending limits on a wallet:
 
-1. Navigate to the wallet page for the wallet type you want to configure (e.g., **Stripe Wallet**, **Card Wallet**, or **Sub-Agent Cards**)
+1. Navigate to the wallet page for the wallet type you want to configure (e.g., **Crypto Wallet**, **Card Wallet**, or **Sub-Agent Cards**)
 2. Select the wallet you want to edit
 3. Click the **Guardrails** button in the action bar
 4. Adjust the per-transaction, daily, and monthly limits

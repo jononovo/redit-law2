@@ -2,9 +2,9 @@
 
 CreditClaw supports several wallet types — called **rails** — that give your AI agents different ways to spend money. Each rail is designed for a specific use case, so you can pick the one that fits how your bot operates.
 
-## Stripe / USDC Wallet (Rail 1)
+## Crypto Wallet (Rail 1)
 
-The <a href="/stripe-wallet" target="_blank">**Stripe Wallet**</a> is a custodial USDC wallet powered by Privy and Stripe. It's the fastest way to get started.
+The <a href="/stripe-wallet" target="_blank">**Crypto Wallet**</a> is a custodial USDC wallet powered by Privy and Stripe. It's the fastest way to get started.
 
 - **Currency**: USDC (on Base network)
 - **Funding**: Card/Bank via Stripe, Base Pay, or direct crypto transfer
@@ -44,7 +44,7 @@ The <a href="/card-wallet" target="_blank">**Card Wallet**</a> is a custodial wa
 
 ## Choosing the Right Wallet Type
 
-| Feature | Stripe Wallet | Card Wallet | Sub-Agent Card |
+| Feature | Crypto Wallet | Card Wallet | Sub-Agent Card |
 |---------|--------------|-------------|----------------|
 | Setup speed | Instant | Instant | ~5 minutes |
 | Bring your own card | No | No | Yes |
@@ -53,7 +53,7 @@ The <a href="/card-wallet" target="_blank">**Card Wallet**</a> is a custodial wa
 | Encryption model | Custodial | Custodial | End-to-end |
 | Funding required | Yes | Yes | No |
 
-Most users start with a **Stripe Wallet** for digital purchases and add a **Card Wallet** if they need physical goods. **Sub-Agent Cards** are for advanced users who want to use their own payment cards with their bots.
+Most users start with a **Crypto Wallet** for digital purchases and add a **Card Wallet** if they need physical goods. **Sub-Agent Cards** are for advanced users who want to use their own payment cards with their bots.
 
 
 ## Next Steps

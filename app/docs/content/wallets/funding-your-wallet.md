@@ -1,12 +1,12 @@
 # Funding Your Wallet
 
-Stripe Wallets (Rail 1) and Card Wallets (Rail 2) need to be funded before your bot can make purchases. CreditClaw supports several funding methods.
+Crypto Wallets (Rail 1) and Card Wallets (Rail 2) need to be funded before your bot can make purchases. CreditClaw supports several funding methods.
 
 > **Note**: Sub-Agent Cards (Rail 5) use your existing credit/debit cards directly and don't require separate funding.
 
 ## Opening the Fund Wallet Sheet
 
-1. Go to your wallet page (<a href="/stripe-wallet" target="_blank">**Stripe Wallets**</a> or <a href="/card-wallet" target="_blank">**Card Wallets**</a>)
+1. Go to your wallet page (<a href="/stripe-wallet" target="_blank">**Crypto Wallets**</a> or <a href="/card-wallet" target="_blank">**Card Wallets**</a>)
 2. Select the wallet you want to fund
 3. Click the **Fund** button in the wallet action bar
 4. The funding sheet opens on the right side of the screen
@@ -53,7 +53,7 @@ This method works with any wallet that supports USDC on Base — hardware wallet
 
 ## Wallet Address
 
-Every Stripe Wallet and Card Wallet has a unique USDC address on the Base network. You can find this address:
+Every Crypto Wallet and Card Wallet has a unique USDC address on the Base network. You can find this address:
 
 - In the funding sheet (displayed at the top with a copy button)
 - On the wallet detail page
@@ -70,7 +70,7 @@ You can transfer USDC between your own wallets:
 4. Enter the amount
 5. Confirm the transfer
 
-Transfers between your own wallets are instant and free. You can transfer between Stripe Wallets and Card Wallets in either direction.
+Transfers between your own wallets are instant and free. You can transfer between Crypto Wallets and Card Wallets in either direction.
 
 ## Funding Tips
 

@@ -374,7 +374,7 @@ export default function CreateCheckoutPage() {
             Wallet <span className="text-red-500">*</span>
           </Label>
           {wallets.length === 0 ? (
-            <p className="text-sm text-neutral-400">No active wallets found. Create a Stripe Wallet first.</p>
+            <p className="text-sm text-neutral-400">No active wallets found. Create a Crypto Wallet first.</p>
           ) : (
             <Select value={walletId} onValueChange={setWalletId}>
               <SelectTrigger data-testid="select-checkout-wallet">

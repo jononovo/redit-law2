@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/features/platform-management/auth/auth-context";
 import { authFetch } from "@/features/platform-management/auth-fetch";
 import { useToast } from "@/hooks/use-toast";
-import type { Rail1WalletInfo, Rail1ApprovalInfo, Rail1TransactionInfo } from "@/components/wallet/types";
+import type { Rail1WalletInfo, Rail1TransactionInfo } from "@/components/wallet/types";
 import { useWalletActions } from "@/components/wallet/hooks/use-wallet-actions";
 import { useBotLinking } from "@/components/wallet/hooks/use-bot-linking";
 import { useTransfer } from "@/components/wallet/hooks/use-transfer";
@@ -21,7 +21,7 @@ import { FundWalletSheet } from "@/features/agent-shops/payments/components/fund
 import { RailPageTabs } from "@/components/wallet/rail-page-tabs";
 import { TransactionList } from "@/components/wallet/transaction-list";
 import { OrderList, type OrderRow } from "@/components/wallet/order-list";
-import { ApprovalList } from "@/components/wallet/approval-list";
+import { ApprovalHistoryPanel } from "@/components/wallet/approval-history-panel";
 import { WalletSelector } from "@/components/wallet/wallet-selector";
 import type { CryptoGuardrailForm } from "@/components/wallet/dialogs/guardrail-dialog";
 
@@ -30,7 +30,7 @@ export default function StripeWalletPage() {
   const { toast } = useToast();
   const [wallets, setWallets] = useState<Rail1WalletInfo[]>([]);
   const [transactions, setTransactions] = useState<Rail1TransactionInfo[]>([]);
-  const [approvals, setApprovals] = useState<Rail1ApprovalInfo[]>([]);
+  const [pendingApprovalCount, setPendingApprovalCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [selectedWallet, setSelectedWallet] = useState<Rail1WalletInfo | null>(null);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
@@ -93,12 +93,12 @@ export default function StripeWalletPage() {
     } catch {}
   }, [selectedWallet]);
 
-  const fetchApprovals = useCallback(async () => {
+  const fetchPendingApprovalCount = useCallback(async () => {
     try {
       const res = await authFetch("/api/v1/approvals?rail=rail1");
       if (res.ok) {
         const data = await res.json();
-        setApprovals(data.approvals || []);
+        setPendingApprovalCount((data.approvals || []).length);
       }
     } catch {}
   }, []);
@@ -145,12 +145,12 @@ export default function StripeWalletPage() {
     if (user) {
       fetchWallets();
       botLinking.fetchBots();
-      fetchApprovals();
       fetchOrders();
+      fetchPendingApprovalCount();
     } else {
       setLoading(false);
     }
-  }, [user, fetchWallets, botLinking.fetchBots, fetchApprovals, fetchOrders]);
+  }, [user, fetchWallets, botLinking.fetchBots, fetchOrders, fetchPendingApprovalCount]);
 
   useEffect(() => {
     if (selectedWallet) {
@@ -168,7 +168,7 @@ export default function StripeWalletPage() {
     <div className="flex flex-col gap-8 animate-fade-in-up">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-neutral-900 mb-1" data-testid="text-stripe-wallet-title">Stripe Wallet</h1>
+          <h1 className="text-2xl font-bold text-neutral-900 mb-1" data-testid="text-stripe-wallet-title">Crypto Wallet</h1>
           <p className="text-neutral-500">
             Fund bots with USDC on Base via Stripe. Bots pay for API resources using the x402 protocol.
           </p>
@@ -189,7 +189,7 @@ export default function StripeWalletPage() {
             <Wallet className="w-5 h-5 text-blue-600" />
           </div>
           <div>
-            <h3 className="font-bold text-neutral-900 mb-1">How Stripe Wallet Works</h3>
+            <h3 className="font-bold text-neutral-900 mb-1">How Crypto Wallet Works</h3>
             <p className="text-sm text-neutral-600 leading-relaxed">
               Each bot gets a Privy server wallet on Base chain. You fund it with USDC via Stripe's Crypto Onramp (fiat → USDC).
               When your bot needs to pay for an API resource, it uses the x402 payment protocol — CreditClaw signs the EIP-712
@@ -214,7 +214,7 @@ export default function StripeWalletPage() {
             ) : wallets.length === 0 ? (
               <div className="text-center py-24" data-testid="text-no-stripe-wallets">
                 <Wallet className="w-12 h-12 text-neutral-300 mx-auto mb-4" />
-                <p className="text-lg text-neutral-400 font-medium">No Stripe Wallets yet.</p>
+                <p className="text-lg text-neutral-400 font-medium">No Crypto Wallets yet.</p>
                 <p className="text-sm text-neutral-400 mt-2">Click "New Wallet" to provision a USDC wallet for your bot.</p>
               </div>
             ) : (
@@ -267,14 +267,8 @@ export default function StripeWalletPage() {
           {
             id: "approvals",
             label: "Approvals",
-            badge: approvals.length,
-            content: (
-              <ApprovalList
-                approvals={approvals}
-                variant="crypto"
-                onDecide={(id, decision) => walletActions.handleApprovalDecision(id, decision, { onSuccess: fetchApprovals })}
-              />
-            ),
+            badge: pendingApprovalCount,
+            content: <ApprovalHistoryPanel defaultRail="rail1" onPendingCount={setPendingApprovalCount} onDecisionComplete={fetchPendingApprovalCount} />,
           },
         ]}
       />
@@ -284,7 +278,7 @@ export default function StripeWalletPage() {
         onOpenChange={setCreateDialogOpen}
         bots={botLinking.bots}
         config={{
-          title: "Create Stripe Wallet",
+          title: "Create Crypto Wallet",
           description: "Provision a Privy server wallet on Base for your bot. It can be funded with USDC via Stripe.",
           endpoint: "/api/v1/stripe-wallet/create",
           buttonLabel: "Create Wallet",
