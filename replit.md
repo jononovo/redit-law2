@@ -36,18 +36,15 @@ When building UI, check which tenant(s) the feature applies to and follow the ap
 
 ## Modularization Guidelines
 
-New features should follow a feature-first folder structure. Each rail lives under `lib/rail{N}/` with files grouped by responsibility, not by layer.
+New features should follow a feature-first folder structure under `lib/{feature}/` with files grouped by responsibility, not by layer.
 
-**Within a rail**, split code by what it does:
-- `client.ts` — shared API client, auth, fetch wrapper, format helpers (if the rail talks to an external API)
-- `wallet/` or `orders/` — domain operations grouped into subfolders when there are multiple related functions
-- `fulfillment.ts` — business logic that runs when an approval is decided (wallet debits, order creation, webhooks)
-- `approval-callback.ts` — thin glue (~5-10 lines) that registers the rail's fulfillment functions with the unified approval system
+**Within a feature folder**, split code by what it does:
+- `client.ts` — shared API client, auth, fetch wrapper, format helpers (if the feature talks to an external API)
+- Subfolders by domain (e.g. `wallet/`, `orders/`, `scoring/`) when there are multiple related operations
+- `fulfillment.ts` — business logic triggered by external events or callbacks
 - Keep each file focused on one concern. If a file is doing two unrelated things, split it.
 
-**Outside of rails** (cross-cutting features like guardrails, approvals, webhooks, notifications):
-- These stay in their own `lib/{feature}/` folders and should not contain rail-specific business logic.
-- If a cross-cutting module starts accumulating rail-specific code (like `callbacks.ts` did), extract that logic into the rail's own folder and leave a thin import in the cross-cutting module.
+**Cross-cutting vs feature-specific**: Cross-cutting logic (guardrails, approvals, webhooks, notifications) stays in its own `lib/{feature}/` folder and should not accumulate feature-specific business logic. If a cross-cutting module starts pulling in feature-specific code, extract that logic into the feature's own folder and leave a thin import in the cross-cutting module.
 
 **Guardrails** (`lib/guardrails/`) — spending limits (how much). Master-level budget across all rails + per-rail limits per wallet/card. Also owns approval modes.
 
