@@ -211,7 +211,7 @@ export function OrdersPanel({ onConfigureGuardrails }: OrdersPanelProps) {
             <div
               key={order.id}
               className="bg-white rounded-xl border border-neutral-100 p-4 cursor-pointer hover:border-violet-200 hover:shadow-sm transition-all"
-              onClick={() => router.push(`/app/orders/${order.id}`)}
+              onClick={() => router.push(`/orders/${order.id}`)}
               data-testid={`order-card-${order.id}`}
             >
               <div className="flex items-center justify-between">

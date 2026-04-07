@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { ArrowUpRight, ArrowDownLeft, Loader2, Receipt } from "lucide-react";
 import { RailPageTabs } from "@/components/wallet/rail-page-tabs";
 import { OrdersPanel } from "@/components/wallet/orders-panel";
@@ -114,9 +115,35 @@ function TransactionsTab() {
   );
 }
 
+const VALID_TABS = ["transactions", "orders", "approvals"];
+
 export default function TransactionsPage() {
-  const [activeTab, setActiveTab] = useState("transactions");
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const tabParam = searchParams.get("tab");
+  const initialTab = tabParam && VALID_TABS.includes(tabParam) ? tabParam : "transactions";
+  const [activeTab, setActiveTab] = useState(initialTab);
   const [guardrailsOpen, setGuardrailsOpen] = useState(false);
+
+  useEffect(() => {
+    const tab = searchParams.get("tab");
+    const nextTab = tab && VALID_TABS.includes(tab) ? tab : "transactions";
+    if (nextTab !== activeTab) {
+      setActiveTab(nextTab);
+    }
+  }, [searchParams]);
+
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab);
+    const params = new URLSearchParams(searchParams.toString());
+    if (tab === "transactions") {
+      params.delete("tab");
+    } else {
+      params.set("tab", tab);
+    }
+    const query = params.toString();
+    router.replace(`/transactions${query ? `?${query}` : ""}`, { scroll: false });
+  };
 
   return (
     <div className="flex flex-col gap-8 animate-fade-in-up">
@@ -126,7 +153,7 @@ export default function TransactionsPage() {
 
       <RailPageTabs
         activeTab={activeTab}
-        onTabChange={setActiveTab}
+        onTabChange={handleTabChange}
         testIdPrefix="transactions"
         tabs={[
           {

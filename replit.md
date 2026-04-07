@@ -323,12 +323,10 @@ All transaction tables (`rail5_transactions`, `privy_transactions`, `crossmint_t
 
 Rail 5 (`sub-agent-cards/page.tsx`) is ~43 lines — a pure config object passed to `CreditCardListPage`. Adding transaction/approval tabs = add endpoint URLs to the config object.
 
-**Transactions, Orders & Approvals Page** (`/transactions`) — cross-rail activity dashboard with three tabs:
+**Transactions, Orders & Approvals Page** (`/transactions`) — cross-rail activity dashboard with three tabs. Supports URL-param tab selection via `?tab=orders` or `?tab=approvals` (defaults to transactions tab).
 - **Transactions** — wallet activity (topups, debits, refunds) from `GET /api/v1/wallet/transactions`. Table with type, description, amount, balance, date. **Known gap:** currently reads from `rail5_transactions` only — does NOT aggregate from `privy_transactions` (Rail 1), `crossmint_transactions` (Rail 2), or `rail5_checkouts` (Rail 5). Needs to be fixed to show cross-rail activity.
-- **Orders** — confirmed purchases across all rails via `OrdersPanel` (reads from central `orders` table). Cross-rail filters: rail, bot, status, date range. Clicking an order navigates to `/orders/[order_id]` detail page.
+- **Orders** — confirmed purchases across all rails via `OrdersPanel` (reads from central `orders` table). Cross-rail filters: rail, bot, status, date range. Clicking an order navigates to `/orders/[order_id]` detail page. Sidebar "Orders" link deep-links to `/transactions?tab=orders`.
 - **Approvals** — approval history via `ApprovalHistoryPanel`.
-
-**Note:** `/orders` also exists as a standalone sidebar page but renders the identical `OrdersPanel` — should be consolidated into the `/transactions` Orders tab.
 
 **Transaction vs Order:** A *transaction* is a financial movement (deposit, transfer, debit, reconciliation) — it's about the money. An *order* is a confirmed purchase (product, vendor, shipping, tracking) — it's about what was bought. An order typically has a corresponding transaction (via `transactionId` FK), but not every transaction creates an order (deposits, transfers don't).
 
