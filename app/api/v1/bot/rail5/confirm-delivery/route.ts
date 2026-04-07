@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
-import { withBotApi } from "@/lib/agent-management/agent-api/middleware";
+import { withBotApi } from "@/lib/platform-management/agent-management/agent-api/middleware";
 import { storage } from "@/server/storage";
 import { RAIL5_TEST_CHECKOUT_URL } from "@/lib/payment-rails/rail5";
-import { sendToBot } from "@/lib/agent-management/bot-messaging";
-import { buildRail5TestInstructions } from "@/lib/agent-management/bot-messaging/templates";
+import { sendToBot } from "@/lib/platform-management/agent-management/bot-messaging";
+import { buildRail5TestInstructions } from "@/lib/platform-management/agent-management/bot-messaging/templates";
 import { randomBytes } from "crypto";
 
 export const POST = withBotApi("/api/v1/bot/rail5/confirm-delivery", async (_request, { bot }) => {

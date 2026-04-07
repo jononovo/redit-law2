@@ -2,11 +2,11 @@
 
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { authFetch } from "@/lib/auth-fetch";
+import { authFetch } from "@/lib/platform-management/auth-fetch";
 import { encryptCardDetails, buildEncryptedCardFile, downloadEncryptedFile } from "@/lib/payment-rails/card/onboarding-rail5/encrypt";
 import { detectCardBrand, brandToApiValue, getMaxDigits } from "@/lib/payment-rails/card/card-brand";
 import { type CardFieldErrors } from "@/lib/payment-rails/card/hooks";
-import { RAIL5_CARD_DELIVERED } from "@/lib/agent-management/bot-messaging/templates";
+import { RAIL5_CARD_DELIVERED } from "@/lib/platform-management/agent-management/bot-messaging/templates";
 import { randomCardName, type BotOption, type SavedCardDetails } from "./types";
 
 interface UseRail5WizardProps {

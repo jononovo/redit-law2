@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { storage } from "@/server/storage";
 import { crossmintBotPurchaseSchema } from "@/shared/schema";
-import { authenticateBot } from "@/lib/agent-management/auth";
-import { evaluateGuardrails } from "@/lib/guardrails/evaluate";
-import { evaluateProcurementControls } from "@/lib/procurement-controls/evaluate";
-import { evaluateMasterGuardrails } from "@/lib/guardrails/master";
-import { evaluateApprovalDecision } from "@/lib/guardrails/approval";
+import { authenticateBot } from "@/lib/platform-management/agent-management/auth";
+import { evaluateGuardrails } from "@/lib/agent-interaction/guardrails/evaluate";
+import { evaluateProcurementControls } from "@/lib/agent-interaction/procurement-controls/evaluate";
+import { evaluateMasterGuardrails } from "@/lib/agent-interaction/guardrails/master";
+import { evaluateApprovalDecision } from "@/lib/agent-interaction/guardrails/approval";
 import { usdToMicroUsdc } from "@/lib/payment-rails/rail2/client";
-import { createApproval } from "@/lib/approvals/service";
+import { createApproval } from "@/lib/agent-interaction/approvals/service";
 
 async function handler(request: NextRequest, botId: string) {
   try {
@@ -121,7 +121,7 @@ async function handler(request: NextRequest, botId: string) {
       });
 
       try {
-        const { createPurchaseOrder } = await import("@/lib/procurement/crossmint-worldstore/purchase");
+        const { createPurchaseOrder } = await import("@/lib/agent-interaction/procurement/crossmint-worldstore/purchase");
         const bot = await storage.getBotByBotId(botId);
         const owner = await storage.getOwnerByUid(wallet.ownerUid);
         const ownerEmail = owner?.email || bot?.ownerEmail || "";
@@ -150,8 +150,8 @@ async function handler(request: NextRequest, botId: string) {
         });
 
         try {
-          const { recordOrder } = await import("@/lib/orders/create");
-          const { toShippingAddressFields } = await import("@/lib/orders/address-utils");
+          const { recordOrder } = await import("@/lib/agent-interaction/orders/create");
+          const { toShippingAddressFields } = await import("@/lib/agent-interaction/orders/address-utils");
           const convertedAddr = toShippingAddressFields(shipping_address as any);
           await recordOrder({
             ownerUid: wallet.ownerUid,
@@ -180,7 +180,7 @@ async function handler(request: NextRequest, botId: string) {
         }
 
         if (bot) {
-          const { fireWebhook } = await import("@/lib/webhooks");
+          const { fireWebhook } = await import("@/lib/agent-interaction/webhooks");
           fireWebhook(bot, "purchase.approved", {
             transaction_id: tx.id,
             order_id: result.orderId,

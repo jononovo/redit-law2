@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSessionUser } from "@/lib/auth/session";
+import { getSessionUser } from "@/lib/platform-management/auth/session";
 import { storage } from "@/server/storage";
 import { getWalletBalance } from "@/lib/payment-rails/rail2/wallet/balance";
 import { formatUsdc } from "@/lib/payment-rails/rail2/client";

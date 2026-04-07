@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { authFetch } from "@/lib/auth-fetch";
+import { authFetch } from "@/lib/platform-management/auth-fetch";
 import { encryptCardDetails, buildEncryptedCardFile, downloadEncryptedFile } from "@/lib/payment-rails/card/onboarding-rail5/encrypt";
 
 interface CardEntryProps {

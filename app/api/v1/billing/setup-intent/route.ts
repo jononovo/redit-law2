@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getCurrentUser } from "@/lib/auth/session";
+import { getCurrentUser } from "@/lib/platform-management/auth/session";
 import { getOrCreateCustomer, createSetupIntent } from "@/lib/payment-rails/stripe";
 import { storage } from "@/server/storage";
 

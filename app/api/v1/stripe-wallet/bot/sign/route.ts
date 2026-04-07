@@ -3,13 +3,13 @@ import { storage } from "@/server/storage";
 import { privyBotSignSchema } from "@/shared/schema";
 import { signTypedData } from "@/lib/payment-rails/rail1/wallet/sign";
 import { buildTransferWithAuthorizationTypedData, generateNonce, buildXPaymentHeader, usdToMicroUsdc, microUsdcToUsd } from "@/lib/payment-rails/rail1/x402";
-import { authenticateBot } from "@/lib/agent-management/auth";
-import { evaluateGuardrails } from "@/lib/guardrails/evaluate";
-import { evaluateProcurementControls } from "@/lib/procurement-controls/evaluate";
-import { evaluateMasterGuardrails } from "@/lib/guardrails/master";
-import { evaluateApprovalDecision } from "@/lib/guardrails/approval";
-import { createApproval } from "@/lib/approvals/service";
-import { recordOrder } from "@/lib/orders/create";
+import { authenticateBot } from "@/lib/platform-management/agent-management/auth";
+import { evaluateGuardrails } from "@/lib/agent-interaction/guardrails/evaluate";
+import { evaluateProcurementControls } from "@/lib/agent-interaction/procurement-controls/evaluate";
+import { evaluateMasterGuardrails } from "@/lib/agent-interaction/guardrails/master";
+import { evaluateApprovalDecision } from "@/lib/agent-interaction/guardrails/approval";
+import { createApproval } from "@/lib/agent-interaction/approvals/service";
+import { recordOrder } from "@/lib/agent-interaction/orders/create";
 
 async function handler(request: NextRequest, botId: string) {
   try {

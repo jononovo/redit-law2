@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSessionUser } from "@/lib/auth/session";
+import { getSessionUser } from "@/lib/platform-management/auth/session";
 import { storage } from "@/server/storage";
-import { generateInvoicePdf, pdfToBase64 } from "@/lib/invoice-pdf";
-import { sendInvoiceEmail } from "@/lib/invoice-email";
+import { generateInvoicePdf, pdfToBase64 } from "@/lib/agent-shops/invoice-pdf";
+import { sendInvoiceEmail } from "@/lib/agent-shops/invoice-email";
 
 export async function POST(
   request: NextRequest,

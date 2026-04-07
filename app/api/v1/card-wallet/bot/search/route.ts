@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { authenticateBot } from "@/lib/agent-management/auth";
+import { authenticateBot } from "@/lib/platform-management/agent-management/auth";
 import { crossmintProductSearchSchema } from "@/shared/schema";
-import { searchShopifyProduct } from "@/lib/procurement/crossmint-worldstore/shopify-search";
+import { searchShopifyProduct } from "@/lib/agent-interaction/procurement/crossmint-worldstore/shopify-search";
 
 async function handler(request: NextRequest) {
   try {

@@ -4,7 +4,7 @@
 "use client";
 
 import { useState, useRef, useCallback } from "react";
-import { authFetch } from "@/lib/auth-fetch";
+import { authFetch } from "@/lib/platform-management/auth-fetch";
 import { useToast } from "@/hooks/use-toast";
 
 export interface UseStripeOnrampConfig {

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { evaluateGuardrails, evaluateCardGuardrails } from "@/lib/guardrails/evaluate";
+import { evaluateGuardrails, evaluateCardGuardrails } from "@/lib/agent-interaction/guardrails/evaluate";
 import type {
   GuardrailRules,
   TransactionRequest,
@@ -7,7 +7,7 @@ import type {
   CardGuardrailRules,
   CardTransactionRequest,
   CardCumulativeSpend,
-} from "@/lib/guardrails/types";
+} from "@/lib/agent-interaction/guardrails/types";
 
 const defaultRules: GuardrailRules = {
   maxPerTxUsdc: 25,

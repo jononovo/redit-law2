@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useTenant } from "@/lib/tenants/tenant-context";
+import { useTenant } from "@/lib/platform-management/tenants/tenant-context";
 
 const DEFAULT_COLUMNS: { title: string; links: { label: string; href: string; external?: boolean }[] }[] = [
   {

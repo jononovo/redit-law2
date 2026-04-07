@@ -1,5 +1,5 @@
 import { cookies } from "next/headers";
-import { getTenantConfig } from "@/lib/tenants/config";
+import { getTenantConfig } from "@/lib/platform-management/tenants/config";
 
 export const dynamic = "force-dynamic";
 

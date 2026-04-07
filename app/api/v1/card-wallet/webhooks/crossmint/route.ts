@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { storage } from "@/server/storage";
-import { fireWebhook } from "@/lib/webhooks";
+import { fireWebhook } from "@/lib/agent-interaction/webhooks";
 import {
   verifyCrossMintWebhook,
   extractOrderId,
   buildOrderUpdates,
-} from "@/lib/procurement/crossmint-worldstore/webhook";
+} from "@/lib/agent-interaction/procurement/crossmint-worldstore/webhook";
 
 const WEBHOOK_SECRET = process.env.CROSSMINT_WEBHOOK_SECRET;
 

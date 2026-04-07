@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
-import { useTenant } from "@/lib/tenants/tenant-context";
+import { useTenant } from "@/lib/platform-management/tenants/tenant-context";
 
 function useIsDark() {
   const tenant = useTenant();

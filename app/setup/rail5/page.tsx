@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/lib/auth/auth-context";
+import { useAuth } from "@/lib/platform-management/auth/auth-context";
 import { Rail5SetupWizardContent } from "@/components/onboarding/rail5-wizard";
 
 export default function Rail5SetupPage() {

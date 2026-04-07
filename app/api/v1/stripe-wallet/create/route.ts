@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSessionUser } from "@/lib/auth/session";
+import { getSessionUser } from "@/lib/platform-management/auth/session";
 import { storage } from "@/server/storage";
 import { createPrivyWalletSchema } from "@/shared/schema";
 import { createServerWallet } from "@/lib/payment-rails/rail1/wallet/create";
-import { fireRailsUpdated } from "@/lib/webhooks";
+import { fireRailsUpdated } from "@/lib/agent-interaction/webhooks";
 
 export async function POST(request: NextRequest) {
   try {

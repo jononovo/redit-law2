@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSessionUser } from "@/lib/auth/session";
+import { getSessionUser } from "@/lib/platform-management/auth/session";
 import { storage } from "@/server/storage";
 import { getOnChainUsdcBalance } from "@/lib/payment-rails/rail1/wallet/balance";
 import { isAddress } from "viem";

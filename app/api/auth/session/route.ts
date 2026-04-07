@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createSessionCookie, destroySession, getCurrentUser } from "@/lib/auth/session";
-import { adminAuth } from "@/lib/firebase/admin";
+import { createSessionCookie, destroySession, getCurrentUser } from "@/lib/platform-management/auth/session";
+import { adminAuth } from "@/lib/platform-management/firebase/admin";
 import { storage } from "@/server/storage";
 
 export async function POST(request: NextRequest) {

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { withBotApi } from "@/lib/agent-management/agent-api/middleware";
+import { withBotApi } from "@/lib/platform-management/agent-management/agent-api/middleware";
 import { storage } from "@/server/storage";
 
 export const GET = withBotApi("/api/v1/bot/wallet/transactions", async (request, { bot }) => {

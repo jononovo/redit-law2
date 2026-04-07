@@ -7,8 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { StatusBadge } from "@/components/wallet/status-badge";
-import { useAuth } from "@/lib/auth/auth-context";
-import { authFetch } from "@/lib/auth-fetch";
+import { useAuth } from "@/lib/platform-management/auth/auth-context";
+import { authFetch } from "@/lib/platform-management/auth-fetch";
 import { useToast } from "@/hooks/use-toast";
 import type { UnifiedApproval } from "@/shared/schema";
 

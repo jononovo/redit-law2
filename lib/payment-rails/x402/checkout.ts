@@ -1,5 +1,5 @@
 import { storage } from "@/server/storage";
-import { fireWebhook } from "@/lib/webhooks";
+import { fireWebhook } from "@/lib/agent-interaction/webhooks";
 import crypto from "crypto";
 import type { CheckoutPage, PrivyTransaction } from "@/shared/schema";
 

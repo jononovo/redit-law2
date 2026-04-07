@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { withBotApi } from "@/lib/agent-management/agent-api/middleware";
+import { withBotApi } from "@/lib/platform-management/agent-management/agent-api/middleware";
 import { storage } from "@/server/storage";
 import { z } from "zod";
 

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getCurrentUser } from "@/lib/auth/session";
+import { getCurrentUser } from "@/lib/platform-management/auth/session";
 import { addToQueue, getQueueStats, clearCompleted, retryFailed, removeEntry } from "@/lib/brand-engine/scan-queue/process-next";
 
 async function requireAdmin() {

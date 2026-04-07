@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSessionUser } from "@/lib/auth/session";
+import { getSessionUser } from "@/lib/platform-management/auth/session";
 import { getOnChainUsdcBalance } from "@/lib/payment-rails/rail1/wallet/balance";
-import { creditWalletFromQrPay } from "@/lib/qr-pay/ledger";
+import { creditWalletFromQrPay } from "@/lib/agent-shops/qr-pay/ledger";
 import { storage } from "@/server/storage";
 
 export async function GET(

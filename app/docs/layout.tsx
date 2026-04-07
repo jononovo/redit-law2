@@ -14,7 +14,7 @@ import {
   sections,
   type DocSection,
 } from "@/app/docs/content/sections";
-import { getTenantIdFromCookie } from "@/lib/tenants/tenant-context";
+import { getTenantIdFromCookie } from "@/lib/platform-management/tenants/tenant-context";
 
 const TENANT_BRANDING: Record<string, { name: string; logo: string }> = {
   creditclaw: { name: "CreditClaw", logo: "/assets/images/logo-claw-chip.png" },

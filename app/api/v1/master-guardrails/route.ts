@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSessionUser } from "@/lib/auth/session";
+import { getSessionUser } from "@/lib/platform-management/auth/session";
 import { storage } from "@/server/storage";
 import { upsertMasterGuardrailsSchema } from "@/shared/schema";
-import { microUsdcToUsd } from "@/lib/guardrails/master";
-import { GUARDRAIL_DEFAULTS } from "@/lib/guardrails/defaults";
+import { microUsdcToUsd } from "@/lib/agent-interaction/guardrails/master";
+import { GUARDRAIL_DEFAULTS } from "@/lib/agent-interaction/guardrails/defaults";
 
 export async function GET(request: NextRequest) {
   try {
