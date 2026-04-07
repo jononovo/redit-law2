@@ -44,18 +44,11 @@ interface BotData {
   claimed_at: string | null;
 }
 
-interface BalanceData {
-  balance_cents: number;
-  balance: string;
-  has_wallet: boolean;
-}
-
 export default function DashboardOverview() {
   const router = useRouter();
   const { user } = useAuth();
   const { toast } = useToast();
   const [bots, setBots] = useState<BotData[]>([]);
-  const [balance, setBalance] = useState<BalanceData | null>(null);
   const [loading, setLoading] = useState(true);
   const [privyWallets, setPrivyWallets] = useState<Rail1WalletInfo[]>([]);
   const [rail5Cards, setRail5Cards] = useState<NormalizedCard[]>([]);
@@ -73,17 +66,10 @@ export default function DashboardOverview() {
 
   async function fetchData() {
     try {
-      const [botsRes, balanceRes] = await Promise.all([
-        fetch("/api/v1/bots/mine"),
-        fetch("/api/v1/wallet/balance"),
-      ]);
+      const botsRes = await fetch("/api/v1/bots/mine");
       if (botsRes.ok) {
         const data = await botsRes.json();
         setBots(data.bots || []);
-      }
-      if (balanceRes.ok) {
-        const data = await balanceRes.json();
-        setBalance(data);
       }
     } catch {} finally {
       setLoading(false);
@@ -255,17 +241,11 @@ export default function DashboardOverview() {
 
   return (
     <div className="flex flex-col gap-8 animate-fade-in-up">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="bg-white p-6 rounded-xl border border-neutral-100 shadow-sm" data-testid="stat-total-bots">
           <span className="text-sm font-medium text-neutral-500">Total Bots</span>
           <h3 className="text-2xl font-bold text-neutral-900 tracking-tight mt-2">
             {loading ? "—" : bots.length}
-          </h3>
-        </div>
-        <div className="bg-white p-6 rounded-xl border border-neutral-100 shadow-sm" data-testid="stat-wallet-balance">
-          <span className="text-sm font-medium text-neutral-500">Wallet Balance</span>
-          <h3 className="text-2xl font-bold text-green-600 tracking-tight mt-2">
-            {loading ? "—" : balance?.balance || "$0.00"}
           </h3>
         </div>
         <div className="bg-white p-6 rounded-xl border border-neutral-100 shadow-sm" data-testid="stat-pending-bots">

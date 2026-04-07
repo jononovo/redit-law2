@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { withBotApi } from "@/features/platform-management/agent-management/agent-api/middleware";
 import { storage } from "@/server/storage";
 import { rail5CheckoutRequestSchema } from "@/shared/schema";
-import { generateRail5CheckoutId, buildSpawnPayload, buildCheckoutSteps } from "@/features/payment-rails/rail5";
+import { generateRail5TransactionId, buildSpawnPayload, buildCheckoutSteps } from "@/features/payment-rails/rail5";
 import { evaluateMasterGuardrails, centsToMicroUsdc } from "@/features/agent-interaction/guardrails/master";
 import { evaluateCardGuardrails } from "@/features/agent-interaction/guardrails/evaluate";
 import { evaluateApprovalDecision } from "@/features/agent-interaction/guardrails/approval";
@@ -84,12 +84,10 @@ export const POST = withBotApi("/api/v1/bot/rail5/checkout", async (request, { b
     );
   }
 
-  const checkoutId = generateRail5CheckoutId();
-  const wallet = await storage.rail5GetWalletByOwnerUid(card.ownerUid);
-  const walletBalance = wallet?.balanceCents ?? null;
+  const checkoutId = generateRail5TransactionId();
 
   if (approvalDecision.action === "require_approval") {
-    await storage.createRail5Checkout({
+    await storage.createRail5Transaction({
       checkoutId,
       cardId: card.cardId,
       botId: bot.botId,
@@ -100,7 +98,7 @@ export const POST = withBotApi("/api/v1/bot/rail5/checkout", async (request, { b
       amountCents: amount_cents,
       category: category || undefined,
       status: "pending_approval",
-      balanceAfter: walletBalance,
+      balanceAfter: null,
     });
 
     const owner = await storage.getOwnerByUid(card.ownerUid);
@@ -140,7 +138,7 @@ export const POST = withBotApi("/api/v1/bot/rail5/checkout", async (request, { b
     });
   }
 
-  await storage.createRail5Checkout({
+  await storage.createRail5Transaction({
     checkoutId,
     cardId: card.cardId,
     botId: bot.botId,
@@ -151,7 +149,7 @@ export const POST = withBotApi("/api/v1/bot/rail5/checkout", async (request, { b
     amountCents: amount_cents,
     category: category || undefined,
     status: "approved",
-    balanceAfter: walletBalance,
+    balanceAfter: null,
   });
 
   const encryptedFilename = `Card-${card.cardName.replace(/[^a-zA-Z0-9-_]/g, "-")}-${card.cardLast4}.md`;

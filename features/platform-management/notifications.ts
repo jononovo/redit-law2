@@ -58,54 +58,6 @@ export async function notifyOwner(opts: NotifyOwnerOpts): Promise<void> {
   }
 }
 
-export async function notifyPurchase(
-  ownerUid: string,
-  ownerEmail: string,
-  botName: string,
-  botId: string,
-  amountCents: number,
-  merchant: string,
-  newBalanceCents: number,
-): Promise<void> {
-  const { sendPurchaseAlertEmail } = await import("@/features/platform-management/email");
-  const amountUsd = (amountCents / 100).toFixed(2);
-
-  await notifyOwner({
-    ownerUid,
-    ownerEmail,
-    type: "purchase",
-    title: `${botName} spent $${amountUsd}`,
-    body: `${botName} made a $${amountUsd} purchase at ${merchant}. Balance: $${(newBalanceCents / 100).toFixed(2)}.`,
-    botId,
-    shouldNotify: (prefs) => prefs.inAppEnabled && prefs.transactionAlerts,
-    shouldEmail: (prefs) => prefs.emailEnabled && prefs.transactionAlerts && amountCents >= prefs.purchaseOverThresholdCents,
-    emailFn: (email) => sendPurchaseAlertEmail({ ownerEmail: email, botName, amountUsd: Number(amountUsd), merchant }),
-  });
-}
-
-export async function notifyBalanceLow(
-  ownerUid: string,
-  ownerEmail: string,
-  botName: string,
-  botId: string,
-  balanceCents: number,
-): Promise<void> {
-  const { sendBalanceLowEmail } = await import("@/features/platform-management/email");
-  const balanceUsd = (balanceCents / 100).toFixed(2);
-
-  await notifyOwner({
-    ownerUid,
-    ownerEmail,
-    type: "balance_low",
-    title: `${botName}'s balance is low`,
-    body: `${botName}'s wallet balance dropped to $${balanceUsd}. Consider adding funds.`,
-    botId,
-    shouldNotify: (prefs) => prefs.inAppEnabled && prefs.budgetWarnings,
-    shouldEmail: (prefs) => prefs.emailEnabled && prefs.budgetWarnings,
-    emailFn: (email) => sendBalanceLowEmail({ ownerEmail: email, botName, balanceUsd: Number(balanceUsd) }),
-  });
-}
-
 export async function notifySuspicious(
   ownerUid: string,
   ownerEmail: string,

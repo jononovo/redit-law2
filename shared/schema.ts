@@ -29,28 +29,6 @@ export const bots = pgTable("bots", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
-export const rail5Wallets = pgTable("rail5_wallets", {
-  id: serial("id").primaryKey(),
-  botId: text("bot_id").notNull().unique(),
-  ownerUid: text("owner_uid").notNull(),
-  balanceCents: integer("balance_cents").notNull().default(0),
-  currency: text("currency").notNull().default("usd"),
-  isFrozen: boolean("is_frozen").notNull().default(false),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  updatedAt: timestamp("updated_at").notNull().defaultNow(),
-});
-
-export const rail5Transactions = pgTable("rail5_transactions", {
-  id: serial("id").primaryKey(),
-  walletId: integer("wallet_id").notNull(),
-  type: text("type").notNull(),
-  amountCents: integer("amount_cents").notNull(),
-  stripePaymentIntentId: text("stripe_payment_intent_id"),
-  description: text("description"),
-  balanceAfter: integer("balance_after"),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-});
-
 export const paymentMethods = pgTable("payment_methods", {
   id: serial("id").primaryKey(),
   ownerUid: text("owner_uid").notNull(),
@@ -164,10 +142,6 @@ export const purchaseRequestSchema = z.object({
 
 export type Bot = typeof bots.$inferSelect;
 export type InsertBot = typeof bots.$inferInsert;
-export type Rail5Wallet = typeof rail5Wallets.$inferSelect;
-export type InsertRail5Wallet = typeof rail5Wallets.$inferInsert;
-export type Rail5Transaction = typeof rail5Transactions.$inferSelect;
-export type InsertRail5Transaction = typeof rail5Transactions.$inferInsert;
 export type PaymentMethod = typeof paymentMethods.$inferSelect;
 export type InsertPaymentMethod = typeof paymentMethods.$inferInsert;
 
@@ -454,7 +428,7 @@ export const upsertMasterGuardrailsSchema = z.object({
   max_per_tx_usdc: z.number().int().min(1).max(100000).optional(),
   daily_budget_usdc: z.number().int().min(1).max(1000000).optional(),
   monthly_budget_usdc: z.number().int().min(1).max(10000000).optional(),
-  approval_mode: z.enum(["ask_for_everything", "auto_approve_under_threshold", "auto_approve_by_category"]).optional(),
+  approval_mode: z.enum(["ask_for_everything", "auto_approve_under_threshold"]).optional(),
   require_approval_above: z.number().int().min(0).nullable().optional(),
   enabled: z.boolean().optional(),
 });
@@ -565,7 +539,7 @@ export const rail5Cards = pgTable("rail5_cards", {
   index("rail5_cards_status_idx").on(table.status),
 ]);
 
-export const rail5Checkouts = pgTable("rail5_checkouts", {
+export const rail5Transactions = pgTable("rail5_transactions", {
   id: serial("id").primaryKey(),
   checkoutId: text("checkout_id").notNull().unique(),
   cardId: text("card_id").notNull(),
@@ -583,16 +557,16 @@ export const rail5Checkouts = pgTable("rail5_checkouts", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 }, (table) => [
-  index("rail5_checkouts_checkout_id_idx").on(table.checkoutId),
-  index("rail5_checkouts_card_id_idx").on(table.cardId),
-  index("rail5_checkouts_bot_id_idx").on(table.botId),
-  index("rail5_checkouts_status_idx").on(table.status),
+  index("rail5_transactions_checkout_id_idx").on(table.checkoutId),
+  index("rail5_transactions_card_id_idx").on(table.cardId),
+  index("rail5_transactions_bot_id_idx").on(table.botId),
+  index("rail5_transactions_status_idx").on(table.status),
 ]);
 
 export type Rail5Card = typeof rail5Cards.$inferSelect;
 export type InsertRail5Card = typeof rail5Cards.$inferInsert;
-export type Rail5Checkout = typeof rail5Checkouts.$inferSelect;
-export type InsertRail5Checkout = typeof rail5Checkouts.$inferInsert;
+export type Rail5Transaction = typeof rail5Transactions.$inferSelect;
+export type InsertRail5Transaction = typeof rail5Transactions.$inferInsert;
 
 export const rail5InitializeSchema = z.object({
   card_name: z.string().min(1).max(200),

@@ -17,32 +17,14 @@ export async function GET(request: NextRequest) {
 
   const countResult = await db.execute(sql`
     SELECT
-      (SELECT count(*) FROM rail5_transactions)::int +
       (SELECT count(*) FROM privy_transactions)::int +
       (SELECT count(*) FROM crossmint_transactions)::int +
-      (SELECT count(*) FROM rail5_checkouts)::int
+      (SELECT count(*) FROM rail5_transactions)::int
     AS total
   `);
   const total = Number(countResult.rows[0]?.total ?? 0);
 
   const rows = await db.execute(sql`
-    (
-      SELECT
-        t.id,
-        'rail5' AS rail,
-        t.type,
-        t.amount_cents AS amount_raw,
-        'cents' AS amount_unit,
-        t.description,
-        t.status,
-        t.created_at,
-        o.email AS owner_email,
-        w.bot_id
-      FROM rail5_transactions t
-      LEFT JOIN rail5_wallets w ON w.id = t.wallet_id
-      LEFT JOIN owners o ON o.uid = w.owner_uid
-    )
-    UNION ALL
     (
       SELECT
         pt.id,
@@ -89,7 +71,7 @@ export async function GET(request: NextRequest) {
         rc.created_at,
         o.email AS owner_email,
         rc.bot_id
-      FROM rail5_checkouts rc
+      FROM rail5_transactions rc
       LEFT JOIN owners o ON o.uid = rc.owner_uid
     )
     ORDER BY created_at DESC, rail ASC, id DESC

@@ -6,9 +6,7 @@ interface RateLimitConfig {
 }
 
 export const BOT_RATE_LIMITS: Record<string, RateLimitConfig> = {
-  "/api/v1/bot/wallet/check": { maxRequests: 6, windowMs: 60 * 60 * 1000 },
   "/api/v1/bot/wallet/spending": { maxRequests: 6, windowMs: 60 * 60 * 1000 },
-  "/api/v1/bot/wallet/transactions": { maxRequests: 12, windowMs: 60 * 60 * 1000 },
   "/api/v1/bot/rail5/checkout": { maxRequests: 30, windowMs: 60 * 60 * 1000 },
   "/api/v1/bot/rail5/key": { maxRequests: 30, windowMs: 60 * 60 * 1000 },
   "/api/v1/bot/rail5/confirm": { maxRequests: 30, windowMs: 60 * 60 * 1000 },

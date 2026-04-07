@@ -69,7 +69,7 @@ export async function PATCH(
       return NextResponse.json({ error: "cannot_change_status", message: "Card must be set up and delivered before changing status." }, { status: 400 });
     }
     if (data.status === "active" && card.status === "frozen") {
-      const checkouts = await storage.getRail5CheckoutsByCardId(cardId, 50);
+      const checkouts = await storage.getRail5TransactionsByCardId(cardId, 50);
       const hasCompleted = checkouts.some((c) => c.status === "completed");
       updates.status = hasCompleted ? "active" : "confirmed";
     } else {
@@ -151,7 +151,7 @@ export async function GET(
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
   }
 
-  const checkouts = await storage.getRail5CheckoutsByCardId(card.cardId, 50);
+  const checkouts = await storage.getRail5TransactionsByCardId(card.cardId, 50);
 
   const guard = await storage.getRail5Guardrails(card.cardId);
   const { GUARDRAIL_DEFAULTS } = await import("@/features/agent-interaction/guardrails/defaults");

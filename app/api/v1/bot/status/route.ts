@@ -17,13 +17,11 @@ export const GET = withBotApi("/api/v1/bot/status", async (_request, { bot }) =>
   }
 
   const [
-    wallet,
     privyWallet,
     crossmintWallet,
     rail5Card,
     pendingMessageCount,
   ] = await Promise.all([
-    storage.rail5GetWalletByBotId(bot.botId),
     storage.privyGetWalletByBotId(bot.botId),
     storage.crossmintGetWalletByBotId(bot.botId),
     storage.getRail5CardByBotId(bot.botId),
@@ -31,13 +29,6 @@ export const GET = withBotApi("/api/v1/bot/status", async (_request, { bot }) =>
   ]);
 
   const rails: Record<string, any> = {};
-
-  if (wallet) {
-    rails.card_wallet = {
-      status: wallet.balanceCents > 0 ? "active" : "empty",
-      balance_usd: wallet.balanceCents / 100,
-    };
-  }
 
   if (privyWallet) {
     rails.stripe_wallet = {
