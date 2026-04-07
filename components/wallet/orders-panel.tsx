@@ -78,7 +78,7 @@ export function OrdersPanel({ onConfigureGuardrails }: OrdersPanelProps) {
 
   const railLabel = (rail: string) => {
     const labels: Record<string, string> = {
-      rail1: "Stripe Wallet",
+      rail1: "Crypto Wallet",
       rail2: "Card Wallet",
       rail5: "My Card (Encrypted)",
     };
@@ -136,7 +136,7 @@ export function OrdersPanel({ onConfigureGuardrails }: OrdersPanelProps) {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Rails</SelectItem>
-                <SelectItem value="rail1">Stripe Wallet</SelectItem>
+                <SelectItem value="rail1">Crypto Wallet</SelectItem>
                 <SelectItem value="rail2">Card Wallet</SelectItem>
                 <SelectItem value="rail5">My Card (Encrypted)</SelectItem>
               </SelectContent>

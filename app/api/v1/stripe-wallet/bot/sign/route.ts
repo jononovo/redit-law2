@@ -23,7 +23,7 @@ async function handler(request: NextRequest, botId: string) {
 
     const wallet = await storage.privyGetWalletByBotId(botId);
     if (!wallet) {
-      return NextResponse.json({ error: "No Stripe Wallet found for this bot" }, { status: 404 });
+      return NextResponse.json({ error: "No Crypto Wallet found for this bot" }, { status: 404 });
     }
 
     if (wallet.status !== "active") {

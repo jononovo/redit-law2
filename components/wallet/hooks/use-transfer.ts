@@ -49,7 +49,7 @@ export function useTransfer(config: UseTransferConfig) {
               id: w.id,
               rail: "privy" as const,
               address: w.address,
-              label: `${w.bot_name || "Stripe Wallet"} (${w.address.slice(0, 6)}...${w.address.slice(-4)}) — Stripe/Privy`,
+              label: `${w.bot_name || "Crypto Wallet"} (${w.address.slice(0, 6)}...${w.address.slice(-4)}) — Stripe/Privy`,
             });
           }
         });

@@ -138,7 +138,7 @@ export default function StripeWalletLanding() {
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-3xl font-bold mb-4">Ready to fund your bots?</h2>
           <p className="text-neutral-400 max-w-xl mx-auto mb-8">
-            Create a Stripe Wallet, set your guardrails, and let your bots pay for resources autonomously.
+            Create a Crypto Wallet, set your guardrails, and let your bots pay for resources autonomously.
           </p>
           <Link href="/stripe-wallet">
             <Button size="lg" className="rounded-full bg-blue-600 hover:bg-blue-700 px-8 gap-2" data-testid="button-cta-bottom">

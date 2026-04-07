@@ -168,7 +168,7 @@ export default function StripeWalletPage() {
     <div className="flex flex-col gap-8 animate-fade-in-up">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-neutral-900 mb-1" data-testid="text-stripe-wallet-title">Stripe Wallet</h1>
+          <h1 className="text-2xl font-bold text-neutral-900 mb-1" data-testid="text-stripe-wallet-title">Crypto Wallet</h1>
           <p className="text-neutral-500">
             Fund bots with USDC on Base via Stripe. Bots pay for API resources using the x402 protocol.
           </p>
@@ -189,7 +189,7 @@ export default function StripeWalletPage() {
             <Wallet className="w-5 h-5 text-blue-600" />
           </div>
           <div>
-            <h3 className="font-bold text-neutral-900 mb-1">How Stripe Wallet Works</h3>
+            <h3 className="font-bold text-neutral-900 mb-1">How Crypto Wallet Works</h3>
             <p className="text-sm text-neutral-600 leading-relaxed">
               Each bot gets a Privy server wallet on Base chain. You fund it with USDC via Stripe's Crypto Onramp (fiat → USDC).
               When your bot needs to pay for an API resource, it uses the x402 payment protocol — CreditClaw signs the EIP-712
@@ -214,7 +214,7 @@ export default function StripeWalletPage() {
             ) : wallets.length === 0 ? (
               <div className="text-center py-24" data-testid="text-no-stripe-wallets">
                 <Wallet className="w-12 h-12 text-neutral-300 mx-auto mb-4" />
-                <p className="text-lg text-neutral-400 font-medium">No Stripe Wallets yet.</p>
+                <p className="text-lg text-neutral-400 font-medium">No Crypto Wallets yet.</p>
                 <p className="text-sm text-neutral-400 mt-2">Click "New Wallet" to provision a USDC wallet for your bot.</p>
               </div>
             ) : (
@@ -278,7 +278,7 @@ export default function StripeWalletPage() {
         onOpenChange={setCreateDialogOpen}
         bots={botLinking.bots}
         config={{
-          title: "Create Stripe Wallet",
+          title: "Create Crypto Wallet",
           description: "Provision a Privy server wallet on Base for your bot. It can be funded with USDC via Stripe.",
           endpoint: "/api/v1/stripe-wallet/create",
           buttonLabel: "Create Wallet",

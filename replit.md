@@ -181,7 +181,7 @@ Outbound payment rails — how users fund wallets and how their agents spend mon
 
 Custodial USDC wallets on Base chain. Both rails share the same funding → spending → reconciliation pattern, inter-wallet transfers, and guardrail enforcement. They differ by provider.
 
-### Rail 1 — Stripe Wallet (Live)
+### Rail 1 — Crypto Wallet (Live)
 
 Uses Privy server wallets on Base chain, USDC funding via Stripe Crypto Onramp, and x402 payment protocol. **Modularized under `features/payment-rails/rail1/`:**
   - `client.ts` — Privy client singleton, authorization signature helper, app ID/secret getters.
@@ -232,7 +232,7 @@ CreditClaw supports USDC transfers between wallets across all rails and to exter
 - **On-chain Execution:** Privy wallets use REST API (`POST /v1/wallets/{id}/rpc` with ERC-20 transfer calldata, gas sponsored); CrossMint wallets use token transfer endpoint (`POST /wallets/{locator}/tokens/base:usdc/transfers`)
 - **Atomic DB Updates:** Source debit, destination credit, and transaction ledger entries are wrapped in a single Drizzle `db.transaction()` for consistency
 - **Transaction Type:** `"transfer"` with metadata containing `direction` ("inbound"/"outbound"), `transfer_tier`, `counterparty_address`, `counterparty_wallet_id`, `counterparty_rail`, `tx_hash`
-- **Frontend:** Transfer button on both Stripe Wallet and Card Wallet pages, dialog with destination picker (own wallets across both rails or external address), amount input in USD
+- **Frontend:** Transfer button on both Crypto Wallet and Card Wallet pages, dialog with destination picker (own wallets across both rails or external address), amount input in USD
 - **Lib Functions:** `sendUsdcTransfer` in `features/payment-rails/rail1/wallet/transfer.ts` (Privy) and `features/payment-rails/rail2/wallet/transfer.ts` (CrossMint)
 
 ## Self-Hosted Cards (Rail 5) — Live
@@ -281,7 +281,7 @@ See `internal_docs/05-agent-interaction/guardrails.md` for enforcement flow, spe
 **Centralized Dashboard API** (used by ALL rail dashboard pages):
 - `GET /api/v1/approvals?rail=<rail>` — returns pending unified approvals for the authenticated owner, filtered by rail. Extracts rail-specific display fields from `metadata` JSONB (Rail 1: `resource_url`; Rail 2: `product_name`, `shipping_address`).
 - `POST /api/v1/approvals/decide` — accepts `{ approval_id, decision }` (approval_id is the `ua_...` string), verifies ownership, calls `resolveApproval()` with stored HMAC token.
-- All rail dashboard pages (Stripe Wallet, Card Wallet, Self-Hosted Cards) use these centralized endpoints. No rail-specific approval endpoints remain.
+- All rail dashboard pages (Crypto Wallet, Card Wallet, Self-Hosted Cards) use these centralized endpoints. No rail-specific approval endpoints remain.
 
 **Metadata JSONB**: Rail-specific display data is stored in the `metadata` column of `unified_approvals` when checkout routes call `createApproval()`:
 - Rail 1: `{ recipient_address, resource_url }`
@@ -511,7 +511,7 @@ Server-side QR/copy-paste crypto top-up logic (Phase 3). Credits whatever USDC a
 - `/claim`: Bot claim page
 - `/skills`: Vendor procurement skills catalog (public)
 - `/solutions/card-wallet`: Card Wallet landing page (public)
-- `/solutions/stripe-wallet`: Stripe Wallet landing page (public)
+- `/solutions/stripe-wallet`: Crypto Wallet landing page (public)
 - `/overview`: Dashboard overview
 - `/stripe-wallet`: Rail 1 dashboard
 - `/card-wallet`: Rail 2 dashboard

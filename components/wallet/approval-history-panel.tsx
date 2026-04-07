@@ -13,7 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import type { UnifiedApproval } from "@/shared/schema";
 
 const RAIL_LABELS: Record<string, string> = {
-  rail1: "Stripe Wallet",
+  rail1: "Crypto Wallet",
   rail2: "Card Wallet",
   rail5: "Sub-Agent",
 };
@@ -129,7 +129,7 @@ export function ApprovalHistoryPanel({ defaultRail, onPendingCount, onDecisionCo
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Rails</SelectItem>
-                  <SelectItem value="rail1">Stripe Wallet</SelectItem>
+                  <SelectItem value="rail1">Crypto Wallet</SelectItem>
                   <SelectItem value="rail2">Card Wallet</SelectItem>
                   <SelectItem value="rail5">Sub-Agent</SelectItem>
                 </SelectContent>

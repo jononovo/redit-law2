@@ -76,7 +76,7 @@ Returned when the transaction exceeds the auto-approve threshold and requires hu
 | 401    | `{ "error": "Invalid or missing API key" }`  | Bad or missing `Authorization` header |
 | 403    | `{ "error": "Insufficient USDC balance" }`   | Wallet balance too low               |
 | 403    | `{ "error": "..." }`                         | Blocked by guardrails or procurement controls |
-| 404    | `{ "error": "No Stripe Wallet found..." }`   | Bot has no linked Stripe Wallet      |
+| 404    | `{ "error": "No Crypto Wallet found..." }`   | Bot has no linked Crypto Wallet      |
 | 500    | `{ "error": "internal_error" }`              | Server error                         |
 
 ---

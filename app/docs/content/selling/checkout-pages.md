@@ -9,7 +9,7 @@ Navigate to <a href="/checkout/create" target="_blank">**Checkout**</a> in the d
 ### Required Fields
 
 - **Title** — A name for the checkout page (e.g., "API Access Plan" or "Premium Subscription")
-- **Wallet** — The Stripe Wallet where funds will be deposited. Only active wallets are shown.
+- **Wallet** — The Crypto Wallet where funds will be deposited. Only active wallets are shown.
 
 ### Optional Fields
 
