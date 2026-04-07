@@ -1,9 +1,15 @@
 ---
 name: System Architecture
-description: Technical overview of all ten modules. Read after vision.md. Maps every features/ folder and API route to its parent module.
+description: Technical overview of the platform and all ten modules. Maps every features/ folder and API route to its parent module.
 ---
 
 # System Architecture
+
+The infrastructure layer for AI-powered commerce. Three tenants, one codebase:
+
+- **CreditClaw** (`creditclaw.com`) — Financial rails for AI agents. Virtual Visa/Mastercard issuance, wallet funding, spending limits.
+- **shopy.sh** — Consumer-facing scanner and leaderboard. Measures how "agent-friendly" a merchant's website is via the ASX Score (0–100).
+- **brands.sh** — Developer-facing skill registry. Hosts SKILL.md files that teach agents how to browse and buy from specific stores.
 
 ## Modules
 

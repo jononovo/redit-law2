@@ -7,11 +7,10 @@ description: Navigation guide for project_knowledge/. Start here if you're new.
 
 ## Start here
 
-1. **`vision.md`** — what we're building and why
-2. **`architecture.md`** — system overview, all components, current status
-3. **`tenants_vision/`** — one file per tenant (vision + identity + brand + design + key files)
-4. **`internal_docs/` subfolder for your task** — dive into the relevant feature area
-5. **`_how-to-write-docs-guide.md`** — only if you're writing or updating docs
+1. **`architecture.md`** — what we're building, system overview, all components, current status
+2. **`tenants_vision/`** — one file per tenant (vision + identity + brand + design + key files)
+3. **`internal_docs/` subfolder for your task** — dive into the relevant feature area
+4. **`_how-to-write-docs-guide.md`** — only if you're writing or updating docs
 
 ## How to navigate a subfolder
 
@@ -26,7 +25,7 @@ Not every subfolder has a `_README.md` or `_research/` folder — but when they 
 
 ## Structure
 
-- Root-level files are entry points (vision, architecture, guide)
+- Root-level files are entry points (architecture, guide)
 - `currently_building/` is the active working bench
 - `internal_docs/` contains permanent feature documentation organized by area
 - `_completed/` subfolders hold archived plans that have been built
@@ -35,8 +34,7 @@ Not every subfolder has a `_README.md` or `_research/` folder — but when they 
 
 | File | Purpose |
 |------|---------|
-| `vision.md` | Overall product vision — all three tenants (Tier 3 protected) |
-| `architecture.md` | System components, data flow, status, future plans |
+| `architecture.md` | Platform vision, system components, data flow, status, future plans |
 | `_how-to-write-docs-guide.md` | How to write and update docs in this folder |
 
 ## Folders
