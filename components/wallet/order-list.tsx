@@ -98,7 +98,7 @@ export function OrderList({ orders, testIdPrefix = "order" }: OrderListProps) {
   const router = useRouter();
 
   const handleOpenDetail = (order: OrderRow) => {
-    router.push(`/app/orders/${order.id}`);
+    router.push(`/orders/${order.id}`);
   };
 
   if (orders.length === 0) {
