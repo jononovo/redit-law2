@@ -182,7 +182,7 @@ export interface IStorage {
   decideUnifiedApproval(approvalId: string, decision: string): Promise<UnifiedApproval | null>;
   closeUnifiedApprovalByRailRef(rail: string, railRef: string, decision: string): Promise<void>;
   getUnifiedApprovalsByOwnerUid(ownerUid: string, status?: string): Promise<UnifiedApproval[]>;
-  getApprovalHistory(ownerUid: string, filters?: import("./approvals").ApprovalFilters): Promise<UnifiedApproval[]>;
+  getApprovalHistory(ownerUid: string, filters?: import("./agent-interaction/approvals").ApprovalFilters): Promise<UnifiedApproval[]>;
 
   createOrder(data: InsertOrder): Promise<Order>;
   getOrderById(id: number): Promise<Order | null>;
