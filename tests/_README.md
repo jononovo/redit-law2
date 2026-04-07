@@ -31,7 +31,7 @@ Good: 3 tests for the formatter, 15 tests for the approval system.
 | Maturity | `maturity/resolve-maturity.test.ts` | 12 | Draft → community promotion rules |
 | Registry API | `registry/api.test.ts` | 17 | Discovery API query params, filtering, response shape |
 
-| Recommend API | `recommend/recommend.test.ts` | 19 | Data integrity, category FTS, merchant ranking, vector search, e2e pipeline |
+| Product Index Recommend Pipeline | `product-index-recommend-pipeline/product-index-recommend-pipeline.test.ts` | 19 | Data integrity, category FTS, merchant ranking, vector search, e2e pipeline |
 
 **Major gaps** (no automated tests yet):
 - Scan engine / scoring rubric
