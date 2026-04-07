@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import Image from "next/image";
-import { PanelLeft, Book, Code } from "lucide-react";
+import { PanelLeft } from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -12,37 +12,25 @@ import {
 } from "@/components/ui/sheet";
 import {
   sections,
-  getSectionsByAudience,
-  getAudienceFromSlug,
-  getTenantFromSlug,
-  type Audience,
   type DocSection,
-  type DocTenant,
-} from "@/docs/content/sections";
+} from "@/app/docs/content/sections";
 import { getTenantIdFromCookie } from "@/lib/tenants/tenant-context";
 
-const TENANT_BRANDING: Record<string, { name: string; logo: string; userLabel: string; devLabel: string }> = {
-  creditclaw: { name: "CreditClaw", logo: "/assets/images/logo-claw-chip.png", userLabel: "User Guide", devLabel: "Developers" },
-  shopy: { name: "shopy.sh", logo: "/assets/images/logo-claw-chip.png", userLabel: "For Merchants", devLabel: "For Developers" },
-  brands: { name: "brands.sh", logo: "/tenants/brands/images/logo.png", userLabel: "Guide", devLabel: "Developers" },
+const TENANT_BRANDING: Record<string, { name: string; logo: string }> = {
+  creditclaw: { name: "CreditClaw", logo: "/assets/images/logo-claw-chip.png" },
+  shopy: { name: "shopy.sh", logo: "/assets/images/logo-claw-chip.png" },
+  brands: { name: "brands.sh", logo: "/tenants/brands/images/logo.png" },
 };
 
 function Sidebar({
-  audience,
   currentPath,
   onNavigate,
   tenant,
 }: {
-  audience: Audience;
   currentPath: string;
   onNavigate?: () => void;
-  tenant: DocTenant;
+  tenant: string;
 }) {
-  const filteredSections = getSectionsByAudience(audience, tenant);
-  const userFirstPage = getSectionsByAudience("user", tenant)[0];
-  const devFirstPage = getSectionsByAudience("developer", tenant)[0];
-  const userHref = userFirstPage ? `/docs/${userFirstPage.slug}/${userFirstPage.pages[0].slug}` : "/docs";
-  const devHref = devFirstPage ? `/docs/${devFirstPage.slug}/${devFirstPage.pages[0].slug}` : "/docs";
   const branding = TENANT_BRANDING[tenant] || TENANT_BRANDING.creditclaw;
 
   return (
@@ -67,42 +55,10 @@ function Sidebar({
             Docs
           </Link>
         </div>
-        <div className="mt-5 flex items-center gap-4">
-          {userFirstPage && (
-            <Link
-              href={userHref}
-              onClick={onNavigate}
-              className={`flex items-center gap-1.5 text-sm font-semibold transition-colors ${
-                audience === "user"
-                  ? "text-neutral-900"
-                  : "text-neutral-400 hover:text-neutral-600"
-              }`}
-              data-testid="link-audience-user"
-            >
-              <Book className="w-3.5 h-3.5" />
-              {branding.userLabel}
-            </Link>
-          )}
-          {devFirstPage && (
-            <Link
-              href={devHref}
-              onClick={onNavigate}
-              className={`flex items-center gap-1.5 text-sm font-semibold transition-colors ${
-                audience === "developer"
-                  ? "text-neutral-900"
-                  : "text-neutral-400 hover:text-neutral-600"
-              }`}
-              data-testid="link-audience-developer"
-            >
-              <Code className="w-3.5 h-3.5" />
-              {branding.devLabel}
-            </Link>
-          )}
-        </div>
       </div>
 
       <nav className="flex-1 overflow-y-auto p-4 space-y-5" data-testid="docs-sidebar-nav">
-        {filteredSections.map((section) => (
+        {sections.map((section) => (
           <SidebarSection
             key={section.slug}
             section={section}
@@ -126,8 +82,13 @@ function SidebarSection({
 }) {
   return (
     <div>
-      <h3 className="text-xs font-bold text-neutral-400 uppercase tracking-wider mb-2">
+      <h3 className="text-xs font-bold text-neutral-400 uppercase tracking-wider mb-2 flex items-center gap-2">
         {section.title}
+        {section.tag && (
+          <span className="text-[10px] font-medium text-neutral-400 bg-neutral-100 px-1.5 py-0.5 rounded normal-case tracking-normal">
+            {section.tag}
+          </span>
+        )}
       </h3>
       <ul className="space-y-0.5">
         {section.pages.map((page) => {
@@ -159,19 +120,14 @@ export default function DocsLayout({ children }: { children: React.ReactNode }) 
   const pathname = usePathname();
   const [drawerOpen, setDrawerOpen] = useState(false);
 
-  const slugParts = pathname.replace("/docs/", "").replace("/docs", "").split("/").filter(Boolean);
-  const audience: Audience = slugParts.length > 0 ? getAudienceFromSlug(slugParts) : "user";
-
-  const slugTenant = getTenantFromSlug(slugParts);
   const cookieTenant = getTenantIdFromCookie();
-  const tenant: DocTenant = slugParts.length > 0 ? slugTenant : (cookieTenant as DocTenant) || "creditclaw";
+  const tenant = cookieTenant || "creditclaw";
   const branding = TENANT_BRANDING[tenant] || TENANT_BRANDING.creditclaw;
 
   return (
     <div className="min-h-screen bg-white flex" data-testid="docs-layout">
       <aside className="hidden lg:flex flex-col w-72 border-r border-neutral-200 sticky top-0 h-screen shrink-0">
         <Sidebar
-          audience={audience}
           currentPath={pathname}
           tenant={tenant}
         />
@@ -204,7 +160,6 @@ export default function DocsLayout({ children }: { children: React.ReactNode }) 
         <SheetContent side="left" className="p-0 max-w-[80%] w-72">
           <SheetTitle className="sr-only">Documentation navigation</SheetTitle>
           <Sidebar
-            audience={audience}
             currentPath={pathname}
             onNavigate={() => setDrawerOpen(false)}
             tenant={tenant}

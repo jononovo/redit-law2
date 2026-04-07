@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
-import { sections, sitePages } from "@/docs/content/sections";
+import { sections, sitePages } from "@/app/docs/content/sections";
 
 export async function GET() {
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://creditclaw.com";
@@ -15,7 +15,7 @@ export async function GET() {
   parts.push("");
 
   for (const page of sitePages) {
-    const mdPath = path.join(process.cwd(), "docs", "content", page.file);
+    const mdPath = path.join(process.cwd(), "app", "docs", "content", page.file);
     try {
       const content = fs.readFileSync(mdPath, "utf-8");
       parts.push(content);
@@ -44,11 +44,12 @@ export async function GET() {
   parts.push("");
 
   for (const section of sections) {
-    parts.push(`# ${section.title} (${section.audience === "user" ? "User Guide" : "Developer Docs"})`);
+    const tagSuffix = section.tag ? ` [${section.tag}]` : "";
+    parts.push(`# ${section.title}${tagSuffix}`);
     parts.push("");
 
     for (const page of section.pages) {
-      const mdPath = path.join(process.cwd(), "docs", "content", ...section.slug.split("/"), `${page.slug}.md`);
+      const mdPath = path.join(process.cwd(), "app", "docs", "content", ...section.slug.split("/"), `${page.slug}.md`);
       try {
         const content = fs.readFileSync(mdPath, "utf-8");
         parts.push(content);

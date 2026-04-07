@@ -48,6 +48,8 @@ export interface TenantConfig {
     };
   };
 
+  docsEntrySlug?: string;
+
   tracking?: {
     gaId: string;
   };

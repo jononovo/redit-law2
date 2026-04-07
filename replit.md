@@ -36,39 +36,21 @@ When building UI, check which tenant(s) the feature applies to and follow the ap
 
 ## Modularization Guidelines
 
-New features should follow a feature-first folder structure. Each rail lives under `lib/rail{N}/` with files grouped by responsibility, not by layer.
+New features should follow a feature-first folder structure under `lib/{feature}/` with files grouped by responsibility, not by layer.
 
-**Within a rail**, split code by what it does:
-- `client.ts` — shared API client, auth, fetch wrapper, format helpers (if the rail talks to an external API)
-- `wallet/` or `orders/` — domain operations grouped into subfolders when there are multiple related functions
-- `fulfillment.ts` — business logic that runs when an approval is decided (wallet debits, order creation, webhooks)
-- `approval-callback.ts` — thin glue (~5-10 lines) that registers the rail's fulfillment functions with the unified approval system
+**Within a feature folder**, split code by what it does:
+- `client.ts` — shared API client, auth, fetch wrapper, format helpers (if the feature talks to an external API)
+- Subfolders by domain (e.g. `wallet/`, `orders/`, `scoring/`) when there are multiple related operations
+- `fulfillment.ts` — business logic triggered by external events or callbacks
 - Keep each file focused on one concern. If a file is doing two unrelated things, split it.
 
-**Outside of rails** (cross-cutting features like guardrails, approvals, webhooks, notifications):
-- These stay in their own `lib/{feature}/` folders and should not contain rail-specific business logic.
-- If a cross-cutting module starts accumulating rail-specific code (like `callbacks.ts` did), extract that logic into the rail's own folder and leave a thin import in the cross-cutting module.
+**Cross-cutting vs feature-specific**: Cross-cutting logic (guardrails, approvals, webhooks, notifications) stays in its own `lib/{feature}/` folder and should not accumulate feature-specific business logic. If a cross-cutting module starts pulling in feature-specific code, extract that logic into the feature's own folder and leave a thin import in the cross-cutting module.
 
-**Guardrails** (`lib/guardrails/`):
-- `defaults.ts` — single source of truth for all guardrail default values (master + all rails). The schema reads from this file, so changing a value here changes the default for new records. Also exports `PROCUREMENT_DEFAULTS` for procurement controls.
-- `types.ts` — `GuardrailRules` (USDC-based for Rails 1/2), `CardGuardrailRules` (cents-based for Rails 4/5), `TransactionRequest`, `CardTransactionRequest`, `CumulativeSpend`, `CardCumulativeSpend`, `GuardrailDecision` interfaces.
-- `evaluate.ts` — two pure evaluation functions: `evaluateGuardrails()` for USDC rails (1 & 2) and `evaluateCardGuardrails()` for card rail (5). Only enforces spending limits and approval thresholds — domain/merchant/category enforcement is handled by procurement controls.
-- `master.ts` — master-level guardrail evaluation (fetches config, aggregates cross-rail spend, calls `evaluateGuardrails`).
-- `approval.ts` — centralized `evaluateApprovalDecision()` function that reads `approvalMode` and `requireApprovalAbove` from the `master_guardrails` table. This is the single source of truth for all approval decisions across all rails.
-- **Standardized Structure**: Per-rail guardrail tables (`privy_guardrails`, `crossmint_guardrails`, `rail5_guardrails`) contain only spending limits: `maxPerTx`, `dailyBudget`, `monthlyBudget`, `recurringAllowed`, `autoPauseOnZero`, `notes`, `updatedAt`, `updatedBy`. Approval mode (`approvalMode`, `requireApprovalAbove`) lives exclusively on `master_guardrails`. Domain/merchant/category lists live exclusively in `procurement_controls`.
-- **Centralized Approval**: All checkout routes call `evaluateApprovalDecision(ownerUid, amountCents)` from `lib/guardrails/approval.ts`. This function reads from `master_guardrails` and supports:
-  - `ask_for_everything` → require owner approval for all transactions
-  - `auto_approve_under_threshold` → only require approval if amount >= `requireApprovalAbove`
-  - `auto_approve_by_category` → allow (category-based approval not yet fully implemented)
-- **recurringAllowed**: Column exists on all rails for structural consistency but is not yet enforced in checkout routes (pending recurring detection logic).
-- **notes**: Informational field on all rails, returned in API responses but not used in enforcement.
+**Guardrails** (`lib/guardrails/`) — spending limits (how much). Master-level budget across all rails + per-rail limits per wallet/card. Also owns approval modes.
 
-**Procurement Controls** (`lib/procurement-controls/`):
-- `types.ts` — `ProcurementRules`, `ProcurementRequest`, `ProcurementDecision` interfaces.
-- `defaults.ts` — `DEFAULT_PROCUREMENT_RULES` with default blocked categories.
-- `evaluate.ts` — `evaluateProcurementControls()` checks domain, merchant, and category rules. `mergeProcurementRules()` combines master + rail-level rules (blocklists are unioned, allowlists are intersected).
-- DB table: `procurement_controls` with `scope` (master/rail1/rail2/rail5) and `scope_ref_id` for per-rail granularity. Owner-facing API: `GET/POST /api/v1/procurement-controls` and `GET /api/v1/procurement-controls/[scope]`.
-- **Fully separated from guardrails**: Domain/merchant/category lists are exclusively managed by `procurement_controls`. The guardrails tables (`privy_guardrails`, `crossmint_guardrails`, `rail5_guardrails`) no longer have `allowlisted_domains`, `blocklisted_domains`, `allowlisted_merchants`, or `blocklisted_merchants` columns. The guardrails GET APIs still return these fields in the response by reading from `procurement_controls`, maintaining backward compatibility. The card-wallet frontend saves merchant lists to `POST /api/v1/procurement-controls` separately from guardrail limit saves.
+**Procurement Controls** (`lib/procurement-controls/`) — merchant/domain/category restrictions (where). Fully separated from guardrails.
+
+See `internal_docs/05-agent-interaction/guardrails.md` for enforcement flow, spend aggregation, status filters, approval modes, and procurement control details.
 
 **Webhooks** (`lib/webhooks/`):
 - `delivery.ts` — outbound webhook delivery, HMAC-SHA256 signing, retry logic with exponential backoff, and OpenClaw hooks token auth. Exports `fireWebhook()`, `fireRailsUpdated()`, `signPayload()`, `attemptDelivery()`, `retryWebhookDelivery()`, `retryPendingWebhooksForBot()`, `retryAllPendingWebhooks()`.
@@ -125,35 +107,13 @@ CreditClaw uses a lightweight, database-backed feature flag system for controlli
 The platform uses Next.js 16 (App Router), Firebase Auth (client/Admin SDK) with httpOnly session cookies, PostgreSQL via Drizzle ORM, Tailwind CSS v4, PostCSS, shadcn/ui for components, and React Query for state management.
 
 ### Managed Cloudflare Tunnels
-Bots without a `callback_url` get a managed Cloudflare tunnel provisioned at registration. Architecture follows two-layer separation:
-- **Webhook Tunnel module:** `lib/webhook-tunnel/` — self-contained module for Cloudflare tunnel provisioning.
-  - `cloudflare.ts` — low-level Cloudflare API calls only. `provisionBotTunnel(botId, localPort)`, `deleteBotTunnel(tunnelId, botId)`, `getTunnelToken(tunnelId)`, `resolveLocalPort(localPort?, botType?)`, `resolveWebhookPath(webhookPath?, botType?)`. Uses plain `fetch` against Cloudflare API. No business logic, no DB access.
-  - `provisioning.ts` — orchestration layer between Cloudflare API and registration route. `provisionTunnelForBot(botId, botType?, localPort?, webhookPath?)` resolves defaults, calls Cloudflare, generates webhook secret, and returns a structured `TunnelProvisionOutput` containing both `dbFields` (for DB insert) and `responseData` (for API response including `tunnel_setup` object). `cleanupTunnel(tunnelId, botId)` wraps error cleanup. The `tunnel_setup` response structure (steps, headers, retry policy) is defined in one place via `buildTunnelSetupResponse()` — no duplication across registration paths.
-  - `index.ts` — barrel re-exports the public API from both files. Consumers import from `@/lib/webhook-tunnel`.
-- **Schema:** `bots` table has `botType`, `tunnelId`, `tunnelToken`, `tunnelStatus`, `tunnelLocalPort`, `openclawHooksToken` columns (migrations `drizzle/0004_low_morph.sql`, `drizzle/0005_melted_the_fury.sql`, `drizzle/0006_fast_frog_thor.sql`).
-- **Registration fields:** `bot_type` (optional, defaults to `"openclaw"`), `local_port` (optional integer 1–65535), and `webhook_path` (optional string starting with `/`, max 200 chars) in the registration request schema.
-- **Port resolution:** If `local_port` is provided → use it. Else if `bot_type` is `"openclaw"` → 18789. Else → 8080. Stored in `tunnelLocalPort`.
-- **Path resolution:** If `webhook_path` is provided → use it. Else if `bot_type` is `"openclaw"` → `/hooks/creditclaw`. Else → `/webhook`. Appended to tunnel URL to form the full `callbackUrl` (e.g. `https://bot-abc123.nortonbot.com/hooks/creditclaw`).
-- **Flow:** Registration calls `provisionTunnelForBot()` → spreads `dbFields` into DB insert → attaches `responseData` to API response. Bot runs `cloudflared tunnel run --token <token>` and starts local listener on the resolved port.
-- **OpenClaw Gateway auth:** For OpenClaw bots, `provisionTunnelForBot()` also generates an `openclawHooksToken` (stored on the bot record). The registration response includes it as `openclaw_hooks_token` with instructions to set it as `CREDITCLAW_HOOKS_TOKEN` env var. The `openclaw_gateway_config` snippet uses `${CREDITCLAW_HOOKS_TOKEN}` (OpenClaw env var substitution). On outbound webhook delivery, `attemptDelivery()` in `lib/webhooks/delivery.ts` sends `Authorization: Bearer <token>` alongside `X-CreditClaw-Signature` when the bot has a hooks token stored. All delivery paths (direct, retry, Rail 5 deliver-to-bot) pass the hooks token through.
-- **Webhook status:** Tunnel-provisioned bots start with `webhookStatus: "pending"` (not `"active"`) until the tunnel connects.
-- **Cleanup:** If registration fails after tunnel provisioning, `cleanupTunnel(tunnelId, botId)` is called to clean up both DNS and tunnel.
-- **Dashboard:** Bot settings dialog shows tunnel URL as read-only with a `TunnelStatusIndicator` when a tunnel is provisioned.
-- **Required secrets:** `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_ZONE_ID` (not yet added — provisioning is best-effort, registration still succeeds without them).
+Bots without a `callback_url` get a managed Cloudflare tunnel provisioned at registration. Tunnels route through the `nortonbot.com` domain (configured directly in Cloudflare). Module lives in `lib/webhook-tunnel/` with two layers: `cloudflare.ts` (raw API calls) and `provisioning.ts` (orchestration + defaults). Required secrets: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_ZONE_ID`.
+→ Full detail: `project_knowledge/internal_docs/05-agent-interaction/webhook-tunnels.md`
 
 Advanced features:
 - **Wallet Freeze:** Owners can freeze bot wallets, preventing transactions.
 - **Card Color Persistence:** Each card (Rail 5) stores its own `card_color` (`purple`, `dark`, `blue`, `primary`). New cards get a random color on creation. Users can change it from the card detail page (color picker circles below card visual). `resolveCardColor(color, cardId)` in `components/wallet/types.ts` provides a fallback — if `card_color` is null (e.g. a card created before this feature), it derives a stable color from a hash of the card ID. Card deletion uses the unified endpoint `DELETE /api/v1/cards/:cardId?rail=rail5`.
-- **Onboarding Wizard:** A linear 5-step wizard for new bot owner setup. Flow: choose-agent-type → register-bot → sign-in → claim-token → add-card-bridge. The bridge slide only appears if the user claimed a bot (sets `botConnected`). If "Yes, let's add a card" is chosen, the full `Rail5SetupWizardContent` renders inline (not as a modal) with `preselectedBotId` to auto-link the bot and skip the bot selection step. If the user skips at claim-token or add-card-bridge, they go directly to `/overview`. The `Rail5SetupWizardContent` component is a standalone extraction from the dialog-based `Rail5SetupWizard` — both dashboard (dialog mode) and onboarding (inline mode) use the same content component with zero duplication. Props: `onComplete`, `onClose`, `preselectedBotId?`, `inline?`. The onboarding page has no auth gate — authentication happens within the wizard flow.
-- **Rail 5 Setup Wizard:** Full-page route at `/setup/rail5` (outside dashboard layout, no sidebar/header). Uses `Rail5SetupWizardContent` with `inline` mode. On complete/close navigates to `/overview`. Entry points: NewCardModal "My Card - Encrypted" option, overview page "Add Your Card" overlay, sub-agent-cards "Add New Card" button — all navigate to `/setup/rail5` instead of opening a Dialog modal. The onboarding wizard (`/onboarding`) still embeds `Rail5SetupWizardContent` inline directly. The old `Rail5SetupWizard` Dialog wrapper has been removed. **Modularized under `components/onboarding/rail5-wizard/`:**
-    - `index.tsx` — re-exports `Rail5SetupWizardContent` for backward compatibility
-    - `rail5-wizard-content.tsx` — orchestrator: calls hook, renders shell + step switch
-    - `use-rail5-wizard.ts` — custom hook with all state variables and handler functions
-    - `types.ts` — shared interfaces (`BotOption`, `SavedCardDetails`, `Step7Props`, `Step8Props`, etc.), constants (`TOTAL_STEPS = 8`, `FUN_CARD_NAMES`)
-    - `step-indicator.tsx` — step progress dots component
-    - `wizard-shell.tsx` — layout wrapper (close button with inline/non-inline positioning, exit confirmation overlay, step indicator; hides indicator when `step >= TOTAL_STEPS`)
-    - `steps/` — 9 step files: `name-card.tsx` (step 0), `how-it-works.tsx` (step 1), `spending-limits.tsx` (step 2), `card-entry.tsx` (step 3), `billing-address.tsx` (step 4), `link-bot.tsx` (step 5), `encrypt-deliver.tsx` (step 6), `delivery-result.tsx` (step 7), `test-verification.tsx` (step 8 — optional, beyond visible step dots). The step indicator shows 8 dots (steps 0–7). Step 8 (test verification) has a prompt gate: checks test status on mount — if bot already started/completed, shows verification UI directly; otherwise shows "Do you want to test?" prompt with Skip/Yes. Skip is always available during verification.
-- **Wizard Typography System:** All onboarding/wizard flows share a unified typography scale defined in `lib/wizard-typography.ts`. The `wt` object exports responsive class strings for `title`, `subtitle`, `body`, `bodySmall`, `primaryButton`, `secondaryButton`, and `fine`. `wt.primaryButton` and `wt.secondaryButton` include full button sizing (height `h-12 md:h-14`, rounding `rounded-xl`, and font size) — apply them to all navigation `Button` components. For plain text-link buttons (back/skip as `<button>` without borders), use `wt.body` instead. The main onboarding steps (`register-bot`, `sign-in`, `claim-token`, `add-card-bridge`) and all Rail5 wizard steps use `wt` for button sizing. Small utility buttons (Copy/Telegram/Discord, Retry, Re-download) and exit confirmation buttons are intentionally excluded. **Any new wizard flow should import `wt` from `@/lib/wizard-typography` for consistent sizing.** To change button or font sizes across all wizards, edit the single `lib/wizard-typography.ts` file.
+- **Onboarding & Setup Wizards:** Onboarding wizard (`/onboarding`, 5 steps), Rail 5 setup wizard (`/setup/rail5`, 8+1 steps), and shared wizard typography system (`lib/wizard-typography.ts`). → Full detail: `project_knowledge/internal_docs/07-platform-management/onboarding-wizards.md`
 
 ### Multi-Rail Architecture
 CreditClaw employs a multi-rail architecture, segmenting payment rails with independent database tables, API routes, and components.
@@ -679,15 +639,14 @@ Schema changes flow through Drizzle ORM and are auto-synced to production on dep
 5. Config: `drizzle.config.ts` points at `DATABASE_URL` with `pg` driver
 6. The `spending_permissions` table exists in both databases but is not tracked in the schema (legacy table)
 
-### Documentation System (`docs/content/`, `app/docs/`)
-Self-hosted documentation at `/docs` with sidebar navigation, audience toggle, and markdown rendering. Multi-tenant aware — each tenant sees its own docs.
-- **Config**: `docs/content/sections.ts` — typed section/page registry with `Audience` + `DocTenant` tagging. `getSectionsByAudience(audience, tenant?)` filters both. `normalizeTenantId()` validates tenant cookies. `getTenantFromSlug()` derives tenant from URL path.
-- **Layout**: `app/docs/layout.tsx` — client component with persistent sidebar. Swaps branding (logo, labels) per tenant. `app/docs/page.tsx` redirects to first page for current tenant (from cookie).
-- **Renderer**: `app/docs/[...slug]/page.tsx` — reads markdown from `docs/content/{section}/{page}.md`, renders via `react-markdown` with `prose` typography classes. Prev/next navigation filtered by tenant.
-- **CreditClaw docs** — User docs (27 pages): Getting Started, Bots, Wallets, Guardrails, Selling, Settings, Transactions, Skills. Developer docs (13 pages): API Overview, API Endpoints, Webhooks, Agent Integration.
-- **Shopy docs** (8 pages) — Getting Started (what-is-shopy, asx-score-explained), CLI (installation, commands), Skill Format (structure, frontmatter), Agent Integration (reading-skills, feedback-protocol). URL prefix: `/docs/shopy/...`.
-- **URL pattern**: `/docs/{section-slug}/{page-slug}`. CreditClaw dev docs: `/docs/api/...`. Shopy docs: `/docs/shopy/...`.
-- **Tailwind**: Typography plugin added via `@plugin "@tailwindcss/typography"`, source added via `@source "../docs"` in `app/globals.css`.
+### Documentation System (`app/docs/content/`, `app/docs/`)
+Self-hosted documentation at `/docs` with unified single-sidebar navigation (no audience toggle). All three tenants share one sidebar. Multi-tenant aware — each tenant has a `docsEntrySlug` for its landing page.
+- **Config**: `app/docs/content/sections.ts` — flat typed section/page registry. Sections have optional `tag` field (e.g. "shopy") displayed as a badge. No audience/tenant filtering. `findPage(slugParts)` resolves URL to section+page. `getAllPagesFlat()` returns all pages (no args).
+- **Layout**: `app/docs/layout.tsx` — client component with persistent sidebar. Swaps branding (logo) per tenant cookie. No audience toggle.
+- **Renderer**: `app/docs/[...slug]/page.tsx` — reads markdown from `app/docs/content/{section}/{page}.md`, renders via `react-markdown` with `prose` typography classes. Prev/next navigation across all sections.
+- **13 sections** (57 pages): Getting Started, Bots & Onboarding, Wallets & Funding, Spending Controls, Selling, Transactions & Orders, Procurement Skills, Skill Registry (tag: brands), Agent Integration, Settings, ASX Scoring (tag: shopy), Skill Publishing (tag: shopy), CLI Tools (tag: shopy).
+- **URL pattern**: `/docs/{section-slug}/{page-slug}` — single namespace, no `/docs/api/` or `/docs/shopy/` prefixes.
+- **Tenant entry points**: `docsEntrySlug` in `TenantConfig` — creditclaw → `getting-started/what-is-creditclaw`, shopy → `asx-scoring/what-is-shopy`, brands → `skill-registry/what-is-the-registry`.
 - **LLM access**: Raw markdown endpoint at `GET /api/docs/{section}/{page}` (Content-Type: text/markdown). Each doc page has "Copy for LLM" and "View as Markdown" buttons. `GET /llms.txt` serves a structured index of all docs with markdown links. `GET /llms-full.txt` concatenates all docs into a single file.
 
 ### Shopy.sh Pages

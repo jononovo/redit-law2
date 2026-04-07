@@ -1,5 +1,5 @@
 import type { MetadataRoute } from "next";
-import { sections } from "@/docs/content/sections";
+import { sections } from "@/app/docs/content/sections";
 import { getAllPosts, getAllTags } from "@/content/blog/posts";
 import { categories } from "@/content/blog/taxonomy";
 import { storage } from "@/server/storage";

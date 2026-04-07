@@ -1,10 +1,8 @@
 import { NextResponse } from "next/server";
-import { sections, sitePages, getSectionsByAudience } from "@/docs/content/sections";
+import { sections, sitePages } from "@/app/docs/content/sections";
 
 export async function GET() {
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://creditclaw.com";
-  const userSections = getSectionsByAudience("user");
-  const devSections = getSectionsByAudience("developer");
 
   const lines: string[] = [
     "# CreditClaw",
@@ -31,22 +29,13 @@ export async function GET() {
   }
 
   lines.push("");
-  lines.push("## User Guide");
+  lines.push("## Documentation");
   lines.push("");
 
-  for (const section of userSections) {
+  for (const section of sections) {
+    const tagSuffix = section.tag ? ` [${section.tag}]` : "";
     for (const page of section.pages) {
-      lines.push(`- [${page.title}](${baseUrl}/api/docs/${section.slug}/${page.slug}): ${section.title}`);
-    }
-  }
-
-  lines.push("");
-  lines.push("## Developer Documentation");
-  lines.push("");
-
-  for (const section of devSections) {
-    for (const page of section.pages) {
-      lines.push(`- [${page.title}](${baseUrl}/api/docs/${section.slug}/${page.slug}): ${section.title}`);
+      lines.push(`- [${page.title}](${baseUrl}/api/docs/${section.slug}/${page.slug}): ${section.title}${tagSuffix}`);
     }
   }
 
