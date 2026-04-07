@@ -179,7 +179,7 @@ Remove all documentation references to the dead payment-links, topup-request, an
 | # | File | Change |
 |---|------|--------|
 | 6 | `project_knowledge/architecture.md` | Remove Payment Links row from table (line 217) and references (lines 200, 268) |
-| 7 | `project_knowledge/testing.md` | Remove topup-request and payment-links test commands |
+| 7 | `tests/manual-api-suite.md` | Remove topup-request and payment-links test commands |
 | 8 | `project_knowledge/tenants_vision/creditclaw.md` | Update payment links reference (line 80) |
 | 9 | `project_knowledge/internal_docs/07-platform-management/dashboard-overview.md` | Update layout description — remove PaymentLinksPanel (line 19) and "Add Funds card" (line 13) |
 | 10 | `replit.md` | Update to reflect removed routes/components |
@@ -316,7 +316,7 @@ Remove all documentation references to the dead payment-links, topup-request, an
 4. `docs/content/api/webhooks/events.md`
 5. `docs/content/site/homepage.md`
 6. `project_knowledge/architecture.md`
-7. `project_knowledge/testing.md`
+7. `tests/manual-api-suite.md`
 8. `project_knowledge/tenants_vision/creditclaw.md`
 9. `project_knowledge/internal_docs/07-platform-management/dashboard-overview.md`
 10. `replit.md`

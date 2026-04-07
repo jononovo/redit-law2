@@ -1,34 +1,38 @@
 ---
 name: System Architecture
-description: Technical overview of all ten modules. Read after vision.md. Maps every features/ folder and API route to its parent module.
+description: Technical overview of the platform and all eight modules. Maps every features/ folder and API route to its parent module.
 ---
 
 # System Architecture
+
+The infrastructure layer for AI-powered commerce. Three tenants, one codebase:
+
+- **CreditClaw** (`creditclaw.com`) — Financial rails for AI agents. Virtual Visa/Mastercard issuance, wallet funding, spending limits.
+- **shopy.sh** — Consumer-facing scanner and leaderboard. Measures how "agent-friendly" a merchant's website is via the ASX Score (0–100).
+- **brands.sh** — Developer-facing skill registry. Hosts SKILL.md files that teach agents how to browse and buy from specific stores.
 
 ## Modules
 
 | # | Module | What it owns |
 |---|--------|-------------|
-| 1 | Agentic Shopping Score | Scan engine, scoring rubric, scan queue |
-| 2 | Agent Shopping Skills per Brand | SKILL.md generation, skill.json, registry API |
-| 3 | Brands Index for Agentic Shopping | `brand_index`, recommend API, product vector search, categories |
-| 4 | Payment Tools for Agents | Wallets, outbound payment rails (funding + spending) |
-| 5 | Agent Interaction | Webhooks, polling, approvals, guardrails, orders, agent communication patterns |
-| 6 | Agent Plugins | Per-platform plugins (OpenClaw, etc.), browser extension |
-| 7 | Platform Management | Auth, bot lifecycle, pairing, feature flags, admin |
-| 8 | Multi-tenant Structure | Tenant routing, onboarding, landing pages, per-tenant theming |
-| 9 | Agent Shops | Checkout pages, shop storefronts, seller profiles, procurement controls, inbound payment methods |
-| 10 | Thought Leadership | Standards we define and maintain (ASX rubric, SKILL.md spec, open brands index) |
+| 1 | Brands & Skills | Scan engine, scoring rubric, scan queue, SKILL.md/skill.json generation, registry API, `brand_index`, recommend API, product vector search, categories, taxonomy, brand claims, open standards (ASX rubric, SKILL.md spec) |
+| 2 | Product Index | Product listings, vector embeddings, semantic search |
+| 3 | Payment Tools for Agents | Wallets, outbound payment rails (funding + spending) |
+| 4 | Agent Interaction | Webhooks, polling, approvals, guardrails, orders, agent communication patterns |
+| 5 | Agent Plugins | Per-platform plugins (OpenClaw, etc.), browser extension |
+| 6 | Platform Management | Auth, bot lifecycle, pairing, feature flags, admin |
+| 7 | Multi-tenant Structure | Tenant routing, onboarding, landing pages, per-tenant theming |
+| 8 | Agent Shops | Checkout pages, shop storefronts, seller profiles, procurement controls, inbound payment methods |
 
 ---
 
-## 1. Agentic Shopping Score
+## 1. Brands & Skills
 
-Evaluates a domain's AI-readiness. Outputs a 0–100 score across three pillars: Clarity, Discoverability, Reliability.
+Unified pipeline: scan a domain → score it → generate skills → serve the catalog. Also owns the open standards (ASX rubric, SKILL.md spec) and the Recommend API for merchant discovery.
 
-**Key folders:** `features/brand-engine/agentic-score/`, `features/brand-engine/scan-queue/`
-**API routes:** `app/api/v1/scan/`, `app/api/v1/admin/scan-queue/`
-**Tables:** `scan_queue`, `brand_index` (score columns)
+**Key folders:** `features/brand-engine/agentic-score/`, `features/brand-engine/scan-queue/`, `features/brand-engine/procurement-skills/`, `features/brand-engine/catalog/`, `features/brand-engine/brand-claims/`
+**API routes:** `app/api/v1/scan/`, `app/api/v1/admin/scan-queue/`, `app/api/v1/registry/`, `app/api/v1/vendors/`, `app/api/v1/recommend/`, `app/api/v1/brands/`
+**Tables:** `scan_queue`, `brand_index`, `brand_categories`, `brand_claims`, `category_keywords`
 
 | Component | Key functions / files | Purpose |
 |-----------|----------------------|---------|
@@ -38,61 +42,45 @@ Evaluates a domain's AI-readiness. Outputs a 0–100 score across three pillars:
 | Scan Queue | `addToQueue()`, `processNextInQueue()` | Batch intake, deduplication, `FOR UPDATE SKIP LOCKED` worker pattern |
 | Maturity Promotion | `resolveMaturity()` | Auto-promotes `draft` → `community`; manual tiers protected |
 | Domain Normalization | `normalizeDomain()` in `features/brand-engine/agentic-score/fetch.ts` | Canonical domain normalizer — single source for all normalization |
-
-**Docs:** `internal_docs/01-brands-skills-system/asx-scanner.md`
-
----
-
-## 2. Agent Shopping Skills per Brand
-
-Generates machine-readable and LLM-readable instructions for how an agent should shop at a specific store. Also owns the Recommend API — the merchant discovery pipeline that agents call to find where to buy.
-
-**Key folders:** `features/brand-engine/procurement-skills/`, `features/product-index/embeddings/`
-**API routes:** `app/api/v1/registry/`, `app/api/v1/vendors/`, `app/api/v1/recommend/`
-
-| Component | Key functions / files | Purpose |
-|-----------|----------------------|---------|
 | SKILL.md Generator | `generateVendorSkill()`, `buildVendorSkillDraft()` | Markdown skill file — checkout methods, shopping tips, sample curl |
 | skill.json Builder | `buildSkillJson()` | Machine-readable JSON — taxonomy links, access tiers, score breakdowns |
 | Registry API | `/api/v1/registry` routes | List, search, fetch skills programmatically |
-| Taxonomy Mapping | `taxonomy.ts` | Maps brands to Google Product Taxonomy for skill metadata |
+| Taxonomy | `taxonomy.ts`, 28 sectors, 7 tiers, 8 capabilities, 5,638 product categories | Classification system for all brands |
 | Recommend API | `app/api/v1/recommend/route.ts` | Three-stage merchant discovery for agents (see below) |
-| Product Search | `features/product-index/embeddings/`, `product_listings` table | pgvector cosine similarity search, lateral join by brand |
+| Brand Index | `brand_index` table, `LITE_COLUMNS` projection | One row per domain. Central source for all catalog views |
+| Catalog UI | `/skills`, `/skills/[vendor]`, `/c/[sector]` | Public browsing pages for the brand registry |
+| Brand Claims | `features/brand-engine/brand-claims/`, `brand_claims` table | Ownership claims linking brands to user accounts |
 
 **Recommend API stages:**
 1. **Category Resolution** — Perplexity Sonar extracts intent → Postgres FTS against `category_keywords` → top 5 categories
 2. **Merchant Ranking** — recursive SQL over `brand_index` + `brand_categories` → ranked by brand match → match depth → ASX score
 3. **Product Search** — embedding vector → pgvector cosine similarity against `product_listings` → top 3 per merchant
 
-**Docs:** `internal_docs/01-brands-skills-system/merchant-index.md`, `internal_docs/01-brands-skills-system/scan-taxonomy-skills-pipeline.md`
+**Open standards** (ASX rubric, SKILL.md spec, open brands index) are maintained within this module under `internal_docs/01-brands-skills-system/score-standard/`.
+
+**Docs:** `internal_docs/01-brands-skills-system/` — start with `_overview.md` for the full pipeline narrative.
 
 ---
 
-## 3. Brands Index for Agentic Shopping
+## 2. Product Index
 
-Central catalog and storage layer. Owns the `brand_index` table, catalog UI, taxonomy system, and brand claims. The Recommend API (Module 2) queries this data but is documented and maintained there.
+Product listings, vector embeddings, and semantic search. Powers the product search stage of the Recommend API (Module 1).
 
-**Key folders:** `features/brand-engine/catalog/`, `features/brand-engine/brand-claims/`
-**API routes:** `app/api/v1/brands/`
-**Tables:** `brand_index`, `brand_categories`, `product_listings`, `category_keywords`, `brand_claims`
+**Key folders:** `features/product-index/embeddings/`
+**Tables:** `product_listings`
 
 | Component | Key functions / files | Purpose |
 |-----------|----------------------|---------|
-| Brand Index | `brand_index` table, `LITE_COLUMNS` projection | One row per domain. Central source for all catalog views |
-| Catalog UI | `/skills`, `/skills/[vendor]`, `/c/[sector]` | Public browsing pages for the brand registry |
-| Brand Claims | `features/brand-engine/brand-claims/`, `brand_claims` table | Ownership claims linking brands to user accounts |
-| Category Keywords | `category_keywords` table | Keyword → taxonomy ID mapping for full-text search |
-| Taxonomy | 28 sectors, 7 tiers, 8 capabilities, 5,638 product categories | Classification system for all brands |
+| Embedding Generator | `features/product-index/embeddings/embed.ts` | `all-MiniLM-L6-v2` model via `@xenova/transformers` — generates vector embeddings for product names/descriptions |
+| Product Search | `product_listings` table with pgvector | Cosine similarity search, lateral join by brand |
 
-**Docs:** `internal_docs/01-brands-skills-system/brand-catalog.md`, `internal_docs/01-brands-skills-system/metadata-and-taxonomy.md`
-
-> **Note:** Modules 1–3 form a single unified pipeline documented together in `internal_docs/01-brands-skills-system/`. Start with `_overview.md` for the full narrative.
+**Docs:** `internal_docs/02-product-index/`
 
 ---
 
-## 4. Payment Tools for Agents
+## 3. Payment Tools for Agents
 
-Outbound financial rails — how users fund wallets and how their agents spend money at external merchants. Inbound payment methods (how shoppers pay at our checkouts) are in Module 9 (Agent Shops).
+Outbound financial rails — how users fund wallets and how their agents spend money at external merchants. Inbound payment methods (how shoppers pay at our checkouts) are in Module 8 (Agent Shops).
 
 **Key folders:** `features/agent-shops/payments/`, `features/payment-rails/rail1/`, `features/payment-rails/rail2/`, `features/payment-rails/rail5/`, `features/payment-rails/crypto-onramp/`, `features/payment-rails/card/`
 **API routes:** `app/api/v1/wallet/`, `app/api/v1/wallets/`, `app/api/v1/stripe-wallet/`, `app/api/v1/card-wallet/`, `app/api/v1/billing/`, `app/api/v1/rail5/`, `app/api/v1/cards/`
@@ -114,7 +102,7 @@ Outbound financial rails — how users fund wallets and how their agents spend m
 
 ---
 
-## 5. Agent Interaction
+## 4. Agent Interaction
 
 How external agents communicate with CreditClaw. Webhooks, polling, spending controls, and the human↔agent approval loop.
 
@@ -135,7 +123,7 @@ How external agents communicate with CreditClaw. Webhooks, polling, spending con
 
 ---
 
-## 6. Agent Plugins
+## 5. Agent Plugins
 
 Per-platform integrations. Each agent platform (OpenClaw, etc.) gets its own plugin with platform-specific APIs, auth, and packaging.
 
@@ -149,7 +137,7 @@ Per-platform integrations. Each agent platform (OpenClaw, etc.) gets its own plu
 
 ---
 
-## 7. Platform Management
+## 6. Platform Management
 
 Auth, bot lifecycle, admin tooling.
 
@@ -171,7 +159,7 @@ Auth, bot lifecycle, admin tooling.
 
 ---
 
-## 8. Multi-tenant Structure
+## 7. Multi-tenant Structure
 
 Single codebase, three tenants, hostname-based routing.
 
@@ -194,7 +182,7 @@ Single codebase, three tenants, hostname-based routing.
 
 ---
 
-## 9. Agent Shops
+## 8. Agent Shops
 
 Merchant storefronts, checkout experiences, and inbound payment methods — how the world pays our merchants.
 
@@ -220,53 +208,34 @@ Merchant storefronts, checkout experiences, and inbound payment methods — how 
 
 ---
 
-## 10. Thought Leadership
-
-Standards and open protocols we define, maintain, and evangelize. Not feature code — but drives product direction and research.
-
-| Standard | What it is | Where it lives |
-|----------|-----------|---------------|
-| ASX Score (Agentic Shopping Experience) | 0–100 scoring rubric for merchant AI-readiness | `features/brand-engine/agentic-score/rubric.ts`, published on shopy.sh |
-| SKILL.md Specification | Open format for teaching agents to shop at a store | `content/agentic-commerce-standard.md`, `public/SKILL.md` |
-| skill.json Schema | Machine-readable companion to SKILL.md | `features/brand-engine/procurement-skills/skill-json.ts` |
-| Open Brands Skills Index | Public registry of merchant skills | brands.sh, registry API |
-
-This module owns the research and evolution of these standards. When new protocols emerge (ACP, UCP, A2A), evaluation and positioning happens here.
-
-**Docs:** `internal_docs/01-brands-skills-system/score-standard/` (research subfolder contains standards, strategy, and vision docs)
-
----
-
 ## Key Tables
 
 | Table | Module | Purpose |
 |-------|--------|---------|
-| `brand_index` | 3. Brands Index | One row per domain. Central catalog. |
-| `brand_categories` | 3. Brands Index | Many-to-many: brands → Google Taxonomy IDs |
-| `brand_claims` | 3. Brands Index | Ownership claims: brands → user accounts |
-| `product_listings` | 3. Brands Index | Product data with pgvector embeddings |
-| `category_keywords` | 3. Brands Index | Keyword → taxonomy ID for FTS |
-| `scan_queue` | 1. Shopping Score | Pending/processing/completed scan jobs |
-| `owners` | 7. Platform | User accounts, wallet balances, `signup_tenant` |
-| `bots` | 7. Platform | Registered AI agents |
-| `pairing_codes` | 7. Platform | One-time bot → owner pairing codes |
-| `orders` | 5. Agent Interaction | Order lifecycle |
-| `invoices` | 5. Agent Interaction | Payment records |
+| `brand_index` | 1. Brands & Skills | One row per domain. Central catalog. |
+| `brand_categories` | 1. Brands & Skills | Many-to-many: brands → Google Taxonomy IDs |
+| `brand_claims` | 1. Brands & Skills | Ownership claims: brands → user accounts |
+| `category_keywords` | 1. Brands & Skills | Keyword → taxonomy ID for FTS |
+| `scan_queue` | 1. Brands & Skills | Pending/processing/completed scan jobs |
+| `product_listings` | 2. Product Index | Product data with pgvector embeddings |
+| `owners` | 6. Platform | User accounts, wallet balances, `signup_tenant` |
+| `bots` | 6. Platform | Registered AI agents |
+| `pairing_codes` | 6. Platform | One-time bot → owner pairing codes |
+| `orders` | 4. Agent Interaction | Order lifecycle |
+| `invoices` | 4. Agent Interaction | Payment records |
 
 ## System Status
 
 | Module | Status |
 |--------|--------|
-| 1. Agentic Shopping Score | Running — scan engine, queue, maturity promotion all live |
-| 2. Agent Shopping Skills | Running — SKILL.md + skill.json generated per scan |
-| 3. Brands Index | Running — recommend API with all 3 stages live |
-| 4. Payment Tools | Partially live — Rail 1, 5 live. Rail 2 not complete. Stripe Issuing/Connect not built. |
-| 5. Agent Interaction | Running — webhooks, guardrails, approvals, orders live |
-| 6. Agent Plugins | Partial — OpenClaw plugin exists |
-| 7. Platform Management | Running |
-| 8. Multi-tenant Structure | Running — 3 tenants active |
-| 9. Agent Shops | Running — checkout pages, shops, seller profiles, x402/Base Pay/QR Pay live |
-| 10. Thought Leadership | Active — ASX rubric v2.0.0, SKILL.md spec published |
+| 1. Brands & Skills | Running — scan engine, queue, maturity promotion, SKILL.md/skill.json generation, recommend API all live |
+| 2. Product Index | Running — vector embeddings and semantic search live |
+| 3. Payment Tools | Partially live — Rail 1, 5 live. Rail 2 not complete. Stripe Issuing/Connect not built. |
+| 4. Agent Interaction | Running — webhooks, guardrails, approvals, orders live |
+| 5. Agent Plugins | Partial — OpenClaw plugin exists |
+| 6. Platform Management | Running |
+| 7. Multi-tenant Structure | Running — 3 tenants active |
+| 8. Agent Shops | Running — checkout pages, shops, seller profiles, x402/Base Pay/QR Pay live |
 
 ---
 

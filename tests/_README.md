@@ -53,4 +53,4 @@ Config is in `vitest.config.ts` with the `@/` path alias mapped to the project r
 
 ## Manual Integration Tests
 
-`project_knowledge/testing.md` contains a curl-based manual test suite (1,000+ lines) covering bot registration, wallet ops, purchases, guardrails, checkout, and x402 endpoints. Use it as a reference for API contract expectations, not as a regular test run.
+`tests/manual-api-suite.md` contains a curl-based manual test suite (1,000+ lines) covering bot registration, wallet ops, purchases, guardrails, checkout, and x402 endpoints. Use it as a reference for API contract expectations, not as a regular test run.
