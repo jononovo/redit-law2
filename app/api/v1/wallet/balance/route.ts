@@ -9,7 +9,7 @@ export async function GET() {
       return NextResponse.json({ error: "Authentication required" }, { status: 401 });
     }
 
-    const wallet = await storage.getWalletByOwnerUid(user.uid);
+    const wallet = await storage.rail5GetWalletByOwnerUid(user.uid);
     if (!wallet) {
       return NextResponse.json({ balance_cents: 0, balance: "$0.00", has_wallet: false });
     }

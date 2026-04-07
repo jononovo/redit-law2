@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
 
   const countResult = await db.execute(sql`
     SELECT
-      (SELECT count(*) FROM transactions)::int +
+      (SELECT count(*) FROM rail5_transactions)::int +
       (SELECT count(*) FROM privy_transactions)::int +
       (SELECT count(*) FROM crossmint_transactions)::int +
       (SELECT count(*) FROM rail5_checkouts)::int
@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
     (
       SELECT
         t.id,
-        'core' AS rail,
+        'rail5' AS rail,
         t.type,
         t.amount_cents AS amount_raw,
         'cents' AS amount_unit,
@@ -38,8 +38,8 @@ export async function GET(request: NextRequest) {
         t.created_at,
         o.email AS owner_email,
         w.bot_id
-      FROM transactions t
-      LEFT JOIN wallets w ON w.id = t.wallet_id
+      FROM rail5_transactions t
+      LEFT JOIN rail5_wallets w ON w.id = t.wallet_id
       LEFT JOIN owners o ON o.uid = w.owner_uid
     )
     UNION ALL

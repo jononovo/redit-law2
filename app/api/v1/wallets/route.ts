@@ -9,7 +9,7 @@ export async function GET() {
       return NextResponse.json({ error: "Authentication required" }, { status: 401 });
     }
 
-    const walletsWithBots = await storage.getWalletsWithBotsByOwnerUid(user.uid);
+    const walletsWithBots = await storage.rail5GetWalletsWithBotsByOwnerUid(user.uid);
 
     const cards = walletsWithBots.map((w) => ({
       id: w.id,

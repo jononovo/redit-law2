@@ -85,7 +85,7 @@ export const POST = withBotApi("/api/v1/bot/rail5/checkout", async (request, { b
   }
 
   const checkoutId = generateRail5CheckoutId();
-  const wallet = await storage.getWalletByOwnerUid(card.ownerUid);
+  const wallet = await storage.rail5GetWalletByOwnerUid(card.ownerUid);
   const walletBalance = wallet?.balanceCents ?? null;
 
   if (approvalDecision.action === "require_approval") {

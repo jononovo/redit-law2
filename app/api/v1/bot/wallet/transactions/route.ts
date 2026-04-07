@@ -10,7 +10,7 @@ export const GET = withBotApi("/api/v1/bot/wallet/transactions", async (request,
     );
   }
 
-  const wallet = await storage.getWalletByBotId(bot.botId);
+  const wallet = await storage.rail5GetWalletByBotId(bot.botId);
   if (!wallet) {
     return NextResponse.json({ transactions: [] });
   }
@@ -18,7 +18,7 @@ export const GET = withBotApi("/api/v1/bot/wallet/transactions", async (request,
   const { searchParams } = new URL(request.url);
   const limit = Math.min(parseInt(searchParams.get("limit") || "50"), 100);
 
-  const txs = await storage.getTransactionsByWalletId(wallet.id, limit);
+  const txs = await storage.rail5GetTransactionsByWalletId(wallet.id, limit);
 
   return NextResponse.json({
     transactions: txs.map((tx) => ({

@@ -62,7 +62,7 @@ export async function createTestBot(opts: {
   );
 
   await p.query(
-    `INSERT INTO wallets (bot_id, owner_uid, balance_cents, currency, is_frozen, created_at, updated_at)
+    `INSERT INTO rail5_wallets (bot_id, owner_uid, balance_cents, currency, is_frozen, created_at, updated_at)
      VALUES ($1, $2, 100000, 'usd', false, NOW(), NOW())`,
     [botId, ownerUid]
   );
@@ -78,7 +78,7 @@ export async function createTestBot(opts: {
 export async function fundWallet(botId: string, amountCents: number) {
   const p = getPool();
   await p.query(
-    `UPDATE wallets SET balance_cents = balance_cents + $1, updated_at = NOW() WHERE bot_id = $2`,
+    `UPDATE rail5_wallets SET balance_cents = balance_cents + $1, updated_at = NOW() WHERE bot_id = $2`,
     [amountCents, botId]
   );
   console.log(`  Wallet funded: +$${(amountCents / 100).toFixed(2)} for bot ${botId}`);
@@ -86,15 +86,15 @@ export async function fundWallet(botId: string, amountCents: number) {
 
 export async function getWalletBalance(botId: string): Promise<number> {
   const p = getPool();
-  const res = await p.query(`SELECT balance_cents FROM wallets WHERE bot_id = $1`, [botId]);
+  const res = await p.query(`SELECT balance_cents FROM rail5_wallets WHERE bot_id = $1`, [botId]);
   return res.rows[0]?.balance_cents || 0;
 }
 
 export async function cleanupTestData() {
   const p = getPool();
   console.log("\nCleaning up test data...");
-  await p.query(`DELETE FROM transactions WHERE wallet_id IN (SELECT id FROM wallets WHERE bot_id LIKE 'test_bot_%')`);
-  await p.query(`DELETE FROM wallets WHERE bot_id LIKE 'test_bot_%'`);
+  await p.query(`DELETE FROM rail5_transactions WHERE wallet_id IN (SELECT id FROM rail5_wallets WHERE bot_id LIKE 'test_bot_%')`);
+  await p.query(`DELETE FROM rail5_wallets WHERE bot_id LIKE 'test_bot_%'`);
   await p.query(`DELETE FROM api_access_logs WHERE bot_id LIKE 'test_bot_%'`);
   await p.query(`DELETE FROM notifications WHERE bot_id LIKE 'test_bot_%'`);
   await p.query(`DELETE FROM bots WHERE bot_id LIKE 'test_bot_%'`);
@@ -105,7 +105,7 @@ export async function listTestBots() {
   const p = getPool();
   const res = await p.query(
     `SELECT b.bot_id, b.bot_name, b.owner_email, b.wallet_status, w.balance_cents
-     FROM bots b LEFT JOIN wallets w ON b.bot_id = w.bot_id
+     FROM bots b LEFT JOIN rail5_wallets w ON b.bot_id = w.bot_id
      WHERE b.bot_id LIKE 'test_bot_%'
      ORDER BY b.created_at DESC`
   );

@@ -29,7 +29,7 @@ export const bots = pgTable("bots", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
-export const wallets = pgTable("wallets", {
+export const rail5Wallets = pgTable("rail5_wallets", {
   id: serial("id").primaryKey(),
   botId: text("bot_id").notNull().unique(),
   ownerUid: text("owner_uid").notNull(),
@@ -40,7 +40,7 @@ export const wallets = pgTable("wallets", {
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
-export const transactions = pgTable("transactions", {
+export const rail5Transactions = pgTable("rail5_transactions", {
   id: serial("id").primaryKey(),
   walletId: integer("wallet_id").notNull(),
   type: text("type").notNull(),
@@ -164,10 +164,10 @@ export const purchaseRequestSchema = z.object({
 
 export type Bot = typeof bots.$inferSelect;
 export type InsertBot = typeof bots.$inferInsert;
-export type Wallet = typeof wallets.$inferSelect;
-export type InsertWallet = typeof wallets.$inferInsert;
-export type Transaction = typeof transactions.$inferSelect;
-export type InsertTransaction = typeof transactions.$inferInsert;
+export type Rail5Wallet = typeof rail5Wallets.$inferSelect;
+export type InsertRail5Wallet = typeof rail5Wallets.$inferInsert;
+export type Rail5Transaction = typeof rail5Transactions.$inferSelect;
+export type InsertRail5Transaction = typeof rail5Transactions.$inferInsert;
 export type PaymentMethod = typeof paymentMethods.$inferSelect;
 export type InsertPaymentMethod = typeof paymentMethods.$inferInsert;
 

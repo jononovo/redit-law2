@@ -15,7 +15,7 @@ Tenants share the same database, codebase, and deployment. Routing is hostname-b
 |---|--------|-------------|
 | 1 | Brands & Skills | Scan engine, scoring, skills, brand index, taxonomy, recommend API, open standards |
 | 2 | Product Index | Embedding generation (`features/product-index/`), `product_listings` table |
-| 3 | Payment Tools | Wallets, outbound payment rails |
+| 3 | Payment Tools | Rail5 wallets (`rail5_wallets`), outbound payment rails |
 | 4 | Agent Interaction | Webhooks, approvals, guardrails, orders |
 | 5 | Agent Plugins | Per-platform plugins (OpenClaw, etc.) |
 | 6 | Platform Management | Auth, bot lifecycle, pairing, feature flags, admin |
@@ -292,10 +292,11 @@ See `internal_docs/05-agent-interaction/guardrails.md` for enforcement flow, spe
 - **DB Table**: `unified_approvals` with columns: id, approvalId, rail, ownerUid, ownerEmail, botName, amountDisplay, amountRaw, merchantName, itemName, hmacToken, status, expiresAt, decidedAt, railRef, metadata, createdAt.
 - **Env Vars**: `UNIFIED_APPROVAL_HMAC_SECRET` (falls back to `HMAC_SECRET` or default).
 - **Dropped Tables**: `privy_approvals` and `crossmint_approvals` have been removed from schema and dropped from the database.
+- **Rail 5 Table Rename**: Legacy `wallets` → `rail5_wallets`, `transactions` → `rail5_transactions`. All storage methods renamed to `rail5Xxx` pattern (e.g., `rail5CreateWallet`, `rail5DebitWallet`). Methods live in `server/storage/payment-rails/rail5.ts`. Schema types: `Rail5Wallet`, `Rail5Transaction`.
 
 ### Transaction Ledger
 
-All transaction tables (`transactions`, `privy_transactions`, `crossmint_transactions`, `rail5_checkouts`) have a nullable `balance_after` column that records the wallet's balance at the time the transaction was created. No calculations — just stores whatever the DB balance is at that moment. For reconciliation, it stores the on-chain balance. For pending x402 payments, it stores the current (unchanged) DB balance. The real balance drop shows when reconciliation runs. All owner-facing and bot-facing transaction list APIs include `balance_after` / `balance_after_display` in responses. Frontend ledger tables show a "Balance" column.
+All transaction tables (`rail5_transactions`, `privy_transactions`, `crossmint_transactions`, `rail5_checkouts`) have a nullable `balance_after` column that records the wallet's balance at the time the transaction was created. No calculations — just stores whatever the DB balance is at that moment. For reconciliation, it stores the on-chain balance. For pending x402 payments, it stores the current (unchanged) DB balance. The real balance drop shows when reconciliation runs. All owner-facing and bot-facing transaction list APIs include `balance_after` / `balance_after_display` in responses. Frontend ledger tables show a "Balance" column.
 
 ### Wallet Freeze & Rail Events
 
@@ -323,7 +324,7 @@ All transaction tables (`transactions`, `privy_transactions`, `crossmint_transac
 Rail 5 (`sub-agent-cards/page.tsx`) is ~43 lines — a pure config object passed to `CreditCardListPage`. Adding transaction/approval tabs = add endpoint URLs to the config object.
 
 **Transactions, Orders & Approvals Page** (`/transactions`) — cross-rail activity dashboard with three tabs:
-- **Transactions** — wallet activity (topups, debits, refunds) from `GET /api/v1/wallet/transactions`. Table with type, description, amount, balance, date. **Known gap:** currently reads from the legacy `transactions` table only — does NOT aggregate from `privy_transactions` (Rail 1), `crossmint_transactions` (Rail 2), or `rail5_checkouts` (Rail 5). Needs to be fixed to show cross-rail activity.
+- **Transactions** — wallet activity (topups, debits, refunds) from `GET /api/v1/wallet/transactions`. Table with type, description, amount, balance, date. **Known gap:** currently reads from `rail5_transactions` only — does NOT aggregate from `privy_transactions` (Rail 1), `crossmint_transactions` (Rail 2), or `rail5_checkouts` (Rail 5). Needs to be fixed to show cross-rail activity.
 - **Orders** — confirmed purchases across all rails via `OrdersPanel` (reads from central `orders` table). Cross-rail filters: rail, bot, status, date range. Clicking an order navigates to `/orders/[order_id]` detail page.
 - **Approvals** — approval history via `ApprovalHistoryPanel`.
 

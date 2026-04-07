@@ -13,7 +13,7 @@ export const GET = withBotApi("/api/v1/bot/wallet/check", async (_request, { bot
     });
   }
 
-  const wallet = await storage.getWalletByBotId(bot.botId);
+  const wallet = await storage.rail5GetWalletByBotId(bot.botId);
   if (!wallet) {
     return NextResponse.json({
       wallet_status: "inactive",
@@ -22,7 +22,7 @@ export const GET = withBotApi("/api/v1/bot/wallet/check", async (_request, { bot
     });
   }
 
-  const monthlySpent = await storage.getMonthlySpend(wallet.id);
+  const monthlySpent = await storage.rail5GetMonthlySpend(wallet.id);
 
   const rail5Card = await storage.getRail5CardByBotId(bot.botId);
   const activeCard = rail5Card?.status === "active" ? rail5Card : null;
