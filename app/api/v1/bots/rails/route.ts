@@ -28,29 +28,19 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Authentication required" }, { status: 401 });
     }
 
-    const [bots, wallets, privyWallets, crossmintWallets, rail5Cards] = await Promise.all([
+    const [bots, privyWallets, crossmintWallets, rail5Cards] = await Promise.all([
       storage.getBotsByOwnerUid(user.uid),
-      storage.rail5GetWalletsWithBotsByOwnerUid(user.uid),
       storage.privyGetWalletsByOwnerUid(user.uid),
       storage.crossmintGetWalletsByOwnerUid(user.uid),
       storage.getRail5CardsByOwnerUid(user.uid),
     ]);
 
-    const walletMap = new Map(wallets.map(w => [w.botId, w]));
     const privyMap = new Map(privyWallets.map(w => [w.botId, w]));
     const crossmintMap = new Map(crossmintWallets.map(w => [w.botId, w]));
     const rail5Map = new Map(rail5Cards.filter(c => c.botId).map(c => [c.botId!, c]));
 
     const botsWithRails = bots.map(bot => {
       const rails: Record<string, any> = {};
-
-      const wallet = walletMap.get(bot.botId);
-      if (wallet) {
-        rails.card_wallet = {
-          status: wallet.balanceCents > 0 ? "active" : "empty",
-          balance_usd: wallet.balanceCents / 100,
-        };
-      }
 
       const privy = privyMap.get(bot.botId);
       if (privy) {

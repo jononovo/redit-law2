@@ -85,8 +85,6 @@ export const POST = withBotApi("/api/v1/bot/rail5/checkout", async (request, { b
   }
 
   const checkoutId = generateRail5CheckoutId();
-  const wallet = await storage.rail5GetWalletByOwnerUid(card.ownerUid);
-  const walletBalance = wallet?.balanceCents ?? null;
 
   if (approvalDecision.action === "require_approval") {
     await storage.createRail5Checkout({
@@ -100,7 +98,7 @@ export const POST = withBotApi("/api/v1/bot/rail5/checkout", async (request, { b
       amountCents: amount_cents,
       category: category || undefined,
       status: "pending_approval",
-      balanceAfter: walletBalance,
+      balanceAfter: null,
     });
 
     const owner = await storage.getOwnerByUid(card.ownerUid);
@@ -151,7 +149,7 @@ export const POST = withBotApi("/api/v1/bot/rail5/checkout", async (request, { b
     amountCents: amount_cents,
     category: category || undefined,
     status: "approved",
-    balanceAfter: walletBalance,
+    balanceAfter: null,
   });
 
   const encryptedFilename = `Card-${card.cardName.replace(/[^a-zA-Z0-9-_]/g, "-")}-${card.cardLast4}.md`;

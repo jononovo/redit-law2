@@ -15,7 +15,7 @@ Tenants share the same database, codebase, and deployment. Routing is hostname-b
 |---|--------|-------------|
 | 1 | Brands & Skills | Scan engine, scoring, skills, brand index, taxonomy, recommend API, open standards |
 | 2 | Product Index | Embedding generation (`features/product-index/`), `product_listings` table |
-| 3 | Payment Tools | Rail5 wallets (`rail5_wallets`), outbound payment rails |
+| 3 | Payment Tools | Rail5 cards + guardrails + approvals, outbound payment rails |
 | 4 | Agent Interaction | Webhooks, approvals, guardrails, orders |
 | 5 | Agent Plugins | Per-platform plugins (OpenClaw, etc.) |
 | 6 | Platform Management | Auth, bot lifecycle, pairing, feature flags, admin |

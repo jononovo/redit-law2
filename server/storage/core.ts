@@ -1,6 +1,6 @@
 import { db } from "@/server/db";
 import {
-  bots, rail5Wallets, paymentMethods, apiAccessLogs,
+  bots, paymentMethods, apiAccessLogs,
   type InsertBot, type Bot,
   type PaymentMethod, type InsertPaymentMethod,
   type ApiAccessLog, type InsertApiAccessLog,
@@ -60,11 +60,6 @@ export const coreMethods: CoreMethods = {
       .returning();
 
     if (!updated) return null;
-
-    await db.insert(rail5Wallets).values({
-      botId: updated.botId,
-      ownerUid,
-    }).returning();
 
     return updated;
   },

@@ -1,8 +1,6 @@
 import {
   type Owner, type InsertOwner,
   type Bot, type InsertBot,
-  type Rail5Wallet, type InsertRail5Wallet,
-  type Rail5Transaction, type InsertRail5Transaction,
   type PaymentMethod, type InsertPaymentMethod,
   type ApiAccessLog, type InsertApiAccessLog,
   type WebhookDelivery, type InsertWebhookDelivery,
@@ -57,12 +55,6 @@ export interface IStorage {
   updateBotProfile(botId: string, ownerUid: string, data: { callbackUrl?: string; botName?: string; description?: string | null }): Promise<{ bot: Bot; newWebhookSecret: string | null }>;
   checkDuplicateRegistration(botName: string, ownerEmail: string): Promise<boolean>;
 
-  rail5CreateWallet(data: InsertRail5Wallet): Promise<Rail5Wallet>;
-  rail5GetWalletByBotId(botId: string): Promise<Rail5Wallet | null>;
-  rail5GetWalletByOwnerUid(ownerUid: string): Promise<Rail5Wallet | null>;
-  rail5CreateTransaction(data: InsertRail5Transaction): Promise<Rail5Transaction>;
-  rail5GetTransactionsByWalletId(walletId: number, limit?: number): Promise<Rail5Transaction[]>;
-
   getPaymentMethod(ownerUid: string): Promise<PaymentMethod | null>;
   getPaymentMethods(ownerUid: string): Promise<PaymentMethod[]>;
   getPaymentMethodById(id: number, ownerUid: string): Promise<PaymentMethod | null>;
@@ -71,8 +63,6 @@ export interface IStorage {
   setDefaultPaymentMethod(id: number, ownerUid: string): Promise<PaymentMethod | null>;
 
   getBotsByApiKeyPrefix(prefix: string): Promise<Bot[]>;
-  rail5DebitWallet(walletId: number, amountCents: number): Promise<Rail5Wallet | null>;
-  rail5GetMonthlySpend(walletId: number): Promise<number>;
 
   createAccessLog(data: InsertApiAccessLog): Promise<void>;
   getAccessLogsByBotIds(botIds: string[], limit?: number): Promise<ApiAccessLog[]>;
@@ -100,10 +90,6 @@ export interface IStorage {
 
   addWaitlistEntry(data: InsertWaitlistEntry): Promise<WaitlistEntry>;
   getWaitlistEntryByEmail(email: string): Promise<WaitlistEntry | null>;
-
-  rail5FreezeWallet(walletId: number, ownerUid: string): Promise<Rail5Wallet | null>;
-  rail5UnfreezeWallet(walletId: number, ownerUid: string): Promise<Rail5Wallet | null>;
-  rail5GetWalletsWithBotsByOwnerUid(ownerUid: string): Promise<(Rail5Wallet & { botName: string; botId: string })[]>;
 
   crossmintCreateWallet(data: InsertCrossmintWallet): Promise<CrossmintWallet>;
   crossmintGetWalletById(id: number): Promise<CrossmintWallet | null>;

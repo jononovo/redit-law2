@@ -31,5 +31,5 @@ export async function evaluateApprovalDecision(
     return { action: "allow", reason: "Amount is below approval threshold." };
   }
 
-  return { action: "allow", reason: "Approval mode allows this transaction." };
+  return { action: "require_approval", reason: "Unknown approval mode — defaulting to require approval." };
 }

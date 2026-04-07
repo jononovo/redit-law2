@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { registerBotRequestSchema, bots, rail5Wallets, pairingCodes } from "@/shared/schema";
+import { registerBotRequestSchema, bots, pairingCodes } from "@/shared/schema";
 import { storage } from "@/server/storage";
 import { db } from "@/server/db";
 import { eq, and } from "drizzle-orm";
@@ -153,12 +153,6 @@ export async function POST(request: NextRequest) {
         if (!claimed) {
           throw new Error("PAIRING_RACE");
         }
-
-        await tx.insert(rail5Wallets).values({
-          botId,
-          ownerUid: pairingCodeRecord.ownerUid,
-          balanceCents: 0,
-        }).returning();
 
         return bot;
       });

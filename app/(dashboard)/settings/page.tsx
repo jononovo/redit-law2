@@ -277,7 +277,6 @@ interface BotWithRails {
 }
 
 const RAIL_META: Record<string, { label: string; shortLabel: string; icon: typeof CreditCard; bg: string; text: string; border: string }> = {
-  card_wallet: { label: "Prepaid Wallet", shortLabel: "Prepaid", icon: CreditCard, bg: "bg-emerald-50", text: "text-emerald-700", border: "border-emerald-200" },
   stripe_wallet: { label: "Crypto Wallet", shortLabel: "Crypto", icon: Zap, bg: "bg-blue-50", text: "text-blue-700", border: "border-blue-200" },
   shopping_wallet: { label: "Shopping Wallet", shortLabel: "Shopping", icon: CreditCard, bg: "bg-violet-50", text: "text-violet-700", border: "border-violet-200" },
   sub_agent_cards: { label: "Sub-Agent Cards", shortLabel: "Sub-Agent", icon: Shield, bg: "bg-pink-50", text: "text-pink-700", border: "border-pink-200" },
