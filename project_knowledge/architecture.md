@@ -124,7 +124,7 @@ How external agents communicate with CreditClaw. Webhooks, polling, spending con
 |-----------|----------------------|---------|
 | Webhook Delivery | `lib/webhooks/delivery.ts`, `lib/webhooks/index.ts` | Outbound event notifications to agent platforms |
 | Webhook Tunnel | `lib/webhook-tunnel/cloudflare.ts`, `provisioning.ts` | Cloudflare tunnel provisioning for webhook endpoints |
-| Guardrails | `lib/guardrails/`, `app/api/v1/master-guardrails/`, `server/storage/master-guardrails.ts` | Per-transaction limits, category blocking, approval modes. Master spend aggregates Rails 1, 2, 5. |
+| Guardrails | `lib/guardrails/`, `app/api/v1/master-guardrails/` | Per-transaction limits, category blocking, approval modes |
 | Approvals | `lib/approvals/`, `app/api/v1/approvals/` | Human-in-the-loop approval for agent purchases |
 | Orders | `lib/orders/`, `app/api/v1/orders/` | Order lifecycle and tracking |
 | Feedback | `lib/feedback/aggregate.ts` | Agent feedback aggregation |
