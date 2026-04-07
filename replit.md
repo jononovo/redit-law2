@@ -9,6 +9,21 @@ One codebase, three tenants. The infrastructure layer for AI-powered commerce:
 
 Tenants share the same database, codebase, and deployment. Routing is hostname-based via middleware. See `project_knowledge/_README.md` for full architecture and internal docs.
 
+## Modules
+
+| # | Module | What it owns |
+|---|--------|-------------|
+| 1 | Brands & Skills | Scan engine, scoring, skills, brand index, taxonomy, recommend API, open standards |
+| 2 | Product Index | Embedding generation (`features/product-index/`), `product_listings` table |
+| 3 | Payment Tools | Wallets, outbound payment rails |
+| 4 | Agent Interaction | Webhooks, approvals, guardrails, orders |
+| 5 | Agent Plugins | Per-platform plugins (OpenClaw, etc.) |
+| 6 | Platform Management | Auth, bot lifecycle, pairing, feature flags, admin |
+| 7 | Multi-tenant Structure | Tenant routing, onboarding, per-tenant theming |
+| 8 | Agent Shops | Checkout, storefronts, seller profiles, inbound payments |
+
+Full detail: `project_knowledge/architecture.md`
+
 ## Tenant Theming
 Each tenant has its own config at `public/tenants/{tenantId}/config.json` (source of truth) and `features/platform-management/tenants/tenant-configs.ts` (client bundle). Configs define branding, meta tags, theme tokens, routes, features, and tracking.
 
@@ -187,7 +202,7 @@ A config-driven build system at `skill-variants/` (project root) that generates 
 
 ### Brands & Skills System
 
-The platform's growth engine. A single automated pipeline that scans merchant domains, scores their AI-readiness, classifies them into a taxonomy, generates per-merchant shopping skills, and stores everything in a central Brand Index. This system spans architecture modules 1–3 (Agentic Shopping Score, Agent Shopping Skills, Brands Index) which work as one pipeline.
+The platform's growth engine. A single automated pipeline that scans merchant domains, scores their AI-readiness, classifies them into a taxonomy, generates per-merchant shopping skills, and stores everything in a central Brand Index. This is Module 1 in the system architecture — a single unified pipeline.
 
 → Full system overview: `project_knowledge/internal_docs/01-brands-skills-system/_overview.md`
 
@@ -248,7 +263,7 @@ Served at: `GET /brands/{slug}/skill` (text/markdown, 24h cache) and `GET /brand
 2. **Merchant Ranking** — recursive CTE over `brand_categories` + `brand_index` → ranked by brand match → match depth → ASX score
 3. **Product Search** — pgvector cosine similarity against `product_listings` → top 3 per merchant
 
-Product listings: `VECTOR(384)` column, `Xenova/all-MiniLM-L6-v2` embeddings, IVFFlat index. Ingestion via Shopify JSON, Firecrawl batch, Google Shopping XML, or weekly refresh scripts.
+Product listings (Module 2 — Product Index): `VECTOR(384)` column, `Xenova/all-MiniLM-L6-v2` embeddings via `features/product-index/embeddings/embed.ts`, IVFFlat index. Ingestion via Shopify JSON, Firecrawl batch, Google Shopping XML, or weekly refresh scripts.
 
 #### Scan Queue
 
