@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSessionUser } from "@/lib/platform-management/auth/session";
+import { getSessionUser } from "@/features/platform-management/auth/session";
 import { storage } from "@/server/storage";
 import { createCrossmintWalletSchema } from "@/shared/schema";
-import { createSmartWallet } from "@/lib/payment-rails/rail2/wallet/create";
-import { fireRailsUpdated } from "@/lib/agent-interaction/webhooks";
+import { createSmartWallet } from "@/features/payment-rails/rail2/wallet/create";
+import { fireRailsUpdated } from "@/features/agent-interaction/webhooks";
 
 export async function POST(request: NextRequest) {
   try {

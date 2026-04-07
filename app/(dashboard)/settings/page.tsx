@@ -8,7 +8,7 @@ import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { PaymentSetup } from "@/components/dashboard/payment-setup";
 import { ShippingAddressManager } from "@/components/dashboard/shipping-address-manager";
-import { useAuth } from "@/lib/platform-management/auth/auth-context";
+import { useAuth } from "@/features/platform-management/auth/auth-context";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Loader2, Shield, TrendingUp, Zap, CreditCard, Bot, ChevronDown, Smartphone } from "lucide-react";
 

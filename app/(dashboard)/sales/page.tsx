@@ -6,8 +6,8 @@ import { Loader2, DollarSign, Filter, ExternalLink } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { StatusBadge } from "@/components/wallet/status-badge";
-import { useAuth } from "@/lib/platform-management/auth/auth-context";
-import { authFetch } from "@/lib/platform-management/auth-fetch";
+import { useAuth } from "@/features/platform-management/auth/auth-context";
+import { authFetch } from "@/features/platform-management/auth-fetch";
 import Link from "next/link";
 
 interface SaleDTO {

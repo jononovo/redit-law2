@@ -5,7 +5,7 @@ import { CheckCircle2, Loader2, Shield, X, Copy, Send, MessageCircle, FlaskConic
 import { Button } from "@/components/ui/button";
 import { wt } from "@/lib/wizard-typography";
 import { useToast } from "@/hooks/use-toast";
-import { authFetch } from "@/lib/platform-management/auth-fetch";
+import { authFetch } from "@/features/platform-management/auth-fetch";
 import { type Step8Props, type TestPurchaseResult, type TestPurchaseApiResponse, FIELD_LABELS } from "../types";
 
 const TEST_RELAY_MESSAGE = `Complete a test purchase to verify your encrypted card file works correctly.

@@ -6,8 +6,8 @@ import { ArrowLeft, Loader2, CreditCard, Shield, Bot, Snowflake, Play, Clock, Ch
 import { Button } from "@/components/ui/button";
 import { CardVisual } from "@/components/wallet/card-visual";
 import { CARD_COLORS, resolveCardColor } from "@/components/wallet/types";
-import { useAuth } from "@/lib/platform-management/auth/auth-context";
-import { authFetch } from "@/lib/platform-management/auth-fetch";
+import { useAuth } from "@/features/platform-management/auth/auth-context";
+import { authFetch } from "@/features/platform-management/auth-fetch";
 import { useToast } from "@/hooks/use-toast";
 
 interface Rail5Checkout {

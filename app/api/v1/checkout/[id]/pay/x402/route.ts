@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { storage } from "@/server/storage";
-import { parseXPaymentHeader, validateX402Payment, settleX402Payment, waitForReceipt, buildX402DedupeKey } from "@/lib/payment-rails/x402/receive";
-import { creditWalletFromX402, recordX402Sale } from "@/lib/payment-rails/x402/checkout";
+import { parseXPaymentHeader, validateX402Payment, settleX402Payment, waitForReceipt, buildX402DedupeKey } from "@/features/payment-rails/x402/receive";
+import { creditWalletFromX402, recordX402Sale } from "@/features/payment-rails/x402/checkout";
 
 const x402PaySchema = z.object({
   buyer_email: z.string().email().optional(),

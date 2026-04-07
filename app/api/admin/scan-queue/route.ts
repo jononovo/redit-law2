@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getCurrentUser } from "@/lib/platform-management/auth/session";
-import { addToQueue, getQueueStats, clearCompleted, retryFailed, removeEntry } from "@/lib/brand-engine/scan-queue/process-next";
+import { getCurrentUser } from "@/features/platform-management/auth/session";
+import { addToQueue, getQueueStats, clearCompleted, retryFailed, removeEntry } from "@/features/brand-engine/scan-queue/process-next";
 
 async function requireAdmin() {
   const user = await getCurrentUser();

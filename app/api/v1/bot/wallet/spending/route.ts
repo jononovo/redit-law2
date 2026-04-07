@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import { withBotApi } from "@/lib/platform-management/agent-management/agent-api/middleware";
+import { withBotApi } from "@/features/platform-management/agent-management/agent-api/middleware";
 import { storage } from "@/server/storage";
-import { GUARDRAIL_DEFAULTS } from "@/lib/agent-interaction/guardrails/defaults";
-import { PROCUREMENT_DEFAULTS } from "@/lib/agent-interaction/guardrails/defaults";
+import { GUARDRAIL_DEFAULTS } from "@/features/agent-interaction/guardrails/defaults";
+import { PROCUREMENT_DEFAULTS } from "@/features/agent-interaction/guardrails/defaults";
 
 export const GET = withBotApi("/api/v1/bot/wallet/spending", async (_request, { bot }) => {
   if (bot.walletStatus === "pending") {

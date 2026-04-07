@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { getSessionUser } from "@/lib/platform-management/auth/session";
+import { getSessionUser } from "@/features/platform-management/auth/session";
 import { storage } from "@/server/storage";
 import { db } from "@/server/db";
-import { sendUsdcTransfer as privySendUsdc } from "@/lib/payment-rails/rail1/wallet/transfer";
-import { sendUsdcTransfer as crossmintSendUsdc } from "@/lib/payment-rails/rail2/wallet/transfer";
-import { evaluateGuardrails } from "@/lib/agent-interaction/guardrails/evaluate";
+import { sendUsdcTransfer as privySendUsdc } from "@/features/payment-rails/rail1/wallet/transfer";
+import { sendUsdcTransfer as crossmintSendUsdc } from "@/features/payment-rails/rail2/wallet/transfer";
+import { evaluateGuardrails } from "@/features/agent-interaction/guardrails/evaluate";
 import { isAddress } from "viem";
 import {
   privyWallets,

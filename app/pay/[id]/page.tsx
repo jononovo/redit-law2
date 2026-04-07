@@ -5,8 +5,8 @@ import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { Lock, Loader2, AlertCircle, Clock, Ban, Mail, FileText, Calendar, Users } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { CheckoutPaymentPanel } from "@/lib/agent-shops/payments/components/checkout-payment-panel";
-import type { PaymentResult } from "@/lib/agent-shops/payments/types";
+import { CheckoutPaymentPanel } from "@/features/agent-shops/payments/components/checkout-payment-panel";
+import type { PaymentResult } from "@/features/agent-shops/payments/types";
 
 interface CheckoutPageData {
   checkout_page_id: string;

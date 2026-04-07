@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSessionUser } from "@/lib/platform-management/auth/session";
+import { getSessionUser } from "@/features/platform-management/auth/session";
 import { storage } from "@/server/storage";
-import { getOnChainUsdcBalance } from "@/lib/payment-rails/rail1/wallet/balance";
+import { getOnChainUsdcBalance } from "@/features/payment-rails/rail1/wallet/balance";
 import { isAddress } from "viem";
 
 const SYNC_COOLDOWN_MS = 30 * 1000;

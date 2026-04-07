@@ -8,8 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { StatusBadge } from "@/components/wallet/status-badge";
-import { useAuth } from "@/lib/platform-management/auth/auth-context";
-import { authFetch } from "@/lib/platform-management/auth-fetch";
+import { useAuth } from "@/features/platform-management/auth/auth-context";
+import { authFetch } from "@/features/platform-management/auth-fetch";
 import type { Order } from "@/shared/schema";
 
 interface BotOption {

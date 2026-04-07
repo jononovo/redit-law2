@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
-import { withBotApi } from "@/lib/platform-management/agent-management/agent-api/middleware";
+import { withBotApi } from "@/features/platform-management/agent-management/agent-api/middleware";
 import { storage } from "@/server/storage";
 import { rail5CheckoutRequestSchema } from "@/shared/schema";
-import { generateRail5CheckoutId, buildSpawnPayload, buildCheckoutSteps } from "@/lib/payment-rails/rail5";
-import { evaluateMasterGuardrails, centsToMicroUsdc } from "@/lib/agent-interaction/guardrails/master";
-import { evaluateCardGuardrails } from "@/lib/agent-interaction/guardrails/evaluate";
-import { evaluateApprovalDecision } from "@/lib/agent-interaction/guardrails/approval";
-import { GUARDRAIL_DEFAULTS } from "@/lib/agent-interaction/guardrails/defaults";
-import { recordOrder } from "@/lib/agent-interaction/orders/create";
+import { generateRail5CheckoutId, buildSpawnPayload, buildCheckoutSteps } from "@/features/payment-rails/rail5";
+import { evaluateMasterGuardrails, centsToMicroUsdc } from "@/features/agent-interaction/guardrails/master";
+import { evaluateCardGuardrails } from "@/features/agent-interaction/guardrails/evaluate";
+import { evaluateApprovalDecision } from "@/features/agent-interaction/guardrails/approval";
+import { GUARDRAIL_DEFAULTS } from "@/features/agent-interaction/guardrails/defaults";
+import { recordOrder } from "@/features/agent-interaction/orders/create";
 
 export const POST = withBotApi("/api/v1/bot/rail5/checkout", async (request, { bot }) => {
   if (bot.walletStatus !== "active") {
@@ -105,7 +105,7 @@ export const POST = withBotApi("/api/v1/bot/rail5/checkout", async (request, { b
 
     const owner = await storage.getOwnerByUid(card.ownerUid);
     if (owner) {
-      const { notifyOwner } = await import("@/lib/platform-management/notifications");
+      const { notifyOwner } = await import("@/features/platform-management/notifications");
       await notifyOwner({
         ownerUid: card.ownerUid,
         ownerEmail: owner.email,
@@ -115,7 +115,7 @@ export const POST = withBotApi("/api/v1/bot/rail5/checkout", async (request, { b
         botId: bot.botId,
       }).catch(() => {});
 
-      const { createApproval } = await import("@/lib/agent-interaction/approvals/service");
+      const { createApproval } = await import("@/features/agent-interaction/approvals/service");
       createApproval({
         rail: "rail5",
         ownerUid: card.ownerUid,

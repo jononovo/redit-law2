@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useAuth } from "@/lib/platform-management/auth/auth-context";
+import { useAuth } from "@/features/platform-management/auth/auth-context";
 import { WizardStep } from "../wizard-step";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

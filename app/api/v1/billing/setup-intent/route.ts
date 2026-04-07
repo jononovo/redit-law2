@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { getCurrentUser } from "@/lib/platform-management/auth/session";
-import { getOrCreateCustomer, createSetupIntent } from "@/lib/payment-rails/stripe";
+import { getCurrentUser } from "@/features/platform-management/auth/session";
+import { getOrCreateCustomer, createSetupIntent } from "@/features/payment-rails/stripe";
 import { storage } from "@/server/storage";
 
 export async function POST() {

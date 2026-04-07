@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { storage } from "@/server/storage";
-import { authenticateBot } from "@/lib/platform-management/agent-management/auth";
-import { formatUsdc } from "@/lib/payment-rails/rail2/client";
+import { authenticateBot } from "@/features/platform-management/agent-management/auth";
+import { formatUsdc } from "@/features/payment-rails/rail2/client";
 
 async function handler(request: NextRequest, botId: string) {
   try {

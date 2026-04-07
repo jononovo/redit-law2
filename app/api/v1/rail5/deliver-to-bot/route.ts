@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSessionUser } from "@/lib/platform-management/auth/session";
+import { getSessionUser } from "@/features/platform-management/auth/session";
 import { storage } from "@/server/storage";
-import { signPayload, attemptDelivery } from "@/lib/agent-interaction/webhooks";
+import { signPayload, attemptDelivery } from "@/features/agent-interaction/webhooks";
 import { z } from "zod";
-import { RAIL5_CARD_DELIVERED } from "@/lib/platform-management/agent-management/bot-messaging/templates";
+import { RAIL5_CARD_DELIVERED } from "@/features/platform-management/agent-management/bot-messaging/templates";
 
 const deliverSchema = z.object({
   card_id: z.string().min(1),

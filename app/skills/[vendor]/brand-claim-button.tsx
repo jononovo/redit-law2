@@ -4,9 +4,9 @@ import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/lib/platform-management/auth/auth-context";
+import { useAuth } from "@/features/platform-management/auth/auth-context";
 import { Shield, CheckCircle2, Clock } from "lucide-react";
-import { useTenant } from "@/lib/platform-management/tenants/tenant-context";
+import { useTenant } from "@/features/platform-management/tenants/tenant-context";
 
 export function BrandClaimButton({ slug }: { slug: string }) {
   const { user } = useAuth();

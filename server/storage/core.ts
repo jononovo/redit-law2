@@ -8,7 +8,7 @@ import {
   type ApiAccessLog, type InsertApiAccessLog,
 } from "@/shared/schema";
 import { eq, and, isNull, desc, sql, gte, inArray } from "drizzle-orm";
-import { generateWebhookSecret } from "@/lib/platform-management/agent-management/crypto";
+import { generateWebhookSecret } from "@/features/platform-management/agent-management/crypto";
 import type { IStorage } from "./types";
 
 type CoreMethods = Pick<IStorage,

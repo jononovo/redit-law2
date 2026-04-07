@@ -10,11 +10,11 @@ One codebase, three tenants. The infrastructure layer for AI-powered commerce:
 Tenants share the same database, codebase, and deployment. Routing is hostname-based via middleware. See `project_knowledge/_README.md` for full architecture and internal docs.
 
 ## Tenant Theming
-Each tenant has its own config at `public/tenants/{tenantId}/config.json` (source of truth) and `lib/tenants/tenant-configs.ts` (client bundle). Configs define branding, meta tags, theme tokens, routes, features, and tracking.
+Each tenant has its own config at `public/tenants/{tenantId}/config.json` (source of truth) and `features/platform-management/tenants/tenant-configs.ts` (client bundle). Configs define branding, meta tags, theme tokens, routes, features, and tracking.
 
 - **CreditClaw** — "Fun Consumer" theme: 3D clay/claymation aesthetic, coral lobster mascot, bright pastels (orange/blue/purple), Plus Jakarta Sans, 1rem rounded corners
 - **shopy.sh** — Monospace section labels, no rounded corners on cards, no shadows, `gap-px bg-neutral-200` grid dividers, dark sections, green accent in terminal contexts
-- **brands.sh** — Skill-registry framing, shared label maps from `lib/procurement-skills/taxonomy/`
+- **brands.sh** — Skill-registry framing, shared label maps from `features/brand-engine/procurement-skills/taxonomy/`
 
 When building UI, check which tenant(s) the feature applies to and follow the appropriate design language.
 
@@ -46,24 +46,24 @@ New features should follow a feature-first folder structure under `lib/{feature}
 
 **Cross-cutting vs feature-specific**: Cross-cutting logic (guardrails, approvals, webhooks, notifications) stays in its own `lib/{feature}/` folder and should not accumulate feature-specific business logic. If a cross-cutting module starts pulling in feature-specific code, extract that logic into the feature's own folder and leave a thin import in the cross-cutting module.
 
-**Guardrails** (`lib/guardrails/`) — spending limits (how much). Master-level budget across all rails + per-rail limits per wallet/card. Also owns approval modes.
+**Guardrails** (`features/agent-interaction/guardrails/`) — spending limits (how much). Master-level budget across all rails + per-rail limits per wallet/card. Also owns approval modes.
 
-**Procurement Controls** (`lib/procurement-controls/`) — merchant/domain/category restrictions (where). Fully separated from guardrails.
+**Procurement Controls** (`features/agent-interaction/procurement-controls/`) — merchant/domain/category restrictions (where). Fully separated from guardrails.
 
 See `internal_docs/05-agent-interaction/guardrails.md` for enforcement flow, spend aggregation, status filters, approval modes, and procurement control details.
 
-**Webhooks** (`lib/webhooks/`):
+**Webhooks** (`features/agent-interaction/webhooks/`):
 - `delivery.ts` — outbound webhook delivery, HMAC-SHA256 signing, retry logic with exponential backoff, and OpenClaw hooks token auth. Exports `fireWebhook()`, `fireRailsUpdated()`, `signPayload()`, `attemptDelivery()`, `retryWebhookDelivery()`, `retryPendingWebhooksForBot()`, `retryAllPendingWebhooks()`.
-- `index.ts` — barrel re-exports. Consumers import from `@/lib/webhooks`.
+- `index.ts` — barrel re-exports. Consumers import from `@/features/agent-interaction/webhooks`.
 - Types: `WebhookEventType`, `RailsUpdatedAction`.
 - Storage layer lives separately at `server/storage/webhooks.ts`.
 
 **Companion & Shipping Files** (bot checkout support):
-- **Merged Card File with Metadata** (`lib/card/onboarding-rail5/encrypt.ts`): During Rail 5 card onboarding, the encrypted card file includes plaintext "Card Details" and "Billing Address" sections above the encrypted blob. Contains non-sensitive metadata (first 4 digits, expiry, cardholder name, brand) and billing address. Bots read these sections to fill checkout form fields without decrypting. Single file — no separate companion file. Non-sensitive metadata is also saved to the `rail5_cards` DB table (`cardFirst4`, `expMonth`, `expYear`, `cardholderName`, `billingAddress`, `billingCity`, `billingState`, `billingZip`, `billingCountry`) for pre-filling future cards.
-- **Shipping File** (`lib/shipping/`): A central `.creditclaw/shipping.md` file shared across all cards. Generated from the `shipping_addresses` DB table. Auto-pushed to all owner's bots whenever addresses are created, updated, deleted, or default is changed. Bots can also fetch on demand via `GET /api/v1/bot/shipping-addresses`. Default address is marked for bot use at checkout.
+- **Merged Card File with Metadata** (`features/payment-rails/card/onboarding-rail5/encrypt.ts`): During Rail 5 card onboarding, the encrypted card file includes plaintext "Card Details" and "Billing Address" sections above the encrypted blob. Contains non-sensitive metadata (first 4 digits, expiry, cardholder name, brand) and billing address. Bots read these sections to fill checkout form fields without decrypting. Single file — no separate companion file. Non-sensitive metadata is also saved to the `rail5_cards` DB table (`cardFirst4`, `expMonth`, `expYear`, `cardholderName`, `billingAddress`, `billingCity`, `billingState`, `billingZip`, `billingCountry`) for pre-filling future cards.
+- **Shipping File** (`features/agent-interaction/shipping/`): A central `.creditclaw/shipping.md` file shared across all cards. Generated from the `shipping_addresses` DB table. Auto-pushed to all owner's bots whenever addresses are created, updated, deleted, or default is changed. Bots can also fetch on demand via `GET /api/v1/bot/shipping-addresses`. Default address is marked for bot use at checkout.
 - Webhook event: `shipping.addresses.updated` (registered in `WebhookEventType`).
 
-**Bot Messaging System** (`lib/agent-management/bot-messaging/`):
+**Bot Messaging System** (`features/platform-management/agent-management/bot-messaging/`):
 - `index.ts` — `sendToBot(botId, eventType, payload, options?)`: single function for all bot communication. Routes based on webhook health: tries webhook if status is `active` or `degraded`, skips webhook and goes straight to pending message if `unreachable` or `none`.
 - `expiry.ts` — per-event-type expiry config (`rail5.card.delivered` = 24h, general = 7 days).
 - `templates/` — centralized message templates for bot instructions. Each event type has a template file (`.ts` exporting a string constant). All delivery paths (relay UI, webhook payload, staged message) import from here to stay in sync. `getTemplate(eventType, vars?)` substitutes `{{variable}}` placeholders. Currently: `rail5-card-delivered.ts`.
@@ -94,9 +94,9 @@ CreditClaw uses a lightweight, database-backed feature flag system for controlli
 
 ### Architecture
 - **DB Column**: `flags text[] NOT NULL DEFAULT '{}'` on the `owners` table. A user can hold multiple flags simultaneously (e.g., `["admin", "beta"]`).
-- **Tier Types**: `lib/feature-flags/tiers.ts` — defines `Tier = "admin" | "beta" | "paid"` with compile-time enforcement.
-- **Client Hook**: `lib/feature-flags/use-feature-access.ts` — `useHasAccess(tier)` reads from auth context synchronously. No API calls, no loading states.
-- **Auth Flow**: Flags are included in the session response (`GET /api/auth/session` and `POST /api/auth/session`). The `User` interface in `lib/auth/auth-context.tsx` includes `flags: string[]`.
+- **Tier Types**: `features/platform-management/feature-flags/tiers.ts` — defines `Tier = "admin" | "beta" | "paid"` with compile-time enforcement.
+- **Client Hook**: `features/platform-management/feature-flags/use-feature-access.ts` — `useHasAccess(tier)` reads from auth context synchronously. No API calls, no loading states.
+- **Auth Flow**: Flags are included in the session response (`GET /api/auth/session` and `POST /api/auth/session`). The `User` interface in `features/platform-management/auth/auth-context.tsx` includes `flags: string[]`.
 - **Sidebar Integration**: Nav items in `components/dashboard/sidebar.tsx` support an optional `requiredAccess?: Tier` property. Items are filtered out before render — not hidden with CSS.
 - **Admin Dashboard**: `/admin123` — server-side protected via `layout.tsx` that calls `getCurrentUser()` and checks for `admin` flag. Returns 404 (not 403) for non-admins. Uses the same sidebar/header layout as the main dashboard.
 - **Adding a new flag**: (1) Set it in the user's `flags` array in DB, (2) Tag nav items or routes with `requiredAccess`, (3) Done.
@@ -107,7 +107,7 @@ CreditClaw uses a lightweight, database-backed feature flag system for controlli
 The platform uses Next.js 16 (App Router), Firebase Auth (client/Admin SDK) with httpOnly session cookies, PostgreSQL via Drizzle ORM, Tailwind CSS v4, PostCSS, shadcn/ui for components, and React Query for state management.
 
 ### Managed Cloudflare Tunnels
-Bots without a `callback_url` get a managed Cloudflare tunnel provisioned at registration. Tunnels route through the `nortonbot.com` domain (configured directly in Cloudflare). Module lives in `lib/webhook-tunnel/` with two layers: `cloudflare.ts` (raw API calls) and `provisioning.ts` (orchestration + defaults). Required secrets: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_ZONE_ID`.
+Bots without a `callback_url` get a managed Cloudflare tunnel provisioned at registration. Tunnels route through the `nortonbot.com` domain (configured directly in Cloudflare). Module lives in `features/agent-interaction/webhook-tunnel/` with two layers: `cloudflare.ts` (raw API calls) and `provisioning.ts` (orchestration + defaults). Required secrets: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_ZONE_ID`.
 → Full detail: `project_knowledge/internal_docs/05-agent-interaction/webhook-tunnels.md`
 
 Advanced features:
@@ -117,34 +117,34 @@ Advanced features:
 
 ### Multi-Rail Architecture
 CreditClaw employs a multi-rail architecture, segmenting payment rails with independent database tables, API routes, and components.
-- **Rail 1 (Stripe Wallet):** Uses Privy server wallets on Base chain, USDC funding via Stripe Crypto Onramp, and x402 payment protocol. **Modularized under `lib/rail1/`:**
+- **Rail 1 (Stripe Wallet):** Uses Privy server wallets on Base chain, USDC funding via Stripe Crypto Onramp, and x402 payment protocol. **Modularized under `features/payment-rails/rail1/`:**
   - `client.ts` — Privy client singleton, authorization signature helper, app ID/secret getters.
   - `wallet/create.ts` — `createServerWallet()` via Privy walletsService.
   - `wallet/sign.ts` — `signTypedData()` for x402 EIP-712 signing.
   - `wallet/transfer.ts` — `sendUsdcTransfer()` via Privy RPC with ERC-20 calldata.
   - `wallet/balance.ts` — `getOnChainUsdcBalance()` via viem + Base RPC.
-  - `onramp.ts` — re-export shim for `createStripeOnrampSession` from `lib/crypto-onramp/stripe-onramp/session.ts`. Uses `stripe.rawRequest()` via the shared Stripe SDK client (the crypto onramp endpoint is not yet in the SDK's typed API, so rawRequest is used with manual typing).
+  - `onramp.ts` — re-export shim for `createStripeOnrampSession` from `features/payment-rails/crypto-onramp/stripe-onramp/session.ts`. Uses `stripe.rawRequest()` via the shared Stripe SDK client (the crypto onramp endpoint is not yet in the SDK's typed API, so rawRequest is used with manual typing).
   - `x402.ts` — x402 typed data builders (`buildTransferWithAuthorizationTypedData`, `buildXPaymentHeader`, `generateNonce`) and USDC format helpers (`formatUsdc`, `usdToMicroUsdc`, `microUsdcToUsd`).
   - Webhook: `STRIPE_WEBHOOK_SECRET_ONRAMP` env var, event type `crypto.onramp_session.updated`. Balance sync endpoint: `POST /api/v1/stripe-wallet/balance/sync` with 30-sec cooldown and `reconciliation` transaction type for discrepancies. Schema includes `last_synced_at` column on `privy_wallets`.
-- **Rail 2 (Card Wallet):** Uses CrossMint smart wallets on Base chain, USDC funding via fiat onramp, and Amazon/commerce purchases via Orders API. Employs merchant allow/blocklists. **Modularized under `lib/rail2/`:**
+- **Rail 2 (Card Wallet):** Uses CrossMint smart wallets on Base chain, USDC funding via fiat onramp, and Amazon/commerce purchases via Orders API. Employs merchant allow/blocklists. **Modularized under `features/payment-rails/rail2/`:**
   - `client.ts` — shared CrossMint API client (`crossmintFetch`, `getServerApiKey`, format helpers). Handles both API versions: Wallets API (`2025-06-09`) and Orders API (`2022-06-09`).
   - `wallet/create.ts` — `createSmartWallet()` using `evm-fireblocks-custodial` signer.
   - `wallet/balance.ts` — `getWalletBalance()` with balance parsing for old/new response formats.
   - `wallet/transfer.ts` — `sendUsdcTransfer()` for on-chain USDC transfers.
-  - `orders/purchase.ts` — re-export shim for `createPurchaseOrder()`, `getOrderStatus()` from `lib/procurement/crossmint-worldstore/purchase.ts`.
+  - `orders/purchase.ts` — re-export shim for `createPurchaseOrder()`, `getOrderStatus()` from `features/agent-interaction/procurement/crossmint-worldstore/purchase.ts`.
   - `orders/onramp.ts` — `createOnrampOrder()` for fiat-to-USDC via checkoutcom-flow.
-  - On-chain balance sync via reused `getOnChainUsdcBalance` from `lib/rail1/wallet/balance.ts`. Balance sync endpoint: `POST /api/v1/card-wallet/balance/sync` with 30-sec cooldown and `reconciliation` transaction type for discrepancies. Schema includes `last_synced_at` column on `crossmint_wallets`. Frontend ↻ button on Card Wallet dashboard mirrors Rail 1 pattern.
+  - On-chain balance sync via reused `getOnChainUsdcBalance` from `features/payment-rails/rail1/wallet/balance.ts`. Balance sync endpoint: `POST /api/v1/card-wallet/balance/sync` with 30-sec cooldown and `reconciliation` transaction type for discrepancies. Schema includes `last_synced_at` column on `crossmint_wallets`. Frontend ↻ button on Card Wallet dashboard mirrors Rail 1 pattern.
 - **Master Guardrails:** Owner-level, cross-rail spending limits stored in a `master_guardrails` table. These guardrails are checked before per-rail guardrails and aggregate spend across all active rails.
-- **Rail 5 (Sub-Agent Cards):** Encrypted card files with plugin-based checkout. Owner encrypts card client-side (AES-256-GCM), CreditClaw stores only the decryption key. At checkout, the bot calls the `creditclaw_fill_card` plugin (or falls back to an ephemeral sub-agent) which gets the key, decrypts, fills card number + CVV, and wipes all sensitive data. **Plugin:** `public/Plugins/OpenClaw/` (`src/index.ts`, `src/decrypt.ts`, `src/fill-card.ts`, `src/api.ts`). **Modularized under `lib/rail5/`:**
+- **Rail 5 (Sub-Agent Cards):** Encrypted card files with plugin-based checkout. Owner encrypts card client-side (AES-256-GCM), CreditClaw stores only the decryption key. At checkout, the bot calls the `creditclaw_fill_card` plugin (or falls back to an ephemeral sub-agent) which gets the key, decrypts, fills card number + CVV, and wipes all sensitive data. **Plugin:** `public/Plugins/OpenClaw/` (`src/index.ts`, `src/decrypt.ts`, `src/fill-card.ts`, `src/api.ts`). **Modularized under `features/payment-rails/rail5/`:**
   - `index.ts` — core helpers (`generateRail5CardId`, `generateRail5CheckoutId`, `validateKeyMaterial`, `getDailySpendCents`, `getMonthlySpendCents`, `buildSpawnPayload`, `buildCheckoutSteps`) + test checkout constants (`RAIL5_TEST_CHECKOUT_PAGE_ID`, `RAIL5_TEST_CHECKOUT_URL`).
   - `decrypt-script.ts` — static `DECRYPT_SCRIPT` constant (~10-line AES-256-GCM Node.js script) with marker-based regex (`ENCRYPTED_CARD_START/END`) for extracting data from combined files. Falls back to code-fence matching for old-format files.
   - **Card status progression:** `pending_setup` → `pending_delivery` (key submitted) → `confirmed` (bot confirmed file delivery via `POST /bot/rail5/confirm-delivery`) → `active` (first successful checkout completed). `frozen` can be set by owner on `confirmed` or `active` cards; unfreezing restores to `confirmed` or `active` based on checkout history.
   - **Dual execution modes:** Checkout endpoint returns both `checkout_steps` (array of instructions for direct mode) and `spawn_payload` (spawn wrapper for sub-agent mode). Bot chooses which to use.
-  - DB tables: `rail5_cards`, `rail5_checkouts`. Owner API: `/api/v1/rail5/{initialize,submit-key,cards,deliver-to-bot,cards/[cardId]/delivery-status}`. Bot API: `/api/v1/bot/rail5/{checkout,key,confirm,confirm-delivery}`. Dashboard: `/sub-agent-cards`. Setup wizard: 9-step (Name→HowItWorks→VisualCardEntry→BillingAddress→Limits→LinkBot→Encrypt&Send→DeliveryResult→TestVerification) with Web Crypto encryption. Card brand is auto-detected from BIN prefix via shared `lib/card/card-brand.ts` utility (Visa/MC/Amex/Discover/JCB/Diners); sent to server during submit-key.
+  - DB tables: `rail5_cards`, `rail5_checkouts`. Owner API: `/api/v1/rail5/{initialize,submit-key,cards,deliver-to-bot,cards/[cardId]/delivery-status}`. Bot API: `/api/v1/bot/rail5/{checkout,key,confirm,confirm-delivery}`. Dashboard: `/sub-agent-cards`. Setup wizard: 9-step (Name→HowItWorks→VisualCardEntry→BillingAddress→Limits→LinkBot→Encrypt&Send→DeliveryResult→TestVerification) with Web Crypto encryption. Card brand is auto-detected from BIN prefix via shared `features/payment-rails/card/card-brand.ts` utility (Visa/MC/Amex/Discover/JCB/Diners); sent to server during submit-key.
   - **File delivery via `sendToBot()`**: Encryption step calls `POST /api/v1/bot-messages/send` which tries webhook first, falls back to staging a pending message. Combined self-contained markdown file format with `DECRYPT_SCRIPT_START/END` and `ENCRYPTED_CARD_START/END` markers. Backup download always happens.
   - **Delivery result step**: Shows live status (webhook delivered / waiting for bot / confirmed). 1-minute polling every 5s via `GET /rail5/cards/[cardId]/delivery-status`. Share buttons (Copy, Telegram, Discord) for relay message. Collapsible "For AI Agents" section with re-download option. **Phase 2: Test purchase verification** — after bot confirms delivery, polls `GET /rail5/cards/[cardId]/test-purchase-status` for 3 minutes. Server returns submitted card details from the test sale; client compares field-by-field against `savedCardDetails` (preserved in browser memory before input clearing). Shows green checkmarks (match) or red X (mismatch) per field. Confirm-delivery endpoint returns real `test_checkout_url` and `test_instructions` directing bot to sandbox checkout with "testing" payment method.
   - Unified `rails.updated` webhook fires across ALL rails on bot link/unlink/freeze/unfreeze/wallet create with `action`, `rail`, `card_id`/`wallet_id`, `bot_id` in payload. Wired up in: Rail 1 (create, freeze), Rail 2 (create, freeze), Rail 5 (PATCH cards).
-- **Card UI Module (`lib/card/`):** Shared card component library designed for consistent card visuals across the platform.
+- **Card UI Module (`features/payment-rails/card/`):** Shared card component library designed for consistent card visuals across the platform.
   - `card-brand.ts` — brand detection from BIN prefix, formatting, max digits, placeholders. Re-exported from `lib/card-brand.ts` for backward compatibility.
   - `brand-logo.tsx` — visual brand logo component (Visa/MC/Amex/Discover/JCB/Diners).
   - `cipher-effects.tsx` — `useCipherScramble` hook for encryption scramble animations.
@@ -153,7 +153,7 @@ CreditClaw employs a multi-rail architecture, segmenting payment rails with inde
   - `index.ts` — barrel re-export for shared utilities.
   - `onboarding-rail5/` — Rail 5-specific card onboarding:
     - `interactive-card.tsx` — editable visual card component with cipher scramble, field validation, brand detection.
-    - `encrypt.ts` — client-side AES-256-GCM encryption (`encryptCardDetails`, `buildEncryptedCardFile`, `downloadEncryptedFile`). Re-exported from `lib/rail5/encrypt.ts` for backward compatibility.
+    - `encrypt.ts` — client-side AES-256-GCM encryption (`encryptCardDetails`, `buildEncryptedCardFile`, `downloadEncryptedFile`). Re-exported from `features/payment-rails/rail5/encrypt.ts` for backward compatibility.
 
 ### Inter-Wallet Transfers
 CreditClaw supports USDC transfers between wallets across all rails and to external addresses.
@@ -164,7 +164,7 @@ CreditClaw supports USDC transfers between wallets across all rails and to exter
 - **Atomic DB Updates:** Source debit, destination credit, and transaction ledger entries are wrapped in a single Drizzle `db.transaction()` for consistency
 - **Transaction Type:** `"transfer"` with metadata containing `direction` ("inbound"/"outbound"), `transfer_tier`, `counterparty_address`, `counterparty_wallet_id`, `counterparty_rail`, `tx_hash`
 - **Frontend:** Transfer button on both Stripe Wallet and Card Wallet pages, dialog with destination picker (own wallets across both rails or external address), amount input in USD
-- **Lib Functions:** `sendUsdcTransfer` in `lib/rail1/wallet/transfer.ts` (Privy) and `lib/rail2/wallet/transfer.ts` (CrossMint)
+- **Lib Functions:** `sendUsdcTransfer` in `features/payment-rails/rail1/wallet/transfer.ts` (Privy) and `features/payment-rails/rail2/wallet/transfer.ts` (CrossMint)
 
 ### Transaction Ledger — `balance_after` Column
 All transaction tables (`transactions`, `privy_transactions`, `crossmint_transactions`, `rail5_checkouts`) have a nullable `balance_after` column that records the wallet's balance at the time the transaction was created. No calculations — just stores whatever the DB balance is at that moment. For reconciliation, it stores the on-chain balance. For pending x402 payments, it stores the current (unchanged) DB balance. The real balance drop shows when reconciliation runs. All owner-facing and bot-facing transaction list APIs include `balance_after` / `balance_after_display` in responses. Frontend ledger tables show a "Balance" column.
@@ -193,7 +193,7 @@ The platform's growth engine. A single automated pipeline that scans merchant do
 
 **Pipeline:** Domain submitted → classifyBrand + auditSite (parallel Perplexity calls) → computeScoreFromRubric → buildVendorSkillDraft → generateVendorSkill (SKILL.md) → upsertBrandIndex → resolveProductCategories (sequential Perplexity call). Three Perplexity calls per scan, each independently fail-safe.
 
-**Entry points:** `POST /api/v1/scan` (public, user-triggered) and `lib/scan-queue/process-next.ts` (background queue worker). Both run the identical pipeline.
+**Entry points:** `POST /api/v1/scan` (public, user-triggered) and `features/brand-engine/scan-queue/process-next.ts` (background queue worker). Both run the identical pipeline.
 
 #### Brand Index
 
@@ -209,11 +209,11 @@ Key columns: `domain` (unique, dedup key), `slug` (URL routing), `sector`, `bran
 
 Storage methods: `searchBrands` (with `lite` mode for catalog cards), `searchBrandsCount`, `getBrandById`, `getBrandBySlug`, `getBrandByDomain`, `getRetailersForBrand`, `upsertBrandIndex`, `getAllBrandFacets` (10-min cache, auto-invalidated on upsert).
 
-Maturity progression: `draft` → `community` (auto-promoted when score + skillMd + brandData present) → `official` (brand claimed) → `verified` (CreditClaw audited). `resolveMaturity()` in `lib/agentic-score/scan-utils.ts` never demotes.
+Maturity progression: `draft` → `community` (auto-promoted when score + skillMd + brandData present) → `official` (brand claimed) → `verified` (CreditClaw audited). `resolveMaturity()` in `features/brand-engine/agentic-score/scan-utils.ts` never demotes.
 
 #### ASX Score Engine
 
-`lib/agentic-score/` — evaluates merchant AI-readiness. 11 signals, 3 pillars, 100 points:
+`features/brand-engine/agentic-score/` — evaluates merchant AI-readiness. 11 signals, 3 pillars, 100 points:
 - **Clarity** (35 pts): JSON-LD (15), Product Feed/Sitemap (10), Agent Metadata (10)
 - **Discoverability** (30 pts): Search API/MCP (10), Site Search (10), Page Load (5), Product Page Quality (5)
 - **Reliability** (35 pts): Access & Auth (10), Order Management (10), Checkout Flow (10), Bot Tolerance (5)
@@ -222,22 +222,22 @@ Key files: `rubric.ts` (scoring rubric), `scoring-engine.ts` (deterministic scor
 
 #### Taxonomy & Classification
 
-`lib/procurement-skills/taxonomy/` — each concern is its own file with type definition + label map:
+`features/brand-engine/procurement-skills/taxonomy/` — each concern is its own file with type definition + label map:
 - **28 sectors** (21 Google Product Taxonomy roots + 7 custom). 26 assignable; `luxury` is tier-driven, `multi-sector` is set programmatically for department stores/supermarkets/mega merchants.
 - **7 tiers**: commodity → ultra_luxury
 - **8 brand types**: brand, retailer, marketplace, chain, independent, department_store, supermarket, mega_merchant. Brand type controls category resolution depth.
 - **8 capabilities**: guest_checkout, po_number, tax_exempt, bulk_pricing, api_ordering, subscription, wishlist, price_match
 - Also: checkout methods, checkout providers, payment methods, ordering permissions, maturity levels
 
-Core types in `lib/procurement-skills/types.ts` — re-exports all taxonomy types, defines `VendorSkill`, `SearchDiscovery`, `BuyingConfig`, `DealsConfig`, `TaxonomyConfig`, `MethodConfig`.
+Core types in `features/brand-engine/procurement-skills/types.ts` — re-exports all taxonomy types, defines `VendorSkill`, `SearchDiscovery`, `BuyingConfig`, `DealsConfig`, `TaxonomyConfig`, `MethodConfig`.
 
 Product categories: 5,638 entries in `product_categories` table (5,595 Google + 43 custom, seeded by `scripts/seed-google-taxonomy.ts`). Category resolution maps brands to taxonomy IDs via `brand_categories` junction table.
 
 #### Skill Generation & Serving
 
-`lib/procurement-skills/generator.ts` — `generateVendorSkill()` converts VendorSkill objects into SKILL.md markdown (frontmatter, overview, search instructions, checkout flow, tips, known issues).
+`features/brand-engine/procurement-skills/generator.ts` — `generateVendorSkill()` converts VendorSkill objects into SKILL.md markdown (frontmatter, overview, search instructions, checkout flow, tips, known issues).
 
-`lib/procurement-skills/skill-json.ts` — `buildSkillJson()` produces machine-readable JSON (identity, taxonomy, scoring, access, checkout, shipping, loyalty).
+`features/brand-engine/procurement-skills/skill-json.ts` — `buildSkillJson()` produces machine-readable JSON (identity, taxonomy, scoring, access, checkout, shipping, loyalty).
 
 Served at: `GET /brands/{slug}/skill` (text/markdown, 24h cache) and `GET /brands/{slug}/skill-json` (application/json, 24h cache).
 
@@ -252,14 +252,14 @@ Product listings: `VECTOR(384)` column, `Xenova/all-MiniLM-L6-v2` embeddings, IV
 
 #### Scan Queue
 
-`lib/scan-queue/`, admin page at `/admin123/scan-queue` — batch scanning with server-side scheduler:
+`features/brand-engine/scan-queue/`, admin page at `/admin123/scan-queue` — batch scanning with server-side scheduler:
 - Processes one domain every 17 minutes, auto-stops after 3 days, pauses during quiet hours
 - `scan_queue` table with `FOR UPDATE SKIP LOCKED` atomic claim, stale recovery (30 min timeout)
 - Same pipeline as public scan API
 
 #### Brand Claims
 
-`brand_claims` table, `lib/brand-claims/` — self-service ownership verification:
+`brand_claims` table, `features/brand-engine/brand-claims/` — self-service ownership verification:
 - Auto-verify if email domain matches brand domain; manual review otherwise
 - Upgrades maturity to `official` on verify, reverts to `community` on revoke
 - Free email blocklist (Gmail, Yahoo, etc.)
@@ -281,13 +281,13 @@ Hybrid SSR: `app/skills/page.tsx` (server component, initial fetch) + `app/skill
 `unified_approvals` is the **sole source of truth** for all approval state across all rails. The old `privy_approvals` and `crossmint_approvals` tables have been dropped. All approval reads, writes, and decisions go through this single table.
 
 **Architecture:**
-- **Service** (`lib/approvals/service.ts`): `createApproval()` generates HMAC-signed approval links, stores in `unified_approvals` table, sends branded email. `resolveApproval()` verifies HMAC, checks expiry, updates status, dispatches rail-specific callbacks.
-- **Email** (`lib/approvals/email.ts`): Single `sendApprovalEmail()` with CreditClaw-branded HTML template, rail badge, and magic-link button.
-- **Callbacks** (`lib/approvals/callbacks.ts`): Thin loader that imports the four rail-specific fulfillment modules below.
-- **Rail 1 Fulfillment** (`lib/approvals/rail1-fulfillment.ts`): `railRef` = privy_transaction ID. On approve: updates tx status, creates order. On deny: marks tx failed.
-- **Rail 2 Fulfillment** (`lib/approvals/rail2-fulfillment.ts`): `railRef` = crossmint_transaction ID. On approve: looks up tx, creates purchase order via CrossMint, records order, fires webhook. On deny: marks tx failed, fires webhook.
-- **Rail 5 Fulfillment** (`lib/approvals/rail5-fulfillment.ts`): Approval/denial handlers for sub-agent checkouts (status updates, webhook firing) + self-registers.
-- **Lifecycle** (`lib/approvals/lifecycle.ts`): TTL constants per rail (Rail 1 polling: 5min, Rail 1 email: 10min, Rails 2/5: 15min).
+- **Service** (`features/agent-interaction/approvals/service.ts`): `createApproval()` generates HMAC-signed approval links, stores in `unified_approvals` table, sends branded email. `resolveApproval()` verifies HMAC, checks expiry, updates status, dispatches rail-specific callbacks.
+- **Email** (`features/agent-interaction/approvals/email.ts`): Single `sendApprovalEmail()` with CreditClaw-branded HTML template, rail badge, and magic-link button.
+- **Callbacks** (`features/agent-interaction/approvals/callbacks.ts`): Thin loader that imports the four rail-specific fulfillment modules below.
+- **Rail 1 Fulfillment** (`features/agent-interaction/approvals/rail1-fulfillment.ts`): `railRef` = privy_transaction ID. On approve: updates tx status, creates order. On deny: marks tx failed.
+- **Rail 2 Fulfillment** (`features/agent-interaction/approvals/rail2-fulfillment.ts`): `railRef` = crossmint_transaction ID. On approve: looks up tx, creates purchase order via CrossMint, records order, fires webhook. On deny: marks tx failed, fires webhook.
+- **Rail 5 Fulfillment** (`features/agent-interaction/approvals/rail5-fulfillment.ts`): Approval/denial handlers for sub-agent checkouts (status updates, webhook firing) + self-registers.
+- **Lifecycle** (`features/agent-interaction/approvals/lifecycle.ts`): TTL constants per rail (Rail 1 polling: 5min, Rail 1 email: 10min, Rails 2/5: 15min).
 - **Landing Page** (`app/api/v1/approvals/confirm/[approvalId]/route.ts`): GET renders branded approval page with approve/deny buttons; POST processes the decision via `resolveApproval()`. Single entry point for email-based approvals across all rails.
 
 **Centralized Dashboard API** (used by ALL rail dashboard pages):
@@ -305,15 +305,15 @@ Hybrid SSR: `app/skills/page.tsx` (server component, initial fetch) + `app/skill
 - **Env Vars**: `UNIFIED_APPROVAL_HMAC_SECRET` (falls back to `HMAC_SECRET` or default).
 - **Dropped Tables**: `privy_approvals` and `crossmint_approvals` have been removed from schema and dropped from the database.
 
-### Central Orders (`lib/orders/`, `server/storage/orders.ts`)
+### Central Orders (`features/agent-interaction/orders/`, `server/storage/orders.ts`)
 Unified cross-rail order tracking for all vendor purchases. Every confirmed purchase across all rails creates a row in the `orders` table.
 - **Schema**: `orders` table in `shared/schema.ts` with columns for product info (name, image, URL, description, SKU), vendor (name, details JSONB), pricing (price_cents, taxes_cents, shipping_price_cents, currency), shipping (address, type, note), tracking (carrier, number, URL, estimated_delivery), and references (owner_uid, rail, bot_id, wallet_id/card_id, transaction_id, external_order_id).
 - **Storage**: `server/storage/orders.ts` — CRUD methods: `createOrder`, `getOrderById`, `getOrderByExternalId`, `getOrdersByOwner` (with filters: rail, botId, walletId, cardId, status, dateFrom, dateTo), `getOrdersByWallet`, `getOrdersByCard`, `updateOrder`.
-- **Order creation module**: `lib/orders/create.ts` exports `recordOrder()` — single entry point all rails call after a confirmed purchase. `lib/orders/types.ts` defines `OrderInput` interface.
+- **Order creation module**: `features/agent-interaction/orders/create.ts` exports `recordOrder()` — single entry point all rails call after a confirmed purchase. `features/agent-interaction/orders/types.ts` defines `OrderInput` interface.
 - **Rail wiring** (order creation fires ONLY after confirmed execution, never on pending requests):
-  - Rail 1: `lib/approvals/rail1-fulfillment.ts` (approved) + `app/api/v1/stripe-wallet/bot/sign/route.ts` (auto-approved)
-  - Rail 2: `lib/approvals/rail2-fulfillment.ts` (approved) + `app/api/v1/card-wallet/bot/purchase/route.ts` (auto-approved). Webhooks update order via `storage.getOrderByExternalId()` + `storage.updateOrder()`.
-  - Rail 5: `lib/approvals/rail5-fulfillment.ts` (approved) + `app/api/v1/bot/rail5/checkout/route.ts` (auto-approved)
+  - Rail 1: `features/agent-interaction/approvals/rail1-fulfillment.ts` (approved) + `app/api/v1/stripe-wallet/bot/sign/route.ts` (auto-approved)
+  - Rail 2: `features/agent-interaction/approvals/rail2-fulfillment.ts` (approved) + `app/api/v1/card-wallet/bot/purchase/route.ts` (auto-approved). Webhooks update order via `storage.getOrderByExternalId()` + `storage.updateOrder()`.
+  - Rail 5: `features/agent-interaction/approvals/rail5-fulfillment.ts` (approved) + `app/api/v1/bot/rail5/checkout/route.ts` (auto-approved)
 - **API**: `GET /api/v1/orders` (list with query filters), `GET /api/v1/orders/[order_id]` (single order detail). Owner-authenticated.
 - **Pages**: `/orders` (main orders list with cross-rail filters: rail, bot, status, date range), `/orders/[order_id]` (order detail page with product image, timeline, price breakdown, shipping/tracking).
 - **Rail tabs**: All 4 rail pages' Orders tabs now query the central `GET /api/v1/orders?rail=X` endpoint. Clicking an order navigates to `/orders/[order_id]`.
@@ -330,20 +330,20 @@ The platform's inbound commerce engine. Every wallet holder becomes a seller via
 **5 checkout payment methods:** x402 (autonomous agent payments via EIP-3009), Base Pay (one-tap USDC), Stripe Onramp (card/bank→USDC), USDC Direct, Testing mode.
 
 **Key tables:** `checkout_pages`, `sales`, `seller_profiles`, `invoices`, `base_pay_payments`
-**Key code:** `server/storage/sales.ts`, `server/storage/seller-profiles.ts`, `server/storage/invoices.ts`, `lib/x402/receive.ts`, `lib/x402/checkout.ts`, `lib/base-pay/`, `lib/invoice-email.ts`, `lib/invoice-pdf.ts`
+**Key code:** `server/storage/sales.ts`, `server/storage/seller-profiles.ts`, `server/storage/invoices.ts`, `features/payment-rails/x402/receive.ts`, `features/payment-rails/x402/checkout.ts`, `features/agent-shops/base-pay/`, `features/agent-shops/invoice-email.ts`, `features/agent-shops/invoice-pdf.ts`
 **Public pages:** `/pay/[id]` (checkout), `/s/[slug]` (storefront), `/pay/[id]/success` (confirmation)
 **Dashboard pages:** `/checkout/create`, `/shop`, `/sales`, `/invoices`
 **Bot APIs:** Full parity — checkout pages, sales, seller profile, shop, invoices all have bot endpoints under `/api/v1/bot/`
 **Skill file:** `public/MY-STORE.md`
 
-### Crypto Onramp (`lib/crypto-onramp/`) — Server-Side Only
-Server-side Stripe Crypto Onramp logic. Client-side UI is now in `lib/payments/`. Legacy client components retained with `-legacy` suffix for reference.
+### Crypto Onramp (`features/payment-rails/crypto-onramp/`) — Server-Side Only
+Server-side Stripe Crypto Onramp logic. Client-side UI is now in `features/agent-shops/payments/`. Legacy client components retained with `-legacy` suffix for reference.
 - **`types.ts`** — `WalletTarget`, `OnrampSessionResult`, `OnrampWebhookEvent`, `OnrampProvider`
 - **`stripe-onramp/session.ts`** — `createStripeOnrampSession()` — creates Stripe Crypto Onramp session for any wallet address (still used by API routes)
 - **`stripe-onramp/webhook.ts`** — `parseStripeOnrampEvent()` + `handleStripeOnrampFulfillment()` — still used by webhook route
 - **`stripe-onramp/types.ts`** — Stripe-specific payload types
 
-### Payments UI (`lib/payments/`)
+### Payments UI (`features/agent-shops/payments/`)
 Modular client-side payment method selection and execution for both wallet top-ups and checkout pages. Each payment method is a fully self-contained handler component. Pages provide a `PaymentContext` and render either `FundWalletSheet` (top-up) or `CheckoutPaymentPanel` (checkout) — they never touch SDK details.
 - **`types.ts`** — `PaymentContext` (mode, rail, amount, walletAddress, etc.), `PaymentResult`, `PaymentMethodDef`, `PaymentHandlerProps`
 - **`methods.ts`** — `PAYMENT_METHODS` registry + `getAvailableMethods(rail, mode, allowedMethods?)` — filters by rail/mode/allowedMethods
@@ -357,7 +357,7 @@ Modular client-side payment method selection and execution for both wallet top-u
 - **Design principle**: Each handler is independent — no shared base class, no shared hooks. One handler can't break another. Adding a new method = new handler file + entry in `methods.ts`.
 - **Checkout page refactor**: `app/pay/[id]/page.tsx` is now a thin shell (~280 lines, down from ~550) — handles data fetching, layout, and context building. All payment logic delegated to `CheckoutPaymentPanel`.
 
-### Base Pay Backend (`lib/base-pay/`)
+### Base Pay Backend (`features/agent-shops/base-pay/`)
 Server-side Base Pay verification and ledger logic (Phase 1).
 - **`types.ts`** — `BasePayVerifyInput`, `BasePayVerifyResult`, `BasePayCheckoutInput`
 - **`verify.ts`** — RPC verification via `getPaymentStatus()`, recipient/amount check. For top-ups, amount mismatch is logged as a warning but not rejected (credits whatever actually arrived). Recipient must still match.
@@ -366,7 +366,7 @@ Server-side Base Pay verification and ledger logic (Phase 1).
 - **Storage**: `server/storage/base-pay.ts` — `createBasePayPayment`, `getBasePayPaymentByTxId`, `updateBasePayPaymentStatus`
 - **API routes**: `POST /api/v1/base-pay/verify` (authenticated top-up), `POST /api/v1/checkout/[id]/pay/base-pay` (public checkout)
 
-### QR Pay Backend (`lib/qr-pay/`)
+### QR Pay Backend (`features/agent-shops/qr-pay/`)
 Server-side QR/copy-paste crypto top-up logic (Phase 3). Credits whatever USDC amount arrives on-chain — no amount enforcement.
 - **`types.ts`** — `QrPayCreateInput`, `QrPayCreateResult`, `QrPayStatusResult`
 - **`eip681.ts`** — `buildEip681Uri()` — builds EIP-681 URI for USDC transfer on Base (chain 8453, contract `0x833589...`)
@@ -376,19 +376,19 @@ Server-side QR/copy-paste crypto top-up logic (Phase 3). Credits whatever USDC a
 - **API routes**: `POST /api/v1/qr-pay/create` (authenticated, snapshots balanceBefore, generates EIP-681 URI, expires any existing waiting payments for the same wallet), `GET /api/v1/qr-pay/status/[paymentId]` (authenticated, polls on-chain balance, credits delta if > 0)
 - **Concurrent session safety**: Creating a new QR payment expires all existing "waiting" payments for that wallet (prevents balance-delta over-crediting)
 
-### Procurement (`lib/procurement/`)
+### Procurement (`features/agent-interaction/procurement/`)
 Standalone module for spending USDC on products/services. Provider-agnostic structure — CrossMint WorldStore is the first provider.
 - **`types.ts`** — `PurchaseRequest`, `PurchaseResult`, `ShippingAddress`, `ProcurementProvider`, `OrderStatusResult`
 - **`crossmint-worldstore/client.ts`** — `getServerApiKey()`, `worldstoreSearch()` — shared CrossMint WorldStore API client
 - **`crossmint-worldstore/types.ts`** — `CrossMintOrderEvent`, `OrderStatusMapping`, `TrackingInfo`, `ProductVariant`, `ProductSearchResult`
-- **`crossmint-worldstore/purchase.ts`** — `createPurchaseOrder()`, `getOrderStatus()` — uses `crossmintFetch` from `lib/rail2/client.ts` for Orders API
+- **`crossmint-worldstore/purchase.ts`** — `createPurchaseOrder()`, `getOrderStatus()` — uses `crossmintFetch` from `features/payment-rails/rail2/client.ts` for Orders API
 - **`crossmint-worldstore/shopify-search.ts`** — `searchShopifyProduct()` — Shopify product variant search via WorldStore unstable API
 - **`crossmint-worldstore/webhook.ts`** — `verifyCrossMintWebhook()`, `extractOrderId()`, `buildOrderUpdates()`, `extractTrackingInfo()` — order lifecycle webhook processing
-- **Re-export shims**: `lib/rail2/orders/purchase.ts` re-exports `createPurchaseOrder`/`getOrderStatus` — all 4 consumers unchanged
+- **Re-export shims**: `features/payment-rails/rail2/orders/purchase.ts` re-exports `createPurchaseOrder`/`getOrderStatus` — all 4 consumers unchanged
 - **Cross-rail shopping gate**: CrossMint Orders API requires `payerAddress` to be the CrossMint wallet. Shopping from a Privy (Rail 1) wallet would require a pre-transfer step (Privy→CrossMint) before order creation. This is a known limitation — not yet implemented.
-- Future providers (direct merchant APIs, browser checkout agents) slot in as siblings under `lib/procurement/`.
+- Future providers (direct merchant APIs, browser checkout agents) slot in as siblings under `features/agent-interaction/procurement/`.
 
-### Agent Management (`lib/agent-management/`)
+### Agent Management (`features/platform-management/agent-management/`)
 Bot/agent-facing API infrastructure consolidated into a feature folder:
 - `auth.ts` — authenticates bot requests via Bearer API key (prefix lookup + bcrypt verify).
 - `crypto.ts` — API key generation, hashing, verification, claim tokens, card IDs, webhook secrets.
@@ -461,13 +461,13 @@ Vitest-based automated test suite. Run with `npx vitest run`. Config in `vitest.
 
 ### Multitenant Architecture
 The app supports multiple tenants (CreditClaw, shopy.sh, brands.sh) via hostname-based routing:
-- **Tenant configs**: `public/tenants/{tenantId}/config.json` — branding, meta, theme, routes, navigation, tracking (source of truth). Also mirrored in `lib/tenants/tenant-configs.ts` as static imports for client-side use.
-- **Types**: `lib/tenants/types.ts` — `TenantConfig` interface
-- **Config loader (server)**: `lib/tenants/config.ts` — `getTenantConfig()` with caching (uses filesystem, server-only)
-- **Config loader (client)**: `lib/tenants/tenant-configs.ts` — `getStaticTenantConfig()` + `TENANT_THEMES` (bundled statically, no fs dependency)
+- **Tenant configs**: `public/tenants/{tenantId}/config.json` — branding, meta, theme, routes, navigation, tracking (source of truth). Also mirrored in `features/platform-management/tenants/tenant-configs.ts` as static imports for client-side use.
+- **Types**: `features/platform-management/tenants/types.ts` — `TenantConfig` interface
+- **Config loader (server)**: `features/platform-management/tenants/config.ts` — `getTenantConfig()` with caching (uses filesystem, server-only)
+- **Config loader (client)**: `features/platform-management/tenants/tenant-configs.ts` — `getStaticTenantConfig()` + `TENANT_THEMES` (bundled statically, no fs dependency)
 - **Middleware**: `middleware.ts` — resolves hostname → tenantId, sets `x-tenant-id` header + `tenant-id` cookie
 - **Root layout** (`app/layout.tsx`): Uses `cookies()` to read `tenant-id` cookie set by middleware. Resolves tenant config server-side for correct SSR (no flash of wrong tenant). Also includes inline `<script>` for CSS theme variables on client-side navigations. Wraps children in `TenantProvider`.
-- **Client context**: `lib/tenants/tenant-context.tsx` — `TenantProvider` + `useTenant()` hook for client components
+- **Client context**: `features/platform-management/tenants/tenant-context.tsx` — `TenantProvider` + `useTenant()` hook for client components
 - **Tenant-aware pages**: Pages needing server-side tenant routing (home, guide, standard, how-it-works) use `cookies()` + `force-dynamic`. The root layout also uses `cookies()` making child pages dynamic by default, but `revalidate` on individual pages enables ISR caching.
 - **Tenant components**: `components/tenants/{id}/` — per-tenant landing pages, how-it-works pages, etc.
 - **Nav**: Uses `useTenant()` for logo, name, tagline, routes
@@ -476,9 +476,9 @@ The app supports multiple tenants (CreditClaw, shopy.sh, brands.sh) via hostname
 - **owners.signup_tenant**: Tracks which tenant a user signed up from (migration 0011)
 - **Active tenants**: creditclaw (payments), shopy (ASX scoring/readiness), brands (skill catalog/registry)
 - **brands.sh skill detail page** (`app/skills/[vendor]/page.tsx`): ISR-enabled (revalidate=3600). Null-safe — gracefully renders when `brandData` is missing by falling back to `brand.*` fields. Sections like search/checkout/shipping/deals/tips only render when vendor data exists.
-- **brands.sh landing** (`components/tenants/brands/landing.tsx`): Skill-registry framing. Columns: Skill | Capabilities | Checkout | Maturity. Imports shared label maps from `lib/procurement-skills/taxonomy/`. No ScoreBadge (scores live on shopy.sh).
+- **brands.sh landing** (`components/tenants/brands/landing.tsx`): Skill-registry framing. Columns: Skill | Capabilities | Checkout | Maturity. Imports shared label maps from `features/brand-engine/procurement-skills/taxonomy/`. No ScoreBadge (scores live on shopy.sh).
 - To test locally as a different tenant: add `?tenant=shopy` or `?tenant=brands` to any URL
-- **IMPORTANT**: When adding new tenant configs, update BOTH `public/tenants/{id}/config.json` AND `lib/tenants/tenant-configs.ts`
+- **IMPORTANT**: When adding new tenant configs, update BOTH `public/tenants/{id}/config.json` AND `features/platform-management/tenants/tenant-configs.ts`
 
 ### Database Schema Workflow
 Schema changes flow through Drizzle ORM and are auto-synced to production on deploy:

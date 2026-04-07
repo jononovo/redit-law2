@@ -5,9 +5,9 @@ import { CheckCircle2, Loader2, ArrowRight, Download, Sparkles, ChevronDown, Sen
 import { Button } from "@/components/ui/button";
 import { wt } from "@/lib/wizard-typography";
 import { useToast } from "@/hooks/use-toast";
-import { authFetch } from "@/lib/platform-management/auth-fetch";
-import { downloadEncryptedFile } from "@/lib/payment-rails/card/onboarding-rail5/encrypt";
-import { RAIL5_CARD_DELIVERED } from "@/lib/platform-management/agent-management/bot-messaging/templates";
+import { authFetch } from "@/features/platform-management/auth-fetch";
+import { downloadEncryptedFile } from "@/features/payment-rails/card/onboarding-rail5/encrypt";
+import { RAIL5_CARD_DELIVERED } from "@/features/platform-management/agent-management/bot-messaging/templates";
 import { type Step7Props } from "../types";
 
 export function DeliveryResult({

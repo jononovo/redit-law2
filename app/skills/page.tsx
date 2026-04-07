@@ -1,7 +1,7 @@
 import { storage } from "@/server/storage";
 import CatalogClient from "./catalog-client";
 import type { Metadata } from "next";
-import { parseSearchParams, filtersToMetaTitle, filtersToCanonicalParams, DEFAULT_MATURITIES } from "@/lib/brand-engine/catalog/parse-filters";
+import { parseSearchParams, filtersToMetaTitle, filtersToCanonicalParams, DEFAULT_MATURITIES } from "@/features/brand-engine/catalog/parse-filters";
 
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || "https://creditclaw.com";
 const PAGE_SIZE = 50;

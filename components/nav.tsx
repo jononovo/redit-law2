@@ -3,10 +3,10 @@
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import Image from "next/image";
-import { useAuth } from "@/lib/platform-management/auth/auth-context";
+import { useAuth } from "@/features/platform-management/auth/auth-context";
 import { AuthDrawer } from "@/components/auth-drawer";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useTenant } from "@/lib/platform-management/tenants/tenant-context";
+import { useTenant } from "@/features/platform-management/tenants/tenant-context";
 
 const DEFAULT_LINKS = [
   { label: "Score Scanner", href: "/agentic-shopping-score" },

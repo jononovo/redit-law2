@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSessionUser } from "@/lib/platform-management/auth/session";
+import { getSessionUser } from "@/features/platform-management/auth/session";
 import { storage } from "@/server/storage";
-import { getWalletBalance } from "@/lib/payment-rails/rail2/wallet/balance";
-import { formatUsdc } from "@/lib/payment-rails/rail2/client";
+import { getWalletBalance } from "@/features/payment-rails/rail2/wallet/balance";
+import { formatUsdc } from "@/features/payment-rails/rail2/client";
 
 export async function GET(request: NextRequest) {
   try {

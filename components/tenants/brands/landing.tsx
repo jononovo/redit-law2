@@ -7,10 +7,10 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { ArrowRight, ChevronLeft, ChevronRight, Terminal, Loader2, Search } from "lucide-react";
-import { CAPABILITY_LABELS } from "@/lib/brand-engine/procurement-skills/taxonomy/capabilities";
-import { BRAND_TIER_LABELS } from "@/lib/brand-engine/procurement-skills/taxonomy/tiers";
+import { CAPABILITY_LABELS } from "@/features/brand-engine/procurement-skills/taxonomy/capabilities";
+import { BRAND_TIER_LABELS } from "@/features/brand-engine/procurement-skills/taxonomy/tiers";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { ASSIGNABLE_SECTORS } from "@/lib/brand-engine/procurement-skills/taxonomy/sectors";
+import { ASSIGNABLE_SECTORS } from "@/features/brand-engine/procurement-skills/taxonomy/sectors";
 import { ScanProgress } from "@/components/scan-progress";
 import { useDomainScan } from "@/hooks/use-domain-scan";
 
