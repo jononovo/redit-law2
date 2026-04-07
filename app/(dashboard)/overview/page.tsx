@@ -3,11 +3,9 @@
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { BotCard } from "@/components/dashboard/bot-card";
-import { FundModal } from "@/components/dashboard/fund-modal";
 import { ActivityLog } from "@/components/dashboard/activity-log";
 import { WebhookLog } from "@/components/dashboard/webhook-log";
 import { OpsHealth } from "@/components/dashboard/ops-health";
-import { PaymentLinksPanel } from "@/components/dashboard/payment-links";
 import { Bot as BotIcon, Plus, Loader2, Wallet, CreditCard, ExternalLink, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -59,8 +57,6 @@ export default function DashboardOverview() {
   const [bots, setBots] = useState<BotData[]>([]);
   const [balance, setBalance] = useState<BalanceData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [fundOpen, setFundOpen] = useState(false);
-
   const [privyWallets, setPrivyWallets] = useState<Rail1WalletInfo[]>([]);
   const [rail5Cards, setRail5Cards] = useState<NormalizedCard[]>([]);
   const [cardsLoading, setCardsLoading] = useState(true);
@@ -280,23 +276,6 @@ export default function DashboardOverview() {
         </div>
       </div>
 
-      {balance?.has_wallet && (
-        <div
-          onClick={() => setFundOpen(true)}
-          className="bg-neutral-900 text-white p-6 rounded-2xl flex items-center justify-between relative overflow-hidden group cursor-pointer"
-          data-testid="card-add-funds"
-        >
-          <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-purple-500/20 opacity-0 group-hover:opacity-100 transition-opacity" />
-          <div className="relative z-10">
-            <h4 className="font-bold">Add Funds</h4>
-            <p className="text-sm text-neutral-400">Top up your bot&apos;s wallet instantly</p>
-          </div>
-          <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center relative z-10 group-hover:bg-white/20 transition-colors">
-            <Wallet className="w-5 h-5 text-white" />
-          </div>
-        </div>
-      )}
-
       <div>
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-lg font-bold text-neutral-900">My Bots</h2>
@@ -460,19 +439,11 @@ export default function DashboardOverview() {
         )}
       </div>
 
-      <PaymentLinksPanel />
-
       <OpsHealth />
 
       <ActivityLog />
 
       <WebhookLog />
-
-      <FundModal
-        open={fundOpen}
-        onOpenChange={setFundOpen}
-        onSuccess={() => fetchData()}
-      />
 
       <FreezeDialog
         open={!!rail5FreezeTarget}

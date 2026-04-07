@@ -1,14 +1,11 @@
 import { db } from "@/server/db";
 import {
-  bots, wallets, transactions, paymentMethods, topupRequests, apiAccessLogs,
-  reconciliationLogs,
+  bots, wallets, transactions, paymentMethods, apiAccessLogs,
   type InsertBot, type Bot,
   type Wallet, type InsertWallet,
   type Transaction, type InsertTransaction,
   type PaymentMethod, type InsertPaymentMethod,
-  type TopupRequest, type InsertTopupRequest,
   type ApiAccessLog, type InsertApiAccessLog,
-  type ReconciliationLog, type InsertReconciliationLog,
 } from "@/shared/schema";
 import { eq, and, isNull, desc, sql, gte, inArray } from "drizzle-orm";
 import { generateWebhookSecret } from "@/lib/agent-management/crypto";
@@ -18,13 +15,12 @@ type CoreMethods = Pick<IStorage,
   | "createBot" | "getBotByClaimToken" | "getBotByBotId" | "getBotsByOwnerEmail"
   | "getBotsByOwnerUid" | "claimBot" | "updateBotDefaultRail" | "checkDuplicateRegistration"
   | "updateBotWebhookHealth" | "updateBotProfile"
-  | "createWallet" | "getWalletByBotId" | "getWalletByOwnerUid" | "creditWallet"
+  | "createWallet" | "getWalletByBotId" | "getWalletByOwnerUid"
   | "createTransaction" | "getTransactionsByWalletId"
   | "getPaymentMethod" | "getPaymentMethods" | "getPaymentMethodById"
   | "addPaymentMethod" | "deletePaymentMethodById" | "setDefaultPaymentMethod"
-  | "getBotsByApiKeyPrefix" | "debitWallet" | "getDailySpend" | "getMonthlySpend"
-  | "createTopupRequest" | "createAccessLog" | "getAccessLogsByBotIds"
-  | "getWalletsByOwnerUid" | "getTransactionSumByWalletId" | "createReconciliationLog"
+  | "getBotsByApiKeyPrefix" | "debitWallet" | "getMonthlySpend"
+  | "createAccessLog" | "getAccessLogsByBotIds"
   | "freezeWallet" | "unfreezeWallet" | "getWalletsWithBotsByOwnerUid"
 >;
 
@@ -166,18 +162,6 @@ export const coreMethods: CoreMethods = {
     return wallet || null;
   },
 
-  async creditWallet(walletId: number, amountCents: number): Promise<Wallet> {
-    const [updated] = await db
-      .update(wallets)
-      .set({
-        balanceCents: sql`${wallets.balanceCents} + ${amountCents}`,
-        updatedAt: new Date(),
-      })
-      .where(eq(wallets.id, walletId))
-      .returning();
-    return updated;
-  },
-
   async createTransaction(data: InsertTransaction): Promise<Transaction> {
     const [tx] = await db.insert(transactions).values(data).returning();
     return tx;
@@ -266,20 +250,6 @@ export const coreMethods: CoreMethods = {
     return updated || null;
   },
 
-  async getDailySpend(walletId: number): Promise<number> {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const result = await db
-      .select({ total: sql<number>`COALESCE(SUM(${transactions.amountCents}), 0)` })
-      .from(transactions)
-      .where(and(
-        eq(transactions.walletId, walletId),
-        eq(transactions.type, "purchase"),
-        gte(transactions.createdAt, today)
-      ));
-    return Number(result[0]?.total || 0);
-  },
-
   async getMonthlySpend(walletId: number): Promise<number> {
     const firstOfMonth = new Date();
     firstOfMonth.setDate(1);
@@ -293,12 +263,6 @@ export const coreMethods: CoreMethods = {
         gte(transactions.createdAt, firstOfMonth)
       ));
     return Number(result[0]?.total || 0);
-  },
-
-
-  async createTopupRequest(data: InsertTopupRequest): Promise<TopupRequest> {
-    const [req] = await db.insert(topupRequests).values(data).returning();
-    return req;
   },
 
   async createAccessLog(data: InsertApiAccessLog): Promise<void> {
@@ -315,28 +279,6 @@ export const coreMethods: CoreMethods = {
       .where(sql`${apiAccessLogs.botId} IN (${sql.join(botIds.map(id => sql`${id}`), sql`, `)})`)
       .orderBy(desc(apiAccessLogs.createdAt))
       .limit(limit);
-  },
-
-  async getWalletsByOwnerUid(ownerUid: string): Promise<Wallet[]> {
-    return db.select().from(wallets).where(eq(wallets.ownerUid, ownerUid));
-  },
-
-  async getTransactionSumByWalletId(walletId: number): Promise<number> {
-    const result = await db
-      .select({
-        topups: sql<number>`COALESCE(SUM(CASE WHEN ${transactions.type} IN ('topup', 'payment_received') THEN ${transactions.amountCents} ELSE 0 END), 0)`,
-        purchases: sql<number>`COALESCE(SUM(CASE WHEN ${transactions.type} = 'purchase' THEN ${transactions.amountCents} ELSE 0 END), 0)`,
-      })
-      .from(transactions)
-      .where(eq(transactions.walletId, walletId));
-    const topups = Number(result[0]?.topups || 0);
-    const purchases = Number(result[0]?.purchases || 0);
-    return topups - purchases;
-  },
-
-  async createReconciliationLog(data: InsertReconciliationLog): Promise<ReconciliationLog> {
-    const [log] = await db.insert(reconciliationLogs).values(data).returning();
-    return log;
   },
 
   async freezeWallet(walletId: number, ownerUid: string): Promise<Wallet | null> {

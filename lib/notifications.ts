@@ -4,11 +4,8 @@ import type { NotificationPreference } from "@/shared/schema";
 export type NotificationType =
   | "purchase"
   | "balance_low"
-  | "topup_request"
-  | "topup_completed"
   | "suspicious"
-  | "wallet_activated"
-  | "payment_received";
+  | "wallet_activated";
 
 interface NotifyOwnerOpts {
   ownerUid: string;
@@ -131,51 +128,6 @@ export async function notifySuspicious(
     shouldNotify: (prefs) => prefs.inAppEnabled,
     shouldEmail: (prefs) => prefs.emailEnabled,
     emailFn: (email) => sendSuspiciousActivityEmail({ ownerEmail: email, botName, amountUsd: Number(amountUsd), merchant, reason }),
-  });
-}
-
-export async function notifyTopupCompleted(
-  ownerUid: string,
-  ownerEmail: string,
-  botName: string,
-  botId: string,
-  amountCents: number,
-  newBalanceCents: number,
-): Promise<void> {
-  const amountUsd = (amountCents / 100).toFixed(2);
-
-  await notifyOwner({
-    ownerUid,
-    ownerEmail,
-    type: "topup_completed",
-    title: `Wallet funded $${amountUsd}`,
-    body: `Added $${amountUsd} to ${botName}'s wallet. New balance: $${(newBalanceCents / 100).toFixed(2)}.`,
-    botId,
-    shouldNotify: (prefs) => prefs.inAppEnabled && prefs.transactionAlerts,
-    shouldEmail: () => false,
-  });
-}
-
-export async function notifyPaymentReceived(
-  ownerUid: string,
-  ownerEmail: string,
-  botName: string,
-  botId: string,
-  amountCents: number,
-  description: string,
-): Promise<void> {
-  const amountUsd = (amountCents / 100).toFixed(2);
-
-  await notifyOwner({
-    ownerUid,
-    ownerEmail,
-    type: "payment_received",
-    title: `${botName} received $${amountUsd}`,
-    body: `${botName} received a $${amountUsd} payment for: ${description}.`,
-    botId,
-    shouldNotify: (prefs) => prefs.inAppEnabled && prefs.transactionAlerts,
-    shouldEmail: (prefs) => prefs.emailEnabled && prefs.transactionAlerts,
-    emailFn: async () => {},
   });
 }
 

@@ -27,7 +27,7 @@ Through the API, an agent can:
 - **Check wallet status** — query balance, spending limits, and remaining allowance
 - **Request purchases** — initiate merchant checkouts with guardrail evaluation
 - **Create invoices** — generate and send invoices with line items
-- **Create checkout pages** — set up hosted payment pages and Stripe payment links
+- **Create checkout pages** — set up hosted payment pages for accepting payments
 - **List procurement skills** — discover vendor integrations and checkout capabilities
 - **Track sales** — query incoming payments, filter by status and method
 

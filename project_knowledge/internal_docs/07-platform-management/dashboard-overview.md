@@ -10,16 +10,14 @@ description: Layout and component structure of the /overview page. Read when mod
 ## Layout (top to bottom)
 
 1. **Stats bar** — 3-column grid: Total Bots, Wallet Balance, Pending Claim
-2. **Add Funds card** — dark CTA bar, only shown if user has a wallet (`balance.has_wallet`)
-3. **My Bots** — grid of `BotCard` components, or empty state with Get Started / Claim a Bot buttons
-4. **Approvals** — up to 5 recent approvals via `ApprovalList` with `showRailBadge`, only shown if approvals exist. "See all" links to `/transactions`
-5. **Cards & Wallets** — 2-column grid:
+2. **My Bots** — grid of `BotCard` components, or empty state with Get Started / Claim a Bot buttons
+3. **Approvals** — up to 5 recent approvals via `ApprovalList` with `showRailBadge`, only shown if approvals exist. "See all" links to `/transactions`
+4. **Cards & Wallets** — 2-column grid:
    - **Agent Wallet (Rail 1)**: `CryptoWalletItem` with full action bar (Fund, Freeze, Guardrails, Activity → `/stripe-wallet`), or empty state
    - **My Card (Rail 5)**: `CreditCardItem` with action bar, or placeholder `CardVisual` with "Add Your Card" overlay → navigates to `/setup/rail5`
-6. **PaymentLinksPanel**
-7. **OpsHealth**
-8. **ActivityLog**
-9. **WebhookLog**
+5. **OpsHealth** — Webhook health monitoring
+6. **ActivityLog**
+7. **WebhookLog**
 
 ## Hooks
 

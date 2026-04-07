@@ -64,15 +64,6 @@ export const paymentMethods = pgTable("payment_methods", {
 });
 
 
-export const topupRequests = pgTable("topup_requests", {
-  id: serial("id").primaryKey(),
-  botId: text("bot_id").notNull(),
-  amountCents: integer("amount_cents").notNull(),
-  reason: text("reason"),
-  status: text("status").notNull().default("sent"),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-});
-
 export const apiAccessLogs = pgTable("api_access_logs", {
   id: serial("id").primaryKey(),
   botId: text("bot_id").notNull(),
@@ -135,24 +126,6 @@ export const notifications = pgTable("notifications", {
   index("notifications_owner_created_idx").on(table.ownerUid, table.createdAt),
 ]);
 
-export const paymentLinks = pgTable("payment_links", {
-  id: serial("id").primaryKey(),
-  paymentLinkId: text("payment_link_id").notNull().unique(),
-  botId: text("bot_id").notNull(),
-  amountCents: integer("amount_cents").notNull(),
-  description: text("description").notNull(),
-  payerEmail: text("payer_email"),
-  stripeCheckoutSessionId: text("stripe_checkout_session_id"),
-  checkoutUrl: text("checkout_url").notNull(),
-  status: text("status").notNull().default("pending"),
-  paidAt: timestamp("paid_at"),
-  expiresAt: timestamp("expires_at").notNull(),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-}, (table) => [
-  index("payment_links_bot_created_idx").on(table.botId, table.createdAt),
-  index("payment_links_stripe_session_idx").on(table.stripeCheckoutSessionId),
-]);
-
 export const pairingCodes = pgTable("pairing_codes", {
   id: serial("id").primaryKey(),
   code: text("code").notNull().unique(),
@@ -166,17 +139,6 @@ export const pairingCodes = pgTable("pairing_codes", {
   index("pairing_codes_code_idx").on(table.code),
   index("pairing_codes_owner_idx").on(table.ownerUid),
 ]);
-
-export const reconciliationLogs = pgTable("reconciliation_logs", {
-  id: serial("id").primaryKey(),
-  walletId: integer("wallet_id").notNull(),
-  botId: text("bot_id").notNull(),
-  expectedCents: integer("expected_cents").notNull(),
-  actualCents: integer("actual_cents").notNull(),
-  diffCents: integer("diff_cents").notNull(),
-  status: text("status").notNull(),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-});
 
 export const registerBotRequestSchema = z.object({
   bot_name: z.string().min(1).max(100),
@@ -193,23 +155,12 @@ export const claimBotRequestSchema = z.object({
   claim_token: z.string().min(1),
 });
 
-export const fundWalletRequestSchema = z.object({
-  amount_cents: z.number().int().min(100).max(100000),
-  payment_method_id: z.number().int().optional(),
-});
-
 export const purchaseRequestSchema = z.object({
   amount_cents: z.number().int().min(1).max(10000000),
   merchant: z.string().min(1).max(200),
   description: z.string().max(500).optional(),
   category: z.string().max(100).optional(),
 });
-
-export const topupRequestSchema = z.object({
-  amount_usd: z.number().min(1).max(10000),
-  reason: z.string().max(500).optional(),
-});
-
 
 export type Bot = typeof bots.$inferSelect;
 export type InsertBot = typeof bots.$inferInsert;
@@ -220,8 +171,6 @@ export type InsertTransaction = typeof transactions.$inferInsert;
 export type PaymentMethod = typeof paymentMethods.$inferSelect;
 export type InsertPaymentMethod = typeof paymentMethods.$inferInsert;
 
-export type TopupRequest = typeof topupRequests.$inferSelect;
-export type InsertTopupRequest = typeof topupRequests.$inferInsert;
 export type ApiAccessLog = typeof apiAccessLogs.$inferSelect;
 export type InsertApiAccessLog = typeof apiAccessLogs.$inferInsert;
 export type WebhookDelivery = typeof webhookDeliveries.$inferSelect;
@@ -230,10 +179,6 @@ export type NotificationPreference = typeof notificationPreferences.$inferSelect
 export type InsertNotificationPreference = typeof notificationPreferences.$inferInsert;
 export type Notification = typeof notifications.$inferSelect;
 export type InsertNotification = typeof notifications.$inferInsert;
-export type PaymentLink = typeof paymentLinks.$inferSelect;
-export type InsertPaymentLink = typeof paymentLinks.$inferInsert;
-export type ReconciliationLog = typeof reconciliationLogs.$inferSelect;
-export type InsertReconciliationLog = typeof reconciliationLogs.$inferInsert;
 export type PairingCode = typeof pairingCodes.$inferSelect;
 export type InsertPairingCode = typeof pairingCodes.$inferInsert;
 
@@ -250,12 +195,6 @@ export type InsertWaitlistEntry = typeof waitlistEntries.$inferInsert;
 export const waitlistEmailSchema = z.object({
   email: z.string().email(),
   source: z.string().optional(),
-});
-
-export const createPaymentLinkSchema = z.object({
-  amount_usd: z.number().min(0.50).max(10000.00),
-  description: z.string().min(1).max(500),
-  payer_email: z.string().email().optional(),
 });
 
 export const updateNotificationPreferencesSchema = z.object({

@@ -413,53 +413,9 @@ curl -s -X POST http://localhost:5000/api/v1/bot/wallet/purchase \
 
 ---
 
-## Section 6: Bot Top-Up Request
+## Section 6: Bot Transaction History
 
-### Test 6.1 — Request a top-up
-
-```bash
-curl -s -X POST http://localhost:5000/api/v1/bot/wallet/topup-request \
-  -H "Authorization: Bearer $API_KEY" \
-  -H "Content-Type: application/json" \
-  -d "{\"amount_usd\": 25.00, \"reason\": \"Need funds for API credits\"}"
-```
-
-**Expected:** HTTP 200
-**Verify:**
-- `topup_request_id` is present (integer)
-- `status` is `"sent"`
-- `amount_usd` is `25`
-- `owner_notified` is `true`
-
----
-
-### Test 6.2 — Top-up request on unclaimed bot rejected
-
-Register a fresh bot (unclaimed) and try to request a top-up:
-
-```bash
-UNCLAIMED_RESPONSE=$(curl -s -X POST http://localhost:5000/api/v1/bots/register \
-  -H "Content-Type: application/json" \
-  -H "X-Forwarded-For: 10.0.0.50" \
-  -d "{\"bot_name\": \"UnclaimedBot-$(date +%s)\", \"owner_email\": \"unclaimed@example.com\"}")
-UNCLAIMED_KEY=$(echo $UNCLAIMED_RESPONSE | grep -o '"api_key":"[^"]*"' | cut -d'"' -f4)
-
-curl -s -X POST http://localhost:5000/api/v1/bot/wallet/topup-request \
-  -H "Authorization: Bearer $UNCLAIMED_KEY" \
-  -H "Content-Type: application/json" \
-  -d "{\"amount_usd\": 10.00, \"reason\": \"Test\"}"
-```
-
-**Expected:** HTTP 403
-**Verify:**
-- `error` is `"wallet_not_active"`
-- `message` says owner must claim bot first
-
----
-
-## Section 7: Bot Transaction History
-
-### Test 7.1 — Get transaction history
+### Test 6.1 — Get transaction history
 
 ```bash
 curl -s -X GET "http://localhost:5000/api/v1/bot/wallet/transactions?limit=10" \
@@ -474,9 +430,9 @@ curl -s -X GET "http://localhost:5000/api/v1/bot/wallet/transactions?limit=10" \
 
 ---
 
-## Section 8: Owner-First Flow (Pairing Codes)
+## Section 7: Owner-First Flow (Pairing Codes)
 
-### Test 8.1 — Generate pairing code (requires auth)
+### Test 7.1 — Generate pairing code (requires auth)
 
 ```bash
 curl -s -X POST http://localhost:5000/api/v1/pairing-codes
@@ -488,7 +444,7 @@ curl -s -X POST http://localhost:5000/api/v1/pairing-codes
 
 ---
 
-### Test 8.2 — Simulate pairing code via database + bot registration
+### Test 7.2 — Simulate pairing code via database + bot registration
 
 Create a pairing code manually, then register a bot with it:
 
@@ -519,7 +475,7 @@ curl -s -X POST http://localhost:5000/api/v1/bots/register \
 
 ---
 
-### Test 8.3 — Verify paired bot database state
+### Test 7.3 — Verify paired bot database state
 
 ```sql
 -- Check bot is claimed and active
@@ -537,7 +493,7 @@ SELECT status, bot_id, claimed_at FROM pairing_codes WHERE code = '654321';
 
 ---
 
-### Test 8.4 — Paired bot can use API immediately
+### Test 7.4 — Paired bot can use API immediately
 
 ```bash
 curl -s -X GET http://localhost:5000/api/v1/bot/wallet/check \
@@ -551,7 +507,7 @@ curl -s -X GET http://localhost:5000/api/v1/bot/wallet/check \
 
 ---
 
-### Test 8.5 — Reuse of claimed pairing code rejected
+### Test 7.5 — Reuse of claimed pairing code rejected
 
 ```bash
 curl -s -X POST http://localhost:5000/api/v1/bots/register \
@@ -567,7 +523,7 @@ curl -s -X POST http://localhost:5000/api/v1/bots/register \
 
 ---
 
-### Test 8.6 — Expired pairing code rejected
+### Test 7.6 — Expired pairing code rejected
 
 ```sql
 INSERT INTO pairing_codes (code, owner_uid, status, expires_at)
@@ -588,7 +544,7 @@ curl -s -X POST http://localhost:5000/api/v1/bots/register \
 
 ---
 
-### Test 8.7 — Invalid pairing code format (not 6 digits)
+### Test 7.7 — Invalid pairing code format (not 6 digits)
 
 ```bash
 curl -s -X POST http://localhost:5000/api/v1/bots/register \
@@ -604,11 +560,11 @@ curl -s -X POST http://localhost:5000/api/v1/bots/register \
 
 ---
 
-## Section 9: Owner-Authenticated Endpoints (Auth Required)
+## Section 8: Owner-Authenticated Endpoints (Auth Required)
 
 These endpoints all require a valid Firebase session cookie. Without one, they should return 401.
 
-### Test 9.1 — Owner endpoints reject unauthenticated requests
+### Test 8.1 — Owner endpoints reject unauthenticated requests
 
 Test each of these and confirm HTTP 401:
 
@@ -622,7 +578,6 @@ curl -s -o /dev/null -w "%{http_code}" http://localhost:5000/api/v1/notification
 curl -s -o /dev/null -w "%{http_code}" http://localhost:5000/api/v1/notifications/unread-count
 curl -s -o /dev/null -w "%{http_code}" http://localhost:5000/api/v1/notifications/preferences
 curl -s -o /dev/null -w "%{http_code}" http://localhost:5000/api/v1/webhooks
-curl -s -o /dev/null -w "%{http_code}" http://localhost:5000/api/v1/payment-links
 curl -s -o /dev/null -w "%{http_code}" http://localhost:5000/api/v1/activity-log
 curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:5000/api/v1/master-guardrails
 curl -s -o /dev/null -w "%{http_code}" http://localhost:5000/api/v1/master-guardrails
@@ -633,9 +588,9 @@ curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:5000/api/v1/owne
 
 ---
 
-## Section 10: Public Endpoints
+## Section 9: Public Endpoints
 
-### Test 10.1 — Health check (no auth required)
+### Test 9.1 — Health check (no auth required)
 
 ```bash
 curl -s http://localhost:5000/api/v1/health
@@ -648,7 +603,7 @@ curl -s http://localhost:5000/api/v1/health
 
 ---
 
-### Test 10.2 — Waitlist submission
+### Test 9.2 — Waitlist submission
 
 ```bash
 curl -s -X POST http://localhost:5000/api/v1/waitlist \
@@ -663,9 +618,9 @@ curl -s -X POST http://localhost:5000/api/v1/waitlist \
 
 ---
 
-### Test 10.3 — Waitlist duplicate email
+### Test 9.3 — Waitlist duplicate email
 
-Run Test 10.2 twice with the same email:
+Run Test 9.2 twice with the same email:
 
 ```bash
 curl -s -X POST http://localhost:5000/api/v1/waitlist \
@@ -684,12 +639,12 @@ curl -s -X POST http://localhost:5000/api/v1/waitlist \
 
 ---
 
-## Section 11: Landing Pages (HTTP 200 Checks)
+## Section 10: Landing Pages (HTTP 200 Checks)
 
-### Test 11.1 — All public pages return 200
+### Test 10.1 — All public pages return 200
 
 ```bash
-for path in "/" "/how-it-works" "/allowance" "/safety" "/claim" "/payment/success" "/payment/cancelled"; do
+for path in "/" "/how-it-works" "/allowance" "/safety" "/claim"; do
   STATUS=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:5000$path")
   echo "$STATUS $path"
 done
@@ -699,9 +654,9 @@ done
 
 ---
 
-## Section 12: Owners Table & Master Guardrails (Onboarding)
+## Section 11: Owners Table & Master Guardrails (Onboarding)
 
-### Test 12.1 — Owners table exists and accepts upserts
+### Test 11.1 — Owners table exists and accepts upserts
 
 ```sql
 -- Verify table structure
@@ -725,7 +680,7 @@ RETURNING *;
 
 ---
 
-### Test 12.2 — Master guardrails API rejects unauthenticated requests
+### Test 11.2 — Master guardrails API rejects unauthenticated requests
 
 ```bash
 curl -s -o /dev/null -w "%{http_code}" http://localhost:5000/api/v1/master-guardrails
@@ -736,7 +691,7 @@ curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:5000/api/v1/mast
 
 ---
 
-### Test 12.3 — Onboarded endpoint rejects unauthenticated requests
+### Test 11.3 — Onboarded endpoint rejects unauthenticated requests
 
 ```bash
 curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:5000/api/v1/owners/onboarded
@@ -746,7 +701,7 @@ curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:5000/api/v1/owne
 
 ---
 
-### Test 12.4 — Master guardrails validates input
+### Test 11.4 — Master guardrails validates input
 
 ```bash
 curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:5000/api/v1/master-guardrails \
@@ -759,7 +714,7 @@ curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:5000/api/v1/mast
 
 ---
 
-### Test 12.5 — Simulate onboarding master guardrails save via database
+### Test 11.5 — Simulate onboarding master guardrails save via database
 
 Since the onboarding complete step POSTs to /api/v1/master-guardrails (requires auth), verify the database logic directly:
 
@@ -782,7 +737,7 @@ UPDATE owners SET onboarded_at = NOW() WHERE uid = 'test-onboard-owner';
 
 ---
 
-## Section 13: Checkout Pages & x402 Payments
+## Section 12: Checkout Pages & x402 Payments
 
 ### Prerequisites
 
@@ -827,7 +782,7 @@ ON CONFLICT DO NOTHING;
 
 ---
 
-### Test 13.1 — x402 requirements endpoint returns 402 with payment details
+### Test 12.1 — x402 requirements endpoint returns 402 with payment details
 
 ```bash
 curl -s -w "\nHTTP_STATUS: %{http_code}" \
@@ -849,7 +804,7 @@ curl -s -w "\nHTTP_STATUS: %{http_code}" \
 
 ---
 
-### Test 13.2 — x402 requirements endpoint rejects page without x402 method
+### Test 12.2 — x402 requirements endpoint rejects page without x402 method
 
 ```bash
 curl -s -w "\nHTTP_STATUS: %{http_code}" \
@@ -862,7 +817,7 @@ curl -s -w "\nHTTP_STATUS: %{http_code}" \
 
 ---
 
-### Test 13.3 — x402 requirements endpoint returns 404 for nonexistent page
+### Test 12.3 — x402 requirements endpoint returns 404 for nonexistent page
 
 ```bash
 curl -s -w "\nHTTP_STATUS: %{http_code}" \
@@ -875,7 +830,7 @@ curl -s -w "\nHTTP_STATUS: %{http_code}" \
 
 ---
 
-### Test 13.4 — x402 pay endpoint rejects missing X-PAYMENT header
+### Test 12.4 — x402 pay endpoint rejects missing X-PAYMENT header
 
 ```bash
 curl -s -w "\nHTTP_STATUS: %{http_code}" \
@@ -890,7 +845,7 @@ curl -s -w "\nHTTP_STATUS: %{http_code}" \
 
 ---
 
-### Test 13.5 — x402 pay endpoint rejects malformed X-PAYMENT header
+### Test 12.5 — x402 pay endpoint rejects malformed X-PAYMENT header
 
 ```bash
 curl -s -w "\nHTTP_STATUS: %{http_code}" \
@@ -907,7 +862,7 @@ curl -s -w "\nHTTP_STATUS: %{http_code}" \
 
 ---
 
-### Test 13.6 — x402 pay endpoint rejects wrong chain
+### Test 12.6 — x402 pay endpoint rejects wrong chain
 
 ```bash
 WRONG_CHAIN=$(echo '{"from":"0x1111111111111111111111111111111111111111","to":"0xTESTWALLETADDRESS1234567890abcdef12345678","value":"5000000","validAfter":0,"validBefore":9999999999,"nonce":"0xababababababababababababababababababababababababababababababababab","signature":"0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd","chainId":1,"token":"0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"}' | base64 -w 0)
@@ -925,7 +880,7 @@ curl -s -w "\nHTTP_STATUS: %{http_code}" \
 
 ---
 
-### Test 13.7 — x402 pay endpoint rejects recipient mismatch
+### Test 12.7 — x402 pay endpoint rejects recipient mismatch
 
 ```bash
 WRONG_RECIPIENT=$(echo '{"from":"0x1111111111111111111111111111111111111111","to":"0x9999999999999999999999999999999999999999","value":"5000000","validAfter":0,"validBefore":9999999999,"nonce":"0xababababababababababababababababababababababababababababababababab","signature":"0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd","chainId":8453,"token":"0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"}' | base64 -w 0)
@@ -943,7 +898,7 @@ curl -s -w "\nHTTP_STATUS: %{http_code}" \
 
 ---
 
-### Test 13.8 — x402 pay endpoint rejects expired signature
+### Test 12.8 — x402 pay endpoint rejects expired signature
 
 ```bash
 EXPIRED_SIG=$(echo '{"from":"0x1111111111111111111111111111111111111111","to":"0xTESTWALLETADDRESS1234567890abcdef12345678","value":"5000000","validAfter":0,"validBefore":1000000000,"nonce":"0xababababababababababababababababababababababababababababababababab","signature":"0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd","chainId":8453,"token":"0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"}' | base64 -w 0)
@@ -961,7 +916,7 @@ curl -s -w "\nHTTP_STATUS: %{http_code}" \
 
 ---
 
-### Test 13.9 — x402 pay endpoint rejects page without x402 method
+### Test 12.9 — x402 pay endpoint rejects page without x402 method
 
 ```bash
 VALID_HEADER=$(echo '{"from":"0x1111111111111111111111111111111111111111","to":"0xTESTWALLETADDRESS1234567890abcdef12345678","value":"5000000","validAfter":0,"validBefore":9999999999,"nonce":"0xababababababababababababababababababababababababababababababababab","signature":"0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd","chainId":8453,"token":"0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"}' | base64 -w 0)
@@ -979,7 +934,7 @@ curl -s -w "\nHTTP_STATUS: %{http_code}" \
 
 ---
 
-### Test 13.10 — Public checkout page data includes x402 in allowed methods
+### Test 12.10 — Public checkout page data includes x402 in allowed methods
 
 ```bash
 curl -s http://localhost:5000/api/v1/checkout/cp_test_x402/public
@@ -992,7 +947,7 @@ curl -s http://localhost:5000/api/v1/checkout/cp_test_x402/public
 
 ---
 
-## Section 14: Automated Unit Tests
+## Section 13: Automated Unit Tests
 
 Run the automated test suite covering x402 parsing, validation, guardrail evaluation, and utility functions:
 
@@ -1015,7 +970,6 @@ After running all tests, clean up test data:
 ```sql
 DELETE FROM transactions WHERE wallet_id IN (SELECT id FROM wallets WHERE owner_uid LIKE 'test-%');
 DELETE FROM wallets WHERE owner_uid LIKE 'test-%';
-DELETE FROM topup_requests WHERE bot_id IN (SELECT bot_id FROM bots WHERE owner_email LIKE '%@example.com' AND bot_name LIKE 'TestBot-%' OR bot_name LIKE 'PairedBot-%' OR bot_name LIKE 'RateBot-%' OR bot_name LIKE 'UnclaimedBot-%' OR bot_name LIKE 'BadCodeBot' OR bot_name LIKE 'ExpiredPairBot' OR bot_name LIKE 'ReusePairedBot');
 DELETE FROM pairing_codes WHERE owner_uid LIKE 'test-%';
 DELETE FROM bots WHERE owner_email LIKE '%@example.com' AND (bot_name LIKE 'TestBot-%' OR bot_name LIKE 'PairedBot-%' OR bot_name LIKE 'RateBot-%' OR bot_name LIKE 'UnclaimedBot-%' OR bot_name LIKE 'BadCodeBot' OR bot_name LIKE 'ExpiredPairBot' OR bot_name LIKE 'ReusePairedBot' OR bot_name LIKE 'TestBot-WH-%');
 DELETE FROM sales WHERE checkout_page_id IN ('cp_test_x402', 'cp_test_no_x402');
@@ -1053,34 +1007,32 @@ DELETE FROM master_guardrails WHERE owner_uid LIKE 'test-%';
 | 5.5 | Purchase on frozen wallet | 403 | Purchase |
 | 5.6 | Invalid JSON body | 400 | Validation |
 | 5.7 | Missing required fields | 400 | Validation |
-| 6.1 | Top-up request | 200 | Top-Up |
-| 6.2 | Top-up on unclaimed bot | 403 | Top-Up |
-| 7.1 | Transaction history | 200 | Bot API |
-| 8.1 | Pairing code without auth | 401 | Auth |
-| 8.2 | Registration with pairing code | 200 | Pairing |
-| 8.3 | Paired bot DB state | — | Pairing |
-| 8.4 | Paired bot API access | 200 | Pairing |
-| 8.5 | Reuse claimed pairing code | 400 | Pairing |
-| 8.6 | Expired pairing code | 400 | Pairing |
-| 8.7 | Invalid pairing code format | 400 | Validation |
-| 9.1 | Owner endpoints auth check | 401 | Auth |
-| 10.1 | Health check | 200 | Public |
-| 10.2 | Waitlist submission | 200 | Public |
-| 10.3 | Waitlist duplicate | 200/409 | Public |
-| 11.1 | All public pages render | 200 | Pages |
-| 12.1 | Owners table upsert via DB | — | Owners |
-| 12.2 | Master guardrails auth check | 401 | Auth |
-| 12.3 | Onboarded endpoint auth check | 401 | Auth |
-| 12.4 | Master guardrails input validation | 400 | Validation |
-| 12.5 | Onboarding guardrails save via DB | — | Onboarding |
-| 13.1 | x402 requirements endpoint | 402 | x402 |
-| 13.2 | x402 requirements (not enabled) | 400 | x402 |
-| 13.3 | x402 requirements (not found) | 404 | x402 |
-| 13.4 | x402 pay missing header | 400 | x402 |
-| 13.5 | x402 pay malformed header | 400 | x402 |
-| 13.6 | x402 pay wrong chain | 400 | x402 |
-| 13.7 | x402 pay recipient mismatch | 400 | x402 |
-| 13.8 | x402 pay expired signature | 400 | x402 |
-| 13.9 | x402 pay on non-x402 page | 400 | x402 |
-| 13.10 | Public checkout shows x402 method | 200 | Checkout |
-| 14.1 | Automated unit tests (npx vitest) | Pass | Unit Tests |
+| 6.1 | Transaction history | 200 | Bot API |
+| 7.1 | Pairing code without auth | 401 | Auth |
+| 7.2 | Registration with pairing code | 200 | Pairing |
+| 7.3 | Paired bot DB state | — | Pairing |
+| 7.4 | Paired bot API access | 200 | Pairing |
+| 7.5 | Reuse claimed pairing code | 400 | Pairing |
+| 7.6 | Expired pairing code | 400 | Pairing |
+| 7.7 | Invalid pairing code format | 400 | Validation |
+| 8.1 | Owner endpoints auth check | 401 | Auth |
+| 9.1 | Health check | 200 | Public |
+| 9.2 | Waitlist submission | 200 | Public |
+| 9.3 | Waitlist duplicate | 200/409 | Public |
+| 10.1 | All public pages render | 200 | Pages |
+| 11.1 | Owners table upsert via DB | — | Owners |
+| 11.2 | Master guardrails auth check | 401 | Auth |
+| 11.3 | Onboarded endpoint auth check | 401 | Auth |
+| 11.4 | Master guardrails input validation | 400 | Validation |
+| 11.5 | Onboarding guardrails save via DB | — | Onboarding |
+| 12.1 | x402 requirements endpoint | 402 | x402 |
+| 12.2 | x402 requirements (not enabled) | 400 | x402 |
+| 12.3 | x402 requirements (not found) | 404 | x402 |
+| 12.4 | x402 pay missing header | 400 | x402 |
+| 12.5 | x402 pay malformed header | 400 | x402 |
+| 12.6 | x402 pay wrong chain | 400 | x402 |
+| 12.7 | x402 pay recipient mismatch | 400 | x402 |
+| 12.8 | x402 pay expired signature | 400 | x402 |
+| 12.9 | x402 pay on non-x402 page | 400 | x402 |
+| 12.10 | Public checkout shows x402 method | 200 | Checkout |
+| 13.1 | Automated unit tests (npx vitest) | Pass | Unit Tests |

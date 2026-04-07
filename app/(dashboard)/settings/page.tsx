@@ -10,7 +10,7 @@ import { PaymentSetup } from "@/components/dashboard/payment-setup";
 import { ShippingAddressManager } from "@/components/dashboard/shipping-address-manager";
 import { useAuth } from "@/lib/auth/auth-context";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Loader2, Shield, TrendingUp, Zap, CreditCard, Bot, ChevronDown } from "lucide-react";
+import { Loader2, Shield, TrendingUp, Zap, CreditCard, Bot, ChevronDown, Smartphone } from "lucide-react";
 
 interface Preferences {
   transaction_alerts: boolean;
@@ -30,8 +30,8 @@ interface MasterGuardrailsData {
     enabled: boolean;
   } | null;
   spend: {
-    daily: { rail1_usd: number; rail2_usd: number; total_usd: number };
-    monthly: { rail1_usd: number; rail2_usd: number; total_usd: number };
+    daily: { rail1_usd: number; rail2_usd: number; rail5_usd: number; total_usd: number };
+    monthly: { rail1_usd: number; rail2_usd: number; rail5_usd: number; total_usd: number };
   };
 }
 
@@ -62,6 +62,7 @@ function RailBreakdown({ daily, monthly }: MasterGuardrailsData["spend"]) {
   const rails = [
     { name: "Stripe Wallet", icon: Zap, daily: daily.rail1_usd, monthly: monthly.rail1_usd, color: "text-blue-600" },
     { name: "Card Wallet", icon: CreditCard, daily: daily.rail2_usd, monthly: monthly.rail2_usd, color: "text-violet-600" },
+    { name: "Sub-Agent Cards", icon: Smartphone, daily: daily.rail5_usd, monthly: monthly.rail5_usd, color: "text-orange-600" },
   ];
 
   const hasAnySpend = rails.some(r => r.daily > 0 || r.monthly > 0);

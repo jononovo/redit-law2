@@ -4,13 +4,10 @@ import {
   type Wallet, type InsertWallet,
   type Transaction, type InsertTransaction,
   type PaymentMethod, type InsertPaymentMethod,
-  type TopupRequest, type InsertTopupRequest,
   type ApiAccessLog, type InsertApiAccessLog,
   type WebhookDelivery, type InsertWebhookDelivery,
   type NotificationPreference, type InsertNotificationPreference,
   type Notification, type InsertNotification,
-  type PaymentLink, type InsertPaymentLink,
-  type ReconciliationLog, type InsertReconciliationLog,
   type PairingCode, type InsertPairingCode,
   type WaitlistEntry, type InsertWaitlistEntry,
   type PrivyWallet, type InsertPrivyWallet,
@@ -63,8 +60,6 @@ export interface IStorage {
   createWallet(data: InsertWallet): Promise<Wallet>;
   getWalletByBotId(botId: string): Promise<Wallet | null>;
   getWalletByOwnerUid(ownerUid: string): Promise<Wallet | null>;
-  creditWallet(walletId: number, amountCents: number): Promise<Wallet>;
-
   createTransaction(data: InsertTransaction): Promise<Transaction>;
   getTransactionsByWalletId(walletId: number, limit?: number): Promise<Transaction[]>;
 
@@ -77,11 +72,7 @@ export interface IStorage {
 
   getBotsByApiKeyPrefix(prefix: string): Promise<Bot[]>;
   debitWallet(walletId: number, amountCents: number): Promise<Wallet | null>;
-  getDailySpend(walletId: number): Promise<number>;
   getMonthlySpend(walletId: number): Promise<number>;
-
-
-  createTopupRequest(data: InsertTopupRequest): Promise<TopupRequest>;
 
   createAccessLog(data: InsertApiAccessLog): Promise<void>;
   getAccessLogsByBotIds(botIds: string[], limit?: number): Promise<ApiAccessLog[]>;
@@ -100,18 +91,7 @@ export interface IStorage {
   markNotificationsRead(ids: number[], ownerUid: string): Promise<void>;
   markAllNotificationsRead(ownerUid: string): Promise<void>;
 
-  getWalletsByOwnerUid(ownerUid: string): Promise<Wallet[]>;
-  getTransactionSumByWalletId(walletId: number): Promise<number>;
-  createReconciliationLog(data: InsertReconciliationLog): Promise<ReconciliationLog>;
   getFailedWebhookCount24h(botIds: string[]): Promise<number>;
-
-  createPaymentLink(data: InsertPaymentLink): Promise<PaymentLink>;
-  getPaymentLinksByBotId(botId: string, limit?: number, status?: string): Promise<PaymentLink[]>;
-  getPaymentLinkByStripeSession(sessionId: string): Promise<PaymentLink | null>;
-  getPaymentLinkByPaymentLinkId(paymentLinkId: string): Promise<PaymentLink | null>;
-  getPaymentLinksByOwnerUid(ownerUid: string, limit?: number): Promise<PaymentLink[]>;
-  updatePaymentLinkStatus(id: number, status: string, paidAt?: Date): Promise<PaymentLink | null>;
-  completePaymentLink(id: number): Promise<PaymentLink | null>;
 
   createPairingCode(data: InsertPairingCode): Promise<PairingCode>;
   getPairingCodeByCode(code: string): Promise<PairingCode | null>;
@@ -170,8 +150,8 @@ export interface IStorage {
 
   getMasterGuardrails(ownerUid: string): Promise<MasterGuardrail | null>;
   upsertMasterGuardrails(ownerUid: string, data: Partial<InsertMasterGuardrail>): Promise<MasterGuardrail>;
-  getMasterDailySpend(ownerUid: string): Promise<{ rail1: number; rail2: number; total: number }>;
-  getMasterMonthlySpend(ownerUid: string): Promise<{ rail1: number; rail2: number; total: number }>;
+  getMasterDailySpend(ownerUid: string): Promise<{ rail1: number; rail2: number; rail5: number; total: number }>;
+  getMasterMonthlySpend(ownerUid: string): Promise<{ rail1: number; rail2: number; rail5: number; total: number }>;
 
   getRail5Guardrails(cardId: string): Promise<Rail5Guardrail | null>;
   upsertRail5Guardrails(cardId: string, data: Partial<InsertRail5Guardrail>): Promise<Rail5Guardrail>;

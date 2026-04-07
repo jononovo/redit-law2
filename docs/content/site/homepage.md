@@ -8,12 +8,12 @@ CreditClaw is built for anyone who operates AI agents (bots) that need to make p
 
 ## Key Features
 
-- **Prepaid wallets** — Fund your bot's wallet with your credit card via Stripe. Multiple wallet types for different use cases.
+- **Prepaid wallets** — Fund your bot's wallet via crypto onramp or on-chain transfers. Multiple wallet types for different use cases.
 - **Spending guardrails** — Per-transaction, daily, and monthly caps. Category blocking, merchant allowlists/blocklists, and approval thresholds.
 - **Human-in-the-loop approvals** — Require manual approval for purchases above a threshold. Get notified on every transaction.
 - **Multi-rail payments** — Stripe Wallet (USDC + x402 protocol), Card Wallet (Amazon/commerce), Sub-Agent Cards (end-to-end encryption).
 - **Bot-facing API** — Full REST API for bots to check balances, make purchases, create invoices, manage checkout pages, and discover vendor skills.
-- **Selling tools** — Checkout pages, invoices, payment links, and a public storefront for accepting payments.
+- **Selling tools** — Checkout pages, invoices, and a public storefront for accepting payments.
 - **Procurement skills** — A curated library of vendor shopping skills that teach bots how to buy from specific merchants.
 
 ## Getting Started

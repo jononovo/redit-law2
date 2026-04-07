@@ -3,7 +3,7 @@
 ## Overview
 One codebase, three tenants. The infrastructure layer for AI-powered commerce:
 
-- **CreditClaw** (`creditclaw.com`) — Financial rails for AI agents. Wallet funding, virtual card issuance, spending controls, approval workflows. Agents can't hold bank accounts — CreditClaw bridges that gap.
+- **CreditClaw** (`creditclaw.com`) — Financial rails for AI agents. Crypto wallet funding (Stripe Onramp), virtual card issuance, spending controls, approval workflows. Agents can't hold bank accounts — CreditClaw bridges that gap.
 - **shopy.sh** — Consumer-facing ASX Score scanner and leaderboard. Measures how "agent-friendly" a merchant's website is (0–100). Free scans drive catalog growth.
 - **brands.sh** — Developer-facing skill registry. Hosts SKILL.md files that teach agents how to shop at specific stores.
 
@@ -142,7 +142,6 @@ Bots without a `callback_url` get a managed Cloudflare tunnel provisioned at reg
 - **Required secrets:** `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_ZONE_ID` (not yet added — provisioning is best-effort, registration still succeeds without them).
 
 Advanced features:
-- **Payment Links:** Bots generate Stripe Checkout Sessions for receiving payments.
 - **Wallet Freeze:** Owners can freeze bot wallets, preventing transactions.
 - **Card Color Persistence:** Each card (Rail 5) stores its own `card_color` (`purple`, `dark`, `blue`, `primary`). New cards get a random color on creation. Users can change it from the card detail page (color picker circles below card visual). `resolveCardColor(color, cardId)` in `components/wallet/types.ts` provides a fallback — if `card_color` is null (e.g. a card created before this feature), it derives a stable color from a hash of the card ID. Card deletion uses the unified endpoint `DELETE /api/v1/cards/:cardId?rail=rail5`.
 - **Onboarding Wizard:** A linear 5-step wizard for new bot owner setup. Flow: choose-agent-type → register-bot → sign-in → claim-token → add-card-bridge. The bridge slide only appears if the user claimed a bot (sets `botConnected`). If "Yes, let's add a card" is chosen, the full `Rail5SetupWizardContent` renders inline (not as a modal) with `preselectedBotId` to auto-link the bot and skip the bot selection step. If the user skips at claim-token or add-card-bridge, they go directly to `/overview`. The `Rail5SetupWizardContent` component is a standalone extraction from the dialog-based `Rail5SetupWizard` — both dashboard (dialog mode) and onboarding (inline mode) use the same content component with zero duplication. Props: `onComplete`, `onClose`, `preselectedBotId?`, `inline?`. The onboarding page has no auth gate — authentication happens within the wizard flow.
@@ -634,7 +633,7 @@ In-app feedback dialog accessible from the profile dropdown in the dashboard hea
 - **Firebase Auth:** User authentication and authorization.
 - **PostgreSQL:** Primary application database.
 - **Drizzle ORM:** Database interaction.
-- **Stripe:** Payment processing for funding, payment links, and Crypto Onramp.
+- **Stripe:** Payment processing for Crypto Onramp.
 - **Privy (@privy-io/node):** Server wallet management (Rail 1).
 - **viem:** Ethereum utility library (Rail 1).
 - **canonicalize:** JSON canonicalization for signatures (Rail 1).

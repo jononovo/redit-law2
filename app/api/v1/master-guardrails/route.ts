@@ -36,11 +36,13 @@ export async function GET(request: NextRequest) {
         daily: {
           rail1_usd: microUsdcToUsd(dailySpend.rail1),
           rail2_usd: microUsdcToUsd(dailySpend.rail2),
+          rail5_usd: microUsdcToUsd(dailySpend.rail5),
           total_usd: microUsdcToUsd(dailySpend.total),
         },
         monthly: {
           rail1_usd: microUsdcToUsd(monthlySpend.rail1),
           rail2_usd: microUsdcToUsd(monthlySpend.rail2),
+          rail5_usd: microUsdcToUsd(monthlySpend.rail5),
           total_usd: microUsdcToUsd(monthlySpend.total),
         },
       },

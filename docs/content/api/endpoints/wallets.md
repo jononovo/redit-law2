@@ -1,6 +1,6 @@
 # Wallets
 
-The wallet endpoints let your bot check its balance, view transaction history, retrieve spending guardrails, and request top-ups from the owner.
+The wallet endpoints let your bot check its balance, view transaction history, and retrieve spending guardrails.
 
 All endpoints require bot authentication via the `Authorization: Bearer cck_live_...` header. See [Authentication](/docs/api/authentication) for details.
 
@@ -33,7 +33,6 @@ No request body or query parameters required.
     "monthly_spent_usd": 120.50,
     "monthly_remaining_usd": 379.50
   },
-  "pending_topups": 0
 }
 ```
 
@@ -47,7 +46,6 @@ No request body or query parameters required.
 | `spending_limits.monthly_usd` | number | Total monthly spending budget |
 | `spending_limits.monthly_spent_usd` | number | Amount already spent this month |
 | `spending_limits.monthly_remaining_usd` | number | Remaining monthly budget |
-| `pending_topups` | number | Number of pending top-up requests |
 
 If the bot has not been claimed by an owner yet, the response will indicate `"pending"` status:
 
@@ -135,72 +133,6 @@ curl -X GET "https://creditclaw.com/api/v1/bot/wallet/transactions?limit=10" \
 
 ---
 
-## Request Top-Up
-
-Sends a top-up request to the bot's owner via email, asking them to add funds to the wallet.
-
-| | |
-|---|---|
-| **Method** | `POST` |
-| **Path** | `/api/v1/bot/wallet/topup-request` |
-| **Auth** | Bot API key required |
-
-### Request Body
-
-```json
-{
-  "amount_usd": 100.00,
-  "reason": "Running low on funds for scheduled purchases"
-}
-```
-
-| Field | Type | Required | Description |
-|---|---|---|---|
-| `amount_usd` | number | Yes | Requested top-up amount in USD |
-| `reason` | string | No | Explanation for the top-up request |
-
-### Response
-
-```json
-{
-  "topup_request_id": 7,
-  "status": "sent",
-  "amount_usd": 100.00,
-  "owner_notified": true,
-  "message": "Your owner has been emailed a top-up request."
-}
-```
-
-| Field | Type | Description |
-|---|---|---|
-| `topup_request_id` | integer | ID of the created top-up request |
-| `status` | string | Request status (`"sent"`) |
-| `amount_usd` | number | Requested amount |
-| `owner_notified` | boolean | Whether the owner was notified via email |
-| `message` | string | Confirmation message |
-
-### Error Responses
-
-| Status | Body | Condition |
-|---|---|---|
-| 400 | `{ "error": "invalid_json", "message": "Request body must be valid JSON" }` | Malformed JSON body |
-| 400 | `{ "error": "validation_error", "message": "Invalid request body", "details": {...} }` | Missing or invalid fields |
-| 403 | `{ "error": "wallet_not_active", "message": "Wallet not yet activated. Owner must claim this bot first." }` | Bot has not been claimed |
-
-### Example
-
-```bash
-curl -X POST https://creditclaw.com/api/v1/bot/wallet/topup-request \
-  -H "Authorization: Bearer cck_live_abc123..." \
-  -H "Content-Type: application/json" \
-  -d '{
-    "amount_usd": 100.00,
-    "reason": "Need funds for weekly supply order"
-  }'
-```
-
----
-
 ## Get Spending Guardrails
 
 Returns the bot's current spending guardrails including approval mode (from master guardrails), limits, and procurement controls.
@@ -266,5 +198,5 @@ curl -X GET https://creditclaw.com/api/v1/bot/wallet/spending \
 
 - [Authentication](/docs/api/authentication) — how to authenticate API requests
 - [Bots](/docs/api/endpoints/bots) — bot registration and purchase endpoints
-- [Webhook Events](/docs/api/webhooks/events) — listen for `wallet.topup.completed`, `wallet.balance.low`, and other wallet events
-- [Quick Start](/docs/api/agent-integration/quick-start) — end-to-end guide including wallet funding
+- [Webhook Events](/docs/api/webhooks/events) — listen for `wallet.balance.low`, `wallet.sale.completed`, and other wallet events
+- [Quick Start](/docs/api/agent-integration/quick-start) — end-to-end bot integration guide
