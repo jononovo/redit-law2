@@ -321,7 +321,7 @@ Unified cross-rail order tracking for all vendor purchases. Every confirmed purc
 
 ### Agent Shops (Sales, Checkout, Storefronts, Invoicing)
 
-The platform's inbound commerce engine. Every wallet holder becomes a seller via checkout pages, storefronts, and invoices. The inverse of outbound payment rails (Module 4) — this handles how the world pays our merchants, including bot-to-bot commerce via x402.
+The platform's inbound commerce engine. Every wallet holder becomes a seller via checkout pages, storefronts, and invoices. The inverse of outbound payment rails (Module 3) — this handles how the world pays our merchants, including bot-to-bot commerce via x402.
 
 → Full system documentation: `project_knowledge/internal_docs/09-agent-shops/_overview.md`
 

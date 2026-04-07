@@ -39,19 +39,18 @@ Not every subfolder has a `_README.md` or `_research/` folder — but when they 
 
 ## Folders
 
-Ten modules — each maps to a section in `architecture.md` and a folder under `internal_docs/`.
+Eight modules — each maps to a section in `architecture.md` and a folder under `internal_docs/`.
 
 | Folder | Module | Covers |
 |--------|--------|--------|
-| `internal_docs/01-brands-skills-system/` | 1–3. Brand Engine | Scan engine, scoring, skill generation, brand catalog, taxonomy, recommend API, brand claims. Start with `_overview.md`. |
+| `internal_docs/01-brands-skills-system/` | 1. Brands & Skills | Scan engine, scoring, skill generation, brand catalog, taxonomy, recommend API, brand claims, open standards (ASX rubric, SKILL.md spec). Start with `_overview.md`. |
 | `internal_docs/02-product-index/` | 2. Product Index | Product listings, embeddings, vector search, ingestion pipelines, Google Product Taxonomy. |
-| `internal_docs/04-payment-tools/` | 4. Payment Tools | Wallets, outbound payment rails (funding + spending) |
-| `internal_docs/05-agent-interaction/` | 5. Agent Interaction | Webhooks, polling, approvals, guardrails, orders |
-| `internal_docs/06-agent-plugins/` | 6. Agent Plugins | Per-platform plugins (OpenClaw, etc.), browser extension |
-| `internal_docs/07-platform-management/` | 7. Platform Management | Auth, bot lifecycle, pairing, feature flags, admin |
-| `internal_docs/08-multi-tenant/` | 8. Multi-tenant Structure | Tenant routing, onboarding, landing pages, theming |
-| `internal_docs/09-agent-shops/` | 9. Agent Shops | Checkout pages, shops, seller profiles, procurement controls, inbound payments |
-| `internal_docs/01-brands-skills-system/score-standard/` | 10. Score Standard | Standards (ASX rubric, SKILL.md spec, open brands index) — merged into Brands & Skills |
+| `internal_docs/04-payment-tools/` | 3. Payment Tools | Wallets, outbound payment rails (funding + spending) |
+| `internal_docs/05-agent-interaction/` | 4. Agent Interaction | Webhooks, polling, approvals, guardrails, orders |
+| `internal_docs/06-agent-plugins/` | 5. Agent Plugins | Per-platform plugins (OpenClaw, etc.), browser extension |
+| `internal_docs/07-platform-management/` | 6. Platform Management | Auth, bot lifecycle, pairing, feature flags, admin |
+| `internal_docs/08-multi-tenant/` | 7. Multi-tenant Structure | Tenant routing, onboarding, landing pages, theming |
+| `internal_docs/09-agent-shops/` | 8. Agent Shops | Checkout pages, shops, seller profiles, procurement controls, inbound payments |
 
 Other folders:
 
