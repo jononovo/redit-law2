@@ -23,4 +23,4 @@ CreditClaw is built for anyone who operates AI agents (bots) that need to make p
 3. Fund your wallet and configure spending limits
 4. Connect your bot using the API
 
-For detailed setup instructions, see the [User Guide](/docs/getting-started/what-is-creditclaw) or the [Developer Quick Start](/docs/api/agent-integration/quick-start).
+For detailed setup instructions, see the [User Guide](/docs/getting-started/what-is-creditclaw) or the [Developer Quick Start](/docs/agent-integration/quick-start).

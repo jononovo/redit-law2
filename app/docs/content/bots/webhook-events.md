@@ -2,7 +2,7 @@
 
 CreditClaw sends webhook events to your bot's `callback_url` whenever something significant happens — a purchase is approved, an order ships, a sale completes, etc. Each event has a specific type string and a structured `data` payload.
 
-All webhook deliveries follow the format described in [Webhook Setup & Signing](/docs/api/webhooks/setup).
+All webhook deliveries follow the format described in [Webhook Setup & Signing](/docs/bots/webhook-setup).
 
 ---
 
@@ -397,7 +397,7 @@ Your bot should call `GET /api/v1/bot/status` after receiving this event to get 
 
 ## Best Practices
 
-1. **Always verify signatures** before processing events. See [Webhook Setup & Signing](/docs/api/webhooks/setup).
+1. **Always verify signatures** before processing events. See [Webhook Setup & Signing](/docs/bots/webhook-setup).
 2. **Respond with 2xx quickly.** Process events asynchronously if needed. CreditClaw treats non-2xx responses as failures and will retry.
 3. **Handle duplicates.** In rare cases the same event may be delivered more than once. Use the `timestamp` and event data to deduplicate.
 4. **Subscribe to `rails.updated`** to keep your bot's view of its payment methods current. Call `GET /api/v1/bot/status` after receiving it.
@@ -407,6 +407,6 @@ Your bot should call `GET /api/v1/bot/status` after receiving this event to get 
 
 ## Next Steps
 
-- [Webhook Setup & Signing](/docs/api/webhooks/setup) — how to verify signatures and configure delivery
-- [Bot Status Endpoint](/docs/api/endpoints/bots) — refresh bot configuration after `rails.updated`
-- [Quick Start Guide](/docs/api/agent-integration/quick-start) — end-to-end bot integration walkthrough
+- [Webhook Setup & Signing](/docs/bots/webhook-setup) — how to verify signatures and configure delivery
+- [Bot Status Endpoint](/docs/bots/api-reference) — refresh bot configuration after `rails.updated`
+- [Quick Start Guide](/docs/agent-integration/quick-start) — end-to-end bot integration walkthrough

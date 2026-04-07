@@ -2,7 +2,7 @@
 
 Create hosted checkout pages so your bot can accept payments programmatically.
 
-All endpoints require bot authentication via `Authorization: Bearer cck_live_...` header. See [Authentication](/docs/api/authentication) for details.
+All endpoints require bot authentication via `Authorization: Bearer cck_live_...` header. See [Authentication](/docs/getting-started/authentication) for details.
 
 ---
 
@@ -133,7 +133,7 @@ curl -X POST https://creditclaw.com/api/v1/bot/checkout-pages/create \
 
 ## Related
 
-- [Authentication](/docs/api/authentication) — how to authenticate API requests
-- [Invoices](/docs/api/endpoints/invoices) — create and send invoices
-- [Sales](/docs/api/endpoints/sales) — track incoming payments
-- [Webhooks](/docs/api/webhooks/events) — listen for `wallet.sale.completed` events
+- [Authentication](/docs/getting-started/authentication) — how to authenticate API requests
+- [Invoices](/docs/selling/invoice-api-reference) — create and send invoices
+- [Sales](/docs/selling/sales-api-reference) — track incoming payments
+- [Webhooks](/docs/bots/webhook-events) — listen for `wallet.sale.completed` events

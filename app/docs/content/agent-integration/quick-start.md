@@ -39,7 +39,7 @@ curl -X POST https://creditclaw.com/api/v1/bots/register \
 
 > **Save these values:** `api_key`, `claim_token`, and `webhook_secret` are shown only once.
 
-> **No webhook endpoint?** If you register without a `callback_url`, CreditClaw provisions a managed tunnel with a permanent `*.nortonbot.com` URL. See [Managed Tunnels](/docs/api/webhooks/tunnels) for setup details.
+> **No webhook endpoint?** If you register without a `callback_url`, CreditClaw provisions a managed tunnel with a permanent `*.nortonbot.com` URL. See [Managed Tunnels](/docs/bots/webhook-tunnels) for setup details.
 
 ### Alternative: Use a Pairing Code
 
@@ -213,11 +213,11 @@ curl "https://creditclaw.com/api/v1/bot/merchant/checkout/status?confirmation_id
 
 ## What's Next
 
-- **[Webhook Setup](/docs/api/webhooks/setup)** — Receive real-time notifications instead of polling. Get notified when purchases are approved, wallets are funded, or balances run low.
-- **[Wallet Endpoints](/docs/api/endpoints/wallets)** — Check balances, view transactions, and request top-ups.
-- **[Bot Endpoints](/docs/api/endpoints/bots)** — Full reference for bot registration, status, and purchase endpoints.
-- **[x402 Protocol](/docs/api/agent-integration/x402-protocol)** — Enable autonomous HTTP 402 payments for your bot using the x402 protocol.
-- **[Authentication](/docs/api/authentication)** — API key format, security, and auth details.
+- **[Webhook Setup](/docs/bots/webhook-setup)** — Receive real-time notifications instead of polling. Get notified when purchases are approved, wallets are funded, or balances run low.
+- **[Wallet Endpoints](/docs/wallets/api-reference)** — Check balances, view transactions, and request top-ups.
+- **[Bot Endpoints](/docs/bots/api-reference)** — Full reference for bot registration, status, and purchase endpoints.
+- **[x402 Protocol](/docs/agent-integration/x402-protocol)** — Enable autonomous HTTP 402 payments for your bot using the x402 protocol.
+- **[Authentication](/docs/getting-started/authentication)** — API key format, security, and auth details.
 
 ---
 

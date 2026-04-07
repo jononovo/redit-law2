@@ -661,15 +661,14 @@ Schema changes flow through Drizzle ORM and are auto-synced to production on dep
 5. Config: `drizzle.config.ts` points at `DATABASE_URL` with `pg` driver
 6. The `spending_permissions` table exists in both databases but is not tracked in the schema (legacy table)
 
-### Documentation System (`docs/content/`, `app/docs/`)
-Self-hosted documentation at `/docs` with sidebar navigation, audience toggle, and markdown rendering. Multi-tenant aware — each tenant sees its own docs.
-- **Config**: `docs/content/sections.ts` — typed section/page registry with `Audience` + `DocTenant` tagging. `getSectionsByAudience(audience, tenant?)` filters both. `normalizeTenantId()` validates tenant cookies. `getTenantFromSlug()` derives tenant from URL path.
-- **Layout**: `app/docs/layout.tsx` — client component with persistent sidebar. Swaps branding (logo, labels) per tenant. `app/docs/page.tsx` redirects to first page for current tenant (from cookie).
-- **Renderer**: `app/docs/[...slug]/page.tsx` — reads markdown from `docs/content/{section}/{page}.md`, renders via `react-markdown` with `prose` typography classes. Prev/next navigation filtered by tenant.
-- **CreditClaw docs** — User docs (27 pages): Getting Started, Bots, Wallets, Guardrails, Selling, Settings, Transactions, Skills. Developer docs (13 pages): API Overview, API Endpoints, Webhooks, Agent Integration.
-- **Shopy docs** (8 pages) — Getting Started (what-is-shopy, asx-score-explained), CLI (installation, commands), Skill Format (structure, frontmatter), Agent Integration (reading-skills, feedback-protocol). URL prefix: `/docs/shopy/...`.
-- **URL pattern**: `/docs/{section-slug}/{page-slug}`. CreditClaw dev docs: `/docs/api/...`. Shopy docs: `/docs/shopy/...`.
-- **Tailwind**: Typography plugin added via `@plugin "@tailwindcss/typography"`, source added via `@source "../docs"` in `app/globals.css`.
+### Documentation System (`app/docs/content/`, `app/docs/`)
+Self-hosted documentation at `/docs` with unified single-sidebar navigation (no audience toggle). All three tenants share one sidebar. Multi-tenant aware — each tenant has a `docsEntrySlug` for its landing page.
+- **Config**: `app/docs/content/sections.ts` — flat typed section/page registry. Sections have optional `tag` field (e.g. "shopy") displayed as a badge. No audience/tenant filtering. `findPage(slugParts)` resolves URL to section+page. `getAllPagesFlat()` returns all pages (no args).
+- **Layout**: `app/docs/layout.tsx` — client component with persistent sidebar. Swaps branding (logo) per tenant cookie. No audience toggle.
+- **Renderer**: `app/docs/[...slug]/page.tsx` — reads markdown from `app/docs/content/{section}/{page}.md`, renders via `react-markdown` with `prose` typography classes. Prev/next navigation across all sections.
+- **12 sections** (57 pages): Getting Started, Bots & Onboarding, Wallets & Funding, Spending Controls, Selling, Transactions & Orders, Procurement Skills, Agent Integration, Settings, ASX Scoring (tag: shopy), Skill Publishing (tag: shopy), CLI Tools (tag: shopy).
+- **URL pattern**: `/docs/{section-slug}/{page-slug}` — single namespace, no `/docs/api/` or `/docs/shopy/` prefixes.
+- **Tenant entry points**: `docsEntrySlug` in `TenantConfig` — creditclaw → `getting-started/what-is-creditclaw`, shopy → `asx-scoring/what-is-shopy`, brands → `skill-publishing/structure`.
 - **LLM access**: Raw markdown endpoint at `GET /api/docs/{section}/{page}` (Content-Type: text/markdown). Each doc page has "Copy for LLM" and "View as Markdown" buttons. `GET /llms.txt` serves a structured index of all docs with markdown links. `GET /llms-full.txt` concatenates all docs into a single file.
 
 ### Shopy.sh Pages

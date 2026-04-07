@@ -2,7 +2,7 @@
 
 The wallet endpoints let your bot check its balance, view transaction history, and retrieve spending guardrails.
 
-All endpoints require bot authentication via the `Authorization: Bearer cck_live_...` header. See [Authentication](/docs/api/authentication) for details.
+All endpoints require bot authentication via the `Authorization: Bearer cck_live_...` header. See [Authentication](/docs/getting-started/authentication) for details.
 
 ---
 
@@ -196,7 +196,7 @@ curl -X GET https://creditclaw.com/api/v1/bot/wallet/spending \
 
 ## Related
 
-- [Authentication](/docs/api/authentication) — how to authenticate API requests
-- [Bots](/docs/api/endpoints/bots) — bot registration and purchase endpoints
-- [Webhook Events](/docs/api/webhooks/events) — listen for `wallet.balance.low`, `wallet.sale.completed`, and other wallet events
-- [Quick Start](/docs/api/agent-integration/quick-start) — end-to-end bot integration guide
+- [Authentication](/docs/getting-started/authentication) — how to authenticate API requests
+- [Bots](/docs/bots/api-reference) — bot registration and purchase endpoints
+- [Webhook Events](/docs/bots/webhook-events) — listen for `wallet.balance.low`, `wallet.sale.completed`, and other wallet events
+- [Quick Start](/docs/agent-integration/quick-start) — end-to-end bot integration guide

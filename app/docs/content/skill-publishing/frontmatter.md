@@ -19,8 +19,8 @@ metadata:
 | `vendor_domain` | string | The primary domain of the store |
 | `vendor_slug` | string | URL-safe identifier used in the catalog |
 | `vendor_name` | string | Display name of the vendor |
-| `brand_type` | string | Brand classification: `brand`, `retailer`, `independent`, `chain`, `marketplace`, `department_store`, `supermarket`, or `mega_merchant`. Determines how sectors and categories are resolved — see [taxonomy docs](/docs/shopy/taxonomy/sectors#brand-types). |
-| `sector` | string | Primary sector slug — one of 27 assignable values from the [sector taxonomy](/docs/shopy/taxonomy/sectors) (e.g., `electronics`, `apparel-accessories`, `business-industrial`), or `multi-sector` for department stores, supermarkets, and mega merchants. |
+| `brand_type` | string | Brand classification: `brand`, `retailer`, `independent`, `chain`, `marketplace`, `department_store`, `supermarket`, or `mega_merchant`. Determines how sectors and categories are resolved — see [taxonomy docs](/docs/skill-publishing/sectors#brand-types). |
+| `sector` | string | Primary sector slug — one of 27 assignable values from the [sector taxonomy](/docs/skill-publishing/sectors) (e.g., `electronics`, `apparel-accessories`, `business-industrial`), or `multi-sector` for department stores, supermarkets, and mega merchants. |
 | `tier` | string | Market position: `commodity`, `budget`, `value`, `mid_range`, `premium`, `luxury`, `ultra_luxury` |
 
 ## Taxonomy fields
@@ -54,7 +54,7 @@ metadata:
 
 Categories are assigned automatically during scanning using the Google Product Taxonomy. The `product_categories` string format shown above is used in SKILL.md frontmatter for human readability. The machine-readable `skill.json` companion file at `/brands/{slug}/skill-json` uses only the structured `categories` array (with `id`, `name`, `path`, `depth`, `primary` fields) — it does not include the string format.
 
-See the [taxonomy documentation](/docs/shopy/taxonomy/sectors) for details on how sectors and categories work.
+See the [taxonomy documentation](/docs/skill-publishing/sectors) for details on how sectors and categories work.
 
 ## Scoring fields
 

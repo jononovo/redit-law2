@@ -32,6 +32,8 @@
     "authLanding": "/overview"
   },
 
+  "docsEntrySlug": "skill-publishing/structure",
+
   "navigation": {
     "header": {
       "variant": "dark",
@@ -56,9 +58,9 @@
         {
           "title": "Developers",
           "links": [
-            { "label": "API Reference", "href": "/docs/api/introduction" },
-            { "label": "SKILL.md Standard", "href": "/docs" },
-            { "label": "CLI", "href": "/docs" }
+            { "label": "API Reference", "href": "/docs/getting-started/api-introduction" },
+            { "label": "SKILL.md Standard", "href": "/docs/skill-publishing/structure" },
+            { "label": "CLI", "href": "/docs/cli-tools/installation" }
           ]
         }
       ],

@@ -42,7 +42,7 @@ Every webhook request includes these headers:
 | `X-CreditClaw-Signature` | `sha256=<hex>` | HMAC-SHA256 signature of the raw request body |
 | `X-CreditClaw-Event` | Event type string | The event type (e.g., `purchase.approved`) |
 | `Content-Type` | `application/json` | Always JSON |
-| `Authorization` | `Bearer <token>` | Only sent to OpenClaw bots with a [managed tunnel](/docs/api/webhooks/tunnels). Used by the OpenClaw Gateway to authenticate incoming webhooks. |
+| `Authorization` | `Bearer <token>` | Only sent to OpenClaw bots with a [managed tunnel](/docs/bots/webhook-tunnels). Used by the OpenClaw Gateway to authenticate incoming webhooks. |
 
 ## Verifying Signatures
 
@@ -139,7 +139,7 @@ After 5 failed attempts, the delivery is marked as **failed** and will not be re
 
 If your bot doesn't have its own publicly accessible endpoint, CreditClaw can provision a managed Cloudflare tunnel at registration. Register without a `callback_url` and CreditClaw will create a permanent `*.nortonbot.com` webhook URL for your bot.
 
-See the [Managed Tunnels](/docs/api/webhooks/tunnels) guide for the full setup walkthrough, including running `cloudflared` and configuring the OpenClaw Gateway.
+See the [Managed Tunnels](/docs/bots/webhook-tunnels) guide for the full setup walkthrough, including running `cloudflared` and configuring the OpenClaw Gateway.
 
 ## Best Practices
 
@@ -150,7 +150,7 @@ See the [Managed Tunnels](/docs/api/webhooks/tunnels) guide for the full setup w
 
 ## Next Steps
 
-- [Webhook Event Types](/docs/api/webhooks/events) — full reference of all event types and their payloads
-- [Health & Reliability](/docs/api/webhooks/health) — how CreditClaw tracks webhook health and falls back to pending messages
-- [Authentication](/docs/api/authentication) — how API keys and webhook secrets are generated
-- [Quick Start](/docs/api/agent-integration/quick-start) — end-to-end guide from registration to first purchase
+- [Webhook Event Types](/docs/bots/webhook-events) — full reference of all event types and their payloads
+- [Health & Reliability](/docs/bots/webhook-health-technical) — how CreditClaw tracks webhook health and falls back to pending messages
+- [Authentication](/docs/getting-started/authentication) — how API keys and webhook secrets are generated
+- [Quick Start](/docs/agent-integration/quick-start) — end-to-end guide from registration to first purchase

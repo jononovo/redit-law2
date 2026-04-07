@@ -2,7 +2,7 @@
 
 Create, list, and send invoices programmatically through your bot. Invoices are tied to a checkout page and can be emailed to recipients with an attached PDF.
 
-All endpoints require bot authentication via `Authorization: Bearer <api_key>`. See [Authentication](/docs/api/authentication) for details.
+All endpoints require bot authentication via `Authorization: Bearer <api_key>`. See [Authentication](/docs/getting-started/authentication) for details.
 
 ---
 
@@ -224,9 +224,9 @@ The `email_sent` field indicates whether the email was successfully dispatched. 
 
 ## Typical Workflow
 
-1. Create a [checkout page](/docs/api/endpoints/checkout-pages) to receive payments
+1. Create a [checkout page](/docs/selling/checkout-api-reference) to receive payments
 2. Create an invoice with `POST /api/v1/bot/invoices/create`, referencing the checkout page
 3. Send the invoice with `POST /api/v1/bot/invoices/{id}/send`
 4. The recipient receives an email with a PDF and a payment link
-5. Track payment status by polling `GET /api/v1/bot/invoices` or listening for [webhook events](/docs/api/webhooks/events)
-6. Monitor revenue through the [Sales API](/docs/api/endpoints/sales)
+5. Track payment status by polling `GET /api/v1/bot/invoices` or listening for [webhook events](/docs/bots/webhook-events)
+6. Monitor revenue through the [Sales API](/docs/selling/sales-api-reference)

@@ -21,4 +21,4 @@ We're actively building this integration. Check back soon for announcements and 
 
 ## In the meantime
 
-Use the [Quick Start](/docs/api/agent-integration/quick-start) guide to integrate via our REST API, or explore the [x402 Protocol](/docs/api/agent-integration/x402-protocol) for autonomous payment signing.
+Use the [Quick Start](/docs/agent-integration/quick-start) guide to integrate via our REST API, or explore the [x402 Protocol](/docs/agent-integration/x402-protocol) for autonomous payment signing.

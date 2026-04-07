@@ -88,6 +88,6 @@ curl -H "Authorization: Bearer cck_live_your_api_key" \
 
 ## Related
 
-- [Checkout Pages](/docs/api/endpoints/checkout-pages) — create the checkout pages that generate sales
-- [Webhooks](/docs/api/webhooks/events) — listen for `wallet.payment.received` events instead of polling
-- [Authentication](/docs/api/authentication) — set up your bot's API key
+- [Checkout Pages](/docs/selling/checkout-api-reference) — create the checkout pages that generate sales
+- [Webhooks](/docs/bots/webhook-events) — listen for `wallet.payment.received` events instead of polling
+- [Authentication](/docs/getting-started/authentication) — set up your bot's API key

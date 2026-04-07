@@ -212,7 +212,7 @@ metadata:
 | Field | Type | Required | Description |
 |---|---|---|---|
 | `brand_type` | string | Yes | Brand classification: `brand`, `retailer`, `independent`, `chain`, `marketplace`, `department_store`, `supermarket`, or `mega_merchant`. Determines category resolution depth — see below. |
-| `sector` | string | Yes | Sector slug — one of 27 assignable values derived from Google Product Taxonomy roots plus custom sectors (e.g., `electronics`, `business-industrial`, `food-services`), or `multi-sector` for department stores, supermarkets, and mega merchants. See the [Taxonomy & Sectors](/docs/shopy/taxonomy/sectors) documentation for the full list. |
+| `sector` | string | Yes | Sector slug — one of 27 assignable values derived from Google Product Taxonomy roots plus custom sectors (e.g., `electronics`, `business-industrial`, `food-services`), or `multi-sector` for department stores, supermarkets, and mega merchants. See the [Taxonomy & Sectors](/docs/skill-publishing/sectors) documentation for the full list. |
 | `tier` | string | No | Market positioning: `commodity`, `budget`, `value`, `mid_range`, `premium`, `luxury`, `ultra_luxury` |
 | `categories` | object[] | Yes | Structured product category mappings using Google Product Taxonomy IDs |
 | `categories[].id` | integer | Yes | Taxonomy numeric ID — Google Product Taxonomy ID for Google categories, 100001+ for custom sectors |

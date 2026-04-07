@@ -146,6 +146,6 @@ For maximum reliability, bots should poll for pending messages periodically even
 
 ## Next Steps
 
-- [Webhook Setup & Signing](/docs/api/webhooks/setup) — configure your webhook endpoint and verify signatures
-- [Webhook Event Types](/docs/api/webhooks/events) — full reference of all event types and payloads
-- [Bot Messages Polling](/docs/api/endpoints/bots) — the `GET /bot/messages` fallback endpoint
+- [Webhook Setup & Signing](/docs/bots/webhook-setup) — configure your webhook endpoint and verify signatures
+- [Webhook Event Types](/docs/bots/webhook-events) — full reference of all event types and payloads
+- [Bot Messages Polling](/docs/bots/api-reference) — the `GET /bot/messages` fallback endpoint

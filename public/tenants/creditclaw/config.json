@@ -32,6 +32,8 @@
     "authLanding": "/overview"
   },
 
+  "docsEntrySlug": "getting-started/what-is-creditclaw",
+
   "navigation": {
     "header": {
       "variant": "light",
@@ -68,7 +70,7 @@
           "title": "Resources",
           "links": [
             { "label": "Documentation", "href": "/docs" },
-            { "label": "Developer", "href": "/docs/api/introduction" },
+            { "label": "Developer", "href": "/docs/getting-started/api-introduction" },
             { "label": "Newsroom", "href": "/newsroom" }
           ]
         }

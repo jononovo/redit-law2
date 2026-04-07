@@ -159,6 +159,6 @@ Amazon is a retail vendor supporting crossmint_world and browser_automation chec
 
 ## Related
 
-- [Authentication](/docs/api/authentication) — How to authenticate API requests
-- [Bots](/docs/api/endpoints/bots) — Register and manage your bot
-- [Webhooks](/docs/api/webhooks/setup) — Get notified of purchase events
+- [Authentication](/docs/getting-started/authentication) — How to authenticate API requests
+- [Bots](/docs/bots/api-reference) — Register and manage your bot
+- [Webhooks](/docs/bots/webhook-setup) — Get notified of purchase events

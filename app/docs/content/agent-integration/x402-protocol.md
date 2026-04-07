@@ -266,8 +266,8 @@ This means:
 
 ## Related Pages
 
-- [Authentication](/docs/api/authentication) — how to authenticate your bot
-- [Quick Start](/docs/api/agent-integration/quick-start) — end-to-end guide to get your bot transacting
-- [Webhook Setup](/docs/api/webhooks/setup) — receive async notifications for approvals
-- [Webhook Events](/docs/api/webhooks/events) — `purchase.approved`, `purchase.rejected` event payloads
-- [Wallets](/docs/api/endpoints/wallets) — check balance before requesting a signature
+- [Authentication](/docs/getting-started/authentication) — how to authenticate your bot
+- [Quick Start](/docs/agent-integration/quick-start) — end-to-end guide to get your bot transacting
+- [Webhook Setup](/docs/bots/webhook-setup) — receive async notifications for approvals
+- [Webhook Events](/docs/bots/webhook-events) — `purchase.approved`, `purchase.rejected` event payloads
+- [Wallets](/docs/wallets/api-reference) — check balance before requesting a signature

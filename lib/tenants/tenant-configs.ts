@@ -26,6 +26,7 @@ const creditclawConfig: TenantConfig = {
     secondaryColor: "200 95% 60%",
   },
   routes: { guestLanding: "/creditclaw", authLanding: "/overview" },
+  docsEntrySlug: "getting-started/what-is-creditclaw",
   navigation: {
     header: {
       variant: "light",
@@ -62,7 +63,7 @@ const creditclawConfig: TenantConfig = {
           title: "Resources",
           links: [
             { label: "Documentation", href: "/docs" },
-            { label: "Developer", href: "/docs/api/introduction" },
+            { label: "Developer", href: "/docs/getting-started/api-introduction" },
             { label: "Newsroom", href: "/newsroom" },
           ],
         },
@@ -103,6 +104,7 @@ const brandsConfig: TenantConfig = {
     secondaryColor: "220 8% 50%",
   },
   routes: { guestLanding: "/brands", authLanding: "/overview" },
+  docsEntrySlug: "skill-publishing/structure",
   navigation: {
     header: {
       variant: "dark",
@@ -127,9 +129,9 @@ const brandsConfig: TenantConfig = {
         {
           title: "Developers",
           links: [
-            { label: "API Reference", href: "/docs/api/introduction" },
-            { label: "SKILL.md Standard", href: "/docs" },
-            { label: "CLI", href: "/docs" },
+            { label: "API Reference", href: "/docs/getting-started/api-introduction" },
+            { label: "SKILL.md Standard", href: "/docs/skill-publishing/structure" },
+            { label: "CLI", href: "/docs/cli-tools/installation" },
           ],
         },
       ],
@@ -167,6 +169,7 @@ const shopyConfig: TenantConfig = {
     secondaryColor: "0 0% 45%",
   },
   routes: { guestLanding: "/shopy", authLanding: "/overview" },
+  docsEntrySlug: "asx-scoring/what-is-shopy",
   navigation: {
     header: {
       variant: "light",
@@ -200,8 +203,8 @@ const shopyConfig: TenantConfig = {
           title: "Developers",
           links: [
             { label: "Documentation", href: "/docs" },
-            { label: "CLI Reference", href: "/docs/shopy/cli/installation" },
-            { label: "Skill Format", href: "/docs/shopy/skill-format/structure" },
+            { label: "CLI Reference", href: "/docs/cli-tools/installation" },
+            { label: "Skill Format", href: "/docs/skill-publishing/structure" },
           ],
         },
       ],

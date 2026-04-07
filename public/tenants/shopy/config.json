@@ -32,6 +32,8 @@
     "authLanding": "/overview"
   },
 
+  "docsEntrySlug": "asx-scoring/what-is-shopy",
+
   "navigation": {
     "header": {
       "variant": "light",
@@ -65,8 +67,8 @@
           "title": "Developers",
           "links": [
             { "label": "Documentation", "href": "/docs" },
-            { "label": "CLI Reference", "href": "/docs/shopy/cli/installation" },
-            { "label": "Skill Format", "href": "/docs/shopy/skill-format/structure" }
+            { "label": "CLI Reference", "href": "/docs/cli-tools/installation" },
+            { "label": "Skill Format", "href": "/docs/skill-publishing/structure" }
           ]
         }
       ],

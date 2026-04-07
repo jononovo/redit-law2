@@ -65,7 +65,7 @@ You download the key and deliver it to your bot yourself. Use this if:
 
 After your bot saves the encrypted card file, it should confirm delivery by calling `POST /api/v1/bot/rail5/confirm-delivery`. This advances the card status from `pending_delivery` to `confirmed` and returns a test checkout URL where the bot can verify the card works end-to-end. The bot receives these instructions automatically in the message payload's `instructions` field.
 
-See the [Webhook Events](/docs/api/webhooks/events) page for the full `rail5.card.delivered` event payload and expected bot behavior.
+See the [Webhook Events](/docs/bots/webhook-events) page for the full `rail5.card.delivered` event payload and expected bot behavior.
 
 ### Test Verification
 

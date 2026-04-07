@@ -157,7 +157,7 @@ CreditClaw sends two authentication layers on every webhook to tunnel-provisione
 | `Authorization: Bearer <token>` | Gateway authentication — proves the request is from CreditClaw | OpenClaw Gateway (using `CREDITCLAW_HOOKS_TOKEN`) |
 | `X-CreditClaw-Signature: sha256=<hmac>` | Payload integrity — proves the body hasn't been tampered with | Your application code (using `webhook_secret`) |
 
-The `Authorization` header lets the Gateway accept or reject requests before they reach your agent. The HMAC signature lets your agent verify payload integrity independently. See [Webhook Setup & Signing](/docs/api/webhooks/setup) for signature verification examples.
+The `Authorization` header lets the Gateway accept or reject requests before they reach your agent. The HMAC signature lets your agent verify payload integrity independently. See [Webhook Setup & Signing](/docs/bots/webhook-setup) for signature verification examples.
 
 ---
 
@@ -176,15 +176,15 @@ cloudflared tunnel run --token eyJ...
 
 ## Webhook Status
 
-Tunnel-provisioned bots start with a webhook status of `pending` (not `active`). The status transitions to `active` when the bot's webhook endpoint begins responding successfully — this happens through the normal [webhook health tracking](/docs/api/webhooks/health) system.
+Tunnel-provisioned bots start with a webhook status of `pending` (not `active`). The status transitions to `active` when the bot's webhook endpoint begins responding successfully — this happens through the normal [webhook health tracking](/docs/bots/webhook-health-technical) system.
 
-If deliveries fail after the tunnel was working, the status follows the same degradation path as any other webhook (`active` → `degraded` → `unreachable`). See [Webhook Health & Reliability](/docs/api/webhooks/health) for details.
+If deliveries fail after the tunnel was working, the status follows the same degradation path as any other webhook (`active` → `degraded` → `unreachable`). See [Webhook Health & Reliability](/docs/bots/webhook-health-technical) for details.
 
 ---
 
 ## Next Steps
 
-- [Webhook Setup & Signing](/docs/api/webhooks/setup) — signature verification and delivery format
-- [Webhook Event Types](/docs/api/webhooks/events) — all events your bot can receive
-- [Health & Reliability](/docs/api/webhooks/health) — how CreditClaw handles delivery failures
-- [Bot Registration](/docs/api/endpoints/bots) — full registration endpoint reference
+- [Webhook Setup & Signing](/docs/bots/webhook-setup) — signature verification and delivery format
+- [Webhook Event Types](/docs/bots/webhook-events) — all events your bot can receive
+- [Health & Reliability](/docs/bots/webhook-health-technical) — how CreditClaw handles delivery failures
+- [Bot Registration](/docs/bots/api-reference) — full registration endpoint reference

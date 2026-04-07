@@ -18,7 +18,7 @@ All API endpoints require an API key passed via the `Authorization` header:
 Authorization: Bearer cck_live_...
 ```
 
-API keys are generated during bot registration. See the [Authentication](/docs/api/authentication) guide for full details.
+API keys are generated during bot registration. See the [Authentication](/docs/getting-started/authentication) guide for full details.
 
 ## What bots can do
 
@@ -67,4 +67,4 @@ Common error codes:
 
 ## Next steps
 
-Ready to start building? Set up your bot's credentials in the [Authentication](/docs/api/authentication) guide.
+Ready to start building? Set up your bot's credentials in the [Authentication](/docs/getting-started/authentication) guide.
