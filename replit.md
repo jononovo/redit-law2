@@ -322,16 +322,12 @@ All transaction tables (`transactions`, `privy_transactions`, `crossmint_transac
 
 Rail 5 (`sub-agent-cards/page.tsx`) is ~43 lines — a pure config object passed to `CreditCardListPage`. Adding transaction/approval tabs = add endpoint URLs to the config object.
 
-**Unified Tab Structure:** All rail pages use a consistent tab structure via `RailPageTabs`:
+**Transactions, Orders & Approvals Page** (`/transactions`) — cross-rail activity dashboard with three tabs:
+- **Transactions** — all wallet activity (topups, debits, refunds) from `GET /api/v1/wallet/transactions`. Table with type, description, amount, balance, date.
+- **Orders** — central orders list via `OrdersPanel`, with guardrails config shortcut.
+- **Approvals** — approval history via `ApprovalHistoryPanel`.
 
-| Tab | Shows | Rail 1 | Rail 2 | Rail 5 |
-|---|---|---|---|---|
-| Wallets/Cards | Entity list with action bars | Yes | Yes | Yes |
-| Transactions | Financial ledger (deposits, debits, transfers) | Yes | Yes | When endpoint added |
-| Orders | Procurement records (vendor, product, shipping) | No | Yes | When endpoint added |
-| Approvals | Pending approval queue with approve/reject | Yes | Yes | When endpoint added |
-
-Rail 1 (`stripe-wallet/page.tsx`, ~313 lines) and Rail 2 (`card-wallet/page.tsx`, ~515 lines) use shared hooks and all shared tab content components. Rail 2 separates purchases into Orders tab and transfers/deposits into Transactions tab. Remaining page-specific code is genuinely rail-specific: Stripe Onramp Sheet (Rail 1), CrossMint checkout + fund dialog (Rail 2).
+This page aggregates activity across all rails into one view. Individual rail pages (`/stripe-wallet`, `/card-wallet`, `/sub-agent-cards`) also use `RailPageTabs` to show rail-specific transactions, orders, and approvals alongside their wallet/card management.
 
 ---
 
