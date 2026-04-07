@@ -23,7 +23,7 @@ export const GET = withBotApi("/api/v1/bot/status", async (_request, { bot }) =>
     rail5Card,
     pendingMessageCount,
   ] = await Promise.all([
-    storage.getWalletByBotId(bot.botId),
+    storage.rail5GetWalletByBotId(bot.botId),
     storage.privyGetWalletByBotId(bot.botId),
     storage.crossmintGetWalletByBotId(bot.botId),
     storage.getRail5CardByBotId(bot.botId),

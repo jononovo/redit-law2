@@ -31,8 +31,8 @@ export async function POST(
     }
 
     const updated = frozen
-      ? await storage.freezeWallet(walletId, user.uid)
-      : await storage.unfreezeWallet(walletId, user.uid);
+      ? await storage.rail5FreezeWallet(walletId, user.uid)
+      : await storage.rail5UnfreezeWallet(walletId, user.uid);
 
     if (!updated) {
       return NextResponse.json({ error: "Wallet not found or not owned by you" }, { status: 404 });

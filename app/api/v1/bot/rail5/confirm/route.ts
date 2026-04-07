@@ -73,7 +73,7 @@ export const POST = withBotApi("/api/v1/bot/rail5/confirm", async (request, { bo
     });
   }
 
-  const wallet = await storage.getWalletByBotId(bot.botId);
+  const wallet = await storage.rail5GetWalletByBotId(bot.botId);
   if (!wallet) {
     return NextResponse.json(
       { error: "wallet_not_found", message: "No wallet found for this bot." },
@@ -81,7 +81,7 @@ export const POST = withBotApi("/api/v1/bot/rail5/confirm", async (request, { bo
     );
   }
 
-  const updated = await storage.debitWallet(wallet.id, checkout.amountCents);
+  const updated = await storage.rail5DebitWallet(wallet.id, checkout.amountCents);
   if (!updated) {
     await storage.updateRail5Checkout(checkout_id, {
       status: "failed",
@@ -98,7 +98,7 @@ export const POST = withBotApi("/api/v1/bot/rail5/confirm", async (request, { bo
     confirmedAt: new Date(),
   });
 
-  await storage.createTransaction({
+  await storage.rail5CreateTransaction({
     walletId: wallet.id,
     type: "purchase",
     amountCents: checkout.amountCents,

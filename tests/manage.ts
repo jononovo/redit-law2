@@ -73,8 +73,8 @@ const commands: Record<string, () => Promise<void>> = {
   async transactions() {
     const p = getPool();
     const res = await p.query(
-      `SELECT t.*, w.bot_id FROM transactions t
-       JOIN wallets w ON t.wallet_id = w.id
+      `SELECT t.*, w.bot_id FROM rail5_transactions t
+       JOIN rail5_wallets w ON t.wallet_id = w.id
        WHERE w.bot_id LIKE 'test_bot_%'
        ORDER BY t.created_at DESC LIMIT 20`
     );

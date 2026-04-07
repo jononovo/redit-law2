@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
 
     const [bots, wallets, privyWallets, crossmintWallets, rail5Cards] = await Promise.all([
       storage.getBotsByOwnerUid(user.uid),
-      storage.getWalletsWithBotsByOwnerUid(user.uid),
+      storage.rail5GetWalletsWithBotsByOwnerUid(user.uid),
       storage.privyGetWalletsByOwnerUid(user.uid),
       storage.crossmintGetWalletsByOwnerUid(user.uid),
       storage.getRail5CardsByOwnerUid(user.uid),
