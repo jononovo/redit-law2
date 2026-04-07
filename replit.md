@@ -235,9 +235,9 @@ CreditClaw supports USDC transfers between wallets across all rails and to exter
 - **Frontend:** Transfer button on both Stripe Wallet and Card Wallet pages, dialog with destination picker (own wallets across both rails or external address), amount input in USD
 - **Lib Functions:** `sendUsdcTransfer` in `features/payment-rails/rail1/wallet/transfer.ts` (Privy) and `features/payment-rails/rail2/wallet/transfer.ts` (CrossMint)
 
-### Sub-Agent Cards (Rail 5) — Live
+### Self-Hosted Cards (Rail 5) — Live
 
-Encrypted card files with plugin-based checkout. Uses the owner's personal credit card — no wallet, no USDC, no blockchain. Owner encrypts card client-side (AES-256-GCM), CreditClaw stores only the decryption key. At checkout, the bot calls the `creditclaw_fill_card` plugin (or falls back to an ephemeral sub-agent) which gets the key, decrypts, fills card number + CVV, and wipes all sensitive data. **Plugin:** `public/Plugins/OpenClaw/` (`src/index.ts`, `src/decrypt.ts`, `src/fill-card.ts`, `src/api.ts`). **Modularized under `features/payment-rails/rail5/`:**
+Encrypted card files with plugin-based checkout. Uses the owner's personal credit card — no wallet, no USDC, no blockchain. Owner encrypts card client-side (AES-256-GCM), CreditClaw stores only the decryption key. At checkout, the agent (or a plugin) gets the key, decrypts, fills card number + CVV, and wipes all sensitive data. Actively building plugins for **Claude Coworker** and **OpenClaw** to simplify the payment process — no sub-agent required when using a plugin. **Plugin:** `Plugins/OpenClaw/` (`src/index.ts`, `src/decrypt.ts`, `src/fill-card.ts`, `src/api.ts`). **Modularized under `features/payment-rails/rail5/`:**
   - `index.ts` — core helpers (`generateRail5CardId`, `generateRail5CheckoutId`, `validateKeyMaterial`, `getDailySpendCents`, `getMonthlySpendCents`, `buildSpawnPayload`, `buildCheckoutSteps`) + test checkout constants (`RAIL5_TEST_CHECKOUT_PAGE_ID`, `RAIL5_TEST_CHECKOUT_URL`).
   - `decrypt-script.ts` — static `DECRYPT_SCRIPT` constant (~10-line AES-256-GCM Node.js script) with marker-based regex (`ENCRYPTED_CARD_START/END`) for extracting data from combined files. Falls back to code-fence matching for old-format files.
   - **Card status progression:** `pending_setup` → `pending_delivery` (key submitted) → `confirmed` (bot confirmed file delivery via `POST /bot/rail5/confirm-delivery`) → `active` (first successful checkout completed). `frozen` can be set by owner on `confirmed` or `active` cards; unfreezing restores to `confirmed` or `active` based on checkout history.
@@ -271,14 +271,14 @@ See `internal_docs/05-agent-interaction/guardrails.md` for enforcement flow, spe
 - **Callbacks** (`features/agent-interaction/approvals/callbacks.ts`): Thin loader that imports the four rail-specific fulfillment modules below.
 - **Rail 1 Fulfillment** (`features/agent-interaction/approvals/rail1-fulfillment.ts`): `railRef` = privy_transaction ID. On approve: updates tx status, creates order. On deny: marks tx failed.
 - **Rail 2 Fulfillment** (`features/agent-interaction/approvals/rail2-fulfillment.ts`): `railRef` = crossmint_transaction ID. On approve: looks up tx, creates purchase order via CrossMint, records order, fires webhook. On deny: marks tx failed, fires webhook.
-- **Rail 5 Fulfillment** (`features/agent-interaction/approvals/rail5-fulfillment.ts`): Approval/denial handlers for sub-agent checkouts (status updates, webhook firing) + self-registers.
+- **Rail 5 Fulfillment** (`features/agent-interaction/approvals/rail5-fulfillment.ts`): Approval/denial handlers for self-hosted card checkouts (status updates, webhook firing) + self-registers.
 - **Lifecycle** (`features/agent-interaction/approvals/lifecycle.ts`): TTL constants per rail (Rail 1 polling: 5min, Rail 1 email: 10min, Rails 2/5: 15min).
 - **Landing Page** (`app/api/v1/approvals/confirm/[approvalId]/route.ts`): GET renders branded approval page with approve/deny buttons; POST processes the decision via `resolveApproval()`. Single entry point for email-based approvals across all rails.
 
 **Centralized Dashboard API** (used by ALL rail dashboard pages):
 - `GET /api/v1/approvals?rail=<rail>` — returns pending unified approvals for the authenticated owner, filtered by rail. Extracts rail-specific display fields from `metadata` JSONB (Rail 1: `resource_url`; Rail 2: `product_name`, `shipping_address`).
 - `POST /api/v1/approvals/decide` — accepts `{ approval_id, decision }` (approval_id is the `ua_...` string), verifies ownership, calls `resolveApproval()` with stored HMAC token.
-- All rail dashboard pages (Stripe Wallet, Card Wallet, Sub-Agent Cards) use these centralized endpoints. No rail-specific approval endpoints remain.
+- All rail dashboard pages (Stripe Wallet, Card Wallet, Self-Hosted Cards) use these centralized endpoints. No rail-specific approval endpoints remain.
 
 **Metadata JSONB**: Rail-specific display data is stored in the `metadata` column of `unified_approvals` when checkout routes call `createApproval()`:
 - Rail 1: `{ recipient_address, resource_url }`
@@ -513,7 +513,7 @@ Server-side QR/copy-paste crypto top-up logic (Phase 3). Credits whatever USDC a
 - `/overview`: Dashboard overview
 - `/stripe-wallet`: Rail 1 dashboard
 - `/card-wallet`: Rail 2 dashboard
-- `/sub-agent-cards`: Sub-agent card management (Rail 5)
+- `/sub-agent-cards`: Self-hosted card management (Rail 5)
 - `/transactions`: Transaction history, orders, and unified approvals (three tabs)
 - `/settings`: Account settings
 - `/onboarding`: Guided setup wizard
