@@ -1,0 +1,58 @@
+
+Hey, I think this whole thing should be summarized and we should instead have a file like this in the agent shops folder in the internal docs.  project_knowledge/internal_docs/09-agent-shops  Does that make sense?  Don't change anything yet.   —  
+Oh shit, I wanna die
+
+
+
+——
+
+
+### Sales & Checkout (`server/storage/sales.ts`, `app/pay/`)
+Turns every CreditClaw wallet holder into a seller. Checkout pages are public URLs where anyone can pay (card/bank via Stripe onramp, USDC direct, or x402 wallet). The inverse of Orders — Orders track what you bought, Sales track what someone bought from you.
+- **Schema**: `checkout_pages` table (id, checkoutPageId, ownerUid, walletId, walletAddress, title, description, amountUsdc, amountLocked, allowedMethods, status, successUrl, successMessage, metadata, viewCount, paymentCount, totalReceivedUsdc, expiresAt, digitalProductUrl). Page types: `"product"`, `"event"`, `"digital_product"`. Digital product pages store a `digital_product_url` that is delivered to the bot after successful x402 payment (never exposed in the 402 requirements). Seller identity is always sourced from the seller profile (no per-page overrides). `sales` table (saleId, checkoutPageId, ownerUid, amountUsdc, paymentMethod, status, buyerType, buyerIdentifier, buyerIp, buyerUserAgent, buyerEmail, txHash, stripeOnrampSessionId, privyTransactionId, checkoutTitle, checkoutDescription, confirmedAt, invoiceId).
+- **Storage**: `server/storage/sales.ts` — CRUD for both tables: `createCheckoutPage`, `getCheckoutPageById`, `getCheckoutPagesByOwnerUid`, `updateCheckoutPage`, `archiveCheckoutPage`, `createSale`, `getSaleById`, `getSalesByOwnerUid`, `getSalesByCheckoutPageId`, `updateSaleStatus`, `incrementCheckoutPageStats`, `incrementCheckoutPageViewCount`.
+- **Owner API**: `POST/GET /api/v1/checkout-pages` (create/list), `GET/PATCH/DELETE /api/v1/checkout-pages/[id]` (detail/update/archive), `GET /api/v1/sales` (list with filters), `GET /api/v1/sales/[sale_id]` (detail).
+- **Bot API**: `POST /api/v1/bot/checkout-pages/create` (create), `GET /api/v1/bot/checkout-pages` (list), `GET/PATCH /api/v1/bot/checkout-pages/[id]` (detail/update), `GET /api/v1/bot/sales` (list with filters). All use `withBotApi` middleware. Bot create/update schemas support `shop_visible` and `shop_order` for storefront management.
+- **Public endpoints**: `GET /api/v1/checkout/[id]/public` (fetch config + seller info via 2-tier fallback: seller profile → bot name/email, increments view count), `POST /api/v1/checkout/[id]/pay/stripe-onramp` (create Stripe session, supports `invoice_ref` for server-authoritative invoice amount), `GET /api/v1/checkout/[id]/x402` (returns 402 Payment Required with x402 payment requirements — amount, recipient wallet, token, chain), `POST /api/v1/checkout/[id]/pay/x402` (settles an x402 payment — parses `X-PAYMENT` header, validates signature params, calls `transferWithAuthorization` on-chain via seller's Privy wallet, credits balance, records sale, fires webhook).
+- **x402 Receive Module** (`lib/x402/`):
+  - `receive.ts` — `parseXPaymentHeader()` (base64→JSON), `validateX402Payment()` (checks chain, token, recipient, expiry, amount), `settleX402Payment()` (encodes `transferWithAuthorization` calldata, submits via Privy RPC with gas sponsorship), `splitSignature()` (compact sig → v/r/s).
+  - `checkout.ts` — `creditWalletFromX402()` (wallet balance increment + transaction record), `recordX402Sale()` (sale creation with `x402Nonce` for idempotent retries, amount mismatch detection, invoice linking, `wallet.sale.completed` webhook).
+  - This makes CreditClaw both an x402 **payer** (via `/bot/sign`) and x402 **receiver** (via checkout pages). Enables bot-to-bot commerce where one CreditClaw bot creates a checkout page and another pays it programmatically.
+- **Checkout Page**: `/pay/[id]` — split-panel layout (dark left panel with seller info / white right panel with embedded Stripe widget). Supports `?ref=INV-XXXX` query param for invoice payments — fetches invoice data, shows line items and totals on left panel, locks amount server-side.
+- **Pages**: `/checkout/create` (create + manage checkout pages), `/sales` (sales ledger with clickable rows), `/sales/[sale_id]` (sale detail page), `/pay/[id]` (public checkout page), `/pay/[id]/success` (post-payment confirmation).
+- **Webhook**: `wallet.sale.completed` event fired to seller's bot after confirmed sale via `fireWebhook()`. Includes `invoice_id` and `invoice_ref` when payment was for an invoice.
+- **Invoice linking**: Webhook handler checks for `metadata.invoice_ref`, looks up invoice, verifies checkout page match and payable status, links sale to invoice and marks invoice as paid.
+- **Skill file**: `public/MY-STORE.md` — bot-readable instructions for creating checkout pages, viewing sales, and managing invoices.
+- **Sidebar**: "Sales" section with "Create Checkout", "Shop", "My Sales", and "Invoices" links.
+
+### Seller Profiles (`server/storage/seller-profiles.ts`)
+Per-owner seller identity used across all checkout pages, invoices, and the public storefront.
+- **Schema**: `seller_profiles` table (id, ownerUid unique, businessName, logoUrl, contactEmail, websiteUrl, description, slug unique, shopPublished, shopBannerUrl, createdAt, updatedAt).
+- **Storage**: `server/storage/seller-profiles.ts` — `getSellerProfileByOwnerUid`, `getSellerProfileBySlug`, `upsertSellerProfile`.
+- **Owner API**: `GET/PUT /api/v1/seller-profile` — get or upsert seller profile (including slug, shop_published, shop_banner_url, business_name, logo_url, contact_email, website_url, description). Slug uniqueness enforced at API level.
+- **Bot API**: `GET/PATCH /api/v1/bot/seller-profile` — bots can read and update their seller profile (business_name, slug, description, logo_url, shop_banner_url, shop_published). Enables bots to self-service shop setup without owner dashboard.
+- **Public checkout fallback chain**: seller profile → bot name/owner email (no per-page overrides).
+- **Page**: Seller identity fields are consolidated into the **Shop** page (`/shop`) under "Your Details". The old `/settings/seller` route redirects to `/shop`.
+
+### Shop (`app/s/[slug]`, `app/(dashboard)/shop`)
+Public storefront for sellers, built on top of existing checkout pages.
+- **Schema extensions**: `checkout_pages` gains `pageType` (product/event), `shopVisible`, `shopOrder`, `imageUrl`, `collectBuyerName`. `sales` gains `buyerName`.
+- **Storage**: `getShopPagesByOwnerUid` (active + shopVisible pages sorted by shopOrder), `getBuyerCountForCheckoutPage` (confirmed sales count), `getBuyerNamesForCheckoutPage` (buyer names from confirmed sales).
+- **Public API**: `GET /api/v1/shop/[slug]` — returns seller profile + visible checkout pages with buyer counts for events. 404 if shop not published.
+- **Public API**: `GET /api/v1/checkout/[id]/buyers` — returns buyer count + names for event pages only.
+- **Public page**: `/s/[slug]` — storefront with seller info, product grid (image, title, description, price, buyer count for events), links to `/pay/[id]`.
+- **Checkout page updates**: `/pay/[id]` shows buyer name input when `collectBuyerName` is true, shows "X people bought this" for event pages. Buyer name passed to Stripe metadata and stored on sale record.
+- **Admin page**: `/shop` — configure shop slug, publish toggle, banner URL, toggle which checkout pages appear in shop.
+- **Create checkout form**: `/checkout/create` now includes page type (product/event), image URL, and collect buyer name toggle.
+- **Bot API**: `GET /api/v1/bot/shop` — returns shop config + all checkout pages. `POST /api/v1/bot/checkout-pages/create` accepts `page_type`, `image_url`, `collect_buyer_name`, `shop_visible`, `shop_order`. `PATCH /api/v1/bot/checkout-pages/[id]` supports all update fields. `GET/PATCH /api/v1/bot/seller-profile` enables full self-service shop setup.
+- **Sidebar**: "Shop" link added to Sales section.
+
+### Invoicing (`server/storage/invoices.ts`)
+Full invoicing system — create, send, track, and collect payment on invoices tied to checkout pages.
+- **Schema**: `invoices` table (invoiceId, ownerUid, checkoutPageId, referenceNumber unique, recipientName, recipientEmail, lineItems JSONB, subtotalUsdc, taxUsdc, totalUsdc, dueDate, notes, status [draft/sent/viewed/paid/cancelled], pdfUrl, paymentUrl, paidAt, paidSaleId, sentAt, viewedAt, cancelledAt, createdAt, updatedAt).
+- **Storage**: `server/storage/invoices.ts` — full CRUD: `createInvoice`, `getInvoiceById`, `getInvoiceByReferenceNumber`, `getInvoicesByOwnerUid` (with filters), `getInvoicesByCheckoutPageId`, `updateInvoice`, `markInvoiceSent`, `markInvoiceViewed`, `markInvoicePaid`, `cancelInvoice`, `getNextReferenceNumber`.
+- **Owner API**: `POST/GET /api/v1/invoices` (create/list), `GET/PATCH /api/v1/invoices/[id]` (detail/update draft), `POST /api/v1/invoices/[id]/send` (mark sent + email + PDF), `POST /api/v1/invoices/[id]/cancel`.
+- **Public API**: `GET /api/v1/invoices/by-ref/[ref]` — returns display-safe fields only (no internal IDs or owner data).
+- **Bot API**: `POST /api/v1/bot/invoices/create` (10/hr), `GET /api/v1/bot/invoices` (12/hr), `POST /api/v1/bot/invoices/[id]/send` (5/hr).
+- **Email & PDF**: `lib/invoice-email.ts` (HTML email with SendGrid + PDF attachment), `lib/invoice-pdf.ts` (server-side PDF generation via `pdf-lib`).
+- **Pages**: `/invoices` (list with filters), `/invoices/create` (create form with line items repeater), `/invoices/[invoice_id]` (detail with status timeline, actions).

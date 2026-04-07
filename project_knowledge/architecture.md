@@ -39,7 +39,7 @@ Evaluates a domain's AI-readiness. Outputs a 0–100 score across three pillars:
 | Maturity Promotion | `resolveMaturity()` | Auto-promotes `draft` → `community`; manual tiers protected |
 | Domain Normalization | `normalizeDomain()` in `lib/agentic-score/fetch.ts` | Canonical domain normalizer — single source for all normalization |
 
-**Docs:** `internal_docs/01-agentic-shopping-score/`
+**Docs:** `internal_docs/01-brands-skills-system/asx-scanner.md`
 
 ---
 
@@ -64,7 +64,7 @@ Generates machine-readable and LLM-readable instructions for how an agent should
 2. **Merchant Ranking** — recursive SQL over `brand_index` + `brand_categories` → ranked by brand match → match depth → ASX score
 3. **Product Search** — embedding vector → pgvector cosine similarity against `product_listings` → top 3 per merchant
 
-**Docs:** `internal_docs/02-agent-shopping-skills/` — skill generation, merchant-index pipeline, research folder
+**Docs:** `internal_docs/01-brands-skills-system/merchant-index.md`, `internal_docs/01-brands-skills-system/scan-taxonomy-skills-pipeline.md`
 
 ---
 
@@ -84,7 +84,9 @@ Central catalog and storage layer. Owns the `brand_index` table, catalog UI, tax
 | Category Keywords | `category_keywords` table | Keyword → taxonomy ID mapping for full-text search |
 | Taxonomy | 28 sectors, 7 tiers, 8 capabilities, 5,638 product categories | Classification system for all brands |
 
-**Docs:** `internal_docs/03-brands-index/` — brand_index structure, taxonomy system, research folder
+**Docs:** `internal_docs/01-brands-skills-system/product-index.md`, `internal_docs/01-brands-skills-system/metadata-and-taxonomy.md`
+
+> **Note:** Modules 1–3 form a single unified pipeline documented together in `internal_docs/01-brands-skills-system/`. Start with `_overview.md` for the full narrative.
 
 ---
 
