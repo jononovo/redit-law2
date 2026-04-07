@@ -82,7 +82,7 @@ Both are served publicly: `/brands/{slug}/skill` and `/brands/{slug}/skill-json`
 ### Brand Index (storage & serving)
 The `brand_index` table is the single source of truth — one row per domain with ~85 columns. All surfaces read from it: catalog UI (`/skills`), detail pages (`/skills/[vendor]`), sector pages (`/c/[sector]`), bot API (`/api/v1/bot/skills`), and the Recommend API.
 
-→ Deep dive: `product-index.md`
+→ Deep dive: `brand-catalog.md`
 
 ### Merchant Discovery (query)
 The Recommend API lets agents ask "where can I buy running shoes?" and get ranked merchants with skill URLs. Three stages: category FTS → recursive merchant ranking → optional product vector search.
@@ -149,7 +149,7 @@ Brands start as `draft`, auto-promote to `community` when they have a score + SK
 | `scan-taxonomy-skills-pipeline.md` | End-to-end pipeline from domain to skill output |
 | `maturity-promotion.md` | Auto-promotion from draft to community |
 | `merchant-index.md` | Recommend API — category resolution, merchant ranking, skill distribution |
-| `product-index.md` | brand_index table, catalog UI, LITE_COLUMNS, filtering |
+| `brand-catalog.md` | brand_index table, catalog UI, LITE_COLUMNS, filtering |
 | `metadata-and-taxonomy.md` | 28 sectors, 7 tiers, 8 capabilities, Google Product Taxonomy |
 
 ### _completed/

@@ -45,7 +45,8 @@ Ten modules — each maps to a section in `architecture.md` and a folder under `
 
 | Folder | Module | Covers |
 |--------|--------|--------|
-| `internal_docs/01-brands-skills-system/` | 1–3. Brands & Skills | Unified: scan engine, scoring, skill generation, brand catalog, taxonomy, recommend API, brand claims. Start with `_overview.md`. |
+| `internal_docs/01-brands-skills-system/` | 1–3. Brand Engine | Scan engine, scoring, skill generation, brand catalog, taxonomy, recommend API, brand claims. Start with `_overview.md`. |
+| `internal_docs/02-product-index/` | 2. Product Index | Product listings, embeddings, vector search, ingestion pipelines, Google Product Taxonomy. |
 | `internal_docs/04-payment-tools/` | 4. Payment Tools | Wallets, outbound payment rails (funding + spending) |
 | `internal_docs/05-agent-interaction/` | 5. Agent Interaction | Webhooks, polling, approvals, guardrails, orders |
 | `internal_docs/06-agent-plugins/` | 6. Agent Plugins | Per-platform plugins (OpenClaw, etc.), browser extension |

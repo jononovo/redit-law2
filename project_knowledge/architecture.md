@@ -84,7 +84,7 @@ Central catalog and storage layer. Owns the `brand_index` table, catalog UI, tax
 | Category Keywords | `category_keywords` table | Keyword → taxonomy ID mapping for full-text search |
 | Taxonomy | 28 sectors, 7 tiers, 8 capabilities, 5,638 product categories | Classification system for all brands |
 
-**Docs:** `internal_docs/01-brands-skills-system/product-index.md`, `internal_docs/01-brands-skills-system/metadata-and-taxonomy.md`
+**Docs:** `internal_docs/01-brands-skills-system/brand-catalog.md`, `internal_docs/01-brands-skills-system/metadata-and-taxonomy.md`
 
 > **Note:** Modules 1–3 form a single unified pipeline documented together in `internal_docs/01-brands-skills-system/`. Start with `_overview.md` for the full narrative.
 
