@@ -11,6 +11,7 @@ import {
   buildVendorSkillDraft,
   mergeArrayField,
   domainToLabel,
+  resolveMaturity,
 } from "@/lib/agentic-score/scan-utils";
 import { generateVendorSkill } from "@/lib/procurement-skills/generator";
 import { resolveProductCategories } from "@/lib/agentic-score/resolve-categories";
@@ -155,7 +156,12 @@ export async function processNextInQueue(): Promise<ProcessResult | null> {
       brandType: resolvedBrandType,
       submittedBy: existing?.submittedBy ?? "scan-queue",
       submitterType: existing?.submitterType ?? "auto_scan",
-      maturity: existing?.maturity ?? "draft",
+      maturity: resolveMaturity(
+        existing?.maturity ?? null,
+        scoreResult.overallScore != null,
+        !!(skillMd ?? existing?.skillMd),
+        !!(draft ?? (existing?.brandData && JSON.stringify(existing.brandData) !== '{}')),
+      ),
       brandData: draft ?? existing?.brandData ?? {},
       overallScore: scoreResult.overallScore,
       scoreBreakdown: scoreResult.breakdown,

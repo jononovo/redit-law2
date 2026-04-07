@@ -1,4 +1,4 @@
-import { pgTable, serial, text, timestamp, integer, boolean, index, bigint, jsonb, numeric, uniqueIndex } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, timestamp, integer, boolean, index, bigint, jsonb, numeric, uniqueIndex, customType } from "drizzle-orm/pg-core";
 import { z } from "zod";
 import { GUARDRAIL_DEFAULTS } from "@/lib/guardrails/defaults";
 
@@ -1562,3 +1562,69 @@ export const brandCategories = pgTable("brand_categories", {
   index("brand_categories_category_idx").on(table.categoryId),
   uniqueIndex("brand_categories_brand_category_uniq").on(table.brandId, table.categoryId),
 ]);
+
+const tsvector = customType<{ data: string }>({
+  dataType() {
+    return "tsvector";
+  },
+});
+
+export const categoryKeywords = pgTable("category_keywords", {
+  id: serial("id").primaryKey(),
+  categoryId: integer("category_id").notNull(),
+  categoryName: text("category_name").notNull(),
+  categoryPath: text("category_path").notNull(),
+  keywords: text("keywords").array().notNull(),
+  keywordsTsv: tsvector("keywords_tsv"),
+  generatedAt: timestamp("generated_at").notNull().defaultNow(),
+}, (table) => [
+  uniqueIndex("category_keywords_category_id_uniq").on(table.categoryId),
+  index("category_keywords_tsv_idx").using("gin", table.keywordsTsv),
+]);
+
+export type CategoryKeyword = typeof categoryKeywords.$inferSelect;
+export type InsertCategoryKeyword = typeof categoryKeywords.$inferInsert;
+
+const vector384 = customType<{ data: number[] }>({
+  dataType() {
+    return "vector(384)";
+  },
+  toDriver(value: number[]) {
+    return `[${value.join(",")}]`;
+  },
+  fromDriver(value: unknown) {
+    if (typeof value === "string") {
+      return value.replace(/[\[\]]/g, "").split(",").map(Number);
+    }
+    return value as number[];
+  },
+});
+
+export const productListings = pgTable("product_listings", {
+  id: serial("id").primaryKey(),
+  brandId: integer("brand_id").notNull(),
+  name: text("name").notNull(),
+  description: text("description"),
+  priceCents: integer("price_cents").notNull(),
+  currency: text("currency").notNull().default("USD"),
+  inStock: boolean("in_stock").notNull().default(true),
+  imageUrl: text("image_url"),
+  productUrl: text("product_url").notNull(),
+  categoryId: integer("category_id"),
+  brandName: text("brand_name"),
+  upc: text("upc"),
+  gtin: text("gtin"),
+  mpn: text("mpn"),
+  feedSource: text("feed_source"),
+  feedItemId: text("feed_item_id"),
+  embedding: vector384("embedding"),
+  lastSynced: timestamp("last_synced").notNull().defaultNow(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (table) => [
+  uniqueIndex("product_listings_brand_feed_uniq").on(table.brandId, table.feedItemId),
+  index("product_listings_brand_id_idx").on(table.brandId),
+  index("product_listings_category_id_idx").on(table.categoryId),
+]);
+
+export type ProductListing = typeof productListings.$inferSelect;
+export type InsertProductListing = typeof productListings.$inferInsert;

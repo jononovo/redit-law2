@@ -10,6 +10,7 @@ import {
   buildVendorSkillDraft,
   mergeArrayField,
   domainToLabel,
+  resolveMaturity,
 } from "@/lib/agentic-score/scan-utils";
 import { generateVendorSkill } from "@/lib/procurement-skills/generator";
 import type { VendorSkill } from "@/lib/procurement-skills/types";
@@ -209,7 +210,12 @@ export async function POST(request: NextRequest) {
       brandType: resolvedBrandType,
       submittedBy: existing?.submittedBy ?? "asx-scanner",
       submitterType: existing?.submitterType ?? "auto_scan",
-      maturity: existing?.maturity ?? "draft",
+      maturity: resolveMaturity(
+        existing?.maturity ?? null,
+        scoreResult.overallScore != null,
+        !!(skillMd ?? existing?.skillMd),
+        !!(draft ?? (existing?.brandData && JSON.stringify(existing.brandData) !== '{}')),
+      ),
       brandData: draft ?? existing?.brandData ?? {},
       overallScore: scoreResult.overallScore,
       scoreBreakdown: scoreResult.breakdown,

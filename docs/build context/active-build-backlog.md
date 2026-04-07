@@ -2,13 +2,13 @@
 
 Everything that's outstanding, in build sequence order. Each item has a priority, status, dependencies, and reference to its source plan (if one exists).
 
-Last updated: 2026-04-04
+Last updated: 2026-04-05
 
 ---
 
 ## Scale Context
 
-The ASX Score Scanner and brand catalog are the primary growth engines. **Expect tens of thousands of scans and listed domains within the next few weeks.** Every scan upserts a row into `brand_index`, so the catalog will grow rapidly from the current 14 seeded brands to thousands, then tens of thousands. All build decisions should account for this scale — pagination, query performance, sitemap size, pre-rendering, and JSONB payload weight all matter at 10K+ rows.
+The ASX Score Scanner and brand catalog are the primary growth engines. **Expect tens of thousands of scans and listed domains within the next few weeks.** Every scan upserts a row into `brand_index`, so the catalog will grow rapidly from the current 26 brands to thousands, then tens of thousands. All build decisions should account for this scale — pagination, query performance, sitemap size, pre-rendering, and JSONB payload weight all matter at 10K+ rows.
 
 ---
 
@@ -39,16 +39,18 @@ For reference — these are done and archived:
 - GIN indexes + partial boolean indexes on `brand_index` (migration 0007 — `sub_sectors`, `tags`, `carries_brands`, `capabilities`, `checkout_methods`, `payment_methods_accepted`, `supported_countries`, `search_vector` GIN; `has_mcp`, `has_api`, `has_deals`, `ordering=guest`, `tax_exempt`, `po_number`, `claimed_by` partial; plus `search_vector` trigger)
 - Step 2: Multitenant System (2A types+configs, 2B middleware, 2C layout metadata/theming, 2D TenantProvider, 2E nav/footer de-hardcode, 2F landing extraction, 2G API helper, 2H signupTenant column, 2I shopy config skeleton)
 - Step 3: shopy.sh Pages (landing, how-it-works, ASX scanner, skills catalog, AXS explainer, docs, tenant config, middleware routing)
+- Step 4 Phase 1: Registry API — 4 endpoints (`/api/v1/registry`, `/search`, `/{vendor}/skill-json`, `/{vendor}/skill-md`), server-side ILIKE search, maturities typo fix
+- brands.sh landing page: server-side search with 400ms debounce, paginated loading (50/page, "Load More"), "Showing X of Y skills" footer
 - Step 6: Google Product Taxonomy Implementation (see details below)
 
 ---
 
 ## Build Sequence
 
-### Step 2: Multitenant System
+### Step 2: Multitenant System ✅
 
 **Priority:** High — prerequisite for all shopy.sh work
-**Status:** Plan complete (727 lines), not started
+**Status:** Complete
 **Source:** `Shopy/1-multitenant-system-nextjs-implementation-plan.md`
 
 Middleware-based tenant resolution from domain. Static tenant configs in `public/tenants/`. Per-tenant `generateMetadata()`, HSL theme injection, route-level separation, Firebase Auth scoping.
@@ -78,20 +80,46 @@ One codebase serves both creditclaw.com and shopy.sh.
 ### Step 4: Registry API + shopy CLI + Master Skill
 
 **Priority:** Medium-High (after shopy.sh pages) — **the brands.sh landing page already advertises `npx shopy add <brand>` with a rotating showcase of well-known brands (nike, gucci, apple, etc.). This command does not work yet — the npm package does not exist. Building this is needed to fulfill the promise shown to every visitor.**
-**Status:** Plan complete (3 phases), not started
+**Status:** Phase 1 complete, Phases 2-3 not started
 **Source:** `Shopy/shopy-cli-technical-plan.md`
 **Depends on:** Step 3
 
-- Phase 1: Public registry API (`/api/v1/registry/`) — search, download, version manifests
-  - Includes `GET /api/v1/registry/{vendor}/skill.json` — serializes `brand_index` data into the `skill.json` format
-- Phase 2: npm package — `npx shopy add amazon`, config management, local manifests
+- Phase 1: Public registry API (`/api/v1/registry/`) ✅ — **Complete (April 5, 2026)**
+  - [x] `GET /api/v1/registry` — list all skills (paginated, filterable by sector/tier/maturity)
+  - [x] `GET /api/v1/registry/search` — server-side ILIKE search across name/domain/slug/sector
+  - [x] `GET /api/v1/registry/{vendor}/skill-json` — serializes `brand_index` data into skill.json format
+  - [x] `GET /api/v1/registry/{vendor}/skill-md` — raw SKILL.md content as text/markdown
+  - Also fixed: `filters.maturity` → `filters.maturities` typo that allowed draft brands to leak through default filter
+- Phase 2: npm package — `npx shopy add amazon`, config management, local manifests — **not started**
   - This is the minimum needed to make the landing page CTA truthful
   - Package name: `shopy` (needs to be claimed on npm)
   - Core flow: `npx shopy add nike` → hits registry API → downloads skill.json + SKILL.md → writes to `./skills/nike/`
-- Phase 3: `update`, `init`/`remove` commands, GitHub Actions CI
-- **Master Skill (PROCUREMENT.md):** A meta-document (stored as a special `brand_index` row with slug `_creditclaw_index` or served from a dedicated endpoint) that teaches agents how to use the search/registry API — available parameters, how to combine filters, how maturity levels work, how brand relationships work (searching for "Nike" returns Nike HQ + retailers carrying Nike), example queries for common scenarios, and how to read the SKILL.md once a brand is selected. Ships alongside the registry API since it only makes sense once agents have a programmatic way to query the index.
+- Phase 3: `update`, `init`/`remove` commands, GitHub Actions CI — **not started**
+- **Master Skill (PROCUREMENT.md):** A meta-document (stored as a special `brand_index` row with slug `_creditclaw_index` or served from a dedicated endpoint) that teaches agents how to use the search/registry API — available parameters, how to combine filters, how maturity levels work, how brand relationships work (searching for "Nike" returns Nike HQ + retailers carrying Nike), example queries for common scenarios, and how to read the SKILL.md once a brand is selected. Ships alongside the registry API since it only makes sense once agents have a programmatic way to query the index. — **not started**
 
 **Source for master skill concept:** `brand-index-implementation-plan-v3.md` (Phase 4)
+
+---
+
+### Step 4A: Scanner Pipeline Bug Fixes + Scan History
+
+**Priority:** High — 7 of 26 brands have empty brandData/skillMd due to pipeline bugs. Every new scan also loses structured data.
+**Status:** Plans complete, not started
+**Source:** `brands/brands-sh-skill-registry-plan.md` (Task 1-2), `docs/internal/scan-history-plan.md`
+
+**Bug fixes (from brands-sh-skill-registry-plan.md Task 1):**
+- [ ] Save `draft` VendorSkill to `brandData` in both scan paths (`app/api/v1/scan/route.ts`, `lib/scan-queue/process-next.ts`)
+- [ ] Add `checkoutMethods` from draft to upsert call (currently never saved)
+- [ ] Add null guards to `/skills/[vendor]` detail page so brands with empty brandData degrade gracefully (Task 2)
+
+**Scan history (from scan-history-plan.md):**
+- [ ] Add `scan_history` table to schema (append-only log of every scan)
+- [ ] Add `insertScanHistory()` storage method
+- [ ] Wire into both scan paths (after upsert)
+- [ ] Add `GET /api/v1/brands/{slug}/history` endpoint
+- [ ] Enables: score trending, scan count, historical SKILL.md reference
+
+**Affected brands (empty brandData + no skillMd):** allbirds, brooklinen, casper, chubbies, everlane, mejuri, outdoor-voices
 
 ---
 
@@ -153,13 +181,56 @@ Completed in two sessions (April 3, 2026):
 
 ---
 
-### Step 7: Tier 3 Product Index
+### Step 6B: Merchant Index (Stages 1-2) ✅
 
-**Priority:** Future — no detailed build plan yet
-**Status:** Vision only
-**Source:** `agent-readiness-and-product-index-service.md` (Tier 3 section)
+**Priority:** High — prerequisite for product search
+**Status:** Core pipeline built
+**Source:** `docs/internal/brands-sh-merchant-index-plan.md`
+**Depends on:** Step 6
 
-Full product catalog crawl, LLM-powered enrichment, Google Product Taxonomy mapping per product, distribution to Shopify Catalog MCP and Google UCP, vector search layer, CreditClaw Agent Gateway.
+Completed:
+- [x] `category_keywords` table with GIN-indexed tsvector, unique constraint on category_id
+- [x] Keyword generation batch script (`scripts/generate-category-keywords.ts`) — resumable, 15 per batch via Perplexity, atomic transactions, proper English stemming
+- [x] ~1,286 of 5,638 categories populated with LLM-generated keywords
+- [x] `POST /api/v1/recommend` — structured queries with category_ids or text terms, Zod validation, tier/brand filtering
+- [x] `GET /api/v1/recommend?q=...` — natural language intake via Perplexity Sonar → FTS → recursive CTE merchant ranking
+- [x] Recursive ancestor CTE with UNION dedup and depth guard
+- [x] Brand match boost (mentioned brand sorts to top)
+
+Outstanding:
+- [ ] Finish keyword population (run script more times — background task, not a code change)
+- [ ] Grow merchant count via scan queue (26 brands currently)
+- [ ] Phase 2: Skills distribution (front matter discussion needed, master SKILL.md, brands-sh/shop GitHub repo)
+
+---
+
+### Step 7: Product Search (Stage 3) ✅ (core pipeline)
+
+**Priority:** Complete — maintenance/scaling only
+**Status:** Stage 3 complete. All infrastructure built, 8 merchants ingested, all test gates pass.
+**Source:** `docs/internal/brands-sh-product-search-plan.md`
+**Depends on:** Step 6B
+
+Product-level search using pgvector in Postgres. `product_listings` table with all-MiniLM-L6-v2 embeddings (384-dim). Multiple ingestion methods (Shopify, Firecrawl, XML). Products nested in `/api/v1/recommend` response via LATERAL join (fair per-merchant distribution).
+
+Completed:
+- [x] Schema + pgvector setup (`product_listings` table, `VECTOR(384)`, IVFFlat index)
+- [x] Embedding infrastructure (`@xenova/transformers`, `lib/embeddings/embed.ts`)
+- [x] Shopify ingestion script (`scripts/ingest-shopify-products.ts`) with www subdomain auto-detect
+- [x] Wire products into recommend API (POST + GET, `attachProducts()` via LATERAL join, `_brand_id` stripped)
+- [x] 8 merchants ingested: Everlane (2,500), Chubbies (1,746), Allbirds (937), Mejuri (593), Outdoor Voices (367), Brooklinen (305), Casper (203), Glossier (123) — **6,774 products total**
+- [x] Vector search verified: cosine similarity, top 3 per merchant, fair distribution via LATERAL join
+- [x] Google Shopping XML feed parser (`scripts/ingest-xml-feed.ts`)
+- [x] Firecrawl batch crawler for non-Shopify merchants (`scripts/ingest-firecrawl-batch.ts`, `scripts/harvest-firecrawl-batches.ts`)
+- [x] Refresh scheduler (`scripts/refresh-products.ts`)
+- [x] Category keyword generation via Anthropic Claude (`scripts/generate-category-keywords.ts`)
+- [x] FTS name-match boost (exact match 3x, partial 1.5x) + depth boost + OR fallback
+- [x] Bidirectional CTE (ancestor + descendant walk for comprehensive category coverage)
+
+Scaling (run as needed):
+- [ ] Ingest more non-Shopify merchants via Firecrawl/XML parsers
+- [ ] Continue category keyword generation (1,286/5,638 populated, run `npx tsx scripts/generate-category-keywords.ts 5`)
+- [ ] AI enrichment layer (optional, only if recall < 80%)
 
 ---
 
@@ -177,16 +248,27 @@ Full product catalog crawl, LLM-powered enrichment, Google Product Taxonomy mapp
 | Double encryption for sub-agent keys | `260309-Double-security-Sub-agent-temp-encrypt.md` | Ephemeral sub-agent secret for decryption key access |
 | x402 checkout integration | `x402-checkout-plan_1772644619315.docx` | Payment protocol for agent-initiated purchases |
 
+### Merchant Index — Future Enhancements
+
+These are not blocking for the initial build. Add when warranted.
+
+| Item | Source | Notes |
+|---|---|---|
+| AI re-ranking of top 10 merchant results | `brands-sh-merchant-index-plan.md` | After SQL returns top 10, optionally pass them through a fast LLM to re-rank or surface a different top 3 based on richer context (intent, brand affinity, etc.). SQL always does the initial filtering and ranking — this is a quality layer on top, not a replacement. |
+| Limit keyword generation to populated categories | `brands-sh-merchant-index-plan.md` | Currently generating keywords for all ~5,600 categories. Once merchant coverage is deeper, consider only generating for categories that have at least one tagged merchant. Reduces noise in FTS results and speeds up the quarterly refresh. Low priority — the $3 cost and 30-minute runtime are fine for now. |
+
 ---
 
 ## Dependency Map
 
 ```
-Step 2 (Multitenant) ←── independent, can start now
+Step 2 (Multitenant) ←── ✅ COMPLETE
   ↓
-Step 3 (shopy.sh Pages) ←── depends on Step 2
+Step 3 (shopy.sh Pages) ←── ✅ COMPLETE
   ↓
-Step 4 (Registry API + CLI + Master Skill) ←── depends on Step 3
+Step 4 (Registry API + CLI + Master Skill) ←── Phase 1 ✅ COMPLETE, Phases 2-3 not started
+  ↓
+Step 4A (Scanner Pipeline Fixes + Scan History) ←── HIGH PRIORITY, not started
 
 Step 4B (Brand Versioning) ←── independent, should land before Step 5
   ↑ feeds into Step 4 (version manifests) and Step 5 (premium vs free comparison)
@@ -195,12 +277,14 @@ Step 5 (Premium Scan) ←── independent of Steps 2-4, can start now
 
 Step 6 (Google Product Taxonomy) ←── ✅ COMPLETE
   ↓
-Step 7 (Tier 3 Product Index) ←── depends on Step 6 (now unblocked)
+Step 6B (Merchant Index, Stages 1-2) ←── ✅ CORE PIPELINE BUILT (keyword pop + merchant count ongoing)
+  ↓
+Step 7 (Product Search, Stage 3) ←── ✅ CORE PIPELINE BUILT (6,774 products, 8 merchants)
 ```
 
-Steps 2, 4B, and 5 can all run in parallel.
-Step 6 is complete — taxonomy tables, category resolution, and sector system are all in place.
-Step 7 (Tier 3 Product Index) is now unblocked by Step 6 completion.
-Master Skill ships with Step 4 (registry API).
+Step 4 Phase 1 (Registry API) is complete — 4 endpoints live. Phases 2-3 (npm CLI package) are the next major build.
+Step 4A (Scanner pipeline fixes) is high priority — 7 brands have empty data, every new scan loses brandData/checkoutMethods.
+Step 6B core pipeline is built — recommend API works end-to-end. Outstanding: keyword coverage (1,286/5,638, background task) and merchant count (26 brands).
+Step 7 (Product Search) core pipeline is built — 6,774 products across 8 Shopify merchants, vector search in recommend API. Outstanding: more feed types, refresh scheduler.
 Brand Versioning (4B) should ideally land before Step 5 (premium scan comparison needs version history).
 Sitemap splitting is parked until 1,000+ URLs.

@@ -1,10 +1,11 @@
-# Scan → Taxonomy → Skills Pipeline — Internal Developer Guide
+---
+name: Scan → Taxonomy → Skills Pipeline
+description: End-to-end flow from domain submission through scoring, taxonomy, and skill output. Read this first for understanding the core system.
+---
 
-> Last updated: 2026-04-04
+# Scan → Taxonomy → Skills Pipeline
 
-## Overview
-
-This document explains how the core pipeline works end-to-end: a domain is submitted, scanned, classified, scored, assigned product categories from our taxonomy, and turned into structured skill output (SKILL.md + skill.json). Every step is described in sequence with the files involved, data flow, and key design decisions.
+The core pipeline: a domain is submitted, scanned, classified, scored, assigned product categories from the taxonomy, and turned into structured skill output (SKILL.md + skill.json). Every step is described in sequence with the files involved, data flow, and key design decisions.
 
 ---
 
@@ -30,6 +31,7 @@ POST /api/v1/scan (or scan-queue worker)
   computeScoreFromRubric() ──── 11 signals, 100 pts
   buildVendorSkillDraft()  ──── VendorSkill object
   generateVendorSkill()    ──── SKILL.md markdown
+  resolveMaturity()        ──── draft → community if data complete
   ↓
   upsertBrandIndex() ──── write to brand_index table
   ↓
@@ -261,16 +263,6 @@ Luxury is NOT a sector assignment. It's a tier-driven filter view:
 
 **Important:** The `id` IS the taxonomy identifier. There is no separate `gptId` column — the Google taxonomy number is the primary key value. This was a deliberate simplification to avoid ID mapping layers.
 
-Breakdown:
-- 5,595 Google Product Taxonomy entries (from `data/google-product-taxonomy.txt`)
-- 43 custom entries for non-Google sectors:
-  - Food Services (100001-100008): Restaurant Delivery, Meal Kits, Catering, Grocery Delivery, Ghost Kitchens, Coffee & Beverage, Bakery & Desserts
-  - Travel (100010-100017): Flights, Hotels & Lodging, Car Rental, Cruises, Tours & Activities, Travel Insurance, Vacation Rentals
-  - Education (100020-100026): Online Courses, Tutoring, Certifications, Educational Materials, Test Prep, Language Learning
-  - Events (100030-100036): Concert Tickets, Sports Tickets, Conferences, Festivals, Theater & Shows, Workshops & Classes
-  - Luxury (100040-100046): Luxury Fashion, Fine Jewelry, Luxury Watches, Luxury Home, Luxury Automotive, Luxury Beauty
-  - Specialty (100050-100055): General Specialty, Subscription Services, Custom & Personalized, Marketplace & Platform, Rental & Lease
-
 ### Brand Categories Junction
 
 **Table:** `brand_categories`
@@ -316,25 +308,11 @@ The skill.json route at `/brands/{slug}/skill-json` assembles the machine-readab
         "path": "Apparel & Accessories > Clothing > Activewear",
         "depth": 3,
         "primary": true
-      },
-      {
-        "id": 203,
-        "name": "Outerwear",
-        "path": "Apparel & Accessories > Clothing > Outerwear",
-        "depth": 3
-      },
-      {
-        "id": 187,
-        "name": "Shoes",
-        "path": "Apparel & Accessories > Shoes",
-        "depth": 2
       }
     ]
   }
 }
 ```
-
-`categories` — structured objects with numeric IDs for programmatic use and cross-referencing with the Google Product Taxonomy. Each object includes `id`, `name`, `path`, `depth`, and an optional `primary` flag.
 
 ### Other skill.json blocks
 
@@ -361,11 +339,11 @@ The skill.json route at `/brands/{slug}/skill-json` assembles the machine-readab
 | `lib/agentic-score/resolve-categories.ts` | Perplexity category resolution (Call 3) |
 | `lib/agentic-score/scoring-engine.ts` | Score computation from evidence |
 | `lib/agentic-score/rubric.ts` | ASX rubric definition (11 signals, 100 pts) |
-| `lib/agentic-score/scan-utils.ts` | VendorSkill draft builder, domain utilities |
+| `lib/agentic-score/scan-utils.ts` | VendorSkill draft builder, domain utilities, resolveMaturity() |
 | `lib/procurement-skills/generator.ts` | SKILL.md markdown generation |
 | `lib/procurement-skills/skill-json.ts` | skill.json builder |
 | `app/brands/[slug]/skill-json/route.ts` | skill.json HTTP route |
-| `lib/procurement-skills/taxonomy/sectors.ts` | 27 sectors, root IDs, helpers |
+| `lib/procurement-skills/taxonomy/sectors.ts` | 28 sectors (26 assignable + luxury + multi-sector), root IDs, helpers |
 | `shared/schema.ts` | product_categories, brand_categories, brand_index tables |
 | `server/storage/brand-index.ts` | brand_index CRUD operations |
 | `server/storage/brand-categories.ts` | brand_categories CRUD operations |
@@ -373,7 +351,7 @@ The skill.json route at `/brands/{slug}/skill-json` assembles the machine-readab
 
 ---
 
-## Fragile Areas & Design Decisions
+## Gotchas
 
 ### Three Perplexity calls per scan
 
