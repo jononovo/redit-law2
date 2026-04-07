@@ -427,13 +427,90 @@ Update nav links that currently point to `/docs` to use the entry slug:
 
 ---
 
+## Known Issues & Decisions
+
+### Issue 1: 141 internal cross-references in markdown
+
+There are 141 hardcoded `/docs/...` links across the markdown files. The heaviest concentration is in the API files (`api/endpoints/*.md`, `api/agent-integration/*.md`, `api/webhooks/*.md`). Every link using an old slug will break after the restructure.
+
+**Approach**: Build a slug mapping (old → new) and do a bulk find-and-replace across all `.md` files. The full mapping:
+
+| Old slug prefix | New slug |
+|-----------------|----------|
+| `/docs/api/introduction` | `/docs/getting-started/api-introduction` |
+| `/docs/api/authentication` | `/docs/getting-started/authentication` |
+| `/docs/api/endpoints/wallets` | `/docs/wallets/api-reference` |
+| `/docs/api/endpoints/bots` | `/docs/bots/api-reference` |
+| `/docs/api/endpoints/checkout-pages` | `/docs/selling/checkout-api-reference` |
+| `/docs/api/endpoints/invoices` | `/docs/selling/invoice-api-reference` |
+| `/docs/api/endpoints/sales` | `/docs/selling/sales-api-reference` |
+| `/docs/api/endpoints/skills` | `/docs/skills/api-reference` |
+| `/docs/api/endpoints/scan` | `/docs/skills/scan-api-reference` |
+| `/docs/api/webhooks/setup` | `/docs/bots/webhook-setup` |
+| `/docs/api/webhooks/events` | `/docs/bots/webhook-events` |
+| `/docs/api/webhooks/health` | `/docs/bots/webhook-health-technical` |
+| `/docs/api/webhooks/tunnels` | `/docs/bots/webhook-tunnels` |
+| `/docs/api/agent-integration/quick-start` | `/docs/agent-integration/quick-start` |
+| `/docs/api/agent-integration/x402-protocol` | `/docs/agent-integration/x402-protocol` |
+| `/docs/api/agent-integration/mcp` | `/docs/agent-integration/mcp` |
+| `/docs/shopy/getting-started/what-is-shopy` | `/docs/asx-scoring/what-is-shopy` |
+| `/docs/shopy/getting-started/asx-score-explained` | `/docs/asx-scoring/asx-score-explained` |
+| `/docs/shopy/skill-format/structure` | `/docs/skill-publishing/structure` |
+| `/docs/shopy/skill-format/frontmatter` | `/docs/skill-publishing/frontmatter` |
+| `/docs/shopy/taxonomy/sectors` | `/docs/skill-publishing/sectors` |
+| `/docs/shopy/agent-integration/reading-skills` | `/docs/skill-publishing/reading-skills` |
+| `/docs/shopy/agent-integration/feedback-protocol` | `/docs/skill-publishing/feedback-protocol` |
+| `/docs/shopy/cli/installation` | `/docs/cli-tools/installation` |
+| `/docs/shopy/cli/commands` | `/docs/cli-tools/commands` |
+
+Links to sections that don't change slug (e.g. `/docs/wallets/creating-a-wallet`, `/docs/bots/claiming-a-bot`, `/docs/guardrails/spending-limits`) are unaffected.
+
+After replacement, verify with `grep -rn '/docs/api/\|/docs/shopy/' app/docs/content/ --include="*.md"` — should return 0 results.
+
+### Issue 2: `public/tenants/*/config.json` files
+
+Three JSON config files have hardcoded doc links that the plan must also update:
+
+| File | Links to update |
+|------|----------------|
+| `public/tenants/creditclaw/config.json` | `/docs/api/introduction` → `/docs/getting-started/api-introduction` |
+| `public/tenants/shopy/config.json` | `/docs/shopy/cli/installation` → `/docs/cli-tools/installation`, `/docs/shopy/skill-format/structure` → `/docs/skill-publishing/structure` |
+| `public/tenants/brands/config.json` | `/docs/api/introduction` → `/docs/getting-started/api-introduction` |
+
+### Issue 3: `content/agentic-commerce-standard.md`
+
+Has a link to `/docs/shopy/taxonomy/sectors` → update to `/docs/skill-publishing/sectors`.
+
+### Issue 4: Conflicting ASX Score pages
+
+Two pages cover ASX scoring with different numbers:
+- `skills/asx-score.md` — 10 signals, different point distribution
+- `shopy/getting-started/asx-score-explained.md` — 11 signals, different ranges
+
+**Decision needed before implementation**: Which scoring rubric is canonical? Options:
+- **A)** Keep `shopy/asx-score-explained.md` as the detailed version (it has 11 signals, more granular) and trim `skills/asx-score.md` to a brief overview that links to the full breakdown
+- **B)** Reconcile both into one page with the correct current scoring logic
+- **C)** Keep both but make titles clearly distinct (e.g. "ASX Score Overview" vs "ASX Score: Full Rubric")
+
+### Issue 5: Two webhook health pages
+
+- `bots/webhook-health.md` — user-facing, dashboard-oriented
+- `api/webhooks/health.md` — technical, covers `sendToBot()` internals and SQL
+
+**Approach**: Both move into "Bots & Onboarding." User page stays as "Webhook Health" (existing), technical page becomes "Webhook Health: Technical Details" and appears right after it. Order: `webhook-health` → `webhook-health-technical` → `webhook-setup` → `webhook-events` → `webhook-tunnels` → `api-reference`.
+
+---
+
 ## Content Edits (Markdown)
 
-Most markdown stays as-is. Minor edits needed:
+Most markdown stays as-is. Specific edits needed:
 
-1. **API reference pages that move into user sections**: Add a one-line intro like `> This section covers the API endpoints for wallet operations.` at the top, so they don't feel jarring after user-friendly pages.
-2. **Cross-references**: Any markdown that says "see the Developer documentation" or "switch to the Developer tab" needs updating since there's no longer a separate track. Search for links containing `/docs/api/` and update to new slugs.
-3. **ASX Score page in skills section**: Rename title from "ASX Score" to "Agentic Shopping (ASX) Score".
+1. **141 internal cross-references**: Bulk find-and-replace using the slug mapping table above (see Issue 1).
+2. **API reference pages moving into user sections**: Add a one-line blockquote intro at the top, e.g. `> API reference for wallet operations. Requires bot authentication — see [Authentication](/docs/getting-started/authentication).`
+3. **"See the Developer docs" language**: Remove or rephrase any text that says "switch to the Developer tab" or "see the developer documentation" since there's no longer a separate track.
+4. **ASX Score page in skills section**: Rename title from "ASX Score" to "Agentic Shopping (ASX) Score".
+5. **Webhook health technical page**: Rename `api/webhooks/health.md` title from "Health & Reliability" to "Webhook Health: Technical Details".
+6. **`content/agentic-commerce-standard.md`**: Update link to `/docs/skill-publishing/sectors`.
 
 ---
 
@@ -442,35 +519,53 @@ Most markdown stays as-is. Minor edits needed:
 ### Phase 1: File Structure
 1. Create `app/docs/content/` directory
 2. Copy all existing section folders from `docs/content/` to `app/docs/content/` (getting-started, bots, wallets, guardrails, selling, settings, transactions, skills, site)
-3. Move and rename API files into their new section folders per the move table above
-4. Move and rename shopy files into new section folders per the move table above
+3. Move and rename API files into their new section folders per the file move table
+4. Move and rename shopy files into new section folders per the file move table
 5. Create new folders: `agent-integration/`, `asx-scoring/`, `skill-publishing/`, `cli-tools/`
-6. Delete old `docs/` root folder
+6. Rename `api/webhooks/health.md` → `bots/webhook-health-technical.md`
+7. Delete old `docs/` root folder
 
 ### Phase 2: sections.ts Rewrite
-7. Write new `app/docs/content/sections.ts` with flat section list, `tag` field, no `audience`/`tenant` fields
-8. Remove `getSectionsByAudience()`, `getAudienceFromSlug()`, `getTenantFromSlug()`, `normalizeTenantId()`
-9. Simplify `getAllPagesFlat()` to take no arguments
-10. Keep `findPage()` and `sitePages` unchanged
+8. Write new `app/docs/content/sections.ts` with flat section list, `tag` field, no `audience`/`tenant` fields
+9. Remove `getSectionsByAudience()`, `getAudienceFromSlug()`, `getTenantFromSlug()`, `normalizeTenantId()`
+10. Simplify `getAllPagesFlat()` to take no arguments
+11. Keep `findPage()` and `sitePages` unchanged (update `sitePages` file paths from `"site/homepage.md"` etc. since content dir moved)
 
 ### Phase 3: Consumer Updates
-11. Update `app/docs/layout.tsx` — remove audience toggle, render tags, render all sections
-12. Update `app/docs/page.tsx` — use tenant config `docsEntrySlug` for redirect
-13. Update `app/docs/[...slug]/page.tsx` — fix import path, fix fs read path, simplify prev/next
-14. Update `app/api/docs/[...slug]/route.ts` — fix import path, fix fs read path
-15. Update `app/llms.txt/route.ts` — fix import path, single "Documentation" heading
-16. Update `app/llms-full.txt/route.ts` — fix import path, fix fs read path
-17. Update `app/sitemap.ts` — fix import path
-18. Update `app/globals.css` — remove `@source "../docs"` line
+12. Update `app/docs/layout.tsx` — remove audience toggle, render tags, render all sections
+13. Update `app/docs/page.tsx` — use tenant config `docsEntrySlug` for redirect
+14. Update `app/docs/[...slug]/page.tsx` — fix import path, fix fs read path, simplify prev/next
+15. Update `app/api/docs/[...slug]/route.ts` — fix import path, fix fs read path
+16. Update `app/llms.txt/route.ts` — fix import path, single "Documentation" heading
+17. Update `app/llms-full.txt/route.ts` — fix import path, fix fs read path
+18. Update `app/sitemap.ts` — fix import path
+19. Update `app/globals.css` — remove `@source "../docs"` line
 
-### Phase 4: Tenant Config
-19. Add `docsEntrySlug` to `TenantConfig` type
-20. Add `docsEntrySlug` values to all three tenant configs
-21. Update nav links in tenant configs to new doc slugs
+### Phase 4: Tenant & External Config
+20. Add `docsEntrySlug` to `TenantConfig` type in `lib/tenants/types.ts`
+21. Add `docsEntrySlug` values to all three tenant configs in `lib/tenants/tenant-configs.ts`
+22. Update nav links in `lib/tenants/tenant-configs.ts` to new doc slugs
+23. Update nav links in `public/tenants/creditclaw/config.json`
+24. Update nav links in `public/tenants/shopy/config.json`
+25. Update nav links in `public/tenants/brands/config.json`
+26. Update link in `content/agentic-commerce-standard.md`
 
-### Phase 5: Content Polish
-22. Add intro lines to API reference markdown files
-23. Update cross-references in markdown (search for `/docs/api/` links)
+### Phase 5: Cross-Reference Bulk Update
+27. Build slug mapping and run bulk find-and-replace across all `.md` files in `app/docs/content/`
+28. Verify: `grep -rn '/docs/api/\|/docs/shopy/' app/docs/content/ --include="*.md"` returns 0 results
+29. Add intro lines to API reference markdown files
+30. Update "see the developer docs" language in any affected pages
+31. Rename titles: "ASX Score" → "Agentic Shopping (ASX) Score", "Health & Reliability" → "Webhook Health: Technical Details"
+
+### Phase 6: Verify
+32. Start dev server — confirm no import errors or missing file errors
+33. Navigate through all sidebar sections — confirm all pages render
+34. Test prev/next navigation across section boundaries (especially user→API reference pages)
+35. Test `/docs` redirect per tenant (set tenant-id cookie, verify landing page)
+36. Click through internal cross-reference links in API pages to verify they resolve
+37. Test `/llms.txt` and `/llms-full.txt` output — confirm all pages listed
+38. Test `/api/docs/...` raw markdown endpoint
+39. Test sitemap includes all new URLs, no old URLs
 24. Rename "ASX Score" to "Agentic Shopping (ASX) Score" in the skills section page
 
 ### Phase 6: Verify
