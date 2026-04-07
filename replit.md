@@ -255,15 +255,18 @@ Encrypted card files with plugin-based checkout. Uses the owner's personal credi
 
 These systems span all rails (1, 2, and 5).
 
-**Guardrails** (`features/agent-interaction/guardrails/`) — spending limits (how much). Master-level budget across all rails + per-rail limits per wallet/card. Also owns approval modes.
+### Guardrails & Spending Controls
 
-**Master Guardrails:** Owner-level, cross-rail spending limits stored in a `master_guardrails` table. These guardrails are checked before per-rail guardrails and aggregate spend across all active rails.
+**Per-Rail Guardrails** (`features/agent-interaction/guardrails/`) — spending limits (how much). Per-rail limits per wallet/card. Also owns approval modes.
+
+**Master Guardrails** — Owner-level, cross-rail spending limits stored in a `master_guardrails` table. Checked before per-rail guardrails. Aggregates spend across all active rails.
 
 **Procurement Controls** (`features/agent-interaction/procurement-controls/`) — merchant/domain/category restrictions (where). Fully separated from guardrails.
 
 See `internal_docs/05-agent-interaction/guardrails.md` for enforcement flow, spend aggregation, status filters, approval modes, and procurement control details.
 
-**Unified Approval System:**
+### Unified Approvals
+
 `unified_approvals` is the **sole source of truth** for all approval state across all rails. The old `privy_approvals` and `crossmint_approvals` tables have been dropped. All approval reads, writes, and decisions go through this single table.
 
 - **Service** (`features/agent-interaction/approvals/service.ts`): `createApproval()` generates HMAC-signed approval links, stores in `unified_approvals` table, sends branded email. `resolveApproval()` verifies HMAC, checks expiry, updates status, dispatches rail-specific callbacks.
@@ -290,12 +293,15 @@ See `internal_docs/05-agent-interaction/guardrails.md` for enforcement flow, spe
 - **Env Vars**: `UNIFIED_APPROVAL_HMAC_SECRET` (falls back to `HMAC_SECRET` or default).
 - **Dropped Tables**: `privy_approvals` and `crossmint_approvals` have been removed from schema and dropped from the database.
 
-**Transaction Ledger — `balance_after` Column:**
+### Transaction Ledger
+
 All transaction tables (`transactions`, `privy_transactions`, `crossmint_transactions`, `rail5_checkouts`) have a nullable `balance_after` column that records the wallet's balance at the time the transaction was created. No calculations — just stores whatever the DB balance is at that moment. For reconciliation, it stores the on-chain balance. For pending x402 payments, it stores the current (unchanged) DB balance. The real balance drop shows when reconciliation runs. All owner-facing and bot-facing transaction list APIs include `balance_after` / `balance_after_display` in responses. Frontend ledger tables show a "Balance" column.
+
+### Wallet Freeze & Rail Events
 
 **Wallet Freeze:** Owners can freeze bot wallets, preventing transactions.
 
-Unified `rails.updated` webhook fires across ALL rails on bot link/unlink/freeze/unfreeze/wallet create with `action`, `rail`, `card_id`/`wallet_id`, `bot_id` in payload. Wired up in: Rail 1 (create, freeze), Rail 2 (create, freeze), Rail 5 (PATCH cards).
+**`rails.updated` webhook** fires across ALL rails on bot link/unlink/freeze/unfreeze/wallet create with `action`, `rail`, `card_id`/`wallet_id`, `bot_id` in payload. Wired up in: Rail 1 (create, freeze), Rail 2 (create, freeze), Rail 5 (PATCH cards).
 
 ## Shared Wallet & Card UI
 
