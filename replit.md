@@ -457,7 +457,7 @@ In-app feedback dialog accessible from the profile dropdown in the dashboard hea
 - **react-markdown + remark-gfm + @tailwindcss/typography:** Markdown rendering for documentation pages.
 
 ### Testing (`tests/`)
-Vitest-based automated test suite. Run with `npx vitest run`. Config in `vitest.config.ts` with `@/` path alias. See `tests/_README.md` for coverage map, guidelines on when/how to add tests, and known gaps. Manual curl-based integration tests are in `project_knowledge/testing.md`.
+Vitest-based automated test suite. Run with `npx vitest run`. Config in `vitest.config.ts` with `@/` path alias. See `tests/_README.md` for coverage map, guidelines on when/how to add tests, and known gaps. Manual curl-based integration tests are in `tests/manual-api-suite.md`.
 
 ### Multitenant Architecture
 The app supports multiple tenants (CreditClaw, shopy.sh, brands.sh) via hostname-based routing:
