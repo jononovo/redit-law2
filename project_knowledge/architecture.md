@@ -233,7 +233,7 @@ Standards and open protocols we define, maintain, and evangelize. Not feature co
 
 This module owns the research and evolution of these standards. When new protocols emerge (ACP, UCP, A2A), evaluation and positioning happens here.
 
-**Docs:** `internal_docs/10-thought-leadership/`
+**Docs:** `internal_docs/01-brands-skills-system/score-standard/` (research subfolder contains standards, strategy, and vision docs)
 
 ---
 

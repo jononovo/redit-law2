@@ -52,7 +52,7 @@ Ten modules — each maps to a section in `architecture.md` and a folder under `
 | `internal_docs/07-platform-management/` | 7. Platform Management | Auth, bot lifecycle, pairing, feature flags, admin |
 | `internal_docs/08-multi-tenant/` | 8. Multi-tenant Structure | Tenant routing, onboarding, landing pages, theming |
 | `internal_docs/09-agent-shops/` | 9. Agent Shops | Checkout pages, shops, seller profiles, procurement controls, inbound payments |
-| `internal_docs/10-thought-leadership/` | 10. Thought Leadership | Standards (ASX rubric, SKILL.md spec, open brands index) |
+| `internal_docs/01-brands-skills-system/score-standard/` | 10. Score Standard | Standards (ASX rubric, SKILL.md spec, open brands index) — merged into Brands & Skills |
 
 Other folders:
 
