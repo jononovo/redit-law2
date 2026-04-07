@@ -11,6 +11,8 @@ if (!PROD_URL) {
 const dev = new Pool({ connectionString: DEV_URL });
 const prod = new Pool({ connectionString: PROD_URL });
 
+const JSONB_COLS = new Set(["brand_data", "score_breakdown", "recommendations"]);
+
 async function main() {
   console.log("Testing production connection...");
   await prod.query("SELECT 1");
@@ -43,13 +45,30 @@ async function main() {
 
     const cols = Object.keys(b);
     const vals = Object.values(b);
-    const placeholders = vals.map((_, i) => `$${i + 1}`);
-    await prod.query(
-      `INSERT INTO brand_index (${cols.join(",")}) VALUES (${placeholders.join(",")}) ON CONFLICT (id) DO NOTHING`,
-      vals
-    );
-    console.log(`  ADD  id ${b.id} ${b.name} (${b.domain})`);
-    added++;
+    const placeholders = cols.map((col, i) => {
+      if (JSONB_COLS.has(col)) {
+        return `$${i + 1}::jsonb`;
+      }
+      return `$${i + 1}`;
+    });
+
+    const stringVals = vals.map((v, i) => {
+      if (JSONB_COLS.has(cols[i]) && v !== null && typeof v === "object") {
+        return JSON.stringify(v);
+      }
+      return v;
+    });
+
+    try {
+      await prod.query(
+        `INSERT INTO brand_index (${cols.join(",")}) VALUES (${placeholders.join(",")}) ON CONFLICT (id) DO NOTHING`,
+        stringVals
+      );
+      console.log(`  ADD  id ${b.id} ${b.name} (${b.domain})`);
+      added++;
+    } catch (err: any) {
+      console.error(`  FAIL id ${b.id} ${b.name} (${b.domain}) — ${err.message}`);
+    }
   }
 
   await prod.query(`SELECT setval('brand_index_id_seq', (SELECT COALESCE(MAX(id),0) FROM brand_index))`);
