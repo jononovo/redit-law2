@@ -4,7 +4,7 @@ import {
   type SavedShippingAddress, type InsertShippingAddress,
 } from "@/shared/schema";
 import { eq, and } from "drizzle-orm";
-import type { IStorage } from "./types";
+import type { IStorage } from "../types";
 
 type ShippingAddressMethods = Pick<IStorage,
   | "createShippingAddress" | "getShippingAddressesByOwner"

@@ -4,7 +4,7 @@ import {
   type Rail5Guardrail, type InsertRail5Guardrail,
 } from "@/shared/schema";
 import { eq, and, sql, gte } from "drizzle-orm";
-import type { IStorage } from "./types";
+import type { IStorage } from "../types";
 
 type Rail5GuardrailMethods = Pick<IStorage,
   "getRail5Guardrails" | "upsertRail5Guardrails" | "getRail5DailySpendCents" | "getRail5MonthlySpendCents"

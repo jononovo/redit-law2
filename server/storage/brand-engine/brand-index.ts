@@ -1,7 +1,7 @@
 import { db } from "@/server/db";
 import { brandIndex, type BrandIndex, type InsertBrandIndex } from "@/shared/schema";
 import { eq, and, sql, desc, asc, inArray, count } from "drizzle-orm";
-import type { IStorage } from "./types";
+import type { IStorage } from "../types";
 import { SECTOR_LABELS } from "@/features/brand-engine/procurement-skills/taxonomy/sectors";
 
 export interface BrandSearchFilters {

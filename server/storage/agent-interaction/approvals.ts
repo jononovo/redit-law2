@@ -4,7 +4,7 @@ import {
   type UnifiedApproval, type InsertUnifiedApproval,
 } from "@/shared/schema";
 import { eq, and, desc, gte, lte } from "drizzle-orm";
-import type { IStorage } from "./types";
+import type { IStorage } from "../types";
 
 export interface ApprovalFilters {
   status?: string;

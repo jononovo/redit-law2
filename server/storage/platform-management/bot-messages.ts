@@ -4,7 +4,7 @@ import {
   type BotPendingMessage,
 } from "@/shared/schema";
 import { eq, and, sql, lte } from "drizzle-orm";
-import type { IStorage } from "./types";
+import type { IStorage } from "../types";
 
 type BotMessageMethods = Pick<IStorage,
   | "createPendingMessage" | "getPendingMessagesForBot" | "getPendingMessageCount"

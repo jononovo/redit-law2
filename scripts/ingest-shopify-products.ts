@@ -1,7 +1,7 @@
 import { db } from "../server/db";
 import { productListings, brandIndex, categoryKeywords } from "../shared/schema";
 import { sql, eq } from "drizzle-orm";
-import { embed } from "../lib/embeddings/embed";
+import { embed } from "../features/product-index/embeddings/embed";
 
 const PRODUCTS_PER_PAGE = 250;
 const MAX_PAGES = 10;

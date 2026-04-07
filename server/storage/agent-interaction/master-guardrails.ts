@@ -7,7 +7,7 @@ import {
   type MasterGuardrail, type InsertMasterGuardrail,
 } from "@/shared/schema";
 import { eq, and, sql, gte } from "drizzle-orm";
-import type { IStorage } from "./types";
+import type { IStorage } from "../types";
 
 type MasterGuardrailMethods = Pick<IStorage,
   "getMasterGuardrails" | "upsertMasterGuardrails" | "getMasterDailySpend" | "getMasterMonthlySpend"

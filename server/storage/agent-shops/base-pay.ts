@@ -1,7 +1,7 @@
 import { db } from "@/server/db";
 import { basePayPayments } from "@/shared/schema";
 import type { BasePayPayment, InsertBasePayPayment } from "@/shared/schema";
-import type { IStorage } from "./types";
+import type { IStorage } from "../types";
 import { eq } from "drizzle-orm";
 
 type BasePayMethods = Pick<IStorage,

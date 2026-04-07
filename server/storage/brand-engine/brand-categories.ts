@@ -1,7 +1,7 @@
 import { db } from "@/server/db";
 import { brandCategories, productCategories } from "@/shared/schema";
 import { eq, desc, asc } from "drizzle-orm";
-import type { IStorage } from "./types";
+import type { IStorage } from "../types";
 
 export interface CategoryObject {
   id: number;

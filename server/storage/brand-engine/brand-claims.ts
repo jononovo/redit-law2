@@ -4,7 +4,7 @@ import {
   type BrandClaim, type InsertBrandClaim,
 } from "@/shared/schema";
 import { eq, and, desc, sql } from "drizzle-orm";
-import type { IStorage } from "./types";
+import type { IStorage } from "../types";
 
 type BrandClaimMethods = Pick<IStorage,
   | "createBrandClaim"

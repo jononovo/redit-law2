@@ -5,7 +5,7 @@ import {
   type Notification, type InsertNotification,
 } from "@/shared/schema";
 import { eq, and, desc, sql } from "drizzle-orm";
-import type { IStorage } from "./types";
+import type { IStorage } from "../types";
 
 type NotificationMethods = Pick<IStorage,
   | "getNotificationPreferences" | "upsertNotificationPreferences"

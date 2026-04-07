@@ -4,7 +4,7 @@ import {
   type ProcurementControl, type InsertProcurementControl,
 } from "@/shared/schema";
 import { eq, and } from "drizzle-orm";
-import type { IStorage } from "./types";
+import type { IStorage } from "../types";
 
 type ProcurementControlMethods = Pick<IStorage,
   "getProcurementControls" | "getProcurementControlsByScope" | "upsertProcurementControls"

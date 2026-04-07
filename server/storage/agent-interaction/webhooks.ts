@@ -4,7 +4,7 @@ import {
   type WebhookDelivery, type InsertWebhookDelivery,
 } from "@/shared/schema";
 import { eq, and, desc, sql, gte, lte, inArray } from "drizzle-orm";
-import type { IStorage } from "./types";
+import type { IStorage } from "../types";
 
 type WebhookMethods = Pick<IStorage,
   | "createWebhookDelivery" | "updateWebhookDelivery" | "getPendingWebhookRetries"

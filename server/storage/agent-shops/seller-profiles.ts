@@ -1,7 +1,7 @@
 import { db } from "@/server/db";
 import { sellerProfiles } from "@/shared/schema";
 import type { SellerProfile, InsertSellerProfile } from "@/shared/schema";
-import type { IStorage } from "./types";
+import type { IStorage } from "../types";
 import { eq } from "drizzle-orm";
 
 type SellerProfileMethods = Pick<IStorage,
