@@ -32,6 +32,7 @@ Good: 3 tests for the formatter, 15 tests for the approval system.
 | Brand Registry API | `brand-registry-api/api.test.ts` | 17 | Discovery API query params, filtering, response shape |
 
 | Product Index Recommend Pipeline | `product-index-recommend-pipeline/product-index-recommend-pipeline.test.ts` | 19 | Data integrity, category FTS, merchant ranking, vector search, e2e pipeline |
+| Rail 5 Card & Transaction Pipeline | `rail5-card-transaction-pipeline/rail5-card-transaction-pipeline.test.ts` | 72 | ID generation, key validation, onboarding schemas, checkout/confirm schemas, card guardrails, checkout steps, spawn payload, encrypted card file, defaults |
 
 **Major gaps** (no automated tests yet):
 - Scan engine / scoring rubric
