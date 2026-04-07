@@ -1,8 +1,8 @@
 import { db } from "@/server/db";
 import {
-  rail5Cards, rail5Checkouts,
+  rail5Cards, rail5Transactions,
   type Rail5Card, type InsertRail5Card,
-  type Rail5Checkout, type InsertRail5Checkout,
+  type Rail5Transaction, type InsertRail5Transaction,
 } from "@/shared/schema";
 import { eq, desc } from "drizzle-orm";
 import type { IStorage } from "../types";
@@ -11,7 +11,7 @@ type Rail5Methods = Pick<IStorage,
   | "createRail5Card" | "getRail5CardByCardId" | "getRail5CardsByOwnerUid"
   | "getRail5CardByBotId" | "countRail5CardsByBotId" | "updateRail5Card" | "deleteRail5Card"
   | "getRail5CardByTestToken"
-  | "createRail5Checkout" | "getRail5CheckoutById" | "updateRail5Checkout" | "getRail5CheckoutsByCardId"
+  | "createRail5Transaction" | "getRail5TransactionById" | "updateRail5Transaction" | "getRail5TransactionsByCardId"
 >;
 
 export const rail5Methods: Rail5Methods = {
@@ -57,31 +57,31 @@ export const rail5Methods: Rail5Methods = {
     return card || null;
   },
 
-  async createRail5Checkout(data: InsertRail5Checkout): Promise<Rail5Checkout> {
-    const [checkout] = await db.insert(rail5Checkouts).values(data).returning();
-    return checkout;
+  async createRail5Transaction(data: InsertRail5Transaction): Promise<Rail5Transaction> {
+    const [tx] = await db.insert(rail5Transactions).values(data).returning();
+    return tx;
   },
 
-  async getRail5CheckoutById(checkoutId: string): Promise<Rail5Checkout | null> {
-    const [checkout] = await db.select().from(rail5Checkouts).where(eq(rail5Checkouts.checkoutId, checkoutId)).limit(1);
-    return checkout || null;
+  async getRail5TransactionById(checkoutId: string): Promise<Rail5Transaction | null> {
+    const [tx] = await db.select().from(rail5Transactions).where(eq(rail5Transactions.checkoutId, checkoutId)).limit(1);
+    return tx || null;
   },
 
-  async updateRail5Checkout(checkoutId: string, data: Partial<InsertRail5Checkout>): Promise<Rail5Checkout | null> {
+  async updateRail5Transaction(checkoutId: string, data: Partial<InsertRail5Transaction>): Promise<Rail5Transaction | null> {
     const [updated] = await db
-      .update(rail5Checkouts)
+      .update(rail5Transactions)
       .set({ ...data, updatedAt: new Date() })
-      .where(eq(rail5Checkouts.checkoutId, checkoutId))
+      .where(eq(rail5Transactions.checkoutId, checkoutId))
       .returning();
     return updated || null;
   },
 
-  async getRail5CheckoutsByCardId(cardId: string, limit = 50): Promise<Rail5Checkout[]> {
+  async getRail5TransactionsByCardId(cardId: string, limit = 50): Promise<Rail5Transaction[]> {
     return db
       .select()
-      .from(rail5Checkouts)
-      .where(eq(rail5Checkouts.cardId, cardId))
-      .orderBy(desc(rail5Checkouts.createdAt))
+      .from(rail5Transactions)
+      .where(eq(rail5Transactions.cardId, cardId))
+      .orderBy(desc(rail5Transactions.createdAt))
       .limit(limit);
   },
 };

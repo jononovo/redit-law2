@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
     SELECT
       (SELECT count(*) FROM privy_transactions)::int +
       (SELECT count(*) FROM crossmint_transactions)::int +
-      (SELECT count(*) FROM rail5_checkouts)::int
+      (SELECT count(*) FROM rail5_transactions)::int
     AS total
   `);
   const total = Number(countResult.rows[0]?.total ?? 0);
@@ -71,7 +71,7 @@ export async function GET(request: NextRequest) {
         rc.created_at,
         o.email AS owner_email,
         rc.bot_id
-      FROM rail5_checkouts rc
+      FROM rail5_transactions rc
       LEFT JOIN owners o ON o.uid = rc.owner_uid
     )
     ORDER BY created_at DESC, rail ASC, id DESC

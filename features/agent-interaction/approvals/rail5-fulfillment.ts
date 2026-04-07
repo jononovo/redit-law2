@@ -4,9 +4,9 @@ import type { UnifiedApproval } from "@/shared/schema";
 
 async function fulfillRail5Approval(approval: UnifiedApproval): Promise<void> {
   const checkoutId = approval.railRef;
-  await storage.updateRail5Checkout(checkoutId, { status: "approved" });
+  await storage.updateRail5Transaction(checkoutId, { status: "approved" });
 
-  const checkout = await storage.getRail5CheckoutById(checkoutId);
+  const checkout = await storage.getRail5TransactionById(checkoutId);
   if (checkout) {
     const bot = await storage.getBotByBotId(checkout.botId);
     if (bot) {
@@ -46,9 +46,9 @@ async function fulfillRail5Approval(approval: UnifiedApproval): Promise<void> {
 
 async function fulfillRail5Denial(approval: UnifiedApproval): Promise<void> {
   const checkoutId = approval.railRef;
-  await storage.updateRail5Checkout(checkoutId, { status: "denied", confirmedAt: new Date() });
+  await storage.updateRail5Transaction(checkoutId, { status: "denied", confirmedAt: new Date() });
 
-  const checkout = await storage.getRail5CheckoutById(checkoutId);
+  const checkout = await storage.getRail5TransactionById(checkoutId);
   if (checkout) {
     const bot = await storage.getBotByBotId(checkout.botId);
     if (bot) {

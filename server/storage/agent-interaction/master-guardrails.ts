@@ -3,7 +3,7 @@ import {
   masterGuardrails,
   privyTransactions, privyWallets,
   crossmintTransactions, crossmintWallets,
-  rail5Checkouts,
+  rail5Transactions,
   type MasterGuardrail, type InsertMasterGuardrail,
 } from "@/shared/schema";
 import { eq, and, sql, gte } from "drizzle-orm";
@@ -63,12 +63,12 @@ export const masterGuardrailMethods: MasterGuardrailMethods = {
       ));
 
     const [r5] = await db
-      .select({ total: sql<number>`COALESCE(SUM(${rail5Checkouts.amountCents}), 0)` })
-      .from(rail5Checkouts)
+      .select({ total: sql<number>`COALESCE(SUM(${rail5Transactions.amountCents}), 0)` })
+      .from(rail5Transactions)
       .where(and(
-        eq(rail5Checkouts.ownerUid, ownerUid),
-        sql`${rail5Checkouts.status} IN ('approved', 'completed')`,
-        gte(rail5Checkouts.createdAt, startOfDay),
+        eq(rail5Transactions.ownerUid, ownerUid),
+        sql`${rail5Transactions.status} IN ('approved', 'completed')`,
+        gte(rail5Transactions.createdAt, startOfDay),
       ));
 
     const rail1 = Number(r1?.total || 0);
@@ -105,12 +105,12 @@ export const masterGuardrailMethods: MasterGuardrailMethods = {
       ));
 
     const [r5] = await db
-      .select({ total: sql<number>`COALESCE(SUM(${rail5Checkouts.amountCents}), 0)` })
-      .from(rail5Checkouts)
+      .select({ total: sql<number>`COALESCE(SUM(${rail5Transactions.amountCents}), 0)` })
+      .from(rail5Transactions)
       .where(and(
-        eq(rail5Checkouts.ownerUid, ownerUid),
-        sql`${rail5Checkouts.status} IN ('approved', 'completed')`,
-        gte(rail5Checkouts.createdAt, startOfMonth),
+        eq(rail5Transactions.ownerUid, ownerUid),
+        sql`${rail5Transactions.status} IN ('approved', 'completed')`,
+        gte(rail5Transactions.createdAt, startOfMonth),
       ));
 
     const rail1 = Number(r1?.total || 0);

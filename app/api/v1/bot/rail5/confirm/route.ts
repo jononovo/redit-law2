@@ -23,7 +23,7 @@ export const POST = withBotApi("/api/v1/bot/rail5/confirm", async (request, { bo
 
   const { checkout_id, status, merchant_name } = parsed.data;
 
-  const checkout = await storage.getRail5CheckoutById(checkout_id);
+  const checkout = await storage.getRail5TransactionById(checkout_id);
   if (!checkout) {
     return NextResponse.json(
       { error: "not_found", message: "Checkout not found." },
@@ -53,7 +53,7 @@ export const POST = withBotApi("/api/v1/bot/rail5/confirm", async (request, { bo
   }
 
   if (status === "failed") {
-    await storage.updateRail5Checkout(checkout_id, {
+    await storage.updateRail5Transaction(checkout_id, {
       status: "failed",
       confirmedAt: new Date(),
     });
@@ -73,7 +73,7 @@ export const POST = withBotApi("/api/v1/bot/rail5/confirm", async (request, { bo
     });
   }
 
-  await storage.updateRail5Checkout(checkout_id, {
+  await storage.updateRail5Transaction(checkout_id, {
     status: "completed",
     confirmedAt: new Date(),
   });

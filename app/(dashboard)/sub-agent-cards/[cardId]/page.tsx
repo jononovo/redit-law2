@@ -10,7 +10,7 @@ import { useAuth } from "@/features/platform-management/auth/auth-context";
 import { authFetch } from "@/features/platform-management/auth-fetch";
 import { useToast } from "@/hooks/use-toast";
 
-interface Rail5Checkout {
+interface Rail5Transaction {
   checkout_id: string;
   merchant_name: string;
   item_name: string;
@@ -34,7 +34,7 @@ interface Rail5CardDetail {
   monthly_limit_cents: number;
   human_approval_above_cents: number;
   created_at: string;
-  checkouts: Rail5Checkout[];
+  checkouts: Rail5Transaction[];
 }
 
 const BRAND_LABELS: Record<string, string> = {

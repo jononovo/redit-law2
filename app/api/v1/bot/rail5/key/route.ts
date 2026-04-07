@@ -18,7 +18,7 @@ export const POST = withBotApi("/api/v1/bot/rail5/key", async (request, { bot })
     );
   }
 
-  const checkout = await storage.getRail5CheckoutById(checkoutId);
+  const checkout = await storage.getRail5TransactionById(checkoutId);
   if (!checkout) {
     return NextResponse.json(
       { error: "not_found", message: "Checkout not found." },
@@ -55,7 +55,7 @@ export const POST = withBotApi("/api/v1/bot/rail5/key", async (request, { bot })
     );
   }
 
-  await storage.updateRail5Checkout(checkoutId, { keyDelivered: true });
+  await storage.updateRail5Transaction(checkoutId, { keyDelivered: true });
 
   return NextResponse.json({
     key_hex: card.encryptedKeyHex,

@@ -539,7 +539,7 @@ export const rail5Cards = pgTable("rail5_cards", {
   index("rail5_cards_status_idx").on(table.status),
 ]);
 
-export const rail5Checkouts = pgTable("rail5_checkouts", {
+export const rail5Transactions = pgTable("rail5_transactions", {
   id: serial("id").primaryKey(),
   checkoutId: text("checkout_id").notNull().unique(),
   cardId: text("card_id").notNull(),
@@ -557,16 +557,16 @@ export const rail5Checkouts = pgTable("rail5_checkouts", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 }, (table) => [
-  index("rail5_checkouts_checkout_id_idx").on(table.checkoutId),
-  index("rail5_checkouts_card_id_idx").on(table.cardId),
-  index("rail5_checkouts_bot_id_idx").on(table.botId),
-  index("rail5_checkouts_status_idx").on(table.status),
+  index("rail5_transactions_checkout_id_idx").on(table.checkoutId),
+  index("rail5_transactions_card_id_idx").on(table.cardId),
+  index("rail5_transactions_bot_id_idx").on(table.botId),
+  index("rail5_transactions_status_idx").on(table.status),
 ]);
 
 export type Rail5Card = typeof rail5Cards.$inferSelect;
 export type InsertRail5Card = typeof rail5Cards.$inferInsert;
-export type Rail5Checkout = typeof rail5Checkouts.$inferSelect;
-export type InsertRail5Checkout = typeof rail5Checkouts.$inferInsert;
+export type Rail5Transaction = typeof rail5Transactions.$inferSelect;
+export type InsertRail5Transaction = typeof rail5Transactions.$inferInsert;
 
 export const rail5InitializeSchema = z.object({
   card_name: z.string().min(1).max(200),

@@ -19,7 +19,7 @@ import {
   type ProcurementControl, type InsertProcurementControl,
   type UnifiedApproval, type InsertUnifiedApproval,
   type Rail5Card, type InsertRail5Card,
-  type Rail5Checkout, type InsertRail5Checkout,
+  type Rail5Transaction, type InsertRail5Transaction,
   type Order, type InsertOrder,
   type CheckoutPage, type InsertCheckoutPage,
   type Sale, type InsertSale,
@@ -157,10 +157,10 @@ export interface IStorage {
   deleteRail5Card(cardId: string): Promise<void>;
   getRail5CardByTestToken(token: string): Promise<Rail5Card | null>;
 
-  createRail5Checkout(data: InsertRail5Checkout): Promise<Rail5Checkout>;
-  getRail5CheckoutById(checkoutId: string): Promise<Rail5Checkout | null>;
-  updateRail5Checkout(checkoutId: string, data: Partial<InsertRail5Checkout>): Promise<Rail5Checkout | null>;
-  getRail5CheckoutsByCardId(cardId: string, limit?: number): Promise<Rail5Checkout[]>;
+  createRail5Transaction(data: InsertRail5Transaction): Promise<Rail5Transaction>;
+  getRail5TransactionById(checkoutId: string): Promise<Rail5Transaction | null>;
+  updateRail5Transaction(checkoutId: string, data: Partial<InsertRail5Transaction>): Promise<Rail5Transaction | null>;
+  getRail5TransactionsByCardId(cardId: string, limit?: number): Promise<Rail5Transaction[]>;
 
   createUnifiedApproval(data: InsertUnifiedApproval): Promise<UnifiedApproval>;
   getUnifiedApprovalById(approvalId: string): Promise<UnifiedApproval | null>;

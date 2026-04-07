@@ -8,7 +8,7 @@ export function generateRail5CardId(): string {
   return "r5card_" + randomBytes(8).toString("hex");
 }
 
-export function generateRail5CheckoutId(): string {
+export function generateRail5TransactionId(): string {
   return "r5chk_" + randomBytes(8).toString("hex");
 }
 
@@ -28,7 +28,7 @@ export function validateKeyMaterial(keyHex: string, ivHex: string, tagHex: strin
 export async function getDailySpendCents(cardId: string): Promise<number> {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const checkouts = await storage.getRail5CheckoutsByCardId(cardId, 500);
+  const checkouts = await storage.getRail5TransactionsByCardId(cardId, 500);
   return checkouts
     .filter(c => c.status === "completed" && c.createdAt >= today)
     .reduce((sum, c) => sum + c.amountCents, 0);
@@ -38,7 +38,7 @@ export async function getMonthlySpendCents(cardId: string): Promise<number> {
   const monthStart = new Date();
   monthStart.setDate(1);
   monthStart.setHours(0, 0, 0, 0);
-  const checkouts = await storage.getRail5CheckoutsByCardId(cardId, 5000);
+  const checkouts = await storage.getRail5TransactionsByCardId(cardId, 5000);
   return checkouts
     .filter(c => c.status === "completed" && c.createdAt >= monthStart)
     .reduce((sum, c) => sum + c.amountCents, 0);

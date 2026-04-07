@@ -1,6 +1,6 @@
 import { db } from "@/server/db";
 import {
-  rail5Guardrails, rail5Checkouts,
+  rail5Guardrails, rail5Transactions,
   type Rail5Guardrail, type InsertRail5Guardrail,
 } from "@/shared/schema";
 import { eq, and, sql, gte } from "drizzle-orm";
@@ -38,12 +38,12 @@ export const rail5GuardrailMethods: Rail5GuardrailMethods = {
     startOfDay.setHours(0, 0, 0, 0);
 
     const [result] = await db
-      .select({ total: sql<number>`COALESCE(SUM(${rail5Checkouts.amountCents}), 0)` })
-      .from(rail5Checkouts)
+      .select({ total: sql<number>`COALESCE(SUM(${rail5Transactions.amountCents}), 0)` })
+      .from(rail5Transactions)
       .where(and(
-        eq(rail5Checkouts.cardId, cardId),
-        sql`${rail5Checkouts.status} IN ('approved', 'completed')`,
-        gte(rail5Checkouts.createdAt, startOfDay),
+        eq(rail5Transactions.cardId, cardId),
+        sql`${rail5Transactions.status} IN ('approved', 'completed')`,
+        gte(rail5Transactions.createdAt, startOfDay),
       ));
     return Number(result?.total || 0);
   },
@@ -54,12 +54,12 @@ export const rail5GuardrailMethods: Rail5GuardrailMethods = {
     startOfMonth.setHours(0, 0, 0, 0);
 
     const [result] = await db
-      .select({ total: sql<number>`COALESCE(SUM(${rail5Checkouts.amountCents}), 0)` })
-      .from(rail5Checkouts)
+      .select({ total: sql<number>`COALESCE(SUM(${rail5Transactions.amountCents}), 0)` })
+      .from(rail5Transactions)
       .where(and(
-        eq(rail5Checkouts.cardId, cardId),
-        sql`${rail5Checkouts.status} IN ('approved', 'completed')`,
-        gte(rail5Checkouts.createdAt, startOfMonth),
+        eq(rail5Transactions.cardId, cardId),
+        sql`${rail5Transactions.status} IN ('approved', 'completed')`,
+        gte(rail5Transactions.createdAt, startOfMonth),
       ));
     return Number(result?.total || 0);
   },
