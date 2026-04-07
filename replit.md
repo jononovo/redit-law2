@@ -61,7 +61,7 @@ New features should follow a feature-first folder structure under `lib/{feature}
 
 ---
 
-## 1. Brands & Skills
+# 1. Brands & Skills
 
 The platform's growth engine. A single automated pipeline that scans merchant domains, scores their AI-readiness, classifies them into a taxonomy, generates per-merchant shopping skills, and stores everything in a central Brand Index. This is Module 1 in the system architecture — a single unified pipeline.
 
@@ -71,7 +71,7 @@ The platform's growth engine. A single automated pipeline that scans merchant do
 
 **Entry points:** `POST /api/v1/scan` (public, user-triggered) and `features/brand-engine/scan-queue/process-next.ts` (background queue worker). Both run the identical pipeline.
 
-### Brand Index
+## Brand Index
 
 `brand_index` table (`server/storage/brand-index.ts`) — sole source of truth for all brand data. One row per domain, ~85 columns. All surfaces read from it:
 - Catalog UI: `/skills` (SSR + client filtering), `/skills/[vendor]` (SSR detail), `/c/[sector]` (sector pages)
@@ -87,7 +87,7 @@ Storage methods: `searchBrands` (with `lite` mode for catalog cards), `searchBra
 
 Maturity progression: `draft` → `community` (auto-promoted when score + skillMd + brandData present) → `official` (brand claimed) → `verified` (CreditClaw audited). `resolveMaturity()` in `features/brand-engine/agentic-score/scan-utils.ts` never demotes.
 
-### ASX Score Engine
+## ASX Score Engine
 
 `features/brand-engine/agentic-score/` — evaluates merchant AI-readiness. 11 signals, 3 pillars, 100 points:
 - **Clarity** (35 pts): JSON-LD (15), Product Feed/Sitemap (10), Agent Metadata (10)
@@ -96,7 +96,7 @@ Maturity progression: `draft` → `community` (auto-promoted when score + skillM
 
 Key files: `rubric.ts` (scoring rubric), `scoring-engine.ts` (deterministic scorer), `agent-scan.ts` (multi-page Claude scanner), `classify-brand.ts` (Perplexity classification), `audit-site.ts` (Perplexity site audit), `fetch.ts` (parallel fetcher + domain normalization).
 
-### Taxonomy & Classification
+## Taxonomy & Classification
 
 `features/brand-engine/procurement-skills/taxonomy/` — each concern is its own file with type definition + label map:
 - **28 sectors** (21 Google Product Taxonomy roots + 7 custom). 26 assignable; `luxury` is tier-driven, `multi-sector` is set programmatically for department stores/supermarkets/mega merchants.
@@ -109,7 +109,7 @@ Core types in `features/brand-engine/procurement-skills/types.ts` — re-exports
 
 Product categories: 5,638 entries in `product_categories` table (5,595 Google + 43 custom, seeded by `scripts/seed-google-taxonomy.ts`). Category resolution maps brands to taxonomy IDs via `brand_categories` junction table.
 
-### Skill Generation & Serving
+## Skill Generation & Serving
 
 `features/brand-engine/procurement-skills/generator.ts` — `generateVendorSkill()` converts VendorSkill objects into SKILL.md markdown (frontmatter, overview, search instructions, checkout flow, tips, known issues).
 
@@ -117,7 +117,7 @@ Product categories: 5,638 entries in `product_categories` table (5,595 Google + 
 
 Served at: `GET /brands/{slug}/skill` (text/markdown, 24h cache) and `GET /brands/{slug}/skill-json` (application/json, 24h cache).
 
-### Merchant Discovery (Recommend API)
+## Merchant Discovery (Recommend API)
 
 `app/api/v1/recommend/route.ts` — three-stage pipeline for agent queries:
 1. **Category Resolution** — Perplexity Sonar extracts intent → FTS against `category_keywords` → top 5 categories
@@ -126,14 +126,14 @@ Served at: `GET /brands/{slug}/skill` (text/markdown, 24h cache) and `GET /brand
 
 Product listings (Module 2 — Product Index): `VECTOR(384)` column, `Xenova/all-MiniLM-L6-v2` embeddings via `features/product-index/embeddings/embed.ts`, IVFFlat index. Ingestion via Shopify JSON, Firecrawl batch, Google Shopping XML, or weekly refresh scripts.
 
-### Scan Queue
+## Scan Queue
 
 `features/brand-engine/scan-queue/`, admin page at `/admin123/scan-queue` — batch scanning with server-side scheduler:
 - Processes one domain every 17 minutes, auto-stops after 3 days, pauses during quiet hours
 - `scan_queue` table with `FOR UPDATE SKIP LOCKED` atomic claim, stale recovery (30 min timeout)
 - Same pipeline as public scan API
 
-### Brand Claims
+## Brand Claims
 
 `brand_claims` table, `features/brand-engine/brand-claims/` — self-service ownership verification:
 - Auto-verify if email domain matches brand domain; manual review otherwise
@@ -141,18 +141,18 @@ Product listings (Module 2 — Product Index): `VECTOR(384)` column, `Xenova/all
 - Free email blocklist (Gmail, Yahoo, etc.)
 - Admin review queue at `/admin123/brand-claims`
 
-### Brand Feedback
+## Brand Feedback
 
 `brand_feedback` table — agents and humans rate brands (search accuracy, stock reliability, checkout completion):
 - Weighted 90-day rolling average (source weights: human=2.0, agent=1.0, anonymous=0.5)
 - Published at 5+ weighted events → updates `axsRating` on brand_index
 - `POST /api/v1/bot/skills/[vendor]/feedback`, rate limited: 1 per brand per bot per hour
 
-### Catalog UI
+## Catalog UI
 
 Hybrid SSR: `app/skills/page.tsx` (server component, initial fetch) + `app/skills/catalog-client.tsx` (client, filtering/pagination). `VendorCard` in `app/skills/vendor-card.tsx` shared across catalog and sector pages. Detail pages at `app/skills/[vendor]/page.tsx` (SSR for SEO) with claim button, skill preview, and copy URL components. Sector landing pages at `app/c/[sector]/page.tsx`. Sitemap includes all brand pages and populated sector pages.
 
-### Skill Variants System
+## Skill Variants System
 
 A config-driven build system at `skill-variants/` (project root) that generates variant skill packages from the master files in `public/`. Each variant has its own independent `variant.config.json` defining overrides.
 
@@ -171,17 +171,17 @@ A config-driven build system at `skill-variants/` (project root) that generates 
 
 ---
 
-## 3. Payment Tools
+# 3. Payment Tools
 
 Outbound payment rails — how users fund wallets and how their agents spend money at external merchants. Two fundamentally different systems: crypto wallets (Rails 1 & 2) and self-hosted cards (Rail 5).
 
 → Docs: `project_knowledge/internal_docs/04-payment-tools/`
 
-### Crypto Wallets (Rails 1 & 2)
+## Crypto Wallets (Rails 1 & 2)
 
 Custodial USDC wallets on Base chain. Both rails share the same funding → spending → reconciliation pattern, inter-wallet transfers, and guardrail enforcement. They differ by provider.
 
-#### Rail 1 — Stripe Wallet (Live)
+### Rail 1 — Stripe Wallet (Live)
 
 Uses Privy server wallets on Base chain, USDC funding via Stripe Crypto Onramp, and x402 payment protocol. **Modularized under `features/payment-rails/rail1/`:**
   - `client.ts` — Privy client singleton, authorization signature helper, app ID/secret getters.
@@ -193,7 +193,7 @@ Uses Privy server wallets on Base chain, USDC funding via Stripe Crypto Onramp, 
   - `x402.ts` — x402 typed data builders (`buildTransferWithAuthorizationTypedData`, `buildXPaymentHeader`, `generateNonce`) and USDC format helpers (`formatUsdc`, `usdToMicroUsdc`, `microUsdcToUsd`).
   - Webhook: `STRIPE_WEBHOOK_SECRET_ONRAMP` env var, event type `crypto.onramp_session.updated`. Balance sync endpoint: `POST /api/v1/stripe-wallet/balance/sync` with 30-sec cooldown and `reconciliation` transaction type for discrepancies. Schema includes `last_synced_at` column on `privy_wallets`.
 
-#### Rail 2 — Card Wallet (Not yet functional)
+### Rail 2 — Card Wallet (Not yet functional)
 
 Uses CrossMint smart wallets on Base chain, USDC funding via fiat onramp, and Amazon/commerce purchases via Orders API. Employs merchant allow/blocklists. **Modularized under `features/payment-rails/rail2/`:**
   - `client.ts` — shared CrossMint API client (`crossmintFetch`, `getServerApiKey`, format helpers). Handles both API versions: Wallets API (`2025-06-09`) and Orders API (`2022-06-09`).
@@ -215,7 +215,7 @@ Uses CrossMint smart wallets on Base chain, USDC funding via fiat onramp, and Am
 - **Cross-rail shopping gate**: CrossMint Orders API requires `payerAddress` to be the CrossMint wallet. Shopping from a Privy (Rail 1) wallet would require a pre-transfer step (Privy→CrossMint) before order creation. This is a known limitation — not yet implemented.
 - Future providers (direct merchant APIs, browser checkout agents) slot in as siblings under `features/agent-interaction/procurement/`.
 
-#### Crypto Onramp (`features/payment-rails/crypto-onramp/`) — Active (Rail 1)
+### Crypto Onramp (`features/payment-rails/crypto-onramp/`) — Active (Rail 1)
 
 Server-side Stripe Crypto Onramp logic. Client-side UI is now in `features/agent-shops/payments/`. Legacy client components retained with `-legacy` suffix for reference.
 - **`types.ts`** — `WalletTarget`, `OnrampSessionResult`, `OnrampWebhookEvent`, `OnrampProvider`
@@ -223,7 +223,7 @@ Server-side Stripe Crypto Onramp logic. Client-side UI is now in `features/agent
 - **`stripe-onramp/webhook.ts`** — `parseStripeOnrampEvent()` + `handleStripeOnrampFulfillment()` — still used by webhook route
 - **`stripe-onramp/types.ts`** — Stripe-specific payload types
 
-#### Inter-Wallet Transfers
+### Inter-Wallet Transfers
 
 CreditClaw supports USDC transfers between wallets across all rails and to external addresses.
 - **API Endpoint:** `POST /api/v1/wallet/transfer` (authenticated, owner-only)
@@ -235,7 +235,7 @@ CreditClaw supports USDC transfers between wallets across all rails and to exter
 - **Frontend:** Transfer button on both Stripe Wallet and Card Wallet pages, dialog with destination picker (own wallets across both rails or external address), amount input in USD
 - **Lib Functions:** `sendUsdcTransfer` in `features/payment-rails/rail1/wallet/transfer.ts` (Privy) and `features/payment-rails/rail2/wallet/transfer.ts` (CrossMint)
 
-### Self-Hosted Cards (Rail 5) — Live
+## Self-Hosted Cards (Rail 5) — Live
 
 Encrypted card files with plugin-based checkout. Uses the owner's personal credit card — no wallet, no USDC, no blockchain. Owner encrypts card client-side (AES-256-GCM), CreditClaw stores only the decryption key. At checkout, the agent (or a plugin) gets the key, decrypts, fills card number + CVV, and wipes all sensitive data. Actively building plugins for **Claude Coworker** and **OpenClaw** to simplify the payment process — no sub-agent required when using a plugin. **Plugin:** `Plugins/OpenClaw/` (`src/index.ts`, `src/decrypt.ts`, `src/fill-card.ts`, `src/api.ts`). **Modularized under `features/payment-rails/rail5/`:**
   - `index.ts` — core helpers (`generateRail5CardId`, `generateRail5CheckoutId`, `validateKeyMaterial`, `getDailySpendCents`, `getMonthlySpendCents`, `buildSpawnPayload`, `buildCheckoutSteps`) + test checkout constants (`RAIL5_TEST_CHECKOUT_PAGE_ID`, `RAIL5_TEST_CHECKOUT_URL`).
@@ -251,7 +251,7 @@ Encrypted card files with plugin-based checkout. Uses the owner's personal credi
 - **Shipping File** (`features/agent-interaction/shipping/`): A central `.creditclaw/shipping.md` file shared across all cards. Generated from the `shipping_addresses` DB table. Auto-pushed to all owner's bots whenever addresses are created, updated, deleted, or default is changed. Bots can also fetch on demand via `GET /api/v1/bot/shipping-addresses`. Default address is marked for bot use at checkout.
 - Webhook event: `shipping.addresses.updated` (registered in `WebhookEventType`).
 
-### Cross-Rail Systems
+## Cross-Rail Systems
 
 These systems span all rails (1, 2, and 5).
 
@@ -297,7 +297,7 @@ All transaction tables (`transactions`, `privy_transactions`, `crossmint_transac
 
 Unified `rails.updated` webhook fires across ALL rails on bot link/unlink/freeze/unfreeze/wallet create with `action`, `rail`, `card_id`/`wallet_id`, `bot_id` in payload. Wired up in: Rail 1 (create, freeze), Rail 2 (create, freeze), Rail 5 (PATCH cards).
 
-### Shared Wallet & Card UI
+## Shared Wallet & Card UI
 
 **Card UI Module (`features/payment-rails/card/`):** Shared card component library designed for consistent card visuals across the platform.
   - `card-brand.ts` — brand detection from BIN prefix, formatting, max digits, placeholders. Re-exported from `lib/card-brand.ts` for backward compatibility.
@@ -329,13 +329,13 @@ Rail 1 (`stripe-wallet/page.tsx`, ~313 lines) and Rail 2 (`card-wallet/page.tsx`
 
 ---
 
-## 4. Agent Interaction
+# 4. Agent Interaction
 
 How external agents communicate with CreditClaw. Webhooks, messaging, and order tracking.
 
 → Docs: `project_knowledge/internal_docs/05-agent-interaction/`
 
-### Webhooks
+## Webhooks
 
 `features/agent-interaction/webhooks/`:
 - `delivery.ts` — outbound webhook delivery, HMAC-SHA256 signing, retry logic with exponential backoff, and OpenClaw hooks token auth. Exports `fireWebhook()`, `fireRailsUpdated()`, `signPayload()`, `attemptDelivery()`, `retryWebhookDelivery()`, `retryPendingWebhooksForBot()`, `retryAllPendingWebhooks()`.
@@ -343,12 +343,12 @@ How external agents communicate with CreditClaw. Webhooks, messaging, and order 
 - Types: `WebhookEventType`, `RailsUpdatedAction`.
 - Storage layer lives separately at `server/storage/webhooks.ts`.
 
-### Managed Cloudflare Tunnels
+## Managed Cloudflare Tunnels
 
 Bots without a `callback_url` get a managed Cloudflare tunnel provisioned at registration. Tunnels route through the `nortonbot.com` domain (configured directly in Cloudflare). Module lives in `features/agent-interaction/webhook-tunnel/` with two layers: `cloudflare.ts` (raw API calls) and `provisioning.ts` (orchestration + defaults). Required secrets: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_ZONE_ID`.
 → Full detail: `project_knowledge/internal_docs/05-agent-interaction/webhook-tunnels.md`
 
-### Bot Messaging System
+## Bot Messaging System
 
 `features/platform-management/agent-management/bot-messaging/`:
 - `index.ts` — `sendToBot(botId, eventType, payload, options?)`: single function for all bot communication. Routes based on webhook health: tries webhook if status is `active` or `degraded`, skips webhook and goes straight to pending message if `unreachable` or `none`.
@@ -372,7 +372,7 @@ Bots without a `callback_url` get a managed Cloudflare tunnel provisioned at reg
 - Rail 5 `confirm-delivery` also deletes the pending message for the card.
 - **Note**: Direct `fireWebhook()` callers (~20 sites across the codebase) do not participate in health tracking — only `sendToBot()` does. Migration of those callers to `sendToBot()` is a future task.
 
-### Central Orders
+## Central Orders
 
 `features/agent-interaction/orders/`, `server/storage/orders.ts` — Unified cross-rail order tracking for all vendor purchases. Every confirmed purchase across all rails creates a row in the `orders` table.
 - **Schema**: `orders` table in `shared/schema.ts` with columns for product info (name, image, URL, description, SKU), vendor (name, details JSONB), pricing (price_cents, taxes_cents, shipping_price_cents, currency), shipping (address, type, note), tracking (carrier, number, URL, estimated_delivery), and references (owner_uid, rail, bot_id, wallet_id/card_id, transaction_id, external_order_id).
@@ -389,13 +389,13 @@ Bots without a `callback_url` get a managed Cloudflare tunnel provisioned at reg
 
 ---
 
-## 6. Platform Management
+# 6. Platform Management
 
 Auth, bot lifecycle, admin tooling.
 
 → Docs: `project_knowledge/internal_docs/07-platform-management/`
 
-### Feature Flags & Access Control
+## Feature Flags & Access Control
 
 CreditClaw uses a lightweight, database-backed feature flag system for controlling UI visibility and route access.
 - **DB Column**: `flags text[] NOT NULL DEFAULT '{}'` on the `owners` table. A user can hold multiple flags simultaneously (e.g., `["admin", "beta"]`).
@@ -406,7 +406,7 @@ CreditClaw uses a lightweight, database-backed feature flag system for controlli
 - **Admin Dashboard**: `/admin123` — server-side protected via `layout.tsx` that calls `getCurrentUser()` and checks for `admin` flag. Returns 404 (not 403) for non-admins. Uses the same sidebar/header layout as the main dashboard.
 - **Adding a new flag**: (1) Set it in the user's `flags` array in DB, (2) Tag nav items or routes with `requiredAccess`, (3) Done.
 
-### Agent Management
+## Agent Management
 
 `features/platform-management/agent-management/` — Bot/agent-facing API infrastructure:
 - `auth.ts` — authenticates bot requests via Bearer API key (prefix lookup + bcrypt verify).
@@ -417,11 +417,11 @@ CreditClaw uses a lightweight, database-backed feature flag system for controlli
 - `bot-linking.ts` — centralized `linkBotToEntity(rail, entityId, botId, ownerUid)` / `unlinkBotFromEntity(rail, entityId, ownerUid)` for all rails. Max 3 entities per bot, ownership validation, bot existence check, webhook firing (`rails.updated`). Rail configs are declarative objects. Route files are thin wrappers.
 - **Bot Status API:** `GET /api/v1/bot/status` (cross-rail), `GET /api/v1/bot/check/rail{1,2,5}` (per-rail detail). `GET /api/v1/bots/rails` (owner-facing rail connections).
 
-### Onboarding & Setup Wizards
+## Onboarding & Setup Wizards
 
 Onboarding wizard (`/onboarding`, 5 steps), Rail 5 setup wizard (`/setup/rail5`, 8+1 steps), and shared wizard typography system (`lib/wizard-typography.ts`). → Full detail: `project_knowledge/internal_docs/07-platform-management/onboarding-wizards.md`
 
-### Feedback / Support Widget
+## Feedback / Support Widget
 
 In-app feedback dialog accessible from the profile dropdown in the dashboard header. Authenticated users can submit bug reports, feature requests, billing questions, technical support requests, and general feedback.
 - **Frontend:** `components/dashboard/feedback-dialog.tsx` — Dialog component using existing UI primitives (Dialog, Select, Textarea, Button). Manages own form state and submission.
@@ -433,11 +433,11 @@ In-app feedback dialog accessible from the profile dropdown in the dashboard hea
 
 ---
 
-## 7. Multi-tenant Structure
+# 7. Multi-tenant Structure
 
 → Docs: `project_knowledge/internal_docs/08-multi-tenant/`
 
-### Tenant Theming
+## Tenant Theming
 
 Each tenant has its own config at `public/tenants/{tenantId}/config.json` (source of truth) and `features/platform-management/tenants/tenant-configs.ts` (client bundle). Configs define branding, meta tags, theme tokens, routes, features, and tracking.
 
@@ -449,7 +449,7 @@ When building UI, check which tenant(s) the feature applies to and follow the ap
 
 ---
 
-## 8. Agent Shops
+# 8. Agent Shops
 
 The platform's inbound commerce engine. Every wallet holder becomes a seller via checkout pages, storefronts, and invoices. The inverse of outbound payment rails (Module 3) — this handles how the world pays our merchants, including bot-to-bot commerce via x402.
 
@@ -466,7 +466,7 @@ The platform's inbound commerce engine. Every wallet holder becomes a seller via
 **Bot APIs:** Full parity — checkout pages, sales, seller profile, shop, invoices all have bot endpoints under `/api/v1/bot/`
 **Skill file:** `public/MY-STORE.md`
 
-### Payments UI (`features/agent-shops/payments/`)
+## Payments UI (`features/agent-shops/payments/`)
 
 Modular client-side payment method selection and execution for both wallet top-ups and checkout pages. Each payment method is a fully self-contained handler component. Pages provide a `PaymentContext` and render either `FundWalletSheet` (top-up) or `CheckoutPaymentPanel` (checkout) — they never touch SDK details.
 - **`types.ts`** — `PaymentContext` (mode, rail, amount, walletAddress, etc.), `PaymentResult`, `PaymentMethodDef`, `PaymentHandlerProps`
@@ -481,7 +481,7 @@ Modular client-side payment method selection and execution for both wallet top-u
 - **Design principle**: Each handler is independent — no shared base class, no shared hooks. One handler can't break another. Adding a new method = new handler file + entry in `methods.ts`.
 - **Checkout page refactor**: `app/pay/[id]/page.tsx` is now a thin shell (~280 lines, down from ~550) — handles data fetching, layout, and context building. All payment logic delegated to `CheckoutPaymentPanel`.
 
-### Base Pay Backend (`features/agent-shops/base-pay/`)
+## Base Pay Backend (`features/agent-shops/base-pay/`)
 
 Server-side Base Pay verification and ledger logic (Phase 1).
 - **`types.ts`** — `BasePayVerifyInput`, `BasePayVerifyResult`, `BasePayCheckoutInput`
@@ -491,7 +491,7 @@ Server-side Base Pay verification and ledger logic (Phase 1).
 - **Storage**: `server/storage/base-pay.ts` — `createBasePayPayment`, `getBasePayPaymentByTxId`, `updateBasePayPaymentStatus`
 - **API routes**: `POST /api/v1/base-pay/verify` (authenticated top-up), `POST /api/v1/checkout/[id]/pay/base-pay` (public checkout)
 
-### QR Pay Backend (`features/agent-shops/qr-pay/`)
+## QR Pay Backend (`features/agent-shops/qr-pay/`)
 
 Server-side QR/copy-paste crypto top-up logic (Phase 3). Credits whatever USDC amount arrives on-chain — no amount enforcement.
 - **`types.ts`** — `QrPayCreateInput`, `QrPayCreateResult`, `QrPayStatusResult`
@@ -535,5 +535,5 @@ Server-side QR/copy-paste crypto top-up logic (Phase 3). Credits whatever USDC a
 - **Perplexity API:** Site audit and evidence gathering for ASX Score Scanner (via sonar-deep-research model).
 - **react-markdown + remark-gfm + @tailwindcss/typography:** Markdown rendering for documentation pages.
 
-### Testing (`tests/`)
+## Testing (`tests/`)
 Vitest-based automated test suite. Run with `npx vitest run`. Config in `vitest.config.ts` with `@/` path alias. See `tests/_README.md` for coverage map, guidelines on when/how to add tests, and known gaps. Manual curl-based integration tests are in `tests/manual-api-suite.md`.
