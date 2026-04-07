@@ -1,4 +1,5 @@
 import type { ProcurementRules, ProcurementRequest, ProcurementDecision } from "./types";
+import { normalizeDomain } from "@/lib/agentic-score/fetch";
 
 export function mergeProcurementRules(master: ProcurementRules, rail: ProcurementRules): ProcurementRules {
   return {
@@ -11,21 +12,32 @@ export function mergeProcurementRules(master: ProcurementRules, rail: Procuremen
   };
 }
 
+function tryNormalizeDomain(input: string): string | null {
+  try {
+    return normalizeDomain(input);
+  } catch {
+    return null;
+  }
+}
+
 export function evaluateProcurementControls(
   rules: ProcurementRules,
   request: ProcurementRequest
 ): ProcurementDecision {
   if (request.domain) {
-    const domain = normalizeDomain(request.domain);
+    const domain = tryNormalizeDomain(request.domain);
+    if (!domain) {
+      return { action: "block", reason: `Invalid domain: "${request.domain}"` };
+    }
 
     if (rules.blocklistedDomains.length > 0) {
-      if (rules.blocklistedDomains.some((d) => normalizeDomain(d) === domain)) {
+      if (rules.blocklistedDomains.some((d) => tryNormalizeDomain(d) === domain)) {
         return { action: "block", reason: `Domain "${domain}" is blocklisted` };
       }
     }
 
     if (rules.allowlistedDomains.length > 0) {
-      if (!rules.allowlistedDomains.some((d) => normalizeDomain(d) === domain)) {
+      if (!rules.allowlistedDomains.some((d) => tryNormalizeDomain(d) === domain)) {
         return { action: "block", reason: `Domain "${domain}" is not on the allowlist` };
       }
     }
@@ -66,16 +78,6 @@ export function evaluateProcurementControls(
   return { action: "allow" };
 }
 
-function normalizeDomain(input: string): string {
-  try {
-    if (input.includes("://")) {
-      return new URL(input).hostname.toLowerCase();
-    }
-    return input.toLowerCase().trim();
-  } catch {
-    return input.toLowerCase().trim();
-  }
-}
 
 function intersectLists(a: string[], b: string[]): string[] {
   if (a.length === 0) return b;

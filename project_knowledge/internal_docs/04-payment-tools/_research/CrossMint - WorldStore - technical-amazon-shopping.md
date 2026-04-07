@@ -1,4 +1,4 @@
-# Technical Reference: Amazon Shopping with CreditClaw
+# Technical Reference: Amazon Shopping with CreditClaw with CrossMint WorldStore API and StableCoin - Information Only
 
 **Date:** February 14, 2026
 

@@ -85,6 +85,7 @@ export default function ScanQueuePage() {
   const [loading, setLoading] = useState(false);
   const [scanRunning, setScanRunning] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [allowRescans, setAllowRescans] = useState(false);
   const [authError, setAuthError] = useState(false);
 
   const fetchStats = useCallback(async () => {
@@ -186,14 +187,21 @@ export default function ScanQueuePage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ domains }),
+        body: JSON.stringify({ domains, allowRescans }),
       });
       if (res.status === 401) {
         setAuthError(true);
         return;
       }
       const data = await res.json();
-      setMessage(`Added ${data.added} domain(s)${data.skipped?.length ? ` — skipped: ${data.skipped.join(", ")}` : ""}`);
+      const parts = [`Added ${data.added}`];
+      if (data.duplicates?.length) {
+        parts.push(`${data.duplicates.length} duplicate${data.duplicates.length > 1 ? "s" : ""}: ${data.duplicates.join(", ")}`);
+      }
+      if (data.skipped?.length) {
+        parts.push(`${data.skipped.length} skipped: ${data.skipped.join(", ")}`);
+      }
+      setMessage(parts.join(" — "));
       setDomainInput("");
       await fetchStats();
     } catch {
@@ -271,6 +279,18 @@ export default function ScanQueuePage() {
               data-testid="button-scheduler-toggle"
             >
               {scheduler?.running ? "Scheduler ON" : "Scheduler OFF"}
+            </button>
+
+            <button
+              onClick={() => setAllowRescans(!allowRescans)}
+              className={`px-4 py-2 text-sm font-medium border transition-colors ${
+                allowRescans
+                  ? "border-amber-600 text-amber-400 hover:bg-amber-950"
+                  : "border-neutral-700 text-neutral-400 hover:bg-neutral-900"
+              }`}
+              data-testid="button-allow-rescans"
+            >
+              {allowRescans ? "Allow Re-scans ON" : "Allow Re-scans OFF"}
             </button>
 
             {scheduler?.running && scheduler.nextTickIn && (

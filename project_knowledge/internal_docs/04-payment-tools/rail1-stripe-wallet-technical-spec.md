@@ -1,3 +1,8 @@
+---
+name: Rail 1 — Stripe Wallet Technical Spec
+description: Privy server wallets on Base chain, Stripe Crypto Onramp for fiat→USDC, x402 payment protocol for bot spending.
+---
+
 # Rail 1: Stripe Wallet — Technical Specification
 
 **Date:** February 13, 2026, 8:30 PM UTC
@@ -108,6 +113,8 @@ All routes under `/api/v1/stripe-wallet/`. Owner endpoints use Firebase session 
 | POST | `/onramp/session` | Create Stripe Crypto Onramp session. Returns `client_secret` for embedded widget and `redirect_url` for hosted fallback. |
 | GET/POST | `/guardrails` | View or update spending controls for a wallet. |
 | GET | `/transactions` | List transactions for a wallet. Filterable by type. |
+| POST | `/link` | Link a wallet to a bot. |
+| POST | `/unlink` | Unlink a wallet from a bot. |
 | GET | `/approvals` | List pending approvals for the owner. |
 | POST | `/approvals/decide` | Approve or reject a pending payment. Checks expiration. |
 
@@ -210,9 +217,12 @@ Owner sees pending approval in dashboard
 
 | File | Purpose |
 |------|---------|
-| `lib/stripe-wallet/server.ts` | Privy client initialization, authorization signature generation (HMAC over canonicalized payload), wallet creation, EIP-712 signing |
-| `lib/stripe-wallet/x402.ts` | EIP-712 `TransferWithAuthorization` typed data construction, nonce generation, `X-PAYMENT` header encoding, USDC formatting utilities |
-| `lib/stripe-wallet/onramp.ts` | Direct Stripe REST API call to `POST /v1/crypto/onramp_sessions` (SDK lacks native support for beta endpoints) |
+| `lib/rail1/client.ts` | Privy client initialization, authorization signature generation (HMAC over canonicalized payload), app ID/secret helpers |
+| `lib/rail1/x402.ts` | EIP-712 `TransferWithAuthorization` typed data construction, nonce generation, `X-PAYMENT` header encoding, USDC formatting utilities |
+| `lib/rail1/wallet/create.ts` | `createServerWallet()` — Privy wallet creation |
+| `lib/rail1/wallet/balance.ts` | On-chain USDC balance lookup via viem public client |
+| `lib/rail1/wallet/sign.ts` | `signTypedData()` — EIP-712 signing via Privy |
+| `lib/rail1/wallet/transfer.ts` | USDC transfer via Privy wallet (ERC-20 transfer encoding) |
 
 ---
 
@@ -224,7 +234,7 @@ Owner sees pending approval in dashboard
 - **EIP-712 Domain**: `{ name: "USD Coin", version: "2", chainId: 8453, verifyingContract: <USDC address> }`.
 - **Balance units**: `balance_usdc` and `amount_usdc` fields store micro-USDC (6 decimals). `1000000 = $1.00`. Guardrail limits (`max_per_tx_usdc`, etc.) store integer USD values.
 - **Auth**: Firebase Auth (global) for owners via httpOnly session cookies. Bearer API tokens for bots via `authenticateBot()` middleware.
-- **Rail segmentation**: All tables prefixed `privy_*`, all routes under `/api/v1/stripe-wallet/*`, all lib under `lib/stripe-wallet/`, all UI under `/app/stripe-wallet`.
+- **Rail segmentation**: All tables prefixed `privy_*`, all routes under `/api/v1/stripe-wallet/*`, all lib under `lib/rail1/`, all UI under `/app/stripe-wallet`.
 
 ## Environment Variables
 

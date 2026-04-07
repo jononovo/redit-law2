@@ -23,7 +23,7 @@ async function main() {
         ORDER BY bi.name`,
   );
 
-  const rows = merchants.rows as MerchantRow[];
+  const rows = merchants.rows as unknown as MerchantRow[];
   console.log(`Found ${rows.length} merchants with products\n`);
 
   let succeeded = 0;

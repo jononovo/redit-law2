@@ -1,3 +1,8 @@
+---
+name: Rail 5 — Sub-Agent Cards Technical Overview
+description: Split-knowledge encrypted card system. Bot holds ciphertext, CreditClaw holds key, ephemeral sub-agent decrypts at checkout.
+---
+
 # Rail 5: Sub-Agent Cards — Technical Overview
 
 **v4 • March 10, 2026 • Internal**
