@@ -653,9 +653,9 @@ Self-hosted documentation at `/docs` with unified single-sidebar navigation (no 
 - **Config**: `app/docs/content/sections.ts` — flat typed section/page registry. Sections have optional `tag` field (e.g. "shopy") displayed as a badge. No audience/tenant filtering. `findPage(slugParts)` resolves URL to section+page. `getAllPagesFlat()` returns all pages (no args).
 - **Layout**: `app/docs/layout.tsx` — client component with persistent sidebar. Swaps branding (logo) per tenant cookie. No audience toggle.
 - **Renderer**: `app/docs/[...slug]/page.tsx` — reads markdown from `app/docs/content/{section}/{page}.md`, renders via `react-markdown` with `prose` typography classes. Prev/next navigation across all sections.
-- **12 sections** (57 pages): Getting Started, Bots & Onboarding, Wallets & Funding, Spending Controls, Selling, Transactions & Orders, Procurement Skills, Agent Integration, Settings, ASX Scoring (tag: shopy), Skill Publishing (tag: shopy), CLI Tools (tag: shopy).
+- **13 sections** (59 pages): Getting Started, Bots & Onboarding, Wallets & Funding, Spending Controls, Selling, Transactions & Orders, Procurement Skills, Skill Registry (tag: brands), Agent Integration, Settings, ASX Scoring (tag: shopy), Skill Publishing (tag: shopy), CLI Tools (tag: shopy).
 - **URL pattern**: `/docs/{section-slug}/{page-slug}` — single namespace, no `/docs/api/` or `/docs/shopy/` prefixes.
-- **Tenant entry points**: `docsEntrySlug` in `TenantConfig` — creditclaw → `getting-started/what-is-creditclaw`, shopy → `asx-scoring/what-is-shopy`, brands → `skill-publishing/structure`.
+- **Tenant entry points**: `docsEntrySlug` in `TenantConfig` — creditclaw → `getting-started/what-is-creditclaw`, shopy → `asx-scoring/what-is-shopy`, brands → `skill-registry/what-is-the-registry`.
 - **LLM access**: Raw markdown endpoint at `GET /api/docs/{section}/{page}` (Content-Type: text/markdown). Each doc page has "Copy for LLM" and "View as Markdown" buttons. `GET /llms.txt` serves a structured index of all docs with markdown links. `GET /llms-full.txt` concatenates all docs into a single file.
 
 ### Shopy.sh Pages

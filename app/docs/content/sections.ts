@@ -85,11 +85,20 @@ export const sections: DocSection[] = [
     slug: "skills",
     pages: [
       { title: "What Are Skills", slug: "what-are-skills" },
-      { title: "Agentic Shopping (ASX) Score", slug: "asx-score" },
       { title: "Browsing the Supplier Hub", slug: "browsing-skills" },
       { title: "Submitting a Supplier", slug: "submitting-a-supplier" },
       { title: "Skills API Reference", slug: "api-reference" },
       { title: "Scan API Reference", slug: "scan-api-reference" },
+    ],
+  },
+  {
+    title: "Skill Registry",
+    slug: "skill-registry",
+    tag: "brands",
+    pages: [
+      { title: "What is the Registry", slug: "what-is-the-registry" },
+      { title: "Registry API", slug: "registry-api" },
+      { title: "SKILL.md & skill.json", slug: "skill-format" },
     ],
   },
   {

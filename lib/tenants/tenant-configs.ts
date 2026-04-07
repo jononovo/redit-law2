@@ -104,7 +104,7 @@ const brandsConfig: TenantConfig = {
     secondaryColor: "220 8% 50%",
   },
   routes: { guestLanding: "/brands", authLanding: "/overview" },
-  docsEntrySlug: "skill-publishing/structure",
+  docsEntrySlug: "skill-registry/what-is-the-registry",
   navigation: {
     header: {
       variant: "dark",

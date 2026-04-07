@@ -31,13 +31,13 @@ Skills go through a lifecycle of quality levels:
 
 ## ASX Score
 
-Each vendor in the catalog has an ASX Score (0–100) that measures how well the site supports AI shopping agents. The score evaluates 10 signals across three pillars:
+Each vendor in the catalog has an ASX Score (0–100) that measures how well the site supports AI shopping agents. The score evaluates 11 signals across three pillars:
 
-- **Clarity** — Can agents find products? (JSON-LD, sitemap, HTML structure)
-- **Speed** — Can agents search quickly? (APIs, site search, page load)
+- **Clarity** — Can agents understand the product catalog? (JSON-LD, sitemap, HTML structure)
+- **Discoverability** — Can agents find and evaluate products? (APIs, site search, page load, product page quality)
 - **Reliability** — Can agents complete a purchase? (guest checkout, cart management, checkout flow, bot tolerance)
 
-Higher scores mean smoother, more reliable automated purchasing. See [ASX Score](/docs/skills/asx-score) for the full breakdown.
+Higher scores mean smoother, more reliable automated purchasing. See [ASX Score Explained](/docs/asx-scoring/asx-score-explained) for the full breakdown.
 
 ## How Bots Use Skills
 

@@ -6,6 +6,18 @@ date: 2026-04-06
 
 # Shopy CLI (`npx shopy add <brand>`)
 
+-----
+
+260406: Update here: we didn't get the npx shopy name.
+But we have Shopy as an organization @shopy/cli 
+and also we have "npx creditclaw" if we want that.
+
+What do you think we should use for this?
+
+------
+
+
+
 ## Status
 
 **Not started.** The brands.sh landing page advertises this command but the npm package does not exist. Registry API Phase 1 is complete (4 endpoints live) — no other blockers.
