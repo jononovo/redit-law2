@@ -45,10 +45,10 @@ Evaluates a domain's AI-readiness. Outputs a 0–100 score across three pillars:
 
 ## 2. Agent Shopping Skills per Brand
 
-Generates machine-readable and LLM-readable instructions for how an agent should shop at a specific store.
+Generates machine-readable and LLM-readable instructions for how an agent should shop at a specific store. Also owns the Recommend API — the merchant discovery pipeline that agents call to find where to buy.
 
-**Key folders:** `lib/procurement-skills/`
-**API routes:** `app/api/v1/registry/`, `app/api/v1/vendors/`
+**Key folders:** `lib/procurement-skills/`, `lib/embeddings/`
+**API routes:** `app/api/v1/registry/`, `app/api/v1/vendors/`, `app/api/v1/recommend/`
 
 | Component | Key functions / files | Purpose |
 |-----------|----------------------|---------|
@@ -56,33 +56,35 @@ Generates machine-readable and LLM-readable instructions for how an agent should
 | skill.json Builder | `buildSkillJson()` | Machine-readable JSON — taxonomy links, access tiers, score breakdowns |
 | Registry API | `/api/v1/registry` routes | List, search, fetch skills programmatically |
 | Taxonomy Mapping | `taxonomy.ts` | Maps brands to Google Product Taxonomy for skill metadata |
-
-**Docs:** `internal_docs/02-agent-shopping-skills/`
-
----
-
-## 3. Brands Index for Agentic Shopping
-
-Central catalog. Powers sector pages, registry, and the recommend API that agents call to find merchants.
-
-**Key folders:** `lib/catalog/`, `lib/embeddings/`, `lib/brand-claims/`
-**API routes:** `app/api/v1/recommend/`, `app/api/v1/brands/`
-**Tables:** `brand_index`, `brand_categories`, `product_listings`, `category_keywords`, `brand_claims`
-
-| Component | Key functions / files | Purpose |
-|-----------|----------------------|---------|
-| Brand Index | `brand_index` table, `LITE_COLUMNS` projection | One row per domain. Central source for all catalog views |
 | Recommend API | `app/api/v1/recommend/route.ts` | Three-stage merchant discovery for agents (see below) |
 | Product Search | `lib/embeddings/`, `product_listings` table | pgvector cosine similarity search, lateral join by brand |
-| Brand Claims | `lib/brand-claims/`, `brand_claims` table | Ownership claims linking brands to user accounts |
-| Category Keywords | `category_keywords` table | Keyword → taxonomy ID mapping for full-text search |
 
 **Recommend API stages:**
 1. **Category Resolution** — Perplexity Sonar extracts intent → Postgres FTS against `category_keywords` → top 5 categories
 2. **Merchant Ranking** — recursive SQL over `brand_index` + `brand_categories` → ranked by brand match → match depth → ASX score
 3. **Product Search** — embedding vector → pgvector cosine similarity against `product_listings` → top 3 per merchant
 
-**Docs:** `internal_docs/03-brands-index/`
+**Docs:** `internal_docs/02-agent-shopping-skills/` — skill generation, merchant-index pipeline, research folder
+
+---
+
+## 3. Brands Index for Agentic Shopping
+
+Central catalog and storage layer. Owns the `brand_index` table, catalog UI, taxonomy system, and brand claims. The Recommend API (Module 2) queries this data but is documented and maintained there.
+
+**Key folders:** `lib/catalog/`, `lib/brand-claims/`
+**API routes:** `app/api/v1/brands/`
+**Tables:** `brand_index`, `brand_categories`, `product_listings`, `category_keywords`, `brand_claims`
+
+| Component | Key functions / files | Purpose |
+|-----------|----------------------|---------|
+| Brand Index | `brand_index` table, `LITE_COLUMNS` projection | One row per domain. Central source for all catalog views |
+| Catalog UI | `/skills`, `/skills/[vendor]`, `/c/[sector]` | Public browsing pages for the brand registry |
+| Brand Claims | `lib/brand-claims/`, `brand_claims` table | Ownership claims linking brands to user accounts |
+| Category Keywords | `category_keywords` table | Keyword → taxonomy ID mapping for full-text search |
+| Taxonomy | 28 sectors, 7 tiers, 8 capabilities, 5,638 product categories | Classification system for all brands |
+
+**Docs:** `internal_docs/03-brands-index/` — brand_index structure, taxonomy system, research folder
 
 ---
 
@@ -90,16 +92,15 @@ Central catalog. Powers sector pages, registry, and the recommend API that agent
 
 Outbound financial rails — how users fund wallets and how their agents spend money at external merchants. Inbound payment methods (how shoppers pay at our checkouts) are in Module 9 (Agent Shops).
 
-**Key folders:** `lib/payments/`, `lib/rail1/`, `lib/rail2/`, `lib/rail4/`, `lib/rail5/`, `lib/crypto-onramp/`, `lib/card/`, `lib/obfuscation-engine/`, `lib/obfuscation-merchants/`
-**API routes:** `app/api/v1/wallet/`, `app/api/v1/wallets/`, `app/api/v1/stripe-wallet/`, `app/api/v1/card-wallet/`, `app/api/v1/billing/`, `app/api/v1/rail4/`, `app/api/v1/rail5/`, `app/api/v1/cards/`
+**Key folders:** `lib/payments/`, `lib/rail1/`, `lib/rail2/`, `lib/rail5/`, `lib/crypto-onramp/`, `lib/card/`
+**API routes:** `app/api/v1/wallet/`, `app/api/v1/wallets/`, `app/api/v1/stripe-wallet/`, `app/api/v1/card-wallet/`, `app/api/v1/billing/`, `app/api/v1/rail5/`, `app/api/v1/cards/`
 **Tables:** `owners` (wallet balances)
 
 | Rail | Method | Implementation | Status |
 |------|--------|---------------|--------|
 | Rail 1 | Stripe Crypto Onramp | `lib/rail1/`, `lib/crypto-onramp/` — Privy server wallets on Base, fiat → USDC | Live |
 | Rail 2 | Crossmint Wallet | `lib/rail2/` — Crossmint API for wallet creation, balance, transfers, onramp | Not complete |
-| Rail 4 | Obfuscated Self-Hosted Cards | `lib/rail4/`, `lib/obfuscation-engine/` — retired, still in codebase | Retired |
-| Rail 5 | Direct Wallet Debit | `lib/rail5/` — atomic balance deduction at purchase time | Live |
+| Rail 5 | Encrypted Cards | `lib/rail5/` — end-to-end encrypted cards with sub-agent checkout | Live |
 
 | Component | Key functions / files | Purpose |
 |-----------|----------------------|---------|
@@ -156,10 +157,12 @@ Auth, bot lifecycle, admin tooling.
 
 | Component | Key functions / files | Purpose |
 |-----------|----------------------|---------|
-| Auth | `lib/auth/` | Session management, owner authentication |
+| Auth (Owners) | `lib/auth/session.ts`, `lib/auth/auth-context.tsx`, `lib/firebase/` | Firebase Auth — httpOnly `__session` cookie, verified server-side via `adminAuth.verifySessionCookie()` |
+| Auth (Bots) | `lib/agent-management/auth.ts` | Bearer API token via `authenticateBot()` middleware |
 | Bot Management | `lib/agent-management/` | Bot registration, claim tokens, bot-owner linking |
 | Pairing | `app/api/v1/pairing-codes/` | One-time codes for bot → owner pairing |
 | Feature Flags | `lib/feature-flags/` | Runtime feature toggles |
+| Feedback & Support | `lib/feedback/aggregate.ts`, `app/api/v1/feedback/` | In-app feedback/support widget and aggregation |
 | Admin | `app/admin123/`, `app/api/v1/admin/` | Internal admin dashboard and APIs |
 
 **Docs:** `internal_docs/07-platform-management/`
@@ -179,7 +182,6 @@ Single codebase, three tenants, hostname-based routing.
 | Client Hook | `useTenant()` — client-side only | Provides tenant context to React components |
 | Theming | Per-tenant theme tokens | Colors, typography, landing page content |
 | Landing Pages | Per-tenant in `app/` | Each tenant has its own landing/onboarding flow |
-| Feature Flags | Tenant-scoped flags | Controls which features are visible per tenant |
 
 **Tenants:**
 - **CreditClaw** (`creditclaw.com`) — financial rails for AI agents
@@ -258,10 +260,16 @@ This module owns the research and evolution of these standards. When new protoco
 | 1. Agentic Shopping Score | Running — scan engine, queue, maturity promotion all live |
 | 2. Agent Shopping Skills | Running — SKILL.md + skill.json generated per scan |
 | 3. Brands Index | Running — recommend API with all 3 stages live |
-| 4. Payment Tools | Partially live — Rail 1, 5 live. Rail 2 not complete. Rail 4 retired. Stripe Issuing/Connect not built. |
+| 4. Payment Tools | Partially live — Rail 1, 5 live. Rail 2 not complete. Stripe Issuing/Connect not built. |
 | 5. Agent Interaction | Running — webhooks, guardrails, approvals, orders live |
 | 6. Agent Plugins | Partial — OpenClaw plugin exists |
 | 7. Platform Management | Running |
 | 8. Multi-tenant Structure | Running — 3 tenants active |
 | 9. Agent Shops | Running — checkout pages, shops, seller profiles, x402/Base Pay/QR Pay/Payment Links live |
 | 10. Thought Leadership | Active — ASX rubric v2.0.0, SKILL.md spec published |
+
+---
+
+## Future Plans
+
+The `project_knowledge/future/` folder holds ideas, strategy docs, and rough plans that aren't tied to an active build cycle yet. Check there for backlog items, known bugs, and feature explorations before starting new work.

@@ -15,14 +15,12 @@ import type { UnifiedApproval } from "@/shared/schema";
 const RAIL_LABELS: Record<string, string> = {
   rail1: "Stripe Wallet",
   rail2: "Card Wallet",
-  rail4: "Split-Knowledge",
   rail5: "Sub-Agent",
 };
 
 const RAIL_COLORS: Record<string, string> = {
   rail1: "bg-blue-50 text-blue-700",
   rail2: "bg-purple-50 text-purple-700",
-  rail4: "bg-amber-50 text-amber-700",
   rail5: "bg-emerald-50 text-emerald-700",
 };
 
@@ -120,7 +118,6 @@ export function ApprovalHistoryPanel() {
                 <SelectItem value="all">All Rails</SelectItem>
                 <SelectItem value="rail1">Stripe Wallet</SelectItem>
                 <SelectItem value="rail2">Card Wallet</SelectItem>
-                <SelectItem value="rail4">Split-Knowledge</SelectItem>
                 <SelectItem value="rail5">Sub-Agent</SelectItem>
               </SelectContent>
             </Select>

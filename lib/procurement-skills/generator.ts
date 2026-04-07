@@ -223,7 +223,7 @@ Content-Type: application/json
 \`\`\`
 
 Ratings are 1-5. Outcome is one of: success, checkout_failed, search_failed, out_of_stock, price_mismatch, flow_changed.
-Checkout method is one of: native_api, browser_automation, x402, acp, self_hosted_card, crossmint_world.
+Checkout method is one of: native_api, browser_automation, x402, acp, crossmint_world.
 Authorization header is optional but improves rating weight.
 This is optional but helps other agents find reliable vendors.
 `;

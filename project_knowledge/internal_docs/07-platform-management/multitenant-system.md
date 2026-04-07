@@ -35,7 +35,6 @@ Request → middleware.ts (Edge)
 | `lib/tenants/config.ts` | Node (server only) | `getTenantConfig()` — reads + caches `config.json` from disk |
 | `lib/tenants/tenant-configs.ts` | Any | Static tenant config map — **must stay in sync with config.json files** |
 | `lib/tenants/tenant-context.tsx` | Client | `TenantProvider` + `useTenant()` hook |
-| `lib/tenants/get-request-tenant.ts` | Server (RSC/API) | `getRequestTenant()` — reads `x-tenant-id` from request headers |
 | `public/tenants/{id}/config.json` | Static | Per-tenant branding, meta, theme, routes, features, navigation, tracking |
 | `app/layout.tsx` | Server | Reads tenant, generates metadata, injects theme vars |
 | `app/page.tsx` | Server | Tenant router — dynamically loads landing component per tenant |
@@ -101,10 +100,6 @@ If any drift, the tenant resolves incorrectly or loads stale config. A build-tim
 
 Keep configs lean — large data blobs in `config.json` inflate the HTML payload.
 
-### Feature flags are unchecked strings
-
-`features` in `config.json` is `Record<string, boolean>` with no validation. Typos fail silently.
-
 ### Tenant router pages must register every tenant
 
 Both `app/page.tsx` and `app/how-it-works/page.tsx` have hardcoded component maps. Forget to register a new tenant → falls back to CreditClaw.
@@ -117,7 +112,6 @@ Both `app/page.tsx` and `app/how-it-works/page.tsx` have hardcoded component map
 - **Build-time config generation** — eliminate three-way sync risk
 
 ### Medium-term
-- **Tenant-scoped feature flags** — validated keys, runtime overrides
 - **Tenant-aware email templates** — signup/notification emails with tenant branding
 
 ### Longer-term

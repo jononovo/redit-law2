@@ -34,7 +34,7 @@ Toggle the Master Budget switch to enable it. When you first enable it, default 
 When enabled, the master budget section shows:
 
 - **Progress bars** for daily and monthly spend against your limits
-- **Per-rail breakdown** showing how much has been spent through each payment rail (Stripe Wallet, Card Wallet, Self-Hosted)
+- **Per-rail breakdown** showing how much has been spent through each payment rail (Stripe Wallet, Card Wallet, Sub-Agent Cards)
 
 Click **Edit** to adjust your limits at any time.
 
@@ -42,7 +42,7 @@ Click **Edit** to adjust your limits at any time.
 
 If you have bots connected to your account, this section shows:
 
-- Which payment rails each bot has access to (Stripe Wallet, Card Wallet, Self-Hosted Cards, etc.)
+- Which payment rails each bot has access to (Stripe Wallet, Card Wallet, Sub-Agent Cards, etc.)
 - The current balance or card count for each rail
 - The bot's overall status (active, frozen, etc.)
 

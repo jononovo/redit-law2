@@ -6,12 +6,12 @@ export const home_depot: VendorSkill = {
   logoUrl: "/assets/images/vendors/home-depot.svg",
   sector: "home-garden",
   url: "https://www.homedepot.com",
-  checkoutMethods: ["self_hosted_card"],
+  checkoutMethods: ["browser_automation"],
   capabilities: ["price_lookup", "stock_check", "order_tracking", "bulk_pricing"],
   maturity: "beta",
   methodConfig: {
-    self_hosted_card: {
-      locatorFormat: "url:{product_url}",
+    browser_automation: {
+    }",
       requiresAuth: false,
       notes: "Guest checkout available. Product pages show real-time store and online inventory.",
     },

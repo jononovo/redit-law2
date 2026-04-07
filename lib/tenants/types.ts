@@ -32,8 +32,6 @@ export interface TenantConfig {
     authLanding: string;
   };
 
-  features: Record<string, boolean>;
-
   navigation?: {
     header?: {
       variant?: "light" | "dark";

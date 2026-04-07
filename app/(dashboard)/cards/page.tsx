@@ -170,22 +170,6 @@ export default function CardsPage() {
 
   return (
     <div className="flex flex-col gap-8 animate-fade-in-up">
-      <div className="rounded-2xl bg-blue-50 border border-blue-100 p-5 flex items-center gap-4" data-testid="banner-wallets-redirect">
-        <div className="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center shrink-0">
-          <Wallet className="w-6 h-6 text-blue-600" />
-        </div>
-        <div className="flex-1">
-          <p className="font-bold text-neutral-900" data-testid="text-wallets-banner-title">Wallet-funded cards are coming soon</p>
-          <p className="text-sm text-neutral-500 font-medium" data-testid="text-wallets-banner-desc">This is where wallet-funded cards will live. For now, head to Self-Hosted Cards to get started.</p>
-        </div>
-        <Link href="/self-hosted">
-          <Button className="rounded-full gap-2 shrink-0" data-testid="button-go-self-hosted">
-            Self-Hosted Cards
-            <ArrowRight className="w-4 h-4" />
-          </Button>
-        </Link>
-      </div>
-
       <div className="flex justify-between items-center">
         <p className="text-neutral-500">Manage your virtual and physical cards.</p>
         <Dialog>

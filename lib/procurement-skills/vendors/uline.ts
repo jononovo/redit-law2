@@ -6,12 +6,12 @@ export const uline: VendorSkill = {
   logoUrl: "/assets/images/vendors/uline.svg",
   sector: "business-industrial",
   url: "https://www.uline.com",
-  checkoutMethods: ["self_hosted_card"],
+  checkoutMethods: ["browser_automation"],
   capabilities: ["price_lookup", "stock_check", "bulk_pricing", "order_tracking", "business_invoicing", "po_numbers"],
   maturity: "draft",
   methodConfig: {
-    self_hosted_card: {
-      locatorFormat: "url:{product_url}",
+    browser_automation: {
+    }",
       requiresAuth: false,
       notes: "Phone orders also accepted. Website checkout is straightforward.",
     },

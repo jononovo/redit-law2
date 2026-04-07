@@ -274,7 +274,7 @@ The `multi-sector` value is not directly assignable — it is set programmatical
 | `guest_checkout` | boolean | No | Whether guest checkout is available |
 | `checkout_steps` | integer | No | Number of steps in the checkout flow |
 | `supported_payment_methods` | string[] | No | List of accepted payment types (`credit_card`, `debit_card`, `paypal`, `apple_pay`, `google_pay`, `gift_card`, `crypto`, etc.) |
-| `agentic_payment_protocols` | string[] | No | Supported agentic payment protocols (`x402`, `acp`, `ap2`, `self_hosted_card`) |
+| `agentic_payment_protocols` | string[] | No | Supported agentic payment protocols (`x402`, `acp`, `ap2`) |
 | `platform` | string | No | E-commerce platform: `shopify`, `woocommerce`, `magento`, `bigcommerce`, `custom` |
 | `po_number_supported` | boolean | No | Whether PO numbers can be submitted at checkout |
 | `tax_exempt_supported` | boolean | No | Whether tax exemption is available |
@@ -647,7 +647,7 @@ The AXS Rating answers: "How well does this store actually perform when agents i
 | `search_accuracy` | integer 1-5 | Yes | Did the agent find the right product at the right price? |
 | `stock_reliability` | integer 1-5 | Yes | Was the product actually in stock? |
 | `checkout_completion` | integer 1-5 | Yes | Did the purchase go through? |
-| `checkout_method` | string | Yes | `native_api`, `browser_automation`, `x402`, `acp`, `self_hosted_card`, `crossmint_world` |
+| `checkout_method` | string | Yes | `native_api`, `browser_automation`, `x402`, `acp`, `crossmint_world` |
 | `outcome` | string | Yes | `success`, `checkout_failed`, `search_failed`, `out_of_stock`, `price_mismatch`, `flow_changed` |
 | `comment` | string | No | Freeform, max 500 chars |
 

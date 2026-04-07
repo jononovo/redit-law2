@@ -107,15 +107,6 @@ export default function CreditclawHowItWorks() {
                   </div>
                 </div>
                 <div className="space-y-4">
-                  <div className="flex items-start gap-4 p-4 rounded-2xl bg-green-50 border border-green-100">
-                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-green-100 text-green-700 font-bold text-xs shrink-0 mt-0.5">
-                      Live
-                    </div>
-                    <div>
-                      <p className="font-bold text-neutral-900">Self-Hosted Cards</p>
-                      <p className="text-sm text-neutral-500 font-medium">Add your own card with split-knowledge privacy. Full spending controls, human approval workflows, and obfuscation built in.</p>
-                    </div>
-                  </div>
                   <div className="flex items-start gap-4 p-4 rounded-2xl bg-blue-50 border border-blue-100">
                     <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-100 text-blue-700 font-bold text-xs shrink-0 mt-0.5">
                       Waitlist

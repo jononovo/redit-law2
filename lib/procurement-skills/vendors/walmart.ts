@@ -6,12 +6,10 @@ export const walmart: VendorSkill = {
   logoUrl: "/assets/images/vendors/walmart.svg",
   sector: "specialty",
   url: "https://www.walmart.com",
-  checkoutMethods: ["self_hosted_card", "browser_automation"],
+  checkoutMethods: ["browser_automation"],
   capabilities: ["price_lookup", "stock_check", "order_tracking"],
   maturity: "beta",
-  methodConfig: {
-    self_hosted_card: {
-      locatorFormat: "url:{product_url}",
+  methodConfig: {",
       requiresAuth: false,
       notes: "Guest checkout available. Standard credit card checkout flow.",
     },

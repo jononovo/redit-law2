@@ -11,7 +11,7 @@ Every online store works differently. Some have APIs, some require browser autom
 Each skill defines:
 
 - **Vendor identity** — Name, URL, category (retail, office supplies, electronics, etc.)
-- **Checkout methods** — How the bot pays at this vendor (Native API, Agentic Checkout, x402 Protocol, Self-Hosted Card, Browser Automation, or CrossMint World)
+- **Checkout methods** — How the bot pays at this vendor (Native API, Agentic Checkout, x402 Protocol, Browser Automation, or CrossMint World)
 - **Capabilities** — What the vendor supports: price lookup, stock checks, programmatic checkout, order tracking, returns, bulk pricing, PO numbers, and more
 - **Search patterns** — How to find products on the vendor's site, including URL templates and product ID formats
 - **Checkout details** — Whether guest checkout is available, tax exemption fields, PO number support

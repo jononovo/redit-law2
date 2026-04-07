@@ -3,7 +3,6 @@ import {
   masterGuardrails,
   privyTransactions, privyWallets,
   crossmintTransactions, crossmintWallets,
-  checkoutConfirmations, rail4Cards,
   type MasterGuardrail, type InsertMasterGuardrail,
 } from "@/shared/schema";
 import { eq, and, sql, gte } from "drizzle-orm";
@@ -36,7 +35,7 @@ export const masterGuardrailMethods: MasterGuardrailMethods = {
     return created;
   },
 
-  async getMasterDailySpend(ownerUid: string): Promise<{ rail1: number; rail2: number; rail4: number; total: number }> {
+  async getMasterDailySpend(ownerUid: string): Promise<{ rail1: number; rail2: number; total: number }> {
     const startOfDay = new Date();
     startOfDay.setHours(0, 0, 0, 0);
 
@@ -62,25 +61,12 @@ export const masterGuardrailMethods: MasterGuardrailMethods = {
         sql`${crossmintTransactions.status} NOT IN ('failed')`,
       ));
 
-    const [r4] = await db
-      .select({ total: sql<number>`COALESCE(SUM(${checkoutConfirmations.amountCents}), 0)` })
-      .from(checkoutConfirmations)
-      .innerJoin(rail4Cards, eq(checkoutConfirmations.cardId, rail4Cards.cardId))
-      .where(and(
-        eq(rail4Cards.ownerUid, ownerUid),
-        eq(checkoutConfirmations.status, "approved"),
-        gte(checkoutConfirmations.createdAt, startOfDay),
-        eq(checkoutConfirmations.profileIndex, sql`${rail4Cards.realProfileIndex}`),
-      ));
-
     const rail1 = Number(r1?.total || 0);
     const rail2 = Number(r2?.total || 0);
-    const rail4Cents = Number(r4?.total || 0);
-    const rail4 = rail4Cents * 10_000;
-    return { rail1, rail2, rail4, total: rail1 + rail2 + rail4 };
+    return { rail1, rail2, total: rail1 + rail2 };
   },
 
-  async getMasterMonthlySpend(ownerUid: string): Promise<{ rail1: number; rail2: number; rail4: number; total: number }> {
+  async getMasterMonthlySpend(ownerUid: string): Promise<{ rail1: number; rail2: number; total: number }> {
     const startOfMonth = new Date();
     startOfMonth.setDate(1);
     startOfMonth.setHours(0, 0, 0, 0);
@@ -107,21 +93,8 @@ export const masterGuardrailMethods: MasterGuardrailMethods = {
         sql`${crossmintTransactions.status} NOT IN ('failed')`,
       ));
 
-    const [r4] = await db
-      .select({ total: sql<number>`COALESCE(SUM(${checkoutConfirmations.amountCents}), 0)` })
-      .from(checkoutConfirmations)
-      .innerJoin(rail4Cards, eq(checkoutConfirmations.cardId, rail4Cards.cardId))
-      .where(and(
-        eq(rail4Cards.ownerUid, ownerUid),
-        eq(checkoutConfirmations.status, "approved"),
-        gte(checkoutConfirmations.createdAt, startOfMonth),
-        eq(checkoutConfirmations.profileIndex, sql`${rail4Cards.realProfileIndex}`),
-      ));
-
     const rail1 = Number(r1?.total || 0);
     const rail2 = Number(r2?.total || 0);
-    const rail4Cents = Number(r4?.total || 0);
-    const rail4 = rail4Cents * 10_000;
-    return { rail1, rail2, rail4, total: rail1 + rail2 + rail4 };
+    return { rail1, rail2, total: rail1 + rail2 };
   },
 };

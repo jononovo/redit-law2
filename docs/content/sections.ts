@@ -47,7 +47,7 @@ export const sections: DocSection[] = [
       { title: "Wallet Types", slug: "wallet-types" },
       { title: "Creating a Wallet", slug: "creating-a-wallet" },
       { title: "Funding Your Wallet", slug: "funding-your-wallet" },
-      { title: "Self-Hosted & Encrypted Cards", slug: "encrypted-cards" },
+      { title: "Encrypted Cards", slug: "encrypted-cards" },
       { title: "Freezing & Controls", slug: "freezing-and-controls" },
     ],
   },

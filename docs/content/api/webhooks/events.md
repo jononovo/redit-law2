@@ -298,11 +298,11 @@ Fired when an order fails (payment issue, out of stock, vendor error, etc.).
 
 ## Rail5 Events
 
-Rail5 is the self-hosted card rail. These events track card provisioning and checkout flows on Rail5.
+Rail5 is the encrypted card rail. These events track card provisioning and checkout flows on Rail5.
 
 ### `rail5.checkout.completed`
 
-Fired when a Rail5 checkout (purchase using a self-hosted card) completes successfully.
+Fired when a Rail5 checkout (purchase using an encrypted card) completes successfully.
 
 ```json
 {
@@ -445,8 +445,8 @@ Your bot should call `GET /api/v1/bot/status` after receiving this event to get 
 | `order.shipped` | Order | Order has shipped |
 | `order.delivered` | Order | Order delivered |
 | `order.failed` | Order | Order failed |
-| `rail5.checkout.completed` | Rail5 | Self-hosted card checkout succeeded |
-| `rail5.checkout.failed` | Rail5 | Self-hosted card checkout failed |
+| `rail5.checkout.completed` | Rail5 | Sub-agent card checkout succeeded |
+| `rail5.checkout.failed` | Rail5 | Sub-agent card checkout failed |
 | `rail5.card.delivered` | Rail5 | Encrypted card delivered to bot |
 | `rails.updated` | System | Payment config changed — refresh status |
 

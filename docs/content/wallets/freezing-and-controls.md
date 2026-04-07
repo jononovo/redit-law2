@@ -48,18 +48,9 @@ To configure these limits:
 
 Approval thresholds are configured at the account level through **Master Guardrails** in Settings, and apply across all wallets and rails.
 
-### Sub-Agent Cards (Rail 4)
+### Sub-Agent Cards (Rail 5)
 
-Sub-Agent Cards use an **allowance** model:
-
-- Set a dollar amount and duration (daily, weekly, or monthly)
-- The allowance automatically resets at the end of each period
-- Remaining allowance is visible on the dashboard
-- When the allowance is exhausted, the bot cannot spend until the next reset
-
-### Self-Hosted Cards (Rail 5)
-
-Self-Hosted Cards have the most granular controls:
+Sub-Agent Cards have granular spending controls:
 
 - Per-transaction spending limit
 - Daily spending limit

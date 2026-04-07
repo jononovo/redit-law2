@@ -32,8 +32,6 @@
     "authLanding": "/overview"
   },
 
-  "features": {},
-
   "navigation": {
     "header": {
       "variant": "light",

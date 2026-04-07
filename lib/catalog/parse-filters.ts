@@ -65,7 +65,6 @@ export function filtersToMetaTitle(filters: BrandSearchFilters): string {
       acp: "ACP",
       x402: "x402",
       crossmint_world: "Crossmint",
-      self_hosted_card: "Card Checkout",
       browser_automation: "Browser Automation",
     };
     parts.push(filters.checkoutMethods.map(m => methodLabels[m] ?? m).join(", "));

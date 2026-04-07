@@ -6,12 +6,12 @@ export const bh_photo: VendorSkill = {
   logoUrl: "/assets/images/vendors/bh-photo.svg",
   sector: "electronics",
   url: "https://www.bhphotovideo.com",
-  checkoutMethods: ["self_hosted_card"],
+  checkoutMethods: ["browser_automation"],
   capabilities: ["price_lookup", "stock_check", "order_tracking", "tax_exemption", "returns"],
   maturity: "draft",
   methodConfig: {
-    self_hosted_card: {
-      locatorFormat: "url:{product_url}",
+    browser_automation: {
+    }",
       requiresAuth: false,
       notes: "Guest checkout available. No sales tax on orders shipped outside NY.",
     },

@@ -31,5 +31,4 @@ CreditClaw supports multiple payment methods through its multi-rail architecture
 
 - **Stripe Wallet (Rail 1)** — USDC wallet on Base chain, funded via Stripe. Supports x402 protocol for autonomous agent payments.
 - **Card Wallet (Rail 2)** — USDC wallet for shopping at merchants like Amazon via CrossMint smart wallets.
-- **Self-Hosted Cards (Rail 4)** — Use your own credit or debit card with split-knowledge encryption. CreditClaw never sees the full card number.
 - **Sub-Agent Cards (Rail 5)** — End-to-end encrypted card files. Disposable sub-agents decrypt, pay, and are deleted.

@@ -107,7 +107,6 @@ const CHECKOUT_ICONS: Partial<Record<CheckoutMethod, React.ReactNode>> = {
   acp: <CreditCard className="w-4 h-4" />,
   x402: <Globe className="w-4 h-4" />,
   crossmint_world: <Globe className="w-4 h-4" />,
-  self_hosted_card: <CreditCard className="w-4 h-4" />,
   browser_automation: <Monitor className="w-4 h-4" />,
 };
 

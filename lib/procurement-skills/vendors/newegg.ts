@@ -6,12 +6,12 @@ export const newegg: VendorSkill = {
   logoUrl: "/assets/images/vendors/newegg.svg",
   sector: "electronics",
   url: "https://www.newegg.com",
-  checkoutMethods: ["self_hosted_card"],
+  checkoutMethods: ["browser_automation"],
   capabilities: ["price_lookup", "stock_check", "order_tracking", "returns"],
   maturity: "draft",
   methodConfig: {
-    self_hosted_card: {
-      locatorFormat: "url:{product_url}",
+    browser_automation: {
+    }",
       requiresAuth: false,
       notes: "Guest checkout available. Strong for computer components and electronics.",
     },

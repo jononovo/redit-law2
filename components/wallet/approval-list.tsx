@@ -21,13 +21,12 @@ export interface ApprovalRow {
 const RAIL_LABELS: Record<string, string> = {
   rail1: "Stripe Wallet",
   rail2: "Card Wallet",
-  rail4: "Split-Knowledge",
   rail5: "Sub-Agent",
 };
 
 function isCommerceRow(row: ApprovalRow, listVariant?: "crypto" | "commerce"): boolean {
   if (listVariant) return listVariant === "commerce";
-  return row.rail === "rail2" || row.rail === "rail4" || row.rail === "rail5";
+  return row.rail === "rail2" || row.rail === "rail5";
 }
 
 interface ApprovalListProps {

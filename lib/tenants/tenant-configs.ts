@@ -26,7 +26,6 @@ const creditclawConfig: TenantConfig = {
     secondaryColor: "200 95% 60%",
   },
   routes: { guestLanding: "/creditclaw", authLanding: "/overview" },
-  features: {},
   navigation: {
     header: {
       variant: "light",
@@ -104,7 +103,6 @@ const brandsConfig: TenantConfig = {
     secondaryColor: "220 8% 50%",
   },
   routes: { guestLanding: "/brands", authLanding: "/overview" },
-  features: { showCatalog: true, showLeaderboard: true },
   navigation: {
     header: {
       variant: "dark",
@@ -169,7 +167,6 @@ const shopyConfig: TenantConfig = {
     secondaryColor: "0 0% 45%",
   },
   routes: { guestLanding: "/shopy", authLanding: "/overview" },
-  features: { showScanner: true, showCatalog: false, showStandard: true, showGuide: true },
   navigation: {
     header: {
       variant: "light",

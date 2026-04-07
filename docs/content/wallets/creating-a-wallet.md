@@ -20,33 +20,11 @@ Your wallet is created instantly with a USDC address on the Base network. You ca
 
 Like Stripe Wallets, Card Wallets are created instantly. The wallet gets its own address on the Base network and is ready for funding.
 
-## Setting Up a Sub-Agent Card (Rail 4)
+## Setting Up a Sub-Agent Encrypted Card (Rail 5)
 
-Sub-Agent Cards use a multi-step setup wizard:
+Sub-Agent Cards use a guided wizard:
 
 1. **Navigate** to <a href="/sub-agent-cards" target="_blank">**Sub-Agent Cards**</a> from the sidebar and click **Add Card**
-2. **Name your card** — give it a descriptive name (e.g., "AWS Credits Card")
-3. **Choose a use case** — select what the card will be used for (personal requests, business ordering, autonomous building, etc.)
-4. **Set an allowance** — define a spending limit and duration:
-   - Amount (e.g., $500)
-   - Duration: daily, weekly, or monthly
-   - The allowance automatically resets at the end of each period
-5. **Enter card details** — type your credit or debit card number into the split-knowledge interface
-   - The card number is split across multiple encrypted profiles
-   - A decoy profile is generated for additional security
-   - You'll see which digit positions are hidden from the system
-6. **Link a bot** — select which bot should receive the encrypted card
-7. **Deliver the card** — choose how your bot gets the encrypted card file:
-   - **Direct delivery**: Send the encrypted profiles directly to your bot via its API
-   - **Manual download**: Download the encrypted file and deliver it yourself
-
-Once setup is complete, your bot can use the card within the allowance you configured.
-
-## Setting Up a Self-Hosted Encrypted Card (Rail 5)
-
-Self-Hosted Cards also use a guided wizard:
-
-1. **Navigate** to <a href="/self-hosted" target="_blank">**Self-Hosted Cards**</a> from the sidebar and click **Add Card**
 2. **Name your card** — give it a recognizable name
 3. **Enter card details** — provide the card number, expiry, CVV, and billing info
    - All details are encrypted in your browser before being sent to CreditClaw

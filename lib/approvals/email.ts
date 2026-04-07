@@ -10,7 +10,6 @@ if (SENDGRID_API_KEY) {
 const RAIL_LABELS: Record<string, string> = {
   rail1: "USDC Wallet",
   rail2: "Commerce Wallet",
-  rail4: "Self-Hosted Card",
   rail5: "Sub-Agent Card",
 };
 

@@ -20,8 +20,7 @@ export async function GET(request: NextRequest) {
       (SELECT count(*) FROM transactions)::int +
       (SELECT count(*) FROM privy_transactions)::int +
       (SELECT count(*) FROM crossmint_transactions)::int +
-      (SELECT count(*) FROM rail5_checkouts)::int +
-      (SELECT count(*) FROM checkout_confirmations)::int
+      (SELECT count(*) FROM rail5_checkouts)::int
     AS total
   `);
   const total = Number(countResult.rows[0]?.total ?? 0);
@@ -92,23 +91,6 @@ export async function GET(request: NextRequest) {
         rc.bot_id
       FROM rail5_checkouts rc
       LEFT JOIN owners o ON o.uid = rc.owner_uid
-    )
-    UNION ALL
-    (
-      SELECT
-        cc.id,
-        'rail4' AS rail,
-        'checkout' AS type,
-        cc.amount_cents AS amount_raw,
-        'cents' AS amount_unit,
-        cc.merchant_name AS description,
-        cc.status,
-        cc.created_at,
-        o.email AS owner_email,
-        cc.bot_id
-      FROM checkout_confirmations cc
-      LEFT JOIN rail4_cards r4 ON r4.card_id = cc.card_id
-      LEFT JOIN owners o ON o.uid = r4.owner_uid
     )
     ORDER BY created_at DESC, rail ASC, id DESC
     LIMIT ${PAGE_SIZE}

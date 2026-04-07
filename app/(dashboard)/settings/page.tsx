@@ -10,7 +10,7 @@ import { PaymentSetup } from "@/components/dashboard/payment-setup";
 import { ShippingAddressManager } from "@/components/dashboard/shipping-address-manager";
 import { useAuth } from "@/lib/auth/auth-context";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Loader2, Shield, TrendingUp, Zap, CreditCard, Smartphone, Bot, ChevronDown } from "lucide-react";
+import { Loader2, Shield, TrendingUp, Zap, CreditCard, Bot, ChevronDown } from "lucide-react";
 
 interface Preferences {
   transaction_alerts: boolean;
@@ -30,8 +30,8 @@ interface MasterGuardrailsData {
     enabled: boolean;
   } | null;
   spend: {
-    daily: { rail1_usd: number; rail2_usd: number; rail4_usd: number; total_usd: number };
-    monthly: { rail1_usd: number; rail2_usd: number; rail4_usd: number; total_usd: number };
+    daily: { rail1_usd: number; rail2_usd: number; total_usd: number };
+    monthly: { rail1_usd: number; rail2_usd: number; total_usd: number };
   };
 }
 
@@ -62,7 +62,6 @@ function RailBreakdown({ daily, monthly }: MasterGuardrailsData["spend"]) {
   const rails = [
     { name: "Stripe Wallet", icon: Zap, daily: daily.rail1_usd, monthly: monthly.rail1_usd, color: "text-blue-600" },
     { name: "Card Wallet", icon: CreditCard, daily: daily.rail2_usd, monthly: monthly.rail2_usd, color: "text-violet-600" },
-    { name: "Self-Hosted", icon: Smartphone, daily: daily.rail4_usd, monthly: monthly.rail4_usd, color: "text-orange-600" },
   ];
 
   const hasAnySpend = rails.some(r => r.daily > 0 || r.monthly > 0);
@@ -280,7 +279,6 @@ const RAIL_META: Record<string, { label: string; shortLabel: string; icon: typeo
   card_wallet: { label: "Prepaid Wallet", shortLabel: "Prepaid", icon: CreditCard, bg: "bg-emerald-50", text: "text-emerald-700", border: "border-emerald-200" },
   stripe_wallet: { label: "Stripe Wallet", shortLabel: "Stripe", icon: Zap, bg: "bg-blue-50", text: "text-blue-700", border: "border-blue-200" },
   shopping_wallet: { label: "Shopping Wallet", shortLabel: "Shopping", icon: CreditCard, bg: "bg-violet-50", text: "text-violet-700", border: "border-violet-200" },
-  self_hosted_cards: { label: "Self-Hosted Cards", shortLabel: "Self-Hosted", icon: Smartphone, bg: "bg-orange-50", text: "text-orange-700", border: "border-orange-200" },
   sub_agent_cards: { label: "Sub-Agent Cards", shortLabel: "Sub-Agent", icon: Shield, bg: "bg-pink-50", text: "text-pink-700", border: "border-pink-200" },
 };
 

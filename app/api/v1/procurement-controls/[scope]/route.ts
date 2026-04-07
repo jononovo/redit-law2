@@ -13,7 +13,7 @@ export async function GET(
     }
 
     const { scope } = await params;
-    const validScopes = ["master", "rail1", "rail2", "rail4", "rail5"];
+    const validScopes = ["master", "rail1", "rail2", "rail5"];
     if (!validScopes.includes(scope)) {
       return NextResponse.json({ error: "Invalid scope" }, { status: 400 });
     }

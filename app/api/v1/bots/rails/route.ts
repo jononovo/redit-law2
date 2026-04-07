@@ -28,28 +28,17 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Authentication required" }, { status: 401 });
     }
 
-    const [bots, wallets, privyWallets, crossmintWallets, rail4Cards, rail5Cards] = await Promise.all([
+    const [bots, wallets, privyWallets, crossmintWallets, rail5Cards] = await Promise.all([
       storage.getBotsByOwnerUid(user.uid),
       storage.getWalletsWithBotsByOwnerUid(user.uid),
       storage.privyGetWalletsByOwnerUid(user.uid),
       storage.crossmintGetWalletsByOwnerUid(user.uid),
-      storage.getRail4CardsByOwnerUid(user.uid),
       storage.getRail5CardsByOwnerUid(user.uid),
     ]);
 
     const walletMap = new Map(wallets.map(w => [w.botId, w]));
     const privyMap = new Map(privyWallets.map(w => [w.botId, w]));
     const crossmintMap = new Map(crossmintWallets.map(w => [w.botId, w]));
-
-    const rail4ByBot = new Map<string, typeof rail4Cards>();
-    for (const card of rail4Cards) {
-      if (card.botId) {
-        const existing = rail4ByBot.get(card.botId) || [];
-        existing.push(card);
-        rail4ByBot.set(card.botId, existing);
-      }
-    }
-
     const rail5Map = new Map(rail5Cards.filter(c => c.botId).map(c => [c.botId!, c]));
 
     const botsWithRails = bots.map(bot => {
@@ -76,14 +65,6 @@ export async function GET(request: NextRequest) {
         rails.shopping_wallet = {
           status: crossmint.status === "active" ? "active" : "inactive",
           balance_usd: crossmint.balanceUsdc / 1_000_000,
-        };
-      }
-
-      const r4Cards = rail4ByBot.get(bot.botId);
-      if (r4Cards && r4Cards.length > 0) {
-        rails.self_hosted_cards = {
-          status: "active",
-          card_count: r4Cards.length,
         };
       }
 

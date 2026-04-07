@@ -6,7 +6,7 @@ export const amazon: VendorSkill = {
   logoUrl: "/assets/images/vendors/amazon.svg",
   sector: "specialty",
   url: "https://www.amazon.com",
-  checkoutMethods: ["native_api", "self_hosted_card"],
+  checkoutMethods: ["native_api"],
   capabilities: ["price_lookup", "stock_check", "programmatic_checkout", "order_tracking", "returns"],
   maturity: "verified",
   methodConfig: {
@@ -15,9 +15,7 @@ export const amazon: VendorSkill = {
       searchEndpoint: "/api/v1/card-wallet/bot/search",
       requiresAuth: false,
       notes: "Full programmatic purchasing via CrossMint. Use ASIN as product identifier.",
-    },
-    self_hosted_card: {
-      locatorFormat: "url:{product_url}",
+    },",
       requiresAuth: true,
       notes: "Fallback for items not available through CrossMint API.",
     },

@@ -2,7 +2,7 @@ import type { ShippingAddressFields, TrackingInfoFields, VendorDetailsFields } f
 
 export interface OrderInput {
   ownerUid: string;
-  rail: "rail1" | "rail2" | "rail4" | "rail5";
+  rail: "rail1" | "rail2" | "rail5";
   botId?: string | null;
   botName?: string | null;
   walletId?: number | null;

@@ -24,14 +24,14 @@ export const GET = withBotApi("/api/v1/bot/wallet/check", async (_request, { bot
 
   const monthlySpent = await storage.getMonthlySpend(wallet.id);
 
-  const rail4Cards = await storage.getRail4CardsByBotId(bot.botId);
-  const activeCard = rail4Cards.find(c => c.status === "active");
+  const rail5Cards = await storage.getRail5CardsByBotId(bot.botId);
+  const activeCard = rail5Cards.find(c => c.status === "active");
 
   let spendingLimits;
   if (activeCard) {
-    const guard = await storage.getRail4Guardrails(activeCard.cardId);
-    const perTxCents = guard?.maxPerTxCents ?? GUARDRAIL_DEFAULTS.rail4.maxPerTxCents;
-    const monthlyCents = guard?.monthlyBudgetCents ?? GUARDRAIL_DEFAULTS.rail4.monthlyBudgetCents;
+    const guard = await storage.getRail5Guardrails(activeCard.cardId);
+    const perTxCents = guard?.maxPerTxCents ?? GUARDRAIL_DEFAULTS.rail5.maxPerTxCents;
+    const monthlyCents = guard?.monthlyBudgetCents ?? GUARDRAIL_DEFAULTS.rail5.monthlyBudgetCents;
     spendingLimits = {
       per_transaction_usd: perTxCents / 100,
       monthly_usd: monthlyCents / 100,
@@ -40,10 +40,10 @@ export const GET = withBotApi("/api/v1/bot/wallet/check", async (_request, { bot
     };
   } else {
     spendingLimits = {
-      per_transaction_usd: GUARDRAIL_DEFAULTS.rail4.maxPerTxCents / 100,
-      monthly_usd: GUARDRAIL_DEFAULTS.rail4.monthlyBudgetCents / 100,
+      per_transaction_usd: GUARDRAIL_DEFAULTS.rail5.maxPerTxCents / 100,
+      monthly_usd: GUARDRAIL_DEFAULTS.rail5.monthlyBudgetCents / 100,
       monthly_spent_usd: monthlySpent / 100,
-      monthly_remaining_usd: Math.max(0, (GUARDRAIL_DEFAULTS.rail4.monthlyBudgetCents - monthlySpent) / 100),
+      monthly_remaining_usd: Math.max(0, (GUARDRAIL_DEFAULTS.rail5.monthlyBudgetCents - monthlySpent) / 100),
     };
   }
 

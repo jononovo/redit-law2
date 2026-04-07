@@ -1,28 +1,38 @@
-# CreditClaw.com
+# Multi-Tenant Platform — CreditClaw · shopy.sh · brands.sh
 
 ## Overview
-CreditClaw is a prepaid spending controls platform designed for AI agents within the OpenClaw ecosystem. It enables owners to fund bot wallets using their credit cards and enforce strict spending limits (per-transaction, daily, monthly caps, category blocking, approval modes). The platform offers a consumer landing page for immediate sign-up, a waitlist for virtual card issuance, and a dashboard for managing wallets, transactions, and spending controls. Its core purpose is to provide a secure and controlled financial environment for AI agents, focusing on a prepaid model. It also supports bots receiving payments via links and features a "Split-Knowledge Card Model" for enhanced transaction privacy. The project aims to become the leading financial control and payment solution for AI agents.
+One codebase, three tenants. The infrastructure layer for AI-powered commerce:
 
-## Brand Guide
-See `docs/brand.md` for the full brand identity reference — covers color palette, typography, UI design system, and form validation patterns. All new UI work should align with the styles and CSS classes documented there.
+- **CreditClaw** (`creditclaw.com`) — Financial rails for AI agents. Wallet funding, virtual card issuance, spending controls, approval workflows. Agents can't hold bank accounts — CreditClaw bridges that gap.
+- **shopy.sh** — Consumer-facing ASX Score scanner and leaderboard. Measures how "agent-friendly" a merchant's website is (0–100). Free scans drive catalog growth.
+- **brands.sh** — Developer-facing skill registry. Hosts SKILL.md files that teach agents how to shop at specific stores.
 
-## Dashboard Overview Page
-The `/overview` page includes:
-- **Approvals section** (above cards, only shown if approvals exist): Shows up to 5 recent approvals using `ApprovalList` with `showRailBadge`. Has a "See all" link to `/transactions`. Approve/reject actions work in-place.
-- **Cards & Wallets section** (below "My Bots") with per-card titles ("Agent Wallet" / "My Card") and info tooltips matching sidebar descriptions. Shows:
-- **Privy Wallet (Rail 1)**: Full interactive `CryptoWalletItem` with action bar (Fund, Freeze, Guardrails, Activity → navigates to `/stripe-wallet`)
-- **Rail 5 Sub-Agent Card**: Full interactive `CreditCardItem` with action bar. If no card exists, shows placeholder `CardVisual` with semi-transparent overlay and "Add Your Card" button that opens `Rail5SetupWizard` in-place.
-- Uses separate hook instances for each rail: `useWalletActions`, `useBotLinking`, `useGuardrails` (Rail 1 only), `useTransfer` (Rail 1 only)
-- All required dialogs (GuardrailDialog, LinkBotDialog, UnlinkBotDialog, TransferDialog, FundWalletSheet, FreezeDialog, Rail5SetupWizard) are rendered on the overview page
+Tenants share the same database, codebase, and deployment. Routing is hostname-based via middleware. See `project_knowledge/_README.md` for full architecture and internal docs.
 
-## User Preferences
-- **Design theme:** "Fun Consumer" — 3D clay/claymation aesthetic, coral lobster mascot, bright pastels (orange/blue/purple)
-- **Font:** Plus Jakarta Sans
-- **Border radius:** 1rem rounded corners
-- **Framework:** Next.js 16 with App Router only
-- **No framer-motion** (lightweight build)
-- **No Vite, no standalone React** — everything runs through Next.js
+## Tenant Theming
+Each tenant has its own config at `public/tenants/{tenantId}/config.json` (source of truth) and `lib/tenants/tenant-configs.ts` (client bundle). Configs define branding, meta tags, theme tokens, routes, features, and tracking.
+
+- **CreditClaw** — "Fun Consumer" theme: 3D clay/claymation aesthetic, coral lobster mascot, bright pastels (orange/blue/purple), Plus Jakarta Sans, 1rem rounded corners
+- **shopy.sh** — Monospace section labels, no rounded corners on cards, no shadows, `gap-px bg-neutral-200` grid dividers, dark sections, green accent in terminal contexts
+- **brands.sh** — Skill-registry framing, shared label maps from `lib/procurement-skills/taxonomy/`
+
+When building UI, check which tenant(s) the feature applies to and follow the appropriate design language.
+
+## Project Conventions
+- **Framework:** Next.js 16 with App Router only. No Vite, no standalone React.
+- **No framer-motion** — lightweight build
 - All interactive components marked with `"use client"` directive
+- **Font:** Plus Jakarta Sans (CreditClaw tenant)
+
+## Development Principles
+
+**Separation of concerns** — each file, function, and module should have one clear responsibility. If a file is doing two unrelated things, split it. Cross-cutting logic (guardrails, approvals, webhooks) lives in its own `lib/{feature}/` folder and should not contain rail-specific business logic.
+
+**Finish what you start** — when you're in context on a feature, complete it fully. Don't leave partial implementations with "we can finish this later" — that context is expensive to rebuild. Wire up the API, the storage, the UI, the error handling, and the edge cases in the same session. A feature that's 90% done is 0% shippable.
+
+**Descriptive file and variable names** — always lean towards longer, more descriptive names over short generic ones. `dashboard-overview.md` not `overview.md`. `evaluateCardGuardrails()` not `evaluate()`. `brand-versioning-technical-plan.md` not `plan.md`. Generic names are hard to search, hard to distinguish, and hard to maintain.
+
+**Testing** — write automated tests for critical business logic (pure functions, scoring, payment calculations, validation rules). Tests go in `tests/` — see `tests/_README.md` for guidelines and current coverage.
 
 ## Modularization Guidelines
 
@@ -42,10 +52,10 @@ New features should follow a feature-first folder structure. Each rail lives und
 **Guardrails** (`lib/guardrails/`):
 - `defaults.ts` — single source of truth for all guardrail default values (master + all rails). The schema reads from this file, so changing a value here changes the default for new records. Also exports `PROCUREMENT_DEFAULTS` for procurement controls.
 - `types.ts` — `GuardrailRules` (USDC-based for Rails 1/2), `CardGuardrailRules` (cents-based for Rails 4/5), `TransactionRequest`, `CardTransactionRequest`, `CumulativeSpend`, `CardCumulativeSpend`, `GuardrailDecision` interfaces.
-- `evaluate.ts` — two pure evaluation functions: `evaluateGuardrails()` for USDC rails (1 & 2) and `evaluateCardGuardrails()` for card rails (4 & 5). Only enforces spending limits and approval thresholds — domain/merchant/category enforcement is handled by procurement controls.
+- `evaluate.ts` — two pure evaluation functions: `evaluateGuardrails()` for USDC rails (1 & 2) and `evaluateCardGuardrails()` for card rail (5). Only enforces spending limits and approval thresholds — domain/merchant/category enforcement is handled by procurement controls.
 - `master.ts` — master-level guardrail evaluation (fetches config, aggregates cross-rail spend, calls `evaluateGuardrails`).
 - `approval.ts` — centralized `evaluateApprovalDecision()` function that reads `approvalMode` and `requireApprovalAbove` from the `master_guardrails` table. This is the single source of truth for all approval decisions across all rails.
-- **Standardized Structure**: Per-rail guardrail tables (`privy_guardrails`, `crossmint_guardrails`, `rail4_guardrails`, `rail5_guardrails`) contain only spending limits: `maxPerTx`, `dailyBudget`, `monthlyBudget`, `recurringAllowed`, `autoPauseOnZero`, `notes`, `updatedAt`, `updatedBy`. Approval mode (`approvalMode`, `requireApprovalAbove`) lives exclusively on `master_guardrails`. Domain/merchant/category lists live exclusively in `procurement_controls`.
+- **Standardized Structure**: Per-rail guardrail tables (`privy_guardrails`, `crossmint_guardrails`, `rail5_guardrails`) contain only spending limits: `maxPerTx`, `dailyBudget`, `monthlyBudget`, `recurringAllowed`, `autoPauseOnZero`, `notes`, `updatedAt`, `updatedBy`. Approval mode (`approvalMode`, `requireApprovalAbove`) lives exclusively on `master_guardrails`. Domain/merchant/category lists live exclusively in `procurement_controls`.
 - **Centralized Approval**: All checkout routes call `evaluateApprovalDecision(ownerUid, amountCents)` from `lib/guardrails/approval.ts`. This function reads from `master_guardrails` and supports:
   - `ask_for_everything` → require owner approval for all transactions
   - `auto_approve_under_threshold` → only require approval if amount >= `requireApprovalAbove`
@@ -57,8 +67,8 @@ New features should follow a feature-first folder structure. Each rail lives und
 - `types.ts` — `ProcurementRules`, `ProcurementRequest`, `ProcurementDecision` interfaces.
 - `defaults.ts` — `DEFAULT_PROCUREMENT_RULES` with default blocked categories.
 - `evaluate.ts` — `evaluateProcurementControls()` checks domain, merchant, and category rules. `mergeProcurementRules()` combines master + rail-level rules (blocklists are unioned, allowlists are intersected).
-- DB table: `procurement_controls` with `scope` (master/rail1/rail2/rail4/rail5) and `scope_ref_id` for per-rail granularity. Owner-facing API: `GET/POST /api/v1/procurement-controls` and `GET /api/v1/procurement-controls/[scope]`.
-- **Fully separated from guardrails**: Domain/merchant/category lists are exclusively managed by `procurement_controls`. The guardrails tables (`privy_guardrails`, `crossmint_guardrails`, `rail4_guardrails`, `rail5_guardrails`) no longer have `allowlisted_domains`, `blocklisted_domains`, `allowlisted_merchants`, or `blocklisted_merchants` columns. The guardrails GET APIs still return these fields in the response by reading from `procurement_controls`, maintaining backward compatibility. The card-wallet frontend saves merchant lists to `POST /api/v1/procurement-controls` separately from guardrail limit saves.
+- DB table: `procurement_controls` with `scope` (master/rail1/rail2/rail5) and `scope_ref_id` for per-rail granularity. Owner-facing API: `GET/POST /api/v1/procurement-controls` and `GET /api/v1/procurement-controls/[scope]`.
+- **Fully separated from guardrails**: Domain/merchant/category lists are exclusively managed by `procurement_controls`. The guardrails tables (`privy_guardrails`, `crossmint_guardrails`, `rail5_guardrails`) no longer have `allowlisted_domains`, `blocklisted_domains`, `allowlisted_merchants`, or `blocklisted_merchants` columns. The guardrails GET APIs still return these fields in the response by reading from `procurement_controls`, maintaining backward compatibility. The card-wallet frontend saves merchant lists to `POST /api/v1/procurement-controls` separately from guardrail limit saves.
 
 **Webhooks** (`lib/webhooks/`):
 - `delivery.ts` — outbound webhook delivery, HMAC-SHA256 signing, retry logic with exponential backoff, and OpenClaw hooks token auth. Exports `fireWebhook()`, `fireRailsUpdated()`, `signPayload()`, `attemptDelivery()`, `retryWebhookDelivery()`, `retryPendingWebhooksForBot()`, `retryAllPendingWebhooks()`.
@@ -93,31 +103,7 @@ New features should follow a feature-first folder structure. Each rail lives und
 - Rail 5 `confirm-delivery` also deletes the pending message for the card.
 - **Note**: Direct `fireWebhook()` callers (~20 sites across the codebase) do not participate in health tracking — only `sendToBot()` does. Migration of those callers to `sendToBot()` is a future task.
 
-**Storage is modularized** under `server/storage/` with domain-grouped files:
-- `types.ts` — the `IStorage` interface (single source of truth for all method signatures)
-- `index.ts` — composes all domain fragments into the `storage` object and re-exports `IStorage`
-- `core.ts` — bots, wallets, transactions, payment methods, topups, access logs, reconciliation, freeze/unfreeze
-  - `rail4-guardrails.ts` — CRUD for `rail4_guardrails` table
-  - `rail5-guardrails.ts` — CRUD for `rail5_guardrails` table
-  - `procurement-controls.ts` — CRUD for `procurement_controls` table
-- `webhooks.ts` — webhook deliveries, retries, failed count
-- `notifications.ts` — notification preferences + messages
-- `payment-links.ts` — payment links, pairing codes, waitlist
-- `rail1.ts` — all privy/x402 wallet, guardrail, and transaction methods
-- `rail2.ts` — all crossmint wallet, guardrail, and transaction methods
-- `rail4.ts` — rail4 cards, obfuscation events/state, profile allowance, checkout confirmations
-- `rail5.ts` — rail5 cards + checkouts
-- `bot-messages.ts` — bot pending messages CRUD (create, get, count, ack, purge, delete by ref)
-- `owners.ts` — owner profiles (get/upsert)
-- `master-guardrails.ts` — master guardrails + cross-rail daily/monthly spend aggregation
-- `brand-index.ts` — brand catalog search, facets, upsert, readiness scoring
-- `brand-claims.ts` — brand ownership claims (create, verify, reject, revoke)
-- `brand-feedback.ts` — AXS rating feedback from agents and humans
-- `brand-login-accounts.ts` — per-brand login credentials for bot checkout
-- `approvals.ts` — unified approvals
-- `orders.ts` — central orders table CRUD (create, get by ID/externalId, get by owner with filters, get by wallet/card, update)
-- All consumers import from `@/server/storage` unchanged (the directory's `index.ts` is transparent).
-- Methods that use `this.` resolve correctly because all fragments are spread into one object.
+**Storage is modularized** under `server/storage/` with domain-grouped files (one per feature area: `rail1.ts`, `rail2.ts`, `rail5.ts`, `brand-index.ts`, `approvals.ts`, `orders.ts`, etc.). `types.ts` defines the `IStorage` interface (single source of truth). `index.ts` composes all fragments into the exported `storage` object. All consumers import from `@/server/storage` unchanged.
 
 **API route paths never change** during modularization — only internal `lib/` imports get rewired. This avoids breaking any external consumers.
 
@@ -137,11 +123,6 @@ CreditClaw uses a lightweight, database-backed feature flag system for controlli
 
 ### Stack
 The platform uses Next.js 16 (App Router), Firebase Auth (client/Admin SDK) with httpOnly session cookies, PostgreSQL via Drizzle ORM, Tailwind CSS v4, PostCSS, shadcn/ui for components, and React Query for state management.
-
-### Core Features and Design
-CreditClaw features a public landing page and a protected dashboard. Key functionalities include bot registration, Stripe integration for wallet funding, and server-side enforced spending controls. A bot-facing API allows bots to check wallet status, make purchases, request top-ups, and view transaction history. Authentication is via Firebase for owners and Bearer API tokens for bots.
-
-The system supports multiple payment methods per owner, webhook notifications for bots (HMAC-SHA256, exponential backoff), and owner notifications (in-app, email). Operational safety includes daily wallet reconciliation and health checks.
 
 ### Managed Cloudflare Tunnels
 Bots without a `callback_url` get a managed Cloudflare tunnel provisioned at registration. Architecture follows two-layer separation:
@@ -163,9 +144,8 @@ Bots without a `callback_url` get a managed Cloudflare tunnel provisioned at reg
 Advanced features:
 - **Payment Links:** Bots generate Stripe Checkout Sessions for receiving payments.
 - **Wallet Freeze:** Owners can freeze bot wallets, preventing transactions.
-- **Card Color Persistence:** Each card (Rail 4 and Rail 5) stores its own `card_color` (`purple`, `dark`, `blue`, `primary`). New cards get a random color on creation. Users can change it from the card detail page (Rail 5: color picker circles below card visual). `resolveCardColor(color, cardId)` in `components/wallet/types.ts` provides a fallback — if `card_color` is null (e.g. a card created before this feature), it derives a stable color from a hash of the card ID. A one-time backfill script is available at `scripts/backfill-card-colors.sql` for production. Card deletion uses the unified endpoint `DELETE /api/v1/cards/:cardId?rail=rail4|rail5`.
+- **Card Color Persistence:** Each card (Rail 5) stores its own `card_color` (`purple`, `dark`, `blue`, `primary`). New cards get a random color on creation. Users can change it from the card detail page (color picker circles below card visual). `resolveCardColor(color, cardId)` in `components/wallet/types.ts` provides a fallback — if `card_color` is null (e.g. a card created before this feature), it derives a stable color from a hash of the card ID. Card deletion uses the unified endpoint `DELETE /api/v1/cards/:cardId?rail=rail5`.
 - **Onboarding Wizard:** A linear 5-step wizard for new bot owner setup. Flow: choose-agent-type → register-bot → sign-in → claim-token → add-card-bridge. The bridge slide only appears if the user claimed a bot (sets `botConnected`). If "Yes, let's add a card" is chosen, the full `Rail5SetupWizardContent` renders inline (not as a modal) with `preselectedBotId` to auto-link the bot and skip the bot selection step. If the user skips at claim-token or add-card-bridge, they go directly to `/overview`. The `Rail5SetupWizardContent` component is a standalone extraction from the dialog-based `Rail5SetupWizard` — both dashboard (dialog mode) and onboarding (inline mode) use the same content component with zero duplication. Props: `onComplete`, `onClose`, `preselectedBotId?`, `inline?`. The onboarding page has no auth gate — authentication happens within the wizard flow.
-- **Split-Knowledge Card Model (Rail 4):** Manages bot card configurations and transactions using payment profiles and obfuscation. Includes a multi-step setup wizard and a human approval workflow for transactions via HMAC-signed email links.
 - **Rail 5 Setup Wizard:** Full-page route at `/setup/rail5` (outside dashboard layout, no sidebar/header). Uses `Rail5SetupWizardContent` with `inline` mode. On complete/close navigates to `/overview`. Entry points: NewCardModal "My Card - Encrypted" option, overview page "Add Your Card" overlay, sub-agent-cards "Add New Card" button — all navigate to `/setup/rail5` instead of opening a Dialog modal. The onboarding wizard (`/onboarding`) still embeds `Rail5SetupWizardContent` inline directly. The old `Rail5SetupWizard` Dialog wrapper has been removed. **Modularized under `components/onboarding/rail5-wizard/`:**
     - `index.tsx` — re-exports `Rail5SetupWizardContent` for backward compatibility
     - `rail5-wizard-content.tsx` — orchestrator: calls hook, renders shell + step switch
@@ -196,9 +176,6 @@ CreditClaw employs a multi-rail architecture, segmenting payment rails with inde
   - `orders/onramp.ts` — `createOnrampOrder()` for fiat-to-USDC via checkoutcom-flow.
   - On-chain balance sync via reused `getOnChainUsdcBalance` from `lib/rail1/wallet/balance.ts`. Balance sync endpoint: `POST /api/v1/card-wallet/balance/sync` with 30-sec cooldown and `reconciliation` transaction type for discrepancies. Schema includes `last_synced_at` column on `crossmint_wallets`. Frontend ↻ button on Card Wallet dashboard mirrors Rail 1 pattern.
 - **Master Guardrails:** Owner-level, cross-rail spending limits stored in a `master_guardrails` table. These guardrails are checked before per-rail guardrails and aggregate spend across all active rails.
-- **Rail 4 (Self-Hosted Cards):** Implements the Split-Knowledge card model with obfuscation. **Modularized under `lib/rail4/`:**
-  - `obfuscation.ts` — decoy data, fake profile generation, `generateRail4Setup()`, `buildDecoyFileContent()`, types (`FakeProfile`, `Rail4Setup`).
-  - `allowance.ts` — spending window helpers: `getWindowStart()`, `getNextWindowStart()` for day/week/month allowance periods.
 - **Rail 5 (Sub-Agent Cards):** Encrypted card files with plugin-based checkout. Owner encrypts card client-side (AES-256-GCM), CreditClaw stores only the decryption key. At checkout, the bot calls the `creditclaw_fill_card` plugin (or falls back to an ephemeral sub-agent) which gets the key, decrypts, fills card number + CVV, and wipes all sensitive data. **Plugin:** `public/Plugins/OpenClaw/` (`src/index.ts`, `src/decrypt.ts`, `src/fill-card.ts`, `src/api.ts`). **Modularized under `lib/rail5/`:**
   - `index.ts` — core helpers (`generateRail5CardId`, `generateRail5CheckoutId`, `validateKeyMaterial`, `getDailySpendCents`, `getMonthlySpendCents`, `buildSpawnPayload`, `buildCheckoutSteps`) + test checkout constants (`RAIL5_TEST_CHECKOUT_PAGE_ID`, `RAIL5_TEST_CHECKOUT_URL`).
   - `decrypt-script.ts` — static `DECRYPT_SCRIPT` constant (~10-line AES-256-GCM Node.js script) with marker-based regex (`ENCRYPTED_CARD_START/END`) for extracting data from combined files. Falls back to code-fence matching for old-format files.
@@ -207,7 +184,7 @@ CreditClaw employs a multi-rail architecture, segmenting payment rails with inde
   - DB tables: `rail5_cards`, `rail5_checkouts`. Owner API: `/api/v1/rail5/{initialize,submit-key,cards,deliver-to-bot,cards/[cardId]/delivery-status}`. Bot API: `/api/v1/bot/rail5/{checkout,key,confirm,confirm-delivery}`. Dashboard: `/sub-agent-cards`. Setup wizard: 9-step (Name→HowItWorks→VisualCardEntry→BillingAddress→Limits→LinkBot→Encrypt&Send→DeliveryResult→TestVerification) with Web Crypto encryption. Card brand is auto-detected from BIN prefix via shared `lib/card/card-brand.ts` utility (Visa/MC/Amex/Discover/JCB/Diners); sent to server during submit-key.
   - **File delivery via `sendToBot()`**: Encryption step calls `POST /api/v1/bot-messages/send` which tries webhook first, falls back to staging a pending message. Combined self-contained markdown file format with `DECRYPT_SCRIPT_START/END` and `ENCRYPTED_CARD_START/END` markers. Backup download always happens.
   - **Delivery result step**: Shows live status (webhook delivered / waiting for bot / confirmed). 1-minute polling every 5s via `GET /rail5/cards/[cardId]/delivery-status`. Share buttons (Copy, Telegram, Discord) for relay message. Collapsible "For AI Agents" section with re-download option. **Phase 2: Test purchase verification** — after bot confirms delivery, polls `GET /rail5/cards/[cardId]/test-purchase-status` for 3 minutes. Server returns submitted card details from the test sale; client compares field-by-field against `savedCardDetails` (preserved in browser memory before input clearing). Shows green checkmarks (match) or red X (mismatch) per field. Confirm-delivery endpoint returns real `test_checkout_url` and `test_instructions` directing bot to sandbox checkout with "testing" payment method.
-  - Unified `rails.updated` webhook fires across ALL rails on bot link/unlink/freeze/unfreeze/wallet create with `action`, `rail`, `card_id`/`wallet_id`, `bot_id` in payload. Wired up in: Rail 1 (create, freeze), Rail 2 (create, freeze), Rail 4 (link-bot, freeze), Rail 5 (PATCH cards).
+  - Unified `rails.updated` webhook fires across ALL rails on bot link/unlink/freeze/unfreeze/wallet create with `action`, `rail`, `card_id`/`wallet_id`, `bot_id` in payload. Wired up in: Rail 1 (create, freeze), Rail 2 (create, freeze), Rail 5 (PATCH cards).
 - **Card UI Module (`lib/card/`):** Shared card component library designed for consistent card visuals across the platform.
   - `card-brand.ts` — brand detection from BIN prefix, formatting, max digits, placeholders. Re-exported from `lib/card-brand.ts` for backward compatibility.
   - `brand-logo.tsx` — visual brand logo component (Visa/MC/Amex/Discover/JCB/Diners).
@@ -467,36 +444,33 @@ Sitemap (`app/sitemap.ts`) is async and includes all brand detail pages and popu
 - **Callbacks** (`lib/approvals/callbacks.ts`): Thin loader that imports the four rail-specific fulfillment modules below.
 - **Rail 1 Fulfillment** (`lib/approvals/rail1-fulfillment.ts`): `railRef` = privy_transaction ID. On approve: updates tx status, creates order. On deny: marks tx failed.
 - **Rail 2 Fulfillment** (`lib/approvals/rail2-fulfillment.ts`): `railRef` = crossmint_transaction ID. On approve: looks up tx, creates purchase order via CrossMint, records order, fires webhook. On deny: marks tx failed, fires webhook.
-- **Rail 4 Fulfillment** (`lib/approvals/rail4-fulfillment.ts`): Approval/denial handlers for self-hosted card checkouts (wallet debit, allowance tracking, obfuscation events) + self-registers.
 - **Rail 5 Fulfillment** (`lib/approvals/rail5-fulfillment.ts`): Approval/denial handlers for sub-agent checkouts (status updates, webhook firing) + self-registers.
-- **Lifecycle** (`lib/approvals/lifecycle.ts`): TTL constants per rail (Rail 1 polling: 5min, Rail 1 email: 10min, Rails 2/4/5: 15min).
+- **Lifecycle** (`lib/approvals/lifecycle.ts`): TTL constants per rail (Rail 1 polling: 5min, Rail 1 email: 10min, Rails 2/5: 15min).
 - **Landing Page** (`app/api/v1/approvals/confirm/[approvalId]/route.ts`): GET renders branded approval page with approve/deny buttons; POST processes the decision via `resolveApproval()`. Single entry point for email-based approvals across all rails.
 
 **Centralized Dashboard API** (used by ALL rail dashboard pages):
 - `GET /api/v1/approvals?rail=<rail>` — returns pending unified approvals for the authenticated owner, filtered by rail. Extracts rail-specific display fields from `metadata` JSONB (Rail 1: `resource_url`; Rail 2: `product_name`, `shipping_address`).
 - `POST /api/v1/approvals/decide` — accepts `{ approval_id, decision }` (approval_id is the `ua_...` string), verifies ownership, calls `resolveApproval()` with stored HMAC token.
-- All four rail dashboard pages (Stripe Wallet, Card Wallet, Split-Knowledge Cards, Sub-Agent Cards) use these centralized endpoints. No rail-specific approval endpoints remain.
+- All rail dashboard pages (Stripe Wallet, Card Wallet, Sub-Agent Cards) use these centralized endpoints. No rail-specific approval endpoints remain.
 
 **Metadata JSONB**: Rail-specific display data is stored in the `metadata` column of `unified_approvals` when checkout routes call `createApproval()`:
 - Rail 1: `{ recipient_address, resource_url }`
 - Rail 2: `{ productLocator, product_name, quantity, shipping_address }`
-- Rail 4: checkout confirmation details
 - Rail 5: checkout details
 
 **Storage**: `server/storage/approvals.ts` — `createUnifiedApproval`, `getUnifiedApprovalById`, `getUnifiedApprovalByRailRef`, `decideUnifiedApproval`, `closeUnifiedApprovalByRailRef`, `getUnifiedApprovalsByOwnerUid`.
 - **DB Table**: `unified_approvals` with columns: id, approvalId, rail, ownerUid, ownerEmail, botName, amountDisplay, amountRaw, merchantName, itemName, hmacToken, status, expiresAt, decidedAt, railRef, metadata, createdAt.
 - **Env Vars**: `UNIFIED_APPROVAL_HMAC_SECRET` (falls back to `HMAC_SECRET` or default).
-- **Dropped Tables**: `privy_approvals` and `crossmint_approvals` have been removed from schema and dropped from the database. `checkout_confirmations` (Rail 4) remains separate because it doubles as a spend-tracking ledger for daily/monthly budget aggregations.
+- **Dropped Tables**: `privy_approvals` and `crossmint_approvals` have been removed from schema and dropped from the database.
 
 ### Central Orders (`lib/orders/`, `server/storage/orders.ts`)
-Unified cross-rail order tracking for all vendor purchases. Every confirmed purchase across all 4 rails creates a row in the `orders` table.
+Unified cross-rail order tracking for all vendor purchases. Every confirmed purchase across all rails creates a row in the `orders` table.
 - **Schema**: `orders` table in `shared/schema.ts` with columns for product info (name, image, URL, description, SKU), vendor (name, details JSONB), pricing (price_cents, taxes_cents, shipping_price_cents, currency), shipping (address, type, note), tracking (carrier, number, URL, estimated_delivery), and references (owner_uid, rail, bot_id, wallet_id/card_id, transaction_id, external_order_id).
 - **Storage**: `server/storage/orders.ts` — CRUD methods: `createOrder`, `getOrderById`, `getOrderByExternalId`, `getOrdersByOwner` (with filters: rail, botId, walletId, cardId, status, dateFrom, dateTo), `getOrdersByWallet`, `getOrdersByCard`, `updateOrder`.
 - **Order creation module**: `lib/orders/create.ts` exports `recordOrder()` — single entry point all rails call after a confirmed purchase. `lib/orders/types.ts` defines `OrderInput` interface.
 - **Rail wiring** (order creation fires ONLY after confirmed execution, never on pending requests):
   - Rail 1: `lib/approvals/rail1-fulfillment.ts` (approved) + `app/api/v1/stripe-wallet/bot/sign/route.ts` (auto-approved)
   - Rail 2: `lib/approvals/rail2-fulfillment.ts` (approved) + `app/api/v1/card-wallet/bot/purchase/route.ts` (auto-approved). Webhooks update order via `storage.getOrderByExternalId()` + `storage.updateOrder()`.
-  - Rail 4: `lib/approvals/rail4-fulfillment.ts` (approved) + `app/api/v1/bot/merchant/checkout/route.ts` (auto-approved)
   - Rail 5: `lib/approvals/rail5-fulfillment.ts` (approved) + `app/api/v1/bot/rail5/checkout/route.ts` (auto-approved)
 - **API**: `GET /api/v1/orders` (list with query filters), `GET /api/v1/orders/[order_id]` (single order detail). Owner-authenticated.
 - **Pages**: `/orders` (main orders list with cross-rail filters: rail, bot, status, date range), `/orders/[order_id]` (order detail page with product image, timeline, price breakdown, shipping/tracking).
@@ -606,43 +580,24 @@ Standalone module for spending USDC on products/services. Provider-agnostic stru
 - Future providers (direct merchant APIs, browser checkout agents) slot in as siblings under `lib/procurement/`.
 
 ### Agent Management (`lib/agent-management/`)
-Bot linking/unlinking is centralized in `lib/agent-management/bot-linking.ts`. A single `linkBotToEntity(rail, entityId, botId, ownerUid)` / `unlinkBotFromEntity(rail, entityId, ownerUid)` function handles all four rails with uniform rules:
-- **Max 3 entities per bot** enforced across all rails (was previously only Rail 4)
-- **Ownership validation** — entity and bot must both belong to the authenticated user
-- **Bot existence check** — bot must exist before linking
-- **Webhook firing** — `rails.updated` with `wallet_linked`/`wallet_unlinked` (Rails 1/2) or `card_linked`/`card_removed` (Rails 4/5) on every link/unlink (was previously inconsistent)
-- Rail configs are declarative objects specifying storage methods, entity types, webhook actions, and count queries
-- Route files are thin wrappers: auth + call shared function + return result
+Bot/agent-facing API infrastructure consolidated into a feature folder:
+- `auth.ts` — authenticates bot requests via Bearer API key (prefix lookup + bcrypt verify).
+- `crypto.ts` — API key generation, hashing, verification, claim tokens, card IDs, webhook secrets.
+- `rate-limit.ts` — token-bucket rate limiter with per-endpoint config (19 endpoints).
+- `agent-api/middleware.ts` — `withBotApi()` wrapper: auth → rate limit → handler → access log → webhook retry.
+- `agent-api/status-builders.ts` — `buildRail{1,2,5}Detail()` functions for `/bot/status` and `/bot/check/*` responses.
+- `bot-linking.ts` — centralized `linkBotToEntity(rail, entityId, botId, ownerUid)` / `unlinkBotFromEntity(rail, entityId, ownerUid)` for all rails. Max 3 entities per bot, ownership validation, bot existence check, webhook firing (`rails.updated`). Rail configs are declarative objects. Route files are thin wrappers.
+- **Bot Status API:** `GET /api/v1/bot/status` (cross-rail), `GET /api/v1/bot/check/rail{1,2,5}` (per-rail detail). `GET /api/v1/bots/rails` (owner-facing rail connections).
 
 ### Shared Wallet/Card UI (`components/wallet/`)
-All wallet and card page UI is consolidated into `components/wallet/` to eliminate duplication across Rails 1, 2, 4, and 5. Setup wizards are NOT in this folder — they remain in their original locations.
-- **`types.ts`** — Unified types including `NormalizedCard` (common shape both rails map into), plus `normalizeRail4Card()` and `normalizeRail5Card()` converters.
-- **`card-visual.tsx`** — Credit card visual (chip, masked card number, expiry, brand). Used by Rails 4 & 5.
-- **`crypto-card-visual.tsx`** — Crypto wallet visual (wallet icon + bot name + address with copy, balance + "USDC on Base" with inline sync/basescan/transfer icons, guardrails panel, status badge + three-dot menu). No chip, no card number. Used by Rails 1 & 2.
-- **`credit-card-item.tsx`** — **Unified card+action bar component** for all credit card rails. Renders `CardVisual` + identical action bar (Manage, Freeze, Add Agent/Bot badge, More menu) from a `NormalizedCard`.
-- **`credit-card-list-page.tsx`** — **Full page shell** used by both Rail 4 and Rail 5. Handles header, add button, setup wizard, explainer, loading/empty states, card grid, freeze/link/unlink dialogs. Pages just pass a config object. Supports optional `transactionsEndpoint`/`approvalsEndpoint` to enable Transactions/Approvals tabs.
-- **`rail-page-tabs.tsx`** — **Shared tab shell** used by all rail pages. Accepts `RailTab[]` config with `id`, `label`, `content`, optional `hidden` and `badge` count. Renders shadcn Tabs with dynamic grid columns.
-- **`transaction-list.tsx`** — **Shared transaction table** (financial ledger). Displays type, amount, balance after, details, status, date. Used by Rails 1 and 2.
-- **`order-list.tsx`** — **Shared order list + detail dialog**. Card-style list with OrderTimeline, tracking info, shipping address, and refresh-status button. Used by Rail 2.
-- **`approval-list.tsx`** — **Shared approval queue**. Supports `crypto` variant (amount + resource URL) and `commerce` variant (product name + shipping). Used by Rails 1 and 2.
-- **`wallet-selector.tsx`** — **Shared wallet dropdown** for filtering transactions/orders by wallet.
-- **`status-badge.tsx`** — Reusable status badge (active/frozen/pending).
-- **`wallet-action-bar.tsx`** — Base action bar (accepts action items array, badge, menu); used by crypto pages and `CreditCardItem`.
-- **`crypto-wallet-item.tsx`** — **Unified wallet+action bar component** for crypto rails. Wraps `CryptoCardVisual` + `CryptoActionBar`. Card handles inline actions (copy, sync, basescan, transfer) and three-dot menu (add agent, unlink bot). Action bar handles Fund/Pause/Guardrails/Activity.
-- **`crypto-action-bar.tsx`** — Crypto wallet action bar (Fund, Pause/Activate, Guardrails, Activity, Bot badge).
-- **`hooks/use-wallet-actions.ts`** — Shared freeze, sync balance, copy address, approval decision, sync-and-patch handlers (accepts rail-specific config).
-- **`hooks/use-bot-linking.ts`** — Shared link/unlink bot state and handlers. Also used by Rail 2 for bot list in create dialog.
-- **`hooks/use-transfer.ts`** — Shared transfer dialog state and handler (Rails 1 & 2).
-- **`hooks/use-guardrails.ts`** — Shared guardrail form state, open/save logic. Supports `crypto` variant (direct USD values) and `card` variant (micro-USDC multiplier + procurement controls save).
-- **`dialogs/`** — Freeze, link-bot, unlink-bot, transfer, guardrail, create-crypto-wallet dialogs.
-- **`index.ts`** — Barrel export for all components, hooks, types, and dialogs.
+All wallet and card page UI is consolidated into `components/wallet/` to eliminate duplication across Rails 1, 2, and 5. Setup wizards are NOT in this folder — they remain in their original locations. Key components: `card-visual.tsx` (Rail 5), `crypto-card-visual.tsx` (Rails 1/2), `credit-card-item.tsx` (unified card+action bar), `credit-card-list-page.tsx` (full page shell — pages pass a config object), `rail-page-tabs.tsx` (shared tab shell), `transaction-list.tsx`, `order-list.tsx`, `approval-list.tsx`. Shared hooks under `hooks/` (wallet actions, bot linking, transfers, guardrails). Shared dialogs under `dialogs/`. `types.ts` defines `NormalizedCard` with per-rail normalizers.
 
-Rail 4 (`self-hosted/page.tsx`) and Rail 5 (`sub-agent-cards/page.tsx`) are ~43 lines each — pure config objects passed to `CreditCardListPage`. Both rails render identical UI structure, identical action bars, identical dialogs. The only differences are the config: API endpoint, data normalizer, explainer content, and setup wizard component. Adding transaction/approval tabs to these rails = add endpoint URLs to the config object.
+Rail 5 (`sub-agent-cards/page.tsx`) is ~43 lines — a pure config object passed to `CreditCardListPage`. Adding transaction/approval tabs = add endpoint URLs to the config object.
 
 ### Unified Tab Structure
 All rail pages use a consistent tab structure via `RailPageTabs`:
 
-| Tab | Shows | Rail 1 | Rail 2 | Rail 4/5 |
+| Tab | Shows | Rail 1 | Rail 2 | Rail 5 |
 |---|---|---|---|---|
 | Wallets/Cards | Entity list with action bars | Yes | Yes | Yes |
 | Transactions | Financial ledger (deposits, debits, transfers) | Yes | Yes | When endpoint added |
@@ -660,27 +615,11 @@ Rail 1 (`stripe-wallet/page.tsx`, ~313 lines) and Rail 2 (`card-wallet/page.tsx`
 - `/overview`: Dashboard overview
 - `/stripe-wallet`: Rail 1 dashboard
 - `/card-wallet`: Rail 2 dashboard
-- `/self-hosted`: Self-hosted card management (Rail 4)
 - `/sub-agent-cards`: Sub-agent card management (Rail 5)
 - `/transactions`: Transaction history, orders, and unified approvals (three tabs)
 - `/settings`: Account settings
 - `/onboarding`: Guided setup wizard
 
-
-### Agent Management (`lib/agent-management/`)
-Bot/agent-facing API infrastructure consolidated into a feature folder:
-- `auth.ts` — authenticates bot requests via Bearer API key (prefix lookup + bcrypt verify).
-- `crypto.ts` — API key generation, hashing, verification, claim tokens, card IDs, webhook secrets.
-- `rate-limit.ts` — token-bucket rate limiter with per-endpoint config (19 endpoints).
-- `agent-api/middleware.ts` — `withBotApi()` wrapper: auth → rate limit → handler → access log → webhook retry.
-- `agent-api/status-builders.ts` — `buildRail{1,2,4,5}Detail()` functions for `/bot/status` and `/bot/check/*` responses.
-
-### Bot Status & Check API
-- **Unified Status:** `GET /api/v1/bot/status` — cross-rail status, balances, master guardrails, default rail.
-- **Per-Rail Detail:** `GET /api/v1/bot/check/rail{1,2,4,5}` — deep operational info per rail (guardrails, allowances, approval mode, domain/merchant rules).
-- **Preflight:** `POST /api/v1/bot/check/rail4/test` — dry-run validation for Rail 4 purchases (no side effects).
-- **Shared builders:** `lib/agent-management/agent-api/status-builders.ts` — reusable functions for building per-rail detail responses.
-- **Owner Rail Management:** `GET /api/v1/bots/rails` — owner-facing aggregated rail connections per bot.
 
 ### Feedback / Support Widget
 In-app feedback dialog accessible from the profile dropdown in the dashboard header. Authenticated users can submit bug reports, feature requests, billing questions, technical support requests, and general feedback.
@@ -690,9 +629,6 @@ In-app feedback dialog accessible from the profile dropdown in the dashboard hea
 - **No database storage** — feedback goes straight to email. `replyTo` is set to the user's email for direct replies.
 - **Security:** All user-supplied content is HTML-escaped before email insertion. Message length capped at 5000 chars.
 - **Config:** `SUPPORT_EMAIL` env var (defaults to `support@creditclaw.com`).
-
-### API Endpoints
-CreditClaw provides distinct API endpoints for each rail and for master guardrails, facilitating wallet management, transactions, approvals, and guardrail configuration. Bot-facing APIs allow for purchase requests, status polling, and skill discovery. Owner-facing APIs manage cards, guardrails, and approvals.
 
 ## External Dependencies
 - **Firebase Auth:** User authentication and authorization.
@@ -711,24 +647,18 @@ CreditClaw provides distinct API endpoints for each rail and for master guardrai
 - **Perplexity API:** Site audit and evidence gathering for ASX Score Scanner (via sonar-deep-research model).
 - **react-markdown + remark-gfm + @tailwindcss/typography:** Markdown rendering for documentation pages.
 
-### Testing (`tests/`, `docs/testing.md`)
-Two layers of testing:
-- **Automated unit tests** (`tests/`): Vitest-based test suite. Run with `npx vitest run`. Config in `vitest.config.ts` with `@/` path alias.
-  - `tests/x402/receive.test.ts` — x402 header parsing (`parseXPaymentHeader`), payment validation (`validateX402Payment`), dedupe keys (29 tests)
-  - `tests/rail1/x402-utils.test.ts` — EIP-712 typed data building, nonce generation, x402 payment header encoding, USDC formatting utilities (19 tests)
-  - `tests/guardrails/evaluate.test.ts` — guardrail evaluation for both USDC rails (`evaluateGuardrails`) and card rails (`evaluateCardGuardrails`), covering per-tx limits, daily/monthly budgets, approval thresholds (18 tests)
-- **Manual integration tests** (`docs/testing.md`): curl-based test suite covering bot registration, wallet ops, purchases, guardrails, checkout pages, x402 endpoints. Sections 1-12 cover core API, Section 13 covers checkout & x402, Section 14 references the automated tests.
+### Testing (`tests/`)
+Vitest-based automated test suite. Run with `npx vitest run`. Config in `vitest.config.ts` with `@/` path alias. See `tests/_README.md` for coverage map, guidelines on when/how to add tests, and known gaps. Manual curl-based integration tests are in `project_knowledge/testing.md`.
 
 ### Multitenant Architecture
 The app supports multiple tenants (CreditClaw, shopy.sh, brands.sh) via hostname-based routing:
-- **Tenant configs**: `public/tenants/{tenantId}/config.json` — branding, meta, theme, routes, features, tracking (source of truth). Also mirrored in `lib/tenants/tenant-configs.ts` as static imports for client-side use.
+- **Tenant configs**: `public/tenants/{tenantId}/config.json` — branding, meta, theme, routes, navigation, tracking (source of truth). Also mirrored in `lib/tenants/tenant-configs.ts` as static imports for client-side use.
 - **Types**: `lib/tenants/types.ts` — `TenantConfig` interface
-- **Config loader (server)**: `lib/tenants/config.ts` — `getTenantConfig()`, `resolveTenantId()` with caching (uses filesystem, server-only)
+- **Config loader (server)**: `lib/tenants/config.ts` — `getTenantConfig()` with caching (uses filesystem, server-only)
 - **Config loader (client)**: `lib/tenants/tenant-configs.ts` — `getStaticTenantConfig()` + `TENANT_THEMES` (bundled statically, no fs dependency)
 - **Middleware**: `middleware.ts` — resolves hostname → tenantId, sets `x-tenant-id` header + `tenant-id` cookie
 - **Root layout** (`app/layout.tsx`): Uses `cookies()` to read `tenant-id` cookie set by middleware. Resolves tenant config server-side for correct SSR (no flash of wrong tenant). Also includes inline `<script>` for CSS theme variables on client-side navigations. Wraps children in `TenantProvider`.
 - **Client context**: `lib/tenants/tenant-context.tsx` — `TenantProvider` + `useTenant()` hook for client components
-- **Server helper (deprecated)**: `lib/tenants/get-request-tenant.ts` — `getRequestTenant()` reads from headers. Pages should use `cookies()` directly with `export const dynamic = "force-dynamic"` instead.
 - **Tenant-aware pages**: Pages needing server-side tenant routing (home, guide, standard, how-it-works) use `cookies()` + `force-dynamic`. The root layout also uses `cookies()` making child pages dynamic by default, but `revalidate` on individual pages enables ISR caching.
 - **Tenant components**: `components/tenants/{id}/` — per-tenant landing pages, how-it-works pages, etc.
 - **Nav**: Uses `useTenant()` for logo, name, tagline, routes
@@ -750,20 +680,6 @@ Schema changes flow through Drizzle ORM and are auto-synced to production on dep
 5. Config: `drizzle.config.ts` points at `DATABASE_URL` with `pg` driver
 6. The `spending_permissions` table exists in both databases but is not tracked in the schema (legacy table)
 
-### Internal Developer Docs (`project_knowledge/`)
-Private technical documentation for the engineering team. Each doc file has YAML frontmatter (`name`, `description`) for quick scanning.
-
-**Entry point:** `vision.md` → `architecture.md` → `internal_docs/` subfolder → `how-to-write-docs-guide.md` (if writing docs)
-
-- `vision.md` — product purpose and direction (Tier 3 protected)
-- `architecture.md` — system overview, component map
-- `how-to-write-docs-guide.md` — how to write and update internal docs
-- `currently_building/` — active build cycle working bench
-- `internal_docs/tenants/` — tenant identity, purpose, audience, branding
-- `internal_docs/scanning/` — ASX scanner, scan pipeline, maturity, scan history
-- `internal_docs/catalog/` — brand catalog, taxonomy, recommend API, product search
-- `internal_docs/platform/` — multitenant routing, authentication, onboarding
-
 ### Documentation System (`docs/content/`, `app/docs/`)
 Self-hosted documentation at `/docs` with sidebar navigation, audience toggle, and markdown rendering. Multi-tenant aware — each tenant sees its own docs.
 - **Config**: `docs/content/sections.ts` — typed section/page registry with `Audience` + `DocTenant` tagging. `getSectionsByAudience(audience, tenant?)` filters both. `normalizeTenantId()` validates tenant cookies. `getTenantFromSlug()` derives tenant from URL path.
@@ -778,4 +694,3 @@ Self-hosted documentation at `/docs` with sidebar navigation, audience toggle, a
 ### Shopy.sh Pages
 - **`/standard`**: The Agentic Commerce Standard spec page. Server component with custom markdown renderer (no prose library), sticky TOC sidebar, non-dev callout card linking to `/guide`. Source: `content/agentic-commerce-standard.md`.
 - **`/guide`**: Non-technical merchant explainer. 6 sections with Nav/Footer, CSS-only flow diagram, improvement checklist in shopy's `gap-px` grid style, dark CTA section.
-- **Design rules**: No rounded corners on cards, no shadows, `font-mono` section labels, `gap-px bg-neutral-200` grid dividers, `→` list items, dark sections `bg-neutral-950`, green accent only in terminal contexts.
