@@ -6,7 +6,7 @@ import {
   type PrivyTransaction, type InsertPrivyTransaction,
 } from "@/shared/schema";
 import { eq, and, desc, sql, gte, inArray } from "drizzle-orm";
-import type { IStorage } from "./types";
+import type { IStorage } from "../types";
 
 type Rail1Methods = Pick<IStorage,
   | "privyCreateWallet" | "privyGetWalletById" | "privyGetWalletByBotId"

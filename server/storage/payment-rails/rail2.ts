@@ -6,7 +6,7 @@ import {
   type CrossmintTransaction, type InsertCrossmintTransaction,
 } from "@/shared/schema";
 import { eq, and, desc, sql, gte, inArray } from "drizzle-orm";
-import type { IStorage } from "./types";
+import type { IStorage } from "../types";
 
 type Rail2Methods = Pick<IStorage,
   | "crossmintCreateWallet" | "crossmintGetWalletById" | "crossmintGetWalletByBotId"

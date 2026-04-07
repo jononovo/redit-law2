@@ -5,7 +5,7 @@ import {
   type WaitlistEntry, type InsertWaitlistEntry,
 } from "@/shared/schema";
 import { eq, and, sql, gte } from "drizzle-orm";
-import type { IStorage } from "./types";
+import type { IStorage } from "../types";
 
 type PairingWaitlistMethods = Pick<IStorage,
   | "createPairingCode" | "getPairingCodeByCode" | "claimPairingCode" | "getRecentPairingCodeCount"

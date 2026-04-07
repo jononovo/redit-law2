@@ -1,7 +1,7 @@
 import { db } from "@/server/db";
 import { checkoutPages, sales } from "@/shared/schema";
 import type { CheckoutPage, InsertCheckoutPage, Sale, InsertSale } from "@/shared/schema";
-import type { IStorage } from "./types";
+import type { IStorage } from "../types";
 import { eq, and, desc, sql } from "drizzle-orm";
 
 export interface SaleFilters {

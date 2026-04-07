@@ -4,7 +4,7 @@ import {
   type Owner, type InsertOwner,
 } from "@/shared/schema";
 import { eq } from "drizzle-orm";
-import type { IStorage } from "./types";
+import type { IStorage } from "../types";
 
 type OwnerMethods = Pick<IStorage, "getOwnerByUid" | "upsertOwner">;
 

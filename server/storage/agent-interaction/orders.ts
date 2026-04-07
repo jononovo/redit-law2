@@ -4,7 +4,7 @@ import {
   type Order, type InsertOrder,
 } from "@/shared/schema";
 import { eq, and, desc, sql, gte, lte } from "drizzle-orm";
-import type { IStorage } from "./types";
+import type { IStorage } from "../types";
 
 export interface OrderFilters {
   rail?: string;

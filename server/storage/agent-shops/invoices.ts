@@ -1,7 +1,7 @@
 import { db } from "@/server/db";
 import { invoices, sales } from "@/shared/schema";
 import type { Invoice, InsertInvoice, Sale } from "@/shared/schema";
-import type { IStorage } from "./types";
+import type { IStorage } from "../types";
 import { eq, and, desc, sql, gte, lte } from "drizzle-orm";
 
 export interface InvoiceFilters {

@@ -4,7 +4,7 @@ import {
   type BrandLoginAccount, type InsertBrandLoginAccount,
 } from "@/shared/schema";
 import { eq, and } from "drizzle-orm";
-import type { IStorage } from "./types";
+import type { IStorage } from "../types";
 
 type BrandLoginAccountMethods = Pick<IStorage,
   | "createBrandLoginAccount" | "getBrandLoginAccountsByOwner"

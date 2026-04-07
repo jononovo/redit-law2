@@ -5,7 +5,7 @@ import {
   type Rail5Checkout, type InsertRail5Checkout,
 } from "@/shared/schema";
 import { eq, desc } from "drizzle-orm";
-import type { IStorage } from "./types";
+import type { IStorage } from "../types";
 
 type Rail5Methods = Pick<IStorage,
   | "createRail5Card" | "getRail5CardByCardId" | "getRail5CardsByOwnerUid"

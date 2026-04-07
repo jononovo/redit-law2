@@ -1,7 +1,7 @@
 import { db } from "@/server/db";
 import { qrPayments } from "@/shared/schema";
 import type { QrPayment, InsertQrPayment } from "@/shared/schema";
-import type { IStorage } from "./types";
+import type { IStorage } from "../types";
 import { eq, and } from "drizzle-orm";
 
 type QrPayMethods = Pick<IStorage,

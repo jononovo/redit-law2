@@ -1,7 +1,7 @@
 import { db } from "@/server/db";
 import { brandFeedback, type BrandFeedback, type InsertBrandFeedback } from "@/shared/schema";
 import { eq, and, desc, sql, gte } from "drizzle-orm";
-import type { IStorage } from "./types";
+import type { IStorage } from "../types";
 
 type BrandFeedbackMethods = Pick<IStorage,
   | "createBrandFeedback"
