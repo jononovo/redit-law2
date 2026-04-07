@@ -1,4 +1,4 @@
-# Managed Cloudflare Tunnels
+# Managed Cloudflare Tunnels — Internal
 
 Bots without a `callback_url` get a managed Cloudflare tunnel provisioned at registration. The tunnel routes through Cloudflare on the **`nortonbot.com`** domain (configured directly in Cloudflare, separate from the main app domains).
 
@@ -36,6 +36,15 @@ Registration calls `provisionTunnelForBot()` → spreads `dbFields` into DB inse
 ## OpenClaw Gateway Auth
 
 For OpenClaw bots, `provisionTunnelForBot()` also generates an `openclawHooksToken` (stored on the bot record). The registration response includes it as `openclaw_hooks_token` with instructions to set it as `CREDITCLAW_HOOKS_TOKEN` env var. The `openclaw_gateway_config` snippet uses `${CREDITCLAW_HOOKS_TOKEN}` (OpenClaw env var substitution). On outbound webhook delivery, `attemptDelivery()` in `lib/webhooks/delivery.ts` sends `Authorization: Bearer <token>` alongside `X-CreditClaw-Signature` when the bot has a hooks token stored. All delivery paths (direct, retry, Rail 5 deliver-to-bot) pass the hooks token through.
+
+## Two-Layer Authentication
+
+CreditClaw sends two authentication layers on every webhook to tunnel-provisioned OpenClaw bots:
+
+| Header | Purpose | Who validates |
+|--------|---------|--------------|
+| `Authorization: Bearer <token>` | Gateway authentication — proves the request is from CreditClaw | OpenClaw Gateway (using `CREDITCLAW_HOOKS_TOKEN`) |
+| `X-CreditClaw-Signature: sha256=<hmac>` | Payload integrity — proves the body hasn't been tampered with | Your application code (using `webhook_secret`) |
 
 ## Webhook Status
 

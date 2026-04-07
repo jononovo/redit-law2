@@ -1,8 +1,6 @@
-# Webhook Health & Reliability
+# Webhook Health & Reliability — Internal
 
-CreditClaw automatically monitors the health of your bot's webhook endpoint. When deliveries fail, the system gracefully degrades to message staging so your bot never misses an event.
-
----
+Technical internals of the webhook health tracking system. For the public-facing version, see `app/docs/content/bots/webhook-health.md`.
 
 ## How Message Routing Works
 
@@ -16,8 +14,6 @@ All internal event dispatching flows through `sendToBot()`, which decides how to
 6. **Fallback** — if the webhook is `unreachable`, `none`, or delivery failed, the event is staged as a pending message for the bot to poll.
 
 > **Note:** Only `sendToBot()` participates in health tracking. Direct `fireWebhook()` callers bypass the health system entirely — they handle their own error logic.
-
----
 
 ## Status Transitions
 
@@ -41,8 +37,6 @@ CreditClaw tracks two fields on every bot record:
 
 Once a bot reaches `unreachable`, CreditClaw stops attempting webhook delivery and routes all events directly to pending messages. The bot must re-register or update its `callback_url` to reset to `active`.
 
----
-
 ## Atomic Failure Counting
 
 Failure counting uses an atomic SQL increment to handle concurrent deliveries correctly:
@@ -59,8 +53,6 @@ WHERE bot_id = $1
 
 This ensures that two simultaneous failed deliveries cannot both read `fail_count = 0` and both write `fail_count = 1` — the database serializes the increments.
 
----
-
 ## Fire-and-Forget Health Updates
 
 Health status updates are intentionally fire-and-forget. They never block or delay message staging:
@@ -70,8 +62,6 @@ Health status updates are intentionally fire-and-forget. They never block or del
 - If the health update itself fails (e.g., database hiccup), it is logged but does not affect the message delivery outcome.
 
 The message is always either delivered via webhook **or** staged as a pending message — health tracking is a side effect, not a gate.
-
----
 
 ## Fallback Behavior
 
@@ -83,8 +73,6 @@ When webhook delivery is skipped or fails, events are staged as pending messages
 
 Pending messages have configurable expiry times based on event type. Bots retrieve them by polling `GET /api/v1/bot/messages` and acknowledge receipt with `POST /api/v1/bot/messages/ack`.
 
----
-
 ## Recovery
 
 A bot's webhook health resets to `active` with a fail count of `0` when:
@@ -94,58 +82,3 @@ A bot's webhook health resets to `active` with a fail count of `0` when:
 - A webhook delivery succeeds while the status is `degraded` (automatic recovery).
 
 There is no manual "reset health" endpoint — updating the callback URL is the reset mechanism.
-
----
-
-## Inspecting Webhook Health
-
-The `webhook_status` and `webhook_fail_count` fields are included in bot status responses:
-
-### GET /api/v1/bot/status
-
-```json
-{
-  "bot_id": "bot_abc123",
-  "bot_name": "my-shopping-bot",
-  "wallet_status": "active",
-  "webhook_status": "active",
-  "webhook_fail_count": 0,
-  "callback_url": "https://my-bot.example.com/webhook",
-  "rails": { ... }
-}
-```
-
-### GET /api/v1/bots/mine
-
-Returns an array of bots, each including `webhook_status` and `webhook_fail_count`.
-
----
-
-## Bot Messages as a Safety Net
-
-The pending message system (`GET /api/v1/bot/messages`) acts as a universal safety net:
-
-- Bots that never register a webhook receive all events as pending messages.
-- Bots with unreachable webhooks automatically fall back to pending messages.
-- Bots with healthy webhooks can still poll for messages as a backup.
-
-For maximum reliability, bots should poll for pending messages periodically even when webhooks are working. This catches any edge cases where a webhook delivery succeeds from the server's perspective but the bot didn't process it.
-
----
-
-## Best Practices
-
-1. **Use a reliable, always-on endpoint** for your `callback_url`. Serverless functions or managed services with high uptime are ideal.
-2. **Always use HTTPS** for webhook endpoints to protect payload integrity.
-3. **Respond quickly** with a `200` status. Do heavy processing asynchronously after acknowledging receipt.
-4. **Poll as backup** — even with webhooks enabled, periodically call `GET /api/v1/bot/messages` to catch any missed events.
-5. **Monitor `webhook_status`** in your `GET /api/v1/bot/status` responses. If you see `degraded`, investigate your endpoint before it transitions to `unreachable`.
-6. **Update your `callback_url`** to reset health after fixing endpoint issues.
-
----
-
-## Next Steps
-
-- [Webhook Setup & Signing](/docs/bots/webhook-setup) — configure your webhook endpoint and verify signatures
-- [Webhook Event Types](/docs/bots/webhook-events) — full reference of all event types and payloads
-- [Bot Messages Polling](/docs/bots/api-reference) — the `GET /bot/messages` fallback endpoint

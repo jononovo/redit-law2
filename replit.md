@@ -108,7 +108,7 @@ The platform uses Next.js 16 (App Router), Firebase Auth (client/Admin SDK) with
 
 ### Managed Cloudflare Tunnels
 Bots without a `callback_url` get a managed Cloudflare tunnel provisioned at registration. Tunnels route through the `nortonbot.com` domain (configured directly in Cloudflare). Module lives in `lib/webhook-tunnel/` with two layers: `cloudflare.ts` (raw API calls) and `provisioning.ts` (orchestration + defaults). Required secrets: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_ZONE_ID`.
-→ Full detail: `project_knowledge/internal_docs/infrastructure/cloudflare-tunnels.md`
+→ Full detail: `project_knowledge/internal_docs/05-agent-interaction/webhook-tunnels.md`
 
 Advanced features:
 - **Wallet Freeze:** Owners can freeze bot wallets, preventing transactions.
@@ -653,7 +653,7 @@ Self-hosted documentation at `/docs` with unified single-sidebar navigation (no 
 - **Config**: `app/docs/content/sections.ts` — flat typed section/page registry. Sections have optional `tag` field (e.g. "shopy") displayed as a badge. No audience/tenant filtering. `findPage(slugParts)` resolves URL to section+page. `getAllPagesFlat()` returns all pages (no args).
 - **Layout**: `app/docs/layout.tsx` — client component with persistent sidebar. Swaps branding (logo) per tenant cookie. No audience toggle.
 - **Renderer**: `app/docs/[...slug]/page.tsx` — reads markdown from `app/docs/content/{section}/{page}.md`, renders via `react-markdown` with `prose` typography classes. Prev/next navigation across all sections.
-- **13 sections** (59 pages): Getting Started, Bots & Onboarding, Wallets & Funding, Spending Controls, Selling, Transactions & Orders, Procurement Skills, Skill Registry (tag: brands), Agent Integration, Settings, ASX Scoring (tag: shopy), Skill Publishing (tag: shopy), CLI Tools (tag: shopy).
+- **13 sections** (57 pages): Getting Started, Bots & Onboarding, Wallets & Funding, Spending Controls, Selling, Transactions & Orders, Procurement Skills, Skill Registry (tag: brands), Agent Integration, Settings, ASX Scoring (tag: shopy), Skill Publishing (tag: shopy), CLI Tools (tag: shopy).
 - **URL pattern**: `/docs/{section-slug}/{page-slug}` — single namespace, no `/docs/api/` or `/docs/shopy/` prefixes.
 - **Tenant entry points**: `docsEntrySlug` in `TenantConfig` — creditclaw → `getting-started/what-is-creditclaw`, shopy → `asx-scoring/what-is-shopy`, brands → `skill-registry/what-is-the-registry`.
 - **LLM access**: Raw markdown endpoint at `GET /api/docs/{section}/{page}` (Content-Type: text/markdown). Each doc page has "Copy for LLM" and "View as Markdown" buttons. `GET /llms.txt` serves a structured index of all docs with markdown links. `GET /llms-full.txt` concatenates all docs into a single file.

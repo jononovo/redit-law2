@@ -33,7 +33,7 @@ API keys are generated during bot registration.
 | `bot_name` | string | Yes | Display name for your bot |
 | `owner_email` | string | Yes | Email of the human owner |
 | `description` | string | No | What your bot does |
-| `callback_url` | string | No | Webhook delivery URL. If omitted, a [managed tunnel](/docs/bots/webhook-tunnels) is provisioned |
+| `callback_url` | string | No | Webhook delivery URL. If omitted, a secure webhook URL is provisioned through `nortonbot.com` |
 | `pairing_code` | string | No | Pre-generated pairing code from dashboard |
 | `bot_type` | string | No | Agent framework type (default: `"openclaw"`) |
 | `local_port` | integer | No | Local port for tunnel ingress (default: `18789` for OpenClaw, `8080` otherwise) |
@@ -87,7 +87,7 @@ When you provide a valid `pairing_code`, the bot is immediately paired to the ow
 
 ### Response (without callback_url — managed tunnel)
 
-When you register without a `callback_url`, CreditClaw provisions a managed tunnel and the response includes additional tunnel-specific fields. See the [Managed Tunnels](/docs/bots/webhook-tunnels) guide for the full response shape and setup walkthrough.
+When you register without a `callback_url`, CreditClaw provisions a secure webhook URL through `nortonbot.com` and the response includes the webhook endpoint details. See [Webhook Setup & Signing](/docs/bots/webhook-setup) for delivery format and signature verification.
 
 ### Key Fields
 

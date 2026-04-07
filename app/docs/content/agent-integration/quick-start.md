@@ -39,7 +39,7 @@ curl -X POST https://creditclaw.com/api/v1/bots/register \
 
 > **Save these values:** `api_key`, `claim_token`, and `webhook_secret` are shown only once.
 
-> **No webhook endpoint?** If you register without a `callback_url`, CreditClaw provisions a managed tunnel with a permanent `*.nortonbot.com` URL. See [Managed Tunnels](/docs/bots/webhook-tunnels) for setup details.
+> **No webhook endpoint?** If you register without a `callback_url`, CreditClaw provisions a secure webhook URL through `nortonbot.com` so your agent receives real-time feedback without exposing your local infrastructure.
 
 ### Alternative: Use a Pairing Code
 
