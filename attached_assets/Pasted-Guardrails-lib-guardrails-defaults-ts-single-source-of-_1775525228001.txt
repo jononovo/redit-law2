@@ -1,0 +1,21 @@
+Guardrails (lib/guardrails/):
+
+defaults.ts — single source of truth for all guardrail default values (master + all rails). The schema reads from this file, so changing a value here changes the default for new records. Also exports PROCUREMENT_DEFAULTS for procurement controls.
+types.ts — GuardrailRules (USDC-based for Rails 1/2), CardGuardrailRules (cents-based for Rails 4/5), TransactionRequest, CardTransactionRequest, CumulativeSpend, CardCumulativeSpend, GuardrailDecision interfaces.
+evaluate.ts — two pure evaluation functions: evaluateGuardrails() for USDC rails (1 & 2) and evaluateCardGuardrails() for card rail (5). Only enforces spending limits and approval thresholds — domain/merchant/category enforcement is handled by procurement controls.
+master.ts — master-level guardrail evaluation (fetches config, aggregates cross-rail spend, calls evaluateGuardrails). See internal_docs/05-agent-interaction/guardrails.md for spend aggregation details.
+approval.ts — centralized evaluateApprovalDecision() function that reads approvalMode and requireApprovalAbove from the master_guardrails table. This is the single source of truth for all approval decisions across all rails.
+Standardized Structure: Per-rail guardrail tables (privy_guardrails, crossmint_guardrails, rail5_guardrails) contain only spending limits: maxPerTx, dailyBudget, monthlyBudget, recurringAllowed, autoPauseOnZero, notes, updatedAt, updatedBy. Approval mode (approvalMode, requireApprovalAbove) lives exclusively on master_guardrails. Domain/merchant/category lists live exclusively in procurement_controls.
+Centralized Approval: All checkout routes call evaluateApprovalDecision(ownerUid, amountCents) from lib/guardrails/approval.ts. This function reads from master_guardrails and supports:
+ask_for_everything → require owner approval for all transactions
+auto_approve_under_threshold → only require approval if amount >= requireApprovalAbove
+auto_approve_by_category → allow (category-based approval not yet fully implemented)
+recurringAllowed: Column exists on all rails for structural consistency but is not yet enforced in checkout routes (pending recurring detection logic).
+notes: Informational field on all rails, returned in API responses but not used in enforcement.
+Procurement Controls (lib/procurement-controls/):
+
+types.ts — ProcurementRules, ProcurementRequest, ProcurementDecision interfaces.
+defaults.ts — DEFAULT_PROCUREMENT_RULES with default blocked categories.
+evaluate.ts — evaluateProcurementControls() checks domain, merchant, and category rules. mergeProcurementRules() combines master + rail-level rules (blocklists are unioned, allowlists are intersected).
+DB table: procurement_controls with scope (master/rail1/rail2/rail5) and scope_ref_id for per-rail granularity. Owner-facing API: GET/POST /api/v1/procurement-controls and GET /api/v1/procurement-controls/[scope].
+Fully separated from guardrails: Domain/merchant/category lists are exclusively managed by procurement_controls. The guardrails tables (privy_guardrails, crossmint_guardrails, rail5_guardrails) no longer have allowlisted_domains, blocklisted_domains, allowlisted_merchants, or blocklisted_merchants columns. The guardrails GET APIs still return these fields in the response by reading from procurement_controls, maintaining backward compatibility. The card-wallet frontend saves merchant lists to POST /api/v1/procurement-controls separately from guardrail limit saves.
