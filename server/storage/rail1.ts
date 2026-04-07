@@ -158,6 +158,7 @@ export const rail1Methods: Rail1Methods = {
         eq(privyTransactions.walletId, walletId),
         eq(privyTransactions.type, "x402_payment"),
         gte(privyTransactions.createdAt, today),
+        sql`${privyTransactions.status} NOT IN ('failed')`,
       ));
     return Number(result[0]?.total || 0);
   },
@@ -173,6 +174,7 @@ export const rail1Methods: Rail1Methods = {
         eq(privyTransactions.walletId, walletId),
         eq(privyTransactions.type, "x402_payment"),
         gte(privyTransactions.createdAt, firstOfMonth),
+        sql`${privyTransactions.status} NOT IN ('failed')`,
       ));
     return Number(result[0]?.total || 0);
   },
