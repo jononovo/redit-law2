@@ -137,8 +137,6 @@ Note: `Smartphone` is already imported on line 13. The name "Sub-Agent Cards" an
 - **`app/api/v1/bot/rail5/checkout/route.ts`** — Already calls `evaluateMasterGuardrails()`. Will automatically benefit from the corrected totals.
 - **Schema** — No table or column changes.
 
-## Risk
+## Status
 
-Low. This is an additive change to the storage query layer. The enforcement path (`evaluateMasterGuardrails` → `evaluateGuardrails`) already works correctly — it just receives incomplete data today. After this fix it will receive the full cross-rail total.
-
-The unit conversion (cents × 10,000 = micro-USDC) uses the same math already proven in `centsToMicroUsdc()`. The existing Rail 5 checkout route already converts cents → micro-USDC via this same helper before calling `evaluateMasterGuardrails`.
+**Implemented.** All four layers updated and verified — server compiles clean, no breaking changes.

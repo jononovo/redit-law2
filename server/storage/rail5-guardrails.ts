@@ -42,7 +42,7 @@ export const rail5GuardrailMethods: Rail5GuardrailMethods = {
       .from(rail5Checkouts)
       .where(and(
         eq(rail5Checkouts.cardId, cardId),
-        eq(rail5Checkouts.status, "approved"),
+        sql`${rail5Checkouts.status} IN ('approved', 'completed')`,
         gte(rail5Checkouts.createdAt, startOfDay),
       ));
     return Number(result?.total || 0);
@@ -58,7 +58,7 @@ export const rail5GuardrailMethods: Rail5GuardrailMethods = {
       .from(rail5Checkouts)
       .where(and(
         eq(rail5Checkouts.cardId, cardId),
-        eq(rail5Checkouts.status, "approved"),
+        sql`${rail5Checkouts.status} IN ('approved', 'completed')`,
         gte(rail5Checkouts.createdAt, startOfMonth),
       ));
     return Number(result?.total || 0);

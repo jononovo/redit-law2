@@ -150,8 +150,8 @@ export interface IStorage {
 
   getMasterGuardrails(ownerUid: string): Promise<MasterGuardrail | null>;
   upsertMasterGuardrails(ownerUid: string, data: Partial<InsertMasterGuardrail>): Promise<MasterGuardrail>;
-  getMasterDailySpend(ownerUid: string): Promise<{ rail1: number; rail2: number; total: number }>;
-  getMasterMonthlySpend(ownerUid: string): Promise<{ rail1: number; rail2: number; total: number }>;
+  getMasterDailySpend(ownerUid: string): Promise<{ rail1: number; rail2: number; rail5: number; total: number }>;
+  getMasterMonthlySpend(ownerUid: string): Promise<{ rail1: number; rail2: number; rail5: number; total: number }>;
 
   getRail5Guardrails(cardId: string): Promise<Rail5Guardrail | null>;
   upsertRail5Guardrails(cardId: string, data: Partial<InsertRail5Guardrail>): Promise<Rail5Guardrail>;

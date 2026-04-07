@@ -3,6 +3,7 @@ import {
   masterGuardrails,
   privyTransactions, privyWallets,
   crossmintTransactions, crossmintWallets,
+  rail5Checkouts,
   type MasterGuardrail, type InsertMasterGuardrail,
 } from "@/shared/schema";
 import { eq, and, sql, gte } from "drizzle-orm";
@@ -35,7 +36,7 @@ export const masterGuardrailMethods: MasterGuardrailMethods = {
     return created;
   },
 
-  async getMasterDailySpend(ownerUid: string): Promise<{ rail1: number; rail2: number; total: number }> {
+  async getMasterDailySpend(ownerUid: string): Promise<{ rail1: number; rail2: number; rail5: number; total: number }> {
     const startOfDay = new Date();
     startOfDay.setHours(0, 0, 0, 0);
 
@@ -61,12 +62,22 @@ export const masterGuardrailMethods: MasterGuardrailMethods = {
         sql`${crossmintTransactions.status} NOT IN ('failed')`,
       ));
 
+    const [r5] = await db
+      .select({ total: sql<number>`COALESCE(SUM(${rail5Checkouts.amountCents}), 0)` })
+      .from(rail5Checkouts)
+      .where(and(
+        eq(rail5Checkouts.ownerUid, ownerUid),
+        sql`${rail5Checkouts.status} IN ('approved', 'completed')`,
+        gte(rail5Checkouts.createdAt, startOfDay),
+      ));
+
     const rail1 = Number(r1?.total || 0);
     const rail2 = Number(r2?.total || 0);
-    return { rail1, rail2, total: rail1 + rail2 };
+    const rail5 = Number(r5?.total || 0) * 10_000;
+    return { rail1, rail2, rail5, total: rail1 + rail2 + rail5 };
   },
 
-  async getMasterMonthlySpend(ownerUid: string): Promise<{ rail1: number; rail2: number; total: number }> {
+  async getMasterMonthlySpend(ownerUid: string): Promise<{ rail1: number; rail2: number; rail5: number; total: number }> {
     const startOfMonth = new Date();
     startOfMonth.setDate(1);
     startOfMonth.setHours(0, 0, 0, 0);
@@ -93,8 +104,18 @@ export const masterGuardrailMethods: MasterGuardrailMethods = {
         sql`${crossmintTransactions.status} NOT IN ('failed')`,
       ));
 
+    const [r5] = await db
+      .select({ total: sql<number>`COALESCE(SUM(${rail5Checkouts.amountCents}), 0)` })
+      .from(rail5Checkouts)
+      .where(and(
+        eq(rail5Checkouts.ownerUid, ownerUid),
+        sql`${rail5Checkouts.status} IN ('approved', 'completed')`,
+        gte(rail5Checkouts.createdAt, startOfMonth),
+      ));
+
     const rail1 = Number(r1?.total || 0);
     const rail2 = Number(r2?.total || 0);
-    return { rail1, rail2, total: rail1 + rail2 };
+    const rail5 = Number(r5?.total || 0) * 10_000;
+    return { rail1, rail2, rail5, total: rail1 + rail2 + rail5 };
   },
 };
