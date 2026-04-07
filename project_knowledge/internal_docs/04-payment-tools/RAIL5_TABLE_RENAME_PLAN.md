@@ -24,7 +24,8 @@ This plan renames:
 
 | Consumer | File | Method(s) Called |
 |---|---|---|
-| Bot claiming | `server/storage/core.ts` line 69 (inside `claimBot`) | `createWallet` |
+| Bot claiming (via claim token) | `server/storage/core.ts` line 69 (inside `claimBot`) | `createWallet` |
+| Bot registration (via pairing code) | `app/api/v1/bots/register/route.ts` line 157 | Direct `tx.insert(wallets)` inside a DB transaction (bypasses storage layer) |
 | Bot status API | `app/api/v1/bot/status/route.ts` | `getWalletByBotId` |
 | Bot wallet check | `app/api/v1/bot/wallet/check/route.ts` | `getWalletByBotId`, `getMonthlySpend` |
 | Bot wallet txns | `app/api/v1/bot/wallet/transactions/route.ts` | `getWalletByBotId`, `getTransactionsByWalletId` |
@@ -130,9 +131,29 @@ Update type imports and interface method signatures:
 - `debitWallet`, `getMonthlySpend`
 - `freezeWallet`, `unfreezeWallet`, `getWalletsWithBotsByOwnerUid`
 
-**Remove** all imports of `wallets`, `transactions`, `Wallet`, `InsertWallet`, `Transaction`, `InsertTransaction` from core.ts.
+**Remove** type imports `Wallet`, `InsertWallet`, `Transaction`, `InsertTransaction` from core.ts.
 
-**Keep in core.ts**: `claimBot` — but update its internal call from `this.createWallet(...)` to `this.rail5CreateWallet(...)`. The `CoreMethods` Pick type must be updated accordingly (remove old method names, add `rail5CreateWallet`).
+**⚠️ CRITICAL: `claimBot` `this` binding problem**
+
+`claimBot` (line 69) currently calls `this.createWallet(...)`. Every storage module types its method object as `Pick<IStorage, ...>`, so `this` is typed as that Pick. All existing `this.xxx()` calls throughout the codebase reference methods defined within the **same module's Pick type**:
+- `core.ts`: `this.getBotByClaimToken`, `this.createWallet`, `this.getPaymentMethods` — all in `CoreMethods`
+- `rail1.ts`: `this.privyGetGuardrails` — in `Rail1Methods`
+- `rail5-guardrails.ts`: `this.getRail5Guardrails` — in its own module
+
+If we move `createWallet` to `rail5Methods` and try `this.rail5CreateWallet()` inside `claimBot`, **TypeScript will not compile** — because `this` is typed as `CoreMethods`, which won't include `rail5CreateWallet`. At runtime it would work (since `this` is really the full `storage` object), but the compiler will reject it.
+
+**Solution**: Keep `rail5Wallets` table import in `core.ts` (just the table constant) and **inline the wallet insert** directly in `claimBot`:
+```ts
+// Before:
+await this.createWallet({ botId: updated.botId, ownerUid });
+
+// After:
+await db.insert(rail5Wallets).values({ botId: updated.botId, ownerUid }).returning();
+```
+
+This is a one-liner. `claimBot` stays in core (claiming is a core bot operation), and the only Rail 5 import in core.ts is the `rail5Wallets` table constant for that single insert. All the wallet/transaction *methods* still move to `rail5.ts`.
+
+Update `CoreMethods` Pick type: remove `createWallet`, `getWalletByBotId`, `getWalletByOwnerUid`, `createTransaction`, `getTransactionsByWalletId`, `debitWallet`, `getMonthlySpend`, `freezeWallet`, `unfreezeWallet`, `getWalletsWithBotsByOwnerUid`. Do NOT add any `rail5` methods back.
 
 ### 5. `server/storage/payment-rails/rail5.ts` — add wallet/transaction methods
 
@@ -154,12 +175,13 @@ import { eq, and, desc, sql, gte } from "drizzle-orm";
 
 No changes needed — `coreMethods` and `rail5Methods` are both already spread in. The methods just move from one object to the other.
 
-### 7. API Route Files (10 files)
+### 7. API Route Files (11 files)
 
-Purely mechanical `storage.xxx` → `storage.rail5Xxx` renames:
+Mostly mechanical `storage.xxx` → `storage.rail5Xxx` renames, except for the register route which needs a direct table import change:
 
 | File | Old Call | New Call |
 |---|---|---|
+| `app/api/v1/bots/register/route.ts` | `import { ..., wallets, ... }` + `tx.insert(wallets)` | `import { ..., rail5Wallets, ... }` + `tx.insert(rail5Wallets)` (inside DB transaction on line 157, cannot use storage methods) |
 | `app/api/v1/bot/status/route.ts` | `storage.getWalletByBotId(bot.botId)` | `storage.rail5GetWalletByBotId(bot.botId)` |
 | `app/api/v1/bot/wallet/check/route.ts` | `storage.getWalletByBotId(bot.botId)`, `storage.getMonthlySpend(wallet.id)` | `storage.rail5GetWalletByBotId(bot.botId)`, `storage.rail5GetMonthlySpend(wallet.id)` |
 | `app/api/v1/bot/wallet/transactions/route.ts` | `storage.getWalletByBotId`, `storage.getTransactionsByWalletId` | `storage.rail5GetWalletByBotId`, `storage.rail5GetTransactionsByWalletId` |
@@ -177,7 +199,9 @@ Update the raw SQL string literals:
 - `FROM transactions t` → `FROM rail5_transactions t`
 - `LEFT JOIN wallets w` → `LEFT JOIN rail5_wallets w`
 - `(SELECT count(*) FROM transactions)` → `(SELECT count(*) FROM rail5_transactions)`
-- Change `'core' AS rail` → `'rail5' AS rail` (this was always Rail 5 data, now labeled correctly)
+- Change `'core' AS rail` → `'rail5' AS rail`
+
+**Note on the `'core'` → `'rail5'` label change**: The `'core'` label only appears in this one admin endpoint (confirmed — no front-end code filters by `rail='core'`). However, this table may contain historical rows from when Stripe top-ups were the funding method (type='deposit'). Those deposits funded the Rail 5 wallet, so labeling them `rail5` is accurate — they're Rail 5 wallet funding transactions. If the admin UI ever filters by rail, the change from `core` to `rail5` will surface these under the correct rail.
 
 ### 9. Drizzle Migration Snapshot
 
@@ -202,7 +226,7 @@ Update any references to the old table names. In `replit.md`, the Rail 5 section
 3. **Update `server/storage/types.ts`** — rename interface methods and type references
 4. **Update `server/storage/core.ts`** — remove wallet/transaction methods, update `claimBot` to call `rail5CreateWallet`, update `CoreMethods` Pick type
 5. **Update `server/storage/payment-rails/rail5.ts`** — add the relocated methods with new names
-6. **Update all 10 API route files** — mechanical `storage.xxx` → `storage.rail5Xxx`
+6. **Update all 11 API route files** — mechanical `storage.xxx` → `storage.rail5Xxx` (plus register route's direct table import)
 7. **Update `app/api/v1/admin/transactions/route.ts`** — raw SQL table name references
 8. **Run `npx drizzle-kit generate`** to create the migration snapshot
 9. **Update `replit.md`** — document the new table names
@@ -216,6 +240,33 @@ Update any references to the old table names. In `replit.md`, the Rail 5 section
 - **Risk: DB rename on live data** — `ALTER TABLE RENAME` is instant, no data copy, no downtime. Postgres just updates the catalog entry.
 - **Risk: Raw SQL in admin endpoint** — This is the only place that uses raw SQL against these tables. Easy to miss, but explicitly called out in this plan.
 - **Risk: Drizzle snapshot drift** — Running `drizzle-kit generate` after the schema change keeps the snapshot in sync. If forgotten, future migrations may try to recreate the old tables.
+- **Risk: `claimBot` `this` binding** — The original plan said to call `this.rail5CreateWallet()` inside `claimBot`, but this won't compile due to TypeScript's `Pick<IStorage, ...>` typing pattern. Fixed: inline the DB insert directly (see Section 4).
+
+## Pre-existing Concerns (Not Introduced by This Rename)
+
+These are issues discovered during research. They exist today and will continue to exist unchanged after the rename. Documenting them here for future reference.
+
+### Duplicate monthly spend calculations
+
+Two independent functions calculate monthly spend for Rail 5:
+
+1. **`storage.getMonthlySpend(walletId)`** in `server/storage/core.ts` — sums `amount_cents` from `transactions` (soon `rail5_transactions`) where `type='purchase'` and `created_at >= first of month`
+2. **`getMonthlySpendCents(cardId)`** in `features/payment-rails/rail5/index.ts` — filters `rail5_checkouts` where `status='completed'` and `created_at >= first of month`, sums `amountCents`
+
+These query different tables (`rail5_transactions` vs `rail5_checkouts`) and could theoretically diverge if a checkout completes but the transaction write fails, or vice versa. In practice they should match because `rail5/confirm/route.ts` writes to both atomically.
+
+Consumer of #1: `app/api/v1/bot/wallet/check/route.ts` (displayed to bots as `monthly_spent_usd`)
+Consumer of #2: `app/api/v1/bot/rail5/checkout/route.ts` via `evaluateCardGuardrails` (used for guardrail enforcement)
+
+This duplication should be consolidated in a future task.
+
+### `stripePaymentIntentId` column
+
+The `transactions` (soon `rail5_transactions`) table has a `stripe_payment_intent_id` column. No active code writes to it — it's from the removed Stripe top-up funding flow. Historical rows may have values. Keep during rename; remove in a future cleanup.
+
+### Missing `status` column in Drizzle schema
+
+The admin UNION query selects `t.status` from the `transactions` table, but the Drizzle schema does not define a `status` column. This means the raw SQL reads a column that either doesn't exist in the DB (returns NULL) or was added via a manual migration but not reflected in the schema. Either way, this is a pre-existing inconsistency.
 
 ---
 
