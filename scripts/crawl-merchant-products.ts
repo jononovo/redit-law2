@@ -1,6 +1,6 @@
 import { db } from "../server/db";
 import { sql } from "drizzle-orm";
-import { embed } from "../lib/embeddings/embed";
+import { embed } from "../features/product-index/embeddings/embed";
 
 const FIRECRAWL_API_KEY = process.env.FIRECRAWL_API_KEY;
 const MAX_PRODUCTS = 500;
