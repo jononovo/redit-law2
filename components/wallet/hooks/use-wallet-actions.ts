@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { authFetch } from "@/lib/platform-management/auth-fetch";
+import { authFetch } from "@/features/platform-management/auth-fetch";
 import { useToast } from "@/hooks/use-toast";
 
 export interface UseWalletActionsConfig {

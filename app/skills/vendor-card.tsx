@@ -41,7 +41,7 @@ import {
   VendorSector,
   BrandTier,
   SkillMaturity,
-} from "@/lib/brand-engine/procurement-skills/types";
+} from "@/features/brand-engine/procurement-skills/types";
 import type { BrandIndex } from "@/shared/schema";
 
 export const MATURITY_CONFIG: Record<SkillMaturity, { label: string; className: string }> = {

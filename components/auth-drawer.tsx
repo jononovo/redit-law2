@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/lib/platform-management/auth/auth-context";
+import { useAuth } from "@/features/platform-management/auth/auth-context";
 import {
   Sheet,
   SheetContent,

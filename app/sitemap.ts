@@ -3,8 +3,8 @@ import { sections } from "@/app/docs/content/sections";
 import { getAllPosts, getAllTags } from "@/content/blog/posts";
 import { categories } from "@/content/blog/taxonomy";
 import { storage } from "@/server/storage";
-import { SECTOR_LABELS, VendorSector } from "@/lib/brand-engine/procurement-skills/types";
-import { isSectorLuxuryFilter, LUXURY_TIERS } from "@/lib/brand-engine/procurement-skills/taxonomy/sectors";
+import { SECTOR_LABELS, VendorSector } from "@/features/brand-engine/procurement-skills/types";
+import { isSectorLuxuryFilter, LUXURY_TIERS } from "@/features/brand-engine/procurement-skills/taxonomy/sectors";
 
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || "https://creditclaw.com";
 

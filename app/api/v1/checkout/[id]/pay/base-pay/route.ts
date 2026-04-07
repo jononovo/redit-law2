@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { storage } from "@/server/storage";
-import { verifyBasePayPayment } from "@/lib/agent-shops/base-pay/verify";
-import { creditWalletFromBasePay } from "@/lib/agent-shops/base-pay/ledger";
-import { recordBasePaySale } from "@/lib/agent-shops/base-pay/sale";
+import { verifyBasePayPayment } from "@/features/agent-shops/base-pay/verify";
+import { creditWalletFromBasePay } from "@/features/agent-shops/base-pay/ledger";
+import { recordBasePaySale } from "@/features/agent-shops/base-pay/sale";
 
 const checkoutPaySchema = z.object({
   tx_id: z.string().min(1),

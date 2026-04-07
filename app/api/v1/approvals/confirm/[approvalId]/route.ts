@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { resolveApproval, verifyHmac } from "@/lib/agent-interaction/approvals/service";
+import { resolveApproval, verifyHmac } from "@/features/agent-interaction/approvals/service";
 import { storage } from "@/server/storage";
-import "@/lib/agent-interaction/approvals/callbacks";
+import "@/features/agent-interaction/approvals/callbacks";
 
 const RAIL_LABELS: Record<string, string> = {
   rail1: "USDC Wallet",

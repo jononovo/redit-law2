@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { storage } from "@/server/storage";
-import { createStripeOnrampSession } from "@/lib/payment-rails/crypto-onramp/stripe-onramp/session";
+import { createStripeOnrampSession } from "@/features/payment-rails/crypto-onramp/stripe-onramp/session";
 
 export async function POST(
   request: NextRequest,

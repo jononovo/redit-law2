@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { ArrowLeft, CheckCircle2, Loader2 } from "lucide-react";
 import { wt } from "@/lib/wizard-typography";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { authFetch } from "@/lib/platform-management/auth-fetch";
+import { authFetch } from "@/features/platform-management/auth-fetch";
 import { ApprovalMode, type ApprovalModeValue } from "./steps/approval-mode";
 import { ApprovalThreshold } from "./steps/approval-threshold";
 import { ApprovedCategories } from "./steps/approved-categories";

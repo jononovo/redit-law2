@@ -17,7 +17,7 @@ import {
   BookOpen,
 } from "lucide-react";
 import { cookies } from "next/headers";
-import { getTenantConfig } from "@/lib/platform-management/tenants/config";
+import { getTenantConfig } from "@/features/platform-management/tenants/config";
 import type { Metadata } from "next";
 
 export const dynamic = "force-dynamic";

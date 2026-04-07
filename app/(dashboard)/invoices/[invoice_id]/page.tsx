@@ -5,8 +5,8 @@ import { useParams } from "next/navigation";
 import { Loader2, ArrowLeft, Copy, Check, FileText, Send, XCircle, Download, Clock, Eye, CheckCircle2, Ban } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/wallet/status-badge";
-import { useAuth } from "@/lib/platform-management/auth/auth-context";
-import { authFetch } from "@/lib/platform-management/auth-fetch";
+import { useAuth } from "@/features/platform-management/auth/auth-context";
+import { authFetch } from "@/features/platform-management/auth-fetch";
 import Link from "next/link";
 
 interface InvoiceDetail {

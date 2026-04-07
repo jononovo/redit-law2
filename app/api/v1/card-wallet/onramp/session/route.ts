@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSessionUser } from "@/lib/platform-management/auth/session";
+import { getSessionUser } from "@/features/platform-management/auth/session";
 import { storage } from "@/server/storage";
 import { crossmintOnrampSessionSchema } from "@/shared/schema";
-import { createOnrampOrder } from "@/lib/payment-rails/rail2/orders/onramp";
+import { createOnrampOrder } from "@/features/payment-rails/rail2/orders/onramp";
 
 export async function POST(request: NextRequest) {
   try {

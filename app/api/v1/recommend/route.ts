@@ -3,7 +3,7 @@ import { db } from "@/server/db";
 import { categoryKeywords, productCategories, brandIndex, brandCategories } from "@/shared/schema";
 import { sql } from "drizzle-orm";
 import { z } from "zod";
-import { embed } from "@/lib/product-index/embeddings/embed";
+import { embed } from "@/features/product-index/embeddings/embed";
 
 interface IntakeResult {
   categories: string[];

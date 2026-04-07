@@ -23,8 +23,8 @@ import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
-import { useAuth } from "@/lib/platform-management/auth/auth-context";
-import type { Tier } from "@/lib/platform-management/feature-flags/tiers";
+import { useAuth } from "@/features/platform-management/auth/auth-context";
+import type { Tier } from "@/features/platform-management/feature-flags/tiers";
 import {
   Sidebar as SidebarShell,
   SidebarHeader,

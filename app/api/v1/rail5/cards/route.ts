@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSessionUser } from "@/lib/platform-management/auth/session";
+import { getSessionUser } from "@/features/platform-management/auth/session";
 import { storage } from "@/server/storage";
-import { GUARDRAIL_DEFAULTS } from "@/lib/agent-interaction/guardrails/defaults";
+import { GUARDRAIL_DEFAULTS } from "@/features/agent-interaction/guardrails/defaults";
 
 export async function GET(request: NextRequest) {
   const user = await getSessionUser(request);

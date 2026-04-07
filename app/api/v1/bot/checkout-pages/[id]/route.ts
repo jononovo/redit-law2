@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { withBotApi } from "@/lib/platform-management/agent-management/agent-api/middleware";
+import { withBotApi } from "@/features/platform-management/agent-management/agent-api/middleware";
 import { storage } from "@/server/storage";
 import { botUpdateCheckoutPageSchema } from "@/shared/schema";
 

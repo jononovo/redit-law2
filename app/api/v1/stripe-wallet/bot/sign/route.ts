@@ -1,15 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { storage } from "@/server/storage";
 import { privyBotSignSchema } from "@/shared/schema";
-import { signTypedData } from "@/lib/payment-rails/rail1/wallet/sign";
-import { buildTransferWithAuthorizationTypedData, generateNonce, buildXPaymentHeader, usdToMicroUsdc, microUsdcToUsd } from "@/lib/payment-rails/rail1/x402";
-import { authenticateBot } from "@/lib/platform-management/agent-management/auth";
-import { evaluateGuardrails } from "@/lib/agent-interaction/guardrails/evaluate";
-import { evaluateProcurementControls } from "@/lib/agent-interaction/procurement-controls/evaluate";
-import { evaluateMasterGuardrails } from "@/lib/agent-interaction/guardrails/master";
-import { evaluateApprovalDecision } from "@/lib/agent-interaction/guardrails/approval";
-import { createApproval } from "@/lib/agent-interaction/approvals/service";
-import { recordOrder } from "@/lib/agent-interaction/orders/create";
+import { signTypedData } from "@/features/payment-rails/rail1/wallet/sign";
+import { buildTransferWithAuthorizationTypedData, generateNonce, buildXPaymentHeader, usdToMicroUsdc, microUsdcToUsd } from "@/features/payment-rails/rail1/x402";
+import { authenticateBot } from "@/features/platform-management/agent-management/auth";
+import { evaluateGuardrails } from "@/features/agent-interaction/guardrails/evaluate";
+import { evaluateProcurementControls } from "@/features/agent-interaction/procurement-controls/evaluate";
+import { evaluateMasterGuardrails } from "@/features/agent-interaction/guardrails/master";
+import { evaluateApprovalDecision } from "@/features/agent-interaction/guardrails/approval";
+import { createApproval } from "@/features/agent-interaction/approvals/service";
+import { recordOrder } from "@/features/agent-interaction/orders/create";
 
 async function handler(request: NextRequest, botId: string) {
   try {

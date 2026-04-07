@@ -3,11 +3,11 @@ import { registerBotRequestSchema, bots, wallets, pairingCodes } from "@/shared/
 import { storage } from "@/server/storage";
 import { db } from "@/server/db";
 import { eq, and } from "drizzle-orm";
-import { generateBotId, generateApiKey, generateClaimToken, hashApiKey, getApiKeyPrefix, generateWebhookSecret } from "@/lib/platform-management/agent-management/crypto";
-import { sendOwnerRegistrationEmail } from "@/lib/platform-management/email";
-import { fireWebhook } from "@/lib/agent-interaction/webhooks";
-import { notifyWalletActivated } from "@/lib/platform-management/notifications";
-import { provisionTunnelForBot, cleanupTunnel, type TunnelProvisionOutput } from "@/lib/agent-interaction/webhook-tunnel";
+import { generateBotId, generateApiKey, generateClaimToken, hashApiKey, getApiKeyPrefix, generateWebhookSecret } from "@/features/platform-management/agent-management/crypto";
+import { sendOwnerRegistrationEmail } from "@/features/platform-management/email";
+import { fireWebhook } from "@/features/agent-interaction/webhooks";
+import { notifyWalletActivated } from "@/features/platform-management/notifications";
+import { provisionTunnelForBot, cleanupTunnel, type TunnelProvisionOutput } from "@/features/agent-interaction/webhook-tunnel";
 
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
 const RATE_LIMIT = 3;

@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSessionUser } from "@/lib/platform-management/auth/session";
+import { getSessionUser } from "@/features/platform-management/auth/session";
 import { storage } from "@/server/storage";
 import { insertShippingAddressSchema } from "@/shared/schema";
-import { pushShippingFileToBots } from "@/lib/agent-interaction/shipping/push-shipping-to-bots";
+import { pushShippingFileToBots } from "@/features/agent-interaction/shipping/push-shipping-to-bots";
 
 export async function GET(request: NextRequest) {
   try {

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSessionUser } from "@/lib/platform-management/auth/session";
-import { unlinkBotFromEntity } from "@/lib/platform-management/agent-management/bot-linking";
+import { getSessionUser } from "@/features/platform-management/auth/session";
+import { unlinkBotFromEntity } from "@/features/platform-management/agent-management/bot-linking";
 
 export async function POST(request: NextRequest) {
   try {

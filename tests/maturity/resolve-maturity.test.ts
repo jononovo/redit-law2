@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { resolveMaturity } from "@/lib/brand-engine/agentic-score/scan-utils";
+import { resolveMaturity } from "@/features/brand-engine/agentic-score/scan-utils";
 
 describe("resolveMaturity", () => {
   it("promotes draft to community when all signals present", () => {

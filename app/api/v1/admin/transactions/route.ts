@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getCurrentUser } from "@/lib/platform-management/auth/session";
+import { getCurrentUser } from "@/features/platform-management/auth/session";
 import { db } from "@/server/db";
 import { sql } from "drizzle-orm";
 
