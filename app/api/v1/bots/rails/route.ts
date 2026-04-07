@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getCurrentUser } from "@/lib/auth/session";
-import { adminAuth } from "@/lib/firebase/admin";
+import { getCurrentUser } from "@/lib/platform-management/auth/session";
+import { adminAuth } from "@/lib/platform-management/firebase/admin";
 import { storage } from "@/server/storage";
 
 async function getAuthUser(request: NextRequest) {

@@ -2,7 +2,7 @@
 
 import { Suspense, useState, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { useAuth } from "@/lib/auth/auth-context";
+import { useAuth } from "@/lib/platform-management/auth/auth-context";
 import { AuthDrawer } from "@/components/auth-drawer";
 import Image from "next/image";
 import Link from "next/link";

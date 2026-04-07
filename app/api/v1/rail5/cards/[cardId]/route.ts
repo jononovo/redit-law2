@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSessionUser } from "@/lib/auth/session";
+import { getSessionUser } from "@/lib/platform-management/auth/session";
 import { storage } from "@/server/storage";
-import { fireRailsUpdated } from "@/lib/webhooks";
+import { fireRailsUpdated } from "@/lib/agent-interaction/webhooks";
 import { z } from "zod";
 
 const patchSchema = z.object({
@@ -112,7 +112,7 @@ export async function PATCH(
   }
 
   const guard = await storage.getRail5Guardrails(cardId);
-  const { GUARDRAIL_DEFAULTS } = await import("@/lib/guardrails/defaults");
+  const { GUARDRAIL_DEFAULTS } = await import("@/lib/agent-interaction/guardrails/defaults");
 
   return NextResponse.json({
     card_id: updated!.cardId,
@@ -154,7 +154,7 @@ export async function GET(
   const checkouts = await storage.getRail5CheckoutsByCardId(card.cardId, 50);
 
   const guard = await storage.getRail5Guardrails(card.cardId);
-  const { GUARDRAIL_DEFAULTS } = await import("@/lib/guardrails/defaults");
+  const { GUARDRAIL_DEFAULTS } = await import("@/lib/agent-interaction/guardrails/defaults");
 
   return NextResponse.json({
     card_id: card.cardId,

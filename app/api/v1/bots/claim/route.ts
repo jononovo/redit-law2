@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getCurrentUser } from "@/lib/auth/session";
+import { getCurrentUser } from "@/lib/platform-management/auth/session";
 import { claimBotRequestSchema } from "@/shared/schema";
 import { storage } from "@/server/storage";
-import { fireWebhook } from "@/lib/webhooks";
-import { notifyWalletActivated } from "@/lib/notifications";
+import { fireWebhook } from "@/lib/agent-interaction/webhooks";
+import { notifyWalletActivated } from "@/lib/platform-management/notifications";
 
 export async function POST(request: NextRequest) {
   try {

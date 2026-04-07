@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { sections } from "@/app/docs/content/sections";
-import { getStaticTenantConfig } from "@/lib/tenants/tenant-configs";
+import { getStaticTenantConfig } from "@/lib/platform-management/tenants/tenant-configs";
 
 export default async function DocsIndexPage() {
   const cookieStore = await cookies();

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { withBotApi } from "@/lib/agent-management/agent-api/middleware";
+import { withBotApi } from "@/lib/platform-management/agent-management/agent-api/middleware";
 import { storage } from "@/server/storage";
 
 export const POST = withBotApi("/api/v1/bot/rail5/key", async (request, { bot }) => {

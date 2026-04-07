@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSessionUser } from "@/lib/auth/session";
+import { getSessionUser } from "@/lib/platform-management/auth/session";
 import { storage } from "@/server/storage";
-import { sendToBot } from "@/lib/agent-management/bot-messaging";
+import { sendToBot } from "@/lib/platform-management/agent-management/bot-messaging";
 import { z } from "zod";
 
 const sendSchema = z.object({

@@ -3,10 +3,10 @@ import Script from "next/script";
 import { Plus_Jakarta_Sans, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/app/providers";
-import { TenantProvider } from "@/lib/tenants/tenant-context";
+import { TenantProvider } from "@/lib/platform-management/tenants/tenant-context";
 import { cookies } from "next/headers";
-import { getTenantConfig } from "@/lib/tenants/config";
-import { TENANT_THEMES } from "@/lib/tenants/tenant-configs";
+import { getTenantConfig } from "@/lib/platform-management/tenants/config";
+import { TENANT_THEMES } from "@/lib/platform-management/tenants/tenant-configs";
 
 const jakarta = Plus_Jakarta_Sans({
   subsets: ["latin"],

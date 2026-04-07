@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Copy, Check } from "lucide-react";
-import { useTenant } from "@/lib/tenants/tenant-context";
+import { useTenant } from "@/lib/platform-management/tenants/tenant-context";
 
 export function CopySkillUrl({ url }: { url: string }) {
   const [copied, setCopied] = useState(false);

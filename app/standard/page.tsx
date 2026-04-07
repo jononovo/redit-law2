@@ -4,7 +4,7 @@ import Link from "next/link";
 import { BookOpen, ChevronRight, ArrowRight, List } from "lucide-react";
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
-import { getTenantConfig } from "@/lib/tenants/config";
+import { getTenantConfig } from "@/lib/platform-management/tenants/config";
 
 export const dynamic = "force-dynamic";
 

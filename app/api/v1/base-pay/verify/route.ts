@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { verifyBasePayPayment } from "@/lib/base-pay/verify";
-import { creditWalletFromBasePay } from "@/lib/base-pay/ledger";
-import { getSessionUser } from "@/lib/auth/session";
+import { verifyBasePayPayment } from "@/lib/agent-shops/base-pay/verify";
+import { creditWalletFromBasePay } from "@/lib/agent-shops/base-pay/ledger";
+import { getSessionUser } from "@/lib/platform-management/auth/session";
 
 const verifySchema = z.object({
   tx_id: z.string().min(1),

@@ -18,7 +18,7 @@ import {
   VendorSector,
   SkillMaturity,
   VendorSkill,
-} from "@/lib/procurement-skills/types";
+} from "@/lib/brand-engine/procurement-skills/types";
 import {
   ArrowLeft,
   Star,
@@ -62,7 +62,7 @@ import { BrandClaimButton } from "./brand-claim-button";
 import { SkillPreviewPanel, SkillJsonPanel } from "./skill-preview-panel";
 import { CopySkillUrl } from "./copy-skill-url";
 import { getScoreColor } from "@/app/skills/vendor-card";
-import { useTenant } from "@/lib/tenants/tenant-context";
+import { useTenant } from "@/lib/platform-management/tenants/tenant-context";
 
 const MATURITY_CONFIG: Record<string, { label: string; className: string; classNameDark: string; description: string }> = {
   verified: { label: "Verified", className: "bg-green-100 text-green-700 border-green-200", classNameDark: "bg-green-900/40 text-green-400 border-green-800", description: "Tested and confirmed working" },

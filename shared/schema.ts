@@ -1,6 +1,6 @@
 import { pgTable, serial, text, timestamp, integer, boolean, index, bigint, jsonb, numeric, uniqueIndex, customType } from "drizzle-orm/pg-core";
 import { z } from "zod";
-import { GUARDRAIL_DEFAULTS } from "@/lib/guardrails/defaults";
+import { GUARDRAIL_DEFAULTS } from "@/lib/agent-interaction/guardrails/defaults";
 
 export const bots = pgTable("bots", {
   id: serial("id").primaryKey(),

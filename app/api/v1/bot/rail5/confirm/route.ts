@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
-import { withBotApi } from "@/lib/agent-management/agent-api/middleware";
+import { withBotApi } from "@/lib/platform-management/agent-management/agent-api/middleware";
 import { storage } from "@/server/storage";
 import { rail5ConfirmSchema } from "@/shared/schema";
-import { fireWebhook } from "@/lib/webhooks";
-import { notifyPurchase, notifyBalanceLow } from "@/lib/notifications";
+import { fireWebhook } from "@/lib/agent-interaction/webhooks";
+import { notifyPurchase, notifyBalanceLow } from "@/lib/platform-management/notifications";
 
 export const POST = withBotApi("/api/v1/bot/rail5/confirm", async (request, { bot }) => {
   let body;

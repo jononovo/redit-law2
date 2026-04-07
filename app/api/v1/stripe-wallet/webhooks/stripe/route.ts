@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { stripe } from "@/lib/stripe";
-import { parseStripeOnrampEvent, handleStripeOnrampFulfillment } from "@/lib/crypto-onramp/stripe-onramp/webhook";
+import { stripe } from "@/lib/payment-rails/stripe";
+import { parseStripeOnrampEvent, handleStripeOnrampFulfillment } from "@/lib/payment-rails/crypto-onramp/stripe-onramp/webhook";
 
 const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET_ONRAMP || "";
 

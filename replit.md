@@ -185,213 +185,96 @@ A config-driven build system at `skill-variants/` (project root) that generates 
 
 **CI/CD:** GitHub Actions workflow for auto-publishing to ClawHub lives at `skill-variants/publish-skills.yml` (reference copy). Must be manually copied to `.github/workflows/publish-skills.yml` on the GitHub side — the `.github/` folder is not managed by Replit to avoid sync conflicts. See `skill-variants/DEPLOYMENT.md` for full setup instructions.
 
-### Procurement Skills Module
-A `/skills/` module provides a curated library of vendor shopping skills. **Modularized under `lib/procurement-skills/`:**
+### Brands & Skills System
 
-**Taxonomy** (`lib/procurement-skills/taxonomy/`):
-Each concern has its own file with type definition + label map. Barrel-exported via `index.ts`.
-- `sectors.ts` — `VendorSector` type + `SECTOR_LABELS` (28 sectors: 21 Google Product Taxonomy roots + food-services, travel, education, events, luxury, specialty, multi-sector). `SECTOR_ROOT_IDS` maps every sector to its root category ID (Google IDs < 100000, custom IDs ≥ 100001, multi-sector = 0). `GOOGLE_ROOT_IDS` (derived) covers only the 21 Google-mapped sectors. `hasSectorRoot()` and `hasGoogleRoot()` helpers. `ASSIGNABLE_SECTORS` excludes luxury (tier-filter only) and multi-sector (set programmatically, not by Perplexity).
-- `brand-types.ts` — `BrandType` union (brand, retailer, marketplace, chain, independent, department_store, supermarket, mega_merchant). `MULTI_SECTOR_TYPES` = [department_store, supermarket, mega_merchant]. `VALID_BRAND_TYPES` = all 8 values.
-- `tiers.ts` — `BrandTier` type + `BRAND_TIER_LABELS` (7 tiers: ultra_luxury, luxury, premium, mid_range, value, budget, commodity). Deprecated `VendorTier` and `TIER_LABELS` aliases are re-exported for backward compatibility.
-- `checkout-methods.ts` — `CheckoutMethod` type + `CHECKOUT_METHOD_LABELS` + `CHECKOUT_METHOD_COLORS`
-- `capabilities.ts` — `VendorCapability` type + `CAPABILITY_LABELS`
-- `payment-methods.ts` — `PaymentMethod` type + `PAYMENT_METHOD_LABELS` (11 methods: card, ach, crypto, apple_pay, etc.)
-- `checkout-providers.ts` — `CheckoutProvider` type + `CHECKOUT_PROVIDER_LABELS`
-- `ordering.ts` — `OrderingPermission` type + `ORDERING_PERMISSION_LABELS`
-- `maturity.ts` — `SkillMaturity` type
+The platform's growth engine. A single automated pipeline that scans merchant domains, scores their AI-readiness, classifies them into a taxonomy, generates per-merchant shopping skills, and stores everything in a central Brand Index. This system spans architecture modules 1–3 (Agentic Shopping Score, Agent Shopping Skills, Brands Index) which work as one pipeline.
 
-**Core types** (`lib/procurement-skills/types.ts`):
-Re-exports all taxonomy types/labels from `taxonomy/`. Defines domain interfaces: `VendorSkill` (uses `sector: VendorSector` — the legacy `category: VendorCategory` field was removed), `SearchDiscovery`, `BuyingConfig`, `DealsConfig`, `TaxonomyConfig`, `MethodConfig`. Also exports `computeAgentFriendliness()`.
+→ Full system overview: `project_knowledge/internal_docs/01-brands-skills-system/_overview.md`
 
-**Vendors** (`lib/procurement-skills/vendors/`):
-Each vendor is its own file exporting a single `VendorSkill` object. Barrel-exported via `index.ts`.
-- 14 vendor files: `amazon.ts`, `shopify.ts`, `amazon-business.ts`, `walmart.ts`, `walmart-business.ts`, `staples.ts`, `home-depot.ts`, `lowes.ts`, `office-depot.ts`, `uline.ts`, `grainger.ts`, `newegg.ts`, `bh-photo.ts`, `mcmaster-carr.ts`
+**Pipeline:** Domain submitted → classifyBrand + auditSite (parallel Perplexity calls) → computeScoreFromRubric → buildVendorSkillDraft → generateVendorSkill (SKILL.md) → upsertBrandIndex → resolveProductCategories (sequential Perplexity call). Three Perplexity calls per scan, each independently fail-safe.
 
-**Registry** — DELETED in Phase 5. The in-memory `VENDOR_REGISTRY` has been removed. All surfaces (catalog UI, vendor detail, export, claim modal) now read from the `brand_index` database table via the internal API or bot API.
+**Entry points:** `POST /api/v1/scan` (public, user-triggered) and `lib/scan-queue/process-next.ts` (background queue worker). Both run the identical pipeline.
 
-**Generator** (`lib/procurement-skills/generator.ts`):
-Converts `VendorSkill` objects into `SKILL.md` markdown with frontmatter, taxonomy, discovery, buying, and deals sections.
+#### Brand Index
 
-**Category Resolution** (`lib/agentic-score/resolve-categories.ts`):
-After the initial scan classifies a brand's sector and brand type, category resolution varies by brand type. Focused merchants (brand, retailer, independent) get single-sector L3 categories via Perplexity. Department stores and supermarkets get multi-sector L2 categories via Perplexity. Mega merchants get L1 root categories directly (no Perplexity call). Results are persisted in `brand_categories` junction table. The `brand_type` is stored in `brand_index`. Multi-sector merchants get `sector = "multi-sector"`. Non-critical — failures result in empty categories, never a broken scan.
+`brand_index` table (`server/storage/brand-index.ts`) — sole source of truth for all brand data. One row per domain, ~85 columns. All surfaces read from it:
+- Catalog UI: `/skills` (SSR + client filtering), `/skills/[vendor]` (SSR detail), `/c/[sector]` (sector pages)
+- Bot API: `GET /api/v1/bot/skills` (agent-facing catalog search)
+- Skill serving: `GET /brands/{slug}/skill` (SKILL.md), `GET /brands/{slug}/skill-json` (skill.json)
+- Recommend API: `POST /api/v1/recommend` (structured) and `GET /api/v1/recommend?q=...` (natural language)
+- Public API: `GET /api/v1/brands/[slug]`
+- Internal API: `GET /api/internal/brands/search`, `GET /api/internal/brands/[slug]`
 
-**Product Categories DB** (`product_categories` table, seeded by `scripts/seed-google-taxonomy.ts`):
-5,638 entries: 5,595 from Google Product Taxonomy + 43 custom categories for non-Google sectors (food-services, travel, education, events, luxury, specialty). The `id` column IS the taxonomy ID (Google taxonomy numbers for Google categories, 100001+ for custom sectors). No separate `gptId` — unified single identifier.
+Key columns: `domain` (unique, dedup key), `slug` (URL routing), `sector`, `brand_type`, `tier`, `maturity`, `overallScore` (0–100), `scoreBreakdown` (JSONB), `brandData` (full VendorSkill JSONB), `skillMd` (generated markdown), `search_vector` (tsvector with trigger), rating columns (`axsRating`, `ratingCount`, sub-ratings). 22+ indexes.
 
-**Package exports** (`lib/procurement-skills/package/`):
-- `skill-json.ts` — JSON package format including taxonomy/searchDiscovery/buying/deals blocks
-- `payments-md.ts` — Payment instructions markdown
-- `description-md.ts` — Description markdown
+Storage methods: `searchBrands` (with `lite` mode for catalog cards), `searchBrandsCount`, `getBrandById`, `getBrandBySlug`, `getBrandByDomain`, `getRetailersForBrand`, `upsertBrandIndex`, `getAllBrandFacets` (10-min cache, auto-invalidated on upsert).
 
-**Builder** (`lib/procurement-skills/builder/`):
-LLM-powered skill generation. `types.ts` includes `LLMCheckoutAnalysis` with taxonomy inference fields.
+Maturity progression: `draft` → `community` (auto-promoted when score + skillMd + brandData present) → `official` (brand claimed) → `verified` (CreditClaw audited). `resolveMaturity()` in `lib/agentic-score/scan-utils.ts` never demotes.
 
-**Internal Brands API** (`app/api/internal/brands/`):
-Human-facing catalog data source. Separate from the bot API — returns raw BrandIndex rows with JSONB, no agent-specific transformations.
-- `GET /api/internal/brands/search` — paginated search with all filters (sector, tier, maturity, checkout, capability, etc.) + facets
-- `GET /api/internal/brands/[slug]` — single brand detail lookup
+#### ASX Score Engine
 
-## ASX Score Scanner & Brand Catalog (Product Index)
+`lib/agentic-score/` — evaluates merchant AI-readiness. 11 signals, 3 pillars, 100 points:
+- **Clarity** (35 pts): JSON-LD (15), Product Feed/Sitemap (10), Agent Metadata (10)
+- **Discoverability** (30 pts): Search API/MCP (10), Site Search (10), Page Load (5), Product Page Quality (5)
+- **Reliability** (35 pts): Access & Auth (10), Order Management (10), Checkout Flow (10), Bot Tolerance (5)
 
-CreditClaw's public-facing growth engine. The ASX (Agentic Shopping Experience) Score Scanner evaluates how well any merchant website supports AI shopping agents. Users submit a domain, the system fetches and analyzes the site (regex detectors + multi-page Claude agentic scan), scores it against an 11-signal rubric (100 points across Clarity, Discoverability, Reliability), generates a SKILL.md file, and upserts the result into the `brand_index` table. Every scan creates or updates a public brand profile page at `/skills/[vendor]` and adds the brand to the searchable catalog at `/skills`. The scanner is the primary lead gen tool — it runs without auth, and each scan grows the catalog. **Expect tens of thousands of scans and listed domains within the next few weeks.** All code touching the catalog, queries, or brand pages should be built for this scale.
+Key files: `rubric.ts` (scoring rubric), `scoring-engine.ts` (deterministic scorer), `agent-scan.ts` (multi-page Claude scanner), `classify-brand.ts` (Perplexity classification), `audit-site.ts` (Perplexity site audit), `fetch.ts` (parallel fetcher + domain normalization).
 
-**Brand Index** (`brand_index` table, `server/storage/brand-index.ts`):
-Sole source of truth for all brand data across all surfaces (bots, humans, exports). Single denormalized PostgreSQL table with:
-- **Primary identifier**: `domain` (text, NOT NULL, UNIQUE) — canonical dedup key for scans, cache lookups, upserts. Conflict target for `upsertBrandIndex`.
-- **URL routing key**: `slug` (text, NOT NULL, UNIQUE) — used for `/brands/[slug]` pages and `/brands/[slug]/skill.md`. Derived from domain via `domainToSlug()`: `.com` domains strip TLD (`staples.com` → `staples`), non-`.com` keep full domain minus dots (`staples.co.uk` → `staples-co-uk`). Slug is set on insert only — never overwritten by upsert (excluded from update set).
-- `brand_type` text — business model classification (brand, retailer, marketplace, chain, independent, department_store, supermarket, mega_merchant). Populated automatically by classification. Controls category resolution depth routing.
-- Flat indexed columns for every filterable field (sector, tier, maturity, ordering, etc.)
-- `carries_brands` text[] array (GIN-indexed) — distinguishes retailers from HQ brands (populated = retailer)
-- `brand_data` jsonb — full VendorSkill object for retrieval
-- `skill_md` text — pre-generated skill markdown
-- `search_vector` tsvector with trigger (name+description at A, tags/sub_sectors/carries_brands at B, sector at C)
-- ASX Score columns: `overall_score` (integer, nullable — 0-100 AI-powered score), `score_breakdown` (jsonb — per-signal scores), `recommendations` (jsonb — improvement tips), `scan_tier` (text — free/paid), `last_scanned_at` (timestamp), `last_scanned_by` (text)
-- Rating columns: `rating_search_accuracy` (numeric), `rating_stock_reliability` (numeric), `rating_checkout_completion` (numeric), `axs_rating` (numeric — the "Agentic Experience Score" crowdsourced average), `rating_count` (integer). Null until 5+ weighted feedback events. Drizzle returns `numeric` as strings — always use `Number()` when displaying.
-- B2B columns: `tax_exempt_supported`, `po_number_supported`, `business_account`
-- Maturity progression: draft → community → official (brand claimed) → verified (CreditClaw audited)
-- Storage methods: `searchBrands`, `searchBrandsCount`, `getBrandById`, `getBrandBySlug`, `getBrandByDomain`, `getRetailersForBrand`, `upsertBrandIndex`, `getAllBrandFacets`
-- `searchBrands` supports `lite?: boolean` filter — when true, selects only catalog card fields (excludes `skillMd` and heavy metadata columns, but includes `axsRating`, `ratingCount`, `overallScore`). Used by internal search API and sitemap. Export type `BrandCardRow` for type-safe lite consumers.
-- `searchBrands` supports rating-based filters: `minAxsRating`, `minRatingSearch`, `minRatingStock`, `minRatingCheckout`. Also supports `sortBy: "rating"` and `sortBy: "score"` (ASX Score).
-- `getAllBrandFacets` uses 10-minute in-memory cache (module-level). `invalidateFacetCache()` exported from `server/storage/brand-index.ts` and called automatically on `upsertBrandIndex`.
-- 22+ indexes (5 btree, 7 GIN on arrays, 1 GIN on tsvector, 7 partial)
+#### Taxonomy & Classification
 
-**ASX Score Engine** (`lib/agentic-score/`):
-Self-contained scoring module that evaluates how well a merchant's website supports AI shopping agents.
-Architecture: Single central rubric → regex detectors + agentic scan → merged evidence → deterministic scoring.
-- `rubric.ts` — pure data: `SCORING_RUBRIC` v1.1 with 61 criteria, 11 signals, 3 pillars. Types: `RubricCriterion`, `EvidenceMap`, etc. Source of truth for all scoring.
-- `scoring-engine.ts` — `computeScoreFromRubric(rubric, evidence)`: deterministic scorer. Also exports `rubricToPromptText()`, `rubricToCsv()`, and recommendation generation.
-- `detectors.ts` — `detectAll(html, sitemap, robots, loadTime)`: 10 regex-based evidence extractors producing `EvidenceMap` from homepage HTML, sitemap, robots.txt.
-- `compute.ts` — thin wrapper: `computeASXScore(input)` calls `detectAll` → `computeScoreFromRubric`.
-- `agent-scan.ts` — `agenticScan(domain, homepageHtml)`: agentic multi-page scanner using Anthropic SDK with tool use. 4 tools: `fetch_page`, `record_evidence`, `record_findings`, `complete_scan`. Domain-locked SSRF protection with per-redirect-hop validation, page budget (8), timeout (90s), Firecrawl integration. Returns `AgenticScanResult` with evidence, citations, findings, pages fetched. Evidence keys validated against rubric; string "true"/"false" coerced to booleans. Evidence citations include `sourceUrl` and `snippet` for each recorded key. Graceful degradation if API key missing or errors (partial evidence still used).
-- `fetch.ts` — parallel fetcher: `fetchScanInputs(domain)` fetches homepage + sitemap.xml + robots.txt with SSRF protection. Firecrawl JS rendering when `FIRECRAWL_API_KEY` set. Also exports `normalizeDomain()` and `domainToSlug()`.
-- `classify-brand.ts` — `classifyBrand(domain)`: calls Perplexity Sonar API to resolve brand name, sector, tier, capabilities, description from web search. Returns `BrandClassification | null`. Used as primary source for entity metadata in scan pipeline.
-- `scan-utils.ts` — shared helpers: `buildVendorSkillDraft()`, `mergeEvidence()`, `mergeArrayField()`, `toValidSector()`, `toValidCapabilities()`, `domainToLabel()`, `VALID_SECTORS`, `VALID_CAPABILITIES`. Single source of truth used by both `route.ts` and `process-next.ts`.
-- `types.ts` — all type definitions including `PageFetch`, `AgenticScanResult`, `SignalKey`, etc.
-- 3 pillars: Clarity (35pts max) + Discoverability (30pts max) + Reliability (35pts max) = 100pts
-- Discoverability (renamed from Speed in v1.1) includes Product Page Quality signal (5pts, agent-only)
-- Brand page has backward compat: reads stored `speed` key as `discoverability` for pre-v1.1 data
-- Labels: Poor (0-20), Needs Work (21-40), Fair (41-60), Good (61-80), Excellent (81-100)
-- Output writes to `brand_index` via `overallScore`, `scoreBreakdown` (jsonb), `recommendations` (jsonb), `skillMd` (text)
+`lib/procurement-skills/taxonomy/` — each concern is its own file with type definition + label map:
+- **28 sectors** (21 Google Product Taxonomy roots + 7 custom). 26 assignable; `luxury` is tier-driven, `multi-sector` is set programmatically for department stores/supermarkets/mega merchants.
+- **7 tiers**: commodity → ultra_luxury
+- **8 brand types**: brand, retailer, marketplace, chain, independent, department_store, supermarket, mega_merchant. Brand type controls category resolution depth.
+- **8 capabilities**: guest_checkout, po_number, tax_exempt, bulk_pricing, api_ordering, subscription, wishlist, price_match
+- Also: checkout methods, checkout providers, payment methods, ordering permissions, maturity levels
 
-**Merchant Index / Recommend API** (`app/api/v1/recommend/route.ts`):
-brands.sh Merchant Index query pipeline. No auth required. Resolves product categories, ranks merchants, attaches product search results via pgvector, returns skill URLs.
-- POST accepts `category_ids` or `categories` (text search), `tier`, `brand`, `limit`
-- GET accepts `q` (natural language via Perplexity intake), `tier`, `limit`
-- Products attached via `attachProducts()` using LATERAL join: embeds query text with all-MiniLM-L6-v2, does per-merchant cosine similarity via IVFFlat index, returns top 3 per merchant (fair distribution)
-- `_brand_id` internal field stripped from response
+Core types in `lib/procurement-skills/types.ts` — re-exports all taxonomy types, defines `VendorSkill`, `SearchDiscovery`, `BuyingConfig`, `DealsConfig`, `TaxonomyConfig`, `MethodConfig`.
 
-**Product Listings** (`product_listings` table):
-- pgvector-backed product catalog. `VECTOR(384)` column with IVFFlat index for cosine similarity search.
-- Embedding model: `Xenova/all-MiniLM-L6-v2` (384-dim, quantized ONNX) via `lib/embeddings/embed.ts`
-- Ingestion scripts:
-  - `scripts/ingest-shopify-products.ts <domain>` — Shopify `products.json` (auto-detects www subdomain)
-  - `scripts/ingest-firecrawl-batch.ts <domain> <urls_file>` — Firecrawl batch scrape for non-Shopify merchants
-  - `scripts/ingest-xml-feed.ts <domain> <feed_url>` — Google Shopping XML feed parser
-  - `scripts/harvest-firecrawl-batches.ts <domain> <batch_ids_json>` — harvest async Firecrawl batch results
-  - `scripts/refresh-products.ts` — weekly refresh, re-ingests all Shopify merchants
-- Category resolution: product_type matched against `category_keywords.keywords_tsv` via FTS
-- Currently ingested: 6,774 products across 8 merchants (Everlane 2,500, Chubbies 1,746, Allbirds 937, Mejuri 593, Outdoor Voices 367, Brooklinen 305, Casper 203, Glossier 123)
-- `POST /api/v1/recommend` — structured query: `{ category_ids?: number[], categories?: string[], tier?: string, brand?: string, limit?: number }`. Validates with Zod. Returns ranked merchants with ASX scores, match depth, skill URLs.
-- `GET /api/v1/recommend?q=...&tier=...&limit=...` — natural language query. Uses Perplexity intake LLM → FTS category resolution → recursive CTE merchant ranking.
-- Pipeline: intake (NL only) → category FTS resolution → bidirectional CTE (ancestors+descendants) → brand_categories join → depth+score ranking
-- Category keywords stored in `category_keywords` table with GIN-indexed tsvector. Generated by `scripts/generate-category-keywords.ts` (batch Anthropic Claude, resumable, 15 per batch). ~1,286 categories populated.
-- FTS ranking: depth boost (shallower categories rank higher) + name-match boost (exact category name match gets 3x, partial match 1.5x) + OR fallback for multi-word queries
-- Merchant ranking: bidirectional recursive CTE walks category tree (ancestors + descendants up to depth 6), joins brand_categories, ranks by match_depth DESC then asx_score DESC. Brand match boosted to top.
+Product categories: 5,638 entries in `product_categories` table (5,595 Google + 43 custom, seeded by `scripts/seed-google-taxonomy.ts`). Category resolution maps brands to taxonomy IDs via `brand_categories` junction table.
 
-**Scan API** (`app/api/v1/scan/route.ts`):
-Public endpoint for the ASX Score Scanner — CreditClaw's lead gen tool. No auth required.
-- `POST /api/v1/scan` — accepts `{ domain: string }`, returns score + breakdown + recommendations + citations + `skillMdUrl` + `enhanced` flag
-- Pipeline: normalizeDomain → cache check (30-day window) → classifyBrand (Perplexity, parallel) + fetchScanInputs (parallel) → detectAll (regex) → agenticScan (multi-page Claude technical audit only) → mergeEvidence → computeScoreFromRubric → buildVendorSkillDraft → generateVendorSkill (SKILL.md) → upsertBrandIndex → response
-- Entity metadata resolution: Perplexity Sonar → existing DB → domain-derived label. Claude agent does NOT do brand identification.
-- Agentic scan is optional: if ANTHROPIC_API_KEY missing or agent errors, regex-only scores and default SKILL.md are used
-- Perplexity classification is optional: if PERPLEXITY_API_KEY missing or API errors, falls back to existing DB values or domain-derived defaults
-- Rate limiting: in-memory, 5 requests/min per IP (via x-forwarded-for)
-- Error responses: 400 (invalid domain), 422 (unreachable), 429 (rate limit), 500 (internal)
-- Taxonomy guard: existing non-"uncategorized" sector is never overwritten by agent classification
-- Capability persistence: boolean fields (`hasApi`, `hasMcp`) use OR-merge (false→true upgrade), arrays use set-union merge
-- Storage: `getBrandByDomain(domain)` added to IStorage interface and brand-index.ts
+#### Skill Generation & Serving
 
-**Scan Queue** (`lib/scan-queue/`, `app/admin123/scan-queue/`, `app/api/admin/scan-queue/`):
-Admin-only batch scanning system for programmatically scanning multiple domains. Writes directly to the connected database (production writes to production, dev writes to dev — no migration needed).
-- **Admin page**: `/admin123/scan-queue` — paste domains (one per line), add to queue, track progress. Requires admin session (user must have `admin` flag).
-- **Server-side scheduler** (`lib/scan-queue/scheduler.ts`): In-process `setInterval` that processes one domain every 17 minutes. Controlled via admin page start/stop button. Rules:
-  - Auto-stops after 3 days of runtime
-  - Pauses during quiet hours (UTC 00:00–12:00)
-  - Stops when the queue is empty
-  - Does NOT auto-start on server boot — must be manually started via admin page
-  - Manual "Scan Next" is disabled while the scheduler is active (prevents overlapping scans)
-  - Uses generation counter to handle tick/stop race conditions safely
-- **Queue table**: `scan_queue` (id, domain, status, priority, error, resultSlug, resultScore, timestamps). Status flow: pending → scanning → completed/failed.
-- **Atomic claim**: Uses `FOR UPDATE SKIP LOCKED` to prevent race conditions if multiple workers try to process simultaneously.
-- **Stale recovery**: Entries stuck in `scanning` for >30 minutes are automatically reset to `pending`.
-- **API endpoints** (all require admin session):
-  - `GET /api/admin/scan-queue` — list queue with stats
-  - `POST /api/admin/scan-queue` — add domains (`{ domains: string[] }`) or actions (`{ action: "clear_completed" | "retry_failed" | "remove", id?: number }`)
-  - `POST /api/admin/scan-queue/run` — trigger next scan (blocked while scheduler is active)
-  - `GET /api/admin/scan-queue/scheduler` — get scheduler status
-  - `POST /api/admin/scan-queue/scheduler` — start/stop scheduler (`{ action: "start" | "stop" }`)
-- **Processing**: Reuses full scanner pipeline (fetchScanInputs → detectAll → agenticScan → computeScoreFromRubric → generateVendorSkill → upsertBrandIndex). Same code path as `/api/v1/scan`.
+`lib/procurement-skills/generator.ts` — `generateVendorSkill()` converts VendorSkill objects into SKILL.md markdown (frontmatter, overview, search instructions, checkout flow, tips, known issues).
 
-**SKILL.md Serving** (`app/brands/[slug]/skill/route.ts`):
-Public endpoint serving raw SKILL.md markdown for a brand.
-- `GET /brands/[slug]/skill` — returns `Content-Type: text/markdown; charset=utf-8` with 24-hour cache
-- 404 if brand not found or skillMd is null
+`lib/procurement-skills/skill-json.ts` — `buildSkillJson()` produces machine-readable JSON (identity, taxonomy, scoring, access, checkout, shipping, loyalty).
 
-**Public Brands API** (`app/api/v1/brands/[slug]/route.ts`):
-Public-facing brand data endpoint. No auth required.
-- `GET /api/v1/brands/[slug]` — returns lean brand profile (score, breakdown, recommendations, capabilities, meta) without full brandData JSONB
-- 404 if slug not found
+Served at: `GET /brands/{slug}/skill` (text/markdown, 24h cache) and `GET /brands/{slug}/skill-json` (application/json, 24h cache).
 
-**Scanner Landing Page** (`app/agentic-shopping-score/page.tsx`):
-Public lead gen tool. SSR page with client-side form component.
-- Hero + domain input + scan button
-- States: idle → scanning → redirecting (auto-redirect to `/brands/[slug]` after 2.5s) → error
-- Uses `domainToSlug` from `lib/agentic-score/domain-utils.ts` (client-safe, no Node deps)
+#### Merchant Discovery (Recommend API)
 
-**Brand Results Page** (`app/brands/[slug]/page.tsx`):
-SSR server component showing scan results. Bot-readable with full OG/Twitter/canonical meta.
-- Dynamic metadata via `generateMetadata`
-- Two states: scored (gauge + pillar breakdown + signal detail + recommendations) or unscanned (CTA to scan)
-- Client components: `scan-trigger.tsx` (scan/re-scan button), `copy-url-button.tsx` (share URL)
-- Reuses `getScoreColor` from `app/skills/vendor-card.tsx`
-- Score labels: Poor (0-20), Needs Work (21-40), Fair (41-60), Good (61-80), Excellent (81-100)
+`app/api/v1/recommend/route.ts` — three-stage pipeline for agent queries:
+1. **Category Resolution** — Perplexity Sonar extracts intent → FTS against `category_keywords` → top 5 categories
+2. **Merchant Ranking** — recursive CTE over `brand_categories` + `brand_index` → ranked by brand match → match depth → ASX score
+3. **Product Search** — pgvector cosine similarity against `product_listings` → top 3 per merchant
 
-**Brand Feedback** (`brand_feedback` table, `server/storage/brand-feedback.ts`):
-Agents and humans rate brands after purchase attempts. Three sub-ratings (search_accuracy, stock_reliability, checkout_completion) at 1-5 scale with outcome tracking.
-- `source` field: `agent` (authenticated bot), `anonymous_agent` (no auth), `human` (Firebase session)
-- Storage methods: `createBrandFeedback`, `getBrandFeedback`, `getBrandFeedbackCount`, `getRecentFeedbackByBot`
-- API endpoint: `POST /api/v1/bot/skills/[vendor]/feedback` — accepts both bot Bearer auth and Firebase session auth. Normalizes snake_case/camelCase keys. Rate limited: 1 per brand per bot per hour.
-- Aggregation: `lib/feedback/aggregate.ts` — weighted 90-day rolling average. Source weights: human=2.0, authenticated agent=1.0, anonymous=0.5. Recency weights: ≤7d=1.0, ≤30d=0.8, ≤60d=0.6, >60d=0.4. Ratings only published at 5+ weighted events.
-- Internal trigger: `POST /api/internal/feedback/aggregate?slug=optional`
-- Generator (`lib/procurement-skills/generator.ts`) includes feedback instructions at the end of every SKILL.md — agents POST ratings after purchase attempts.
-- Human feedback UI: `components/dashboard/purchase-feedback-prompt.tsx` — star rating component for post-purchase feedback.
+Product listings: `VECTOR(384)` column, `Xenova/all-MiniLM-L6-v2` embeddings, IVFFlat index. Ingestion via Shopify JSON, Firecrawl batch, Google Shopping XML, or weekly refresh scripts.
 
-**Discovery API** (`app/api/v1/bot/skills/route.ts`):
-Now queries `brand_index` table via storage layer instead of in-memory registry. Query params: `category` (deprecated alias for `sector`), `search` (full-text), `sector`, `tier`, `maturity`, `checkout`, `capability`, `ordering_permission`, `payment_method`, `has_deals`, `search_api`, `mcp`, `carries_brand`, `ships_to`, `tax_exempt`, `po_number`, `min_rating`, `min_search_rating`, `min_stock_rating`, `min_checkout_rating`, `sort` (score|name|created_at|rating). Response includes full taxonomy/buying/deals metadata plus `asx_score`, `agent_readiness` (backward compat alias for overallScore), `carries_brands`, `domain`, `ratings` (object with overall/search_accuracy/stock_reliability/checkout_completion/count, or null) per vendor, and `sectors`/`tiers` facets.
+#### Scan Queue
 
-**Post-publish hook**: When a skill draft is published (`app/api/v1/skills/drafts/[id]/publish/route.ts`), it auto-syncs the brand_index row via `upsertBrandIndex`.
+`lib/scan-queue/`, admin page at `/admin123/scan-queue` — batch scanning with server-side scheduler:
+- Processes one domain every 17 minutes, auto-stops after 3 days, pauses during quiet hours
+- `scan_queue` table with `FOR UPDATE SKIP LOCKED` atomic claim, stale recovery (30 min timeout)
+- Same pipeline as public scan API
 
-**Brand Claims** (`brand_claims` table, `server/storage/brand-claims.ts`):
-Self-service brand ownership verification. Brand owners claim their brand from the vendor detail page, upgrading maturity to "official" via email domain matching. Key components:
-- `brand_claims` table with status lifecycle: pending → verified/rejected/revoked
-- Partial unique index `brand_claims_active_claim_idx ON (brand_slug) WHERE status = 'verified'` prevents race conditions
-- Domain matching logic in `lib/brand-claims/domain.ts` (exact, subdomain-of-brand, brand-subdomain-of-email)
-- Free email blocklist in `lib/brand-claims/blocklist.ts` (Gmail, Yahoo, Outlook, etc.)
-- Auto-verify if email domain matches brand domain; manual_review otherwise
-- Transactional `verifyClaim` upgrades `brand_index.maturity` to "official", sets `claimed_by`/`claim_id`
-- Transactional `revokeClaim` reverts brand to "community" maturity; only affects brand_index if claim_id matches
-- API endpoints: `POST /api/v1/brands/[slug]/claim`, `GET /api/v1/brands/claims/mine`, `POST /api/v1/brands/claims/[id]/revoke`, `GET /api/v1/brands/claims/review` (admin), `POST /api/v1/brands/claims/[id]/review` (admin verify/reject)
-- UI: Claim button on vendor detail page (`app/skills/[vendor]/page.tsx` — ghost button, shows for logged-out too), Admin review queue (`app/admin123/brand-claims/page.tsx` — behind admin auth gate)
+#### Brand Claims
 
-**UI** — Catalog page uses hybrid SSR: `app/skills/page.tsx` is a **server component** that fetches the initial 50 brands + facets + total count via `storage.searchBrands({ lite: true })` and passes them as props to `app/skills/catalog-client.tsx` (`"use client"`). The client component initializes state from these server-provided props (no loading skeleton on first paint), then takes over for filtering/search/pagination via the internal API. Dynamic `generateMetadata()` in `page.tsx` uses live total count. `VendorCard` extracted to `app/skills/vendor-card.tsx` (shared between catalog and sector pages). Vendor detail page (`app/skills/[vendor]/page.tsx`, **server component** — SSR for SEO) with `generateMetadata()` for title/OG/Twitter/canonical tags, `cache()` for deduplicating DB queries between metadata and page, and three extracted client components:
-  - `brand-claim-button.tsx` — auth check + claim API call
-  - `skill-preview-panel.tsx` — expand/collapse skill markdown + download
-  - `copy-skill-url.tsx` — clipboard copy with feedback
-  Custom 404 via `not-found.tsx` preserving branded "Vendor Not Found" UI.
+`brand_claims` table, `lib/brand-claims/` — self-service ownership verification:
+- Auto-verify if email domain matches brand domain; manual review otherwise
+- Upgrades maturity to `official` on verify, reverts to `community` on revoke
+- Free email blocklist (Gmail, Yahoo, etc.)
+- Admin review queue at `/admin123/brand-claims`
 
-**Sector Landing Pages** (`app/c/[sector]/page.tsx`) — Server component with SSR metadata, canonical URLs at `/c/[sector]`, cross-linking to other populated sectors, and 404 for sectors with zero published brands. Uses shared `VendorCard` component. Only sectors with at least one published brand (verified/official/beta/community) are included in `generateStaticParams` and the sitemap.
+#### Brand Feedback
 
-Sitemap (`app/sitemap.ts`) is async and includes all brand detail pages and populated sector landing pages.
+`brand_feedback` table — agents and humans rate brands (search accuracy, stock reliability, checkout completion):
+- Weighted 90-day rolling average (source weights: human=2.0, agent=1.0, anonymous=0.5)
+- Published at 5+ weighted events → updates `axsRating` on brand_index
+- `POST /api/v1/bot/skills/[vendor]/feedback`, rate limited: 1 per brand per bot per hour
+
+#### Catalog UI
+
+Hybrid SSR: `app/skills/page.tsx` (server component, initial fetch) + `app/skills/catalog-client.tsx` (client, filtering/pagination). `VendorCard` in `app/skills/vendor-card.tsx` shared across catalog and sector pages. Detail pages at `app/skills/[vendor]/page.tsx` (SSR for SEO) with claim button, skill preview, and copy URL components. Sector landing pages at `app/c/[sector]/page.tsx`. Sitemap includes all brand pages and populated sector pages.
 
 
 ### Unified Approval System
@@ -436,55 +319,22 @@ Unified cross-rail order tracking for all vendor purchases. Every confirmed purc
 - **Rail tabs**: All 4 rail pages' Orders tabs now query the central `GET /api/v1/orders?rail=X` endpoint. Clicking an order navigates to `/orders/[order_id]`.
 - **Sidebar**: Orders link added to dashboard sidebar.
 
-### Sales & Checkout (`server/storage/sales.ts`, `app/pay/`)
-Turns every CreditClaw wallet holder into a seller. Checkout pages are public URLs where anyone can pay (card/bank via Stripe onramp, USDC direct, or x402 wallet). The inverse of Orders — Orders track what you bought, Sales track what someone bought from you.
-- **Schema**: `checkout_pages` table (id, checkoutPageId, ownerUid, walletId, walletAddress, title, description, amountUsdc, amountLocked, allowedMethods, status, successUrl, successMessage, metadata, viewCount, paymentCount, totalReceivedUsdc, expiresAt, digitalProductUrl). Page types: `"product"`, `"event"`, `"digital_product"`. Digital product pages store a `digital_product_url` that is delivered to the bot after successful x402 payment (never exposed in the 402 requirements). Seller identity is always sourced from the seller profile (no per-page overrides). `sales` table (saleId, checkoutPageId, ownerUid, amountUsdc, paymentMethod, status, buyerType, buyerIdentifier, buyerIp, buyerUserAgent, buyerEmail, txHash, stripeOnrampSessionId, privyTransactionId, checkoutTitle, checkoutDescription, confirmedAt, invoiceId).
-- **Storage**: `server/storage/sales.ts` — CRUD for both tables: `createCheckoutPage`, `getCheckoutPageById`, `getCheckoutPagesByOwnerUid`, `updateCheckoutPage`, `archiveCheckoutPage`, `createSale`, `getSaleById`, `getSalesByOwnerUid`, `getSalesByCheckoutPageId`, `updateSaleStatus`, `incrementCheckoutPageStats`, `incrementCheckoutPageViewCount`.
-- **Owner API**: `POST/GET /api/v1/checkout-pages` (create/list), `GET/PATCH/DELETE /api/v1/checkout-pages/[id]` (detail/update/archive), `GET /api/v1/sales` (list with filters), `GET /api/v1/sales/[sale_id]` (detail).
-- **Bot API**: `POST /api/v1/bot/checkout-pages/create` (create), `GET /api/v1/bot/checkout-pages` (list), `GET/PATCH /api/v1/bot/checkout-pages/[id]` (detail/update), `GET /api/v1/bot/sales` (list with filters). All use `withBotApi` middleware. Bot create/update schemas support `shop_visible` and `shop_order` for storefront management.
-- **Public endpoints**: `GET /api/v1/checkout/[id]/public` (fetch config + seller info via 2-tier fallback: seller profile → bot name/email, increments view count), `POST /api/v1/checkout/[id]/pay/stripe-onramp` (create Stripe session, supports `invoice_ref` for server-authoritative invoice amount), `GET /api/v1/checkout/[id]/x402` (returns 402 Payment Required with x402 payment requirements — amount, recipient wallet, token, chain), `POST /api/v1/checkout/[id]/pay/x402` (settles an x402 payment — parses `X-PAYMENT` header, validates signature params, calls `transferWithAuthorization` on-chain via seller's Privy wallet, credits balance, records sale, fires webhook).
-- **x402 Receive Module** (`lib/x402/`):
-  - `receive.ts` — `parseXPaymentHeader()` (base64→JSON), `validateX402Payment()` (checks chain, token, recipient, expiry, amount), `settleX402Payment()` (encodes `transferWithAuthorization` calldata, submits via Privy RPC with gas sponsorship), `splitSignature()` (compact sig → v/r/s).
-  - `checkout.ts` — `creditWalletFromX402()` (wallet balance increment + transaction record), `recordX402Sale()` (sale creation with `x402Nonce` for idempotent retries, amount mismatch detection, invoice linking, `wallet.sale.completed` webhook).
-  - This makes CreditClaw both an x402 **payer** (via `/bot/sign`) and x402 **receiver** (via checkout pages). Enables bot-to-bot commerce where one CreditClaw bot creates a checkout page and another pays it programmatically.
-- **Checkout Page**: `/pay/[id]` — split-panel layout (dark left panel with seller info / white right panel with embedded Stripe widget). Supports `?ref=INV-XXXX` query param for invoice payments — fetches invoice data, shows line items and totals on left panel, locks amount server-side.
-- **Pages**: `/checkout/create` (create + manage checkout pages), `/sales` (sales ledger with clickable rows), `/sales/[sale_id]` (sale detail page), `/pay/[id]` (public checkout page), `/pay/[id]/success` (post-payment confirmation).
-- **Webhook**: `wallet.sale.completed` event fired to seller's bot after confirmed sale via `fireWebhook()`. Includes `invoice_id` and `invoice_ref` when payment was for an invoice.
-- **Invoice linking**: Webhook handler checks for `metadata.invoice_ref`, looks up invoice, verifies checkout page match and payable status, links sale to invoice and marks invoice as paid.
-- **Skill file**: `public/MY-STORE.md` — bot-readable instructions for creating checkout pages, viewing sales, and managing invoices.
-- **Sidebar**: "Sales" section with "Create Checkout", "Shop", "My Sales", and "Invoices" links.
+### Agent Shops (Sales, Checkout, Storefronts, Invoicing)
 
-### Seller Profiles (`server/storage/seller-profiles.ts`)
-Per-owner seller identity used across all checkout pages, invoices, and the public storefront.
-- **Schema**: `seller_profiles` table (id, ownerUid unique, businessName, logoUrl, contactEmail, websiteUrl, description, slug unique, shopPublished, shopBannerUrl, createdAt, updatedAt).
-- **Storage**: `server/storage/seller-profiles.ts` — `getSellerProfileByOwnerUid`, `getSellerProfileBySlug`, `upsertSellerProfile`.
-- **Owner API**: `GET/PUT /api/v1/seller-profile` — get or upsert seller profile (including slug, shop_published, shop_banner_url, business_name, logo_url, contact_email, website_url, description). Slug uniqueness enforced at API level.
-- **Bot API**: `GET/PATCH /api/v1/bot/seller-profile` — bots can read and update their seller profile (business_name, slug, description, logo_url, shop_banner_url, shop_published). Enables bots to self-service shop setup without owner dashboard.
-- **Public checkout fallback chain**: seller profile → bot name/owner email (no per-page overrides).
-- **Page**: Seller identity fields are consolidated into the **Shop** page (`/shop`) under "Your Details". The old `/settings/seller` route redirects to `/shop`.
+The platform's inbound commerce engine. Every wallet holder becomes a seller via checkout pages, storefronts, and invoices. The inverse of outbound payment rails (Module 4) — this handles how the world pays our merchants, including bot-to-bot commerce via x402.
 
-### Shop (`app/s/[slug]`, `app/(dashboard)/shop`)
-Public storefront for sellers, built on top of existing checkout pages.
-- **Schema extensions**: `checkout_pages` gains `pageType` (product/event), `shopVisible`, `shopOrder`, `imageUrl`, `collectBuyerName`. `sales` gains `buyerName`.
-- **Storage**: `getShopPagesByOwnerUid` (active + shopVisible pages sorted by shopOrder), `getBuyerCountForCheckoutPage` (confirmed sales count), `getBuyerNamesForCheckoutPage` (buyer names from confirmed sales).
-- **Public API**: `GET /api/v1/shop/[slug]` — returns seller profile + visible checkout pages with buyer counts for events. 404 if shop not published.
-- **Public API**: `GET /api/v1/checkout/[id]/buyers` — returns buyer count + names for event pages only.
-- **Public page**: `/s/[slug]` — storefront with seller info, product grid (image, title, description, price, buyer count for events), links to `/pay/[id]`.
-- **Checkout page updates**: `/pay/[id]` shows buyer name input when `collectBuyerName` is true, shows "X people bought this" for event pages. Buyer name passed to Stripe metadata and stored on sale record.
-- **Admin page**: `/shop` — configure shop slug, publish toggle, banner URL, toggle which checkout pages appear in shop.
-- **Create checkout form**: `/checkout/create` now includes page type (product/event), image URL, and collect buyer name toggle.
-- **Bot API**: `GET /api/v1/bot/shop` — returns shop config + all checkout pages. `POST /api/v1/bot/checkout-pages/create` accepts `page_type`, `image_url`, `collect_buyer_name`, `shop_visible`, `shop_order`. `PATCH /api/v1/bot/checkout-pages/[id]` supports all update fields. `GET/PATCH /api/v1/bot/seller-profile` enables full self-service shop setup.
-- **Sidebar**: "Shop" link added to Sales section.
+→ Full system documentation: `project_knowledge/internal_docs/09-agent-shops/_overview.md`
 
-### Invoicing (`server/storage/invoices.ts`)
-Full invoicing system — create, send, track, and collect payment on invoices tied to checkout pages.
-- **Schema**: `invoices` table (invoiceId, ownerUid, checkoutPageId, referenceNumber unique, recipientName, recipientEmail, lineItems JSONB, subtotalUsdc, taxUsdc, totalUsdc, dueDate, notes, status [draft/sent/viewed/paid/cancelled], pdfUrl, paymentUrl, paidAt, paidSaleId, sentAt, viewedAt, cancelledAt, createdAt, updatedAt).
-- **Storage**: `server/storage/invoices.ts` — full CRUD: `createInvoice`, `getInvoiceById`, `getInvoiceByReferenceNumber`, `getInvoicesByOwnerUid` (with filters), `getInvoicesByCheckoutPageId`, `updateInvoice`, `markInvoiceSent`, `markInvoiceViewed`, `markInvoicePaid`, `cancelInvoice`, `getNextReferenceNumber`.
-- **Owner API**: `POST/GET /api/v1/invoices` (create/list), `GET/PATCH /api/v1/invoices/[id]` (detail/update draft), `POST /api/v1/invoices/[id]/send` (mark sent + email + PDF), `POST /api/v1/invoices/[id]/cancel`.
-- **Public API**: `GET /api/v1/invoices/by-ref/[ref]` — returns display-safe fields only (no internal IDs or owner data).
-- **Bot API**: `POST /api/v1/bot/invoices/create` (10/hr), `GET /api/v1/bot/invoices` (12/hr), `POST /api/v1/bot/invoices/[id]/send` (5/hr).
-- **Email & PDF**: `lib/invoice-email.ts` (HTML email with SendGrid + PDF attachment), `lib/invoice-pdf.ts` (server-side PDF generation via `pdf-lib`).
-- **Pages**: `/invoices` (list with filters), `/invoices/create` (create form with line items repeater), `/invoices/[invoice_id]` (detail with status timeline, actions).
+**Core primitives:** `checkout_pages` (public payment URLs, 3 page types: product/event/digital_product), `sales` (transaction records), `seller_profiles` (per-owner identity + shop slug), `invoices` (create/send/track/collect).
+
+**5 checkout payment methods:** x402 (autonomous agent payments via EIP-3009), Base Pay (one-tap USDC), Stripe Onramp (card/bank→USDC), USDC Direct, Testing mode.
+
+**Key tables:** `checkout_pages`, `sales`, `seller_profiles`, `invoices`, `base_pay_payments`
+**Key code:** `server/storage/sales.ts`, `server/storage/seller-profiles.ts`, `server/storage/invoices.ts`, `lib/x402/receive.ts`, `lib/x402/checkout.ts`, `lib/base-pay/`, `lib/invoice-email.ts`, `lib/invoice-pdf.ts`
+**Public pages:** `/pay/[id]` (checkout), `/s/[slug]` (storefront), `/pay/[id]/success` (confirmation)
+**Dashboard pages:** `/checkout/create`, `/shop`, `/sales`, `/invoices`
+**Bot APIs:** Full parity — checkout pages, sales, seller profile, shop, invoices all have bot endpoints under `/api/v1/bot/`
+**Skill file:** `public/MY-STORE.md`
 
 ### Crypto Onramp (`lib/crypto-onramp/`) — Server-Side Only
 Server-side Stripe Crypto Onramp logic. Client-side UI is now in `lib/payments/`. Legacy client components retained with `-legacy` suffix for reference.

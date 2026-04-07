@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { storage } from "@/server/storage";
-import { parseSearchParams } from "@/lib/catalog/parse-filters";
+import { parseSearchParams } from "@/lib/brand-engine/catalog/parse-filters";
 
 export async function GET(request: NextRequest) {
   try {

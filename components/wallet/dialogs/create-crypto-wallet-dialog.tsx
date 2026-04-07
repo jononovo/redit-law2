@@ -5,7 +5,7 @@ import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { authFetch } from "@/lib/auth-fetch";
+import { authFetch } from "@/lib/platform-management/auth-fetch";
 import { useToast } from "@/hooks/use-toast";
 import type { BotInfo } from "@/components/wallet/types";
 
