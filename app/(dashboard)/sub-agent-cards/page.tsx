@@ -12,6 +12,7 @@ const config: CreditCardListPageConfig = {
   emptySubtitle: "Click \"Add New Card\" above to get started.",
   apiEndpoint: "/api/v1/rail5/cards",
   railPrefix: "rail5",
+  railId: "rail5",
   basePath: "/sub-agent-cards",
   approvalsEndpoint: "/api/v1/approvals?rail=rail5",
   approvalsDecideEndpoint: "/api/v1/approvals/decide",

@@ -17,7 +17,7 @@ import { CreditCardItem } from "./credit-card-item";
 import { RailPageTabs, type RailTab } from "./rail-page-tabs";
 import { TransactionList, type TransactionRow } from "./transaction-list";
 import { OrderList, type OrderRow } from "./order-list";
-import { ApprovalList, type ApprovalRow } from "./approval-list";
+import { ApprovalHistoryPanel } from "./approval-history-panel";
 import type { NormalizedCard } from "./types";
 
 export interface CreditCardListPageConfig {
@@ -35,6 +35,7 @@ export interface CreditCardListPageConfig {
   setupWizardHref?: string;
   supportsBotLinking?: boolean;
   transactionsEndpoint?: string;
+  railId?: string;
   approvalsEndpoint?: string;
   approvalsDecideEndpoint?: string;
 }
@@ -54,7 +55,7 @@ export function CreditCardListPage({ config }: { config: CreditCardListPageConfi
 
   const [transactions, setTransactions] = useState<TransactionRow[]>([]);
   const [orders, setOrders] = useState<OrderRow[]>([]);
-  const [approvals, setApprovals] = useState<ApprovalRow[]>([]);
+  const [pendingApprovalCount, setPendingApprovalCount] = useState(0);
 
   const fetchCards = useCallback(async () => {
     try {
@@ -107,13 +108,13 @@ export function CreditCardListPage({ config }: { config: CreditCardListPageConfi
     } catch {}
   }, [config.railPrefix]);
 
-  const fetchApprovals = useCallback(async () => {
+  const fetchPendingApprovalCount = useCallback(async () => {
     if (!config.approvalsEndpoint) return;
     try {
       const res = await authFetch(config.approvalsEndpoint);
       if (res.ok) {
         const data = await res.json();
-        setApprovals(data.approvals || []);
+        setPendingApprovalCount((data.approvals || []).length);
       }
     } catch {}
   }, [config.approvalsEndpoint]);
@@ -140,11 +141,11 @@ export function CreditCardListPage({ config }: { config: CreditCardListPageConfi
       }
       fetchTransactions();
       fetchOrders();
-      fetchApprovals();
+      fetchPendingApprovalCount();
     } else {
       setLoading(false);
     }
-  }, [user, fetchCards, botLinking.fetchBots, config.supportsBotLinking, fetchTransactions, fetchOrders, fetchApprovals]);
+  }, [user, fetchCards, botLinking.fetchBots, config.supportsBotLinking, fetchTransactions, fetchOrders, fetchPendingApprovalCount]);
 
   async function handleFreezeConfirm() {
     if (!freezeTarget) return;
@@ -255,14 +256,8 @@ export function CreditCardListPage({ config }: { config: CreditCardListPageConfi
     {
       id: "approvals",
       label: "Approvals",
-      badge: approvals.length,
-      content: (
-        <ApprovalList
-          approvals={approvals}
-          variant={config.approvalsDecideEndpoint ? "commerce" : "crypto"}
-          onDecide={(id, decision) => walletActions.handleApprovalDecision(id, decision, { onSuccess: fetchApprovals })}
-        />
-      ),
+      badge: pendingApprovalCount,
+      content: <ApprovalHistoryPanel defaultRail={config.railId} onPendingCount={setPendingApprovalCount} onDecisionComplete={fetchPendingApprovalCount} />,
     },
   ];
 

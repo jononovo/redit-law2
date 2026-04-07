@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/features/platform-management/auth/auth-context";
 import { authFetch } from "@/features/platform-management/auth-fetch";
 import { useToast } from "@/hooks/use-toast";
-import type { Rail1WalletInfo, Rail1ApprovalInfo, Rail1TransactionInfo } from "@/components/wallet/types";
+import type { Rail1WalletInfo, Rail1TransactionInfo } from "@/components/wallet/types";
 import { useWalletActions } from "@/components/wallet/hooks/use-wallet-actions";
 import { useBotLinking } from "@/components/wallet/hooks/use-bot-linking";
 import { useTransfer } from "@/components/wallet/hooks/use-transfer";
@@ -21,7 +21,7 @@ import { FundWalletSheet } from "@/features/agent-shops/payments/components/fund
 import { RailPageTabs } from "@/components/wallet/rail-page-tabs";
 import { TransactionList } from "@/components/wallet/transaction-list";
 import { OrderList, type OrderRow } from "@/components/wallet/order-list";
-import { ApprovalList } from "@/components/wallet/approval-list";
+import { ApprovalHistoryPanel } from "@/components/wallet/approval-history-panel";
 import { WalletSelector } from "@/components/wallet/wallet-selector";
 import type { CryptoGuardrailForm } from "@/components/wallet/dialogs/guardrail-dialog";
 
@@ -30,7 +30,7 @@ export default function StripeWalletPage() {
   const { toast } = useToast();
   const [wallets, setWallets] = useState<Rail1WalletInfo[]>([]);
   const [transactions, setTransactions] = useState<Rail1TransactionInfo[]>([]);
-  const [approvals, setApprovals] = useState<Rail1ApprovalInfo[]>([]);
+  const [pendingApprovalCount, setPendingApprovalCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [selectedWallet, setSelectedWallet] = useState<Rail1WalletInfo | null>(null);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
@@ -93,12 +93,12 @@ export default function StripeWalletPage() {
     } catch {}
   }, [selectedWallet]);
 
-  const fetchApprovals = useCallback(async () => {
+  const fetchPendingApprovalCount = useCallback(async () => {
     try {
       const res = await authFetch("/api/v1/approvals?rail=rail1");
       if (res.ok) {
         const data = await res.json();
-        setApprovals(data.approvals || []);
+        setPendingApprovalCount((data.approvals || []).length);
       }
     } catch {}
   }, []);
@@ -145,12 +145,12 @@ export default function StripeWalletPage() {
     if (user) {
       fetchWallets();
       botLinking.fetchBots();
-      fetchApprovals();
       fetchOrders();
+      fetchPendingApprovalCount();
     } else {
       setLoading(false);
     }
-  }, [user, fetchWallets, botLinking.fetchBots, fetchApprovals, fetchOrders]);
+  }, [user, fetchWallets, botLinking.fetchBots, fetchOrders, fetchPendingApprovalCount]);
 
   useEffect(() => {
     if (selectedWallet) {
@@ -267,14 +267,8 @@ export default function StripeWalletPage() {
           {
             id: "approvals",
             label: "Approvals",
-            badge: approvals.length,
-            content: (
-              <ApprovalList
-                approvals={approvals}
-                variant="crypto"
-                onDecide={(id, decision) => walletActions.handleApprovalDecision(id, decision, { onSuccess: fetchApprovals })}
-              />
-            ),
+            badge: pendingApprovalCount,
+            content: <ApprovalHistoryPanel defaultRail="rail1" onPendingCount={setPendingApprovalCount} onDecisionComplete={fetchPendingApprovalCount} />,
           },
         ]}
       />
