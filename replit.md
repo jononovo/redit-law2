@@ -323,11 +323,15 @@ All transaction tables (`transactions`, `privy_transactions`, `crossmint_transac
 Rail 5 (`sub-agent-cards/page.tsx`) is ~43 lines — a pure config object passed to `CreditCardListPage`. Adding transaction/approval tabs = add endpoint URLs to the config object.
 
 **Transactions, Orders & Approvals Page** (`/transactions`) — cross-rail activity dashboard with three tabs:
-- **Transactions** — all wallet activity (topups, debits, refunds) from `GET /api/v1/wallet/transactions`. Table with type, description, amount, balance, date.
-- **Orders** — central orders list via `OrdersPanel`, with guardrails config shortcut.
+- **Transactions** — wallet activity (topups, debits, refunds) from `GET /api/v1/wallet/transactions`. Table with type, description, amount, balance, date. **Known gap:** currently reads from the legacy `transactions` table only — does NOT aggregate from `privy_transactions` (Rail 1), `crossmint_transactions` (Rail 2), or `rail5_checkouts` (Rail 5). Needs to be fixed to show cross-rail activity.
+- **Orders** — confirmed purchases across all rails via `OrdersPanel` (reads from central `orders` table). Cross-rail filters: rail, bot, status, date range. Clicking an order navigates to `/orders/[order_id]` detail page.
 - **Approvals** — approval history via `ApprovalHistoryPanel`.
 
-This page aggregates activity across all rails into one view. Individual rail pages (`/stripe-wallet`, `/card-wallet`, `/sub-agent-cards`) also use `RailPageTabs` to show rail-specific transactions, orders, and approvals alongside their wallet/card management.
+**Note:** `/orders` also exists as a standalone sidebar page but renders the identical `OrdersPanel` — should be consolidated into the `/transactions` Orders tab.
+
+**Transaction vs Order:** A *transaction* is a financial movement (deposit, transfer, debit, reconciliation) — it's about the money. An *order* is a confirmed purchase (product, vendor, shipping, tracking) — it's about what was bought. An order typically has a corresponding transaction (via `transactionId` FK), but not every transaction creates an order (deposits, transfers don't).
+
+Individual rail pages (`/stripe-wallet`, `/card-wallet`, `/sub-agent-cards`) also use `RailPageTabs` to show rail-specific transactions, orders, and approvals alongside their wallet/card management.
 
 ---
 
@@ -376,7 +380,7 @@ Bots without a `callback_url` get a managed Cloudflare tunnel provisioned at reg
 
 ## Central Orders
 
-`features/agent-interaction/orders/`, `server/storage/orders.ts` — Unified cross-rail order tracking for all vendor purchases. Every confirmed purchase across all rails creates a row in the `orders` table.
+`features/agent-interaction/orders/`, `server/storage/orders.ts` — Unified cross-rail order tracking for all vendor purchases. Every confirmed purchase across all rails creates a row in the `orders` table. UI lives on the `/transactions` page (Orders tab) — see Module 3 > Shared Wallet & Card UI.
 - **Schema**: `orders` table in `shared/schema.ts` with columns for product info (name, image, URL, description, SKU), vendor (name, details JSONB), pricing (price_cents, taxes_cents, shipping_price_cents, currency), shipping (address, type, note), tracking (carrier, number, URL, estimated_delivery), and references (owner_uid, rail, bot_id, wallet_id/card_id, transaction_id, external_order_id).
 - **Storage**: `server/storage/orders.ts` — CRUD methods: `createOrder`, `getOrderById`, `getOrderByExternalId`, `getOrdersByOwner` (with filters: rail, botId, walletId, cardId, status, dateFrom, dateTo), `getOrdersByWallet`, `getOrdersByCard`, `updateOrder`.
 - **Order creation module**: `features/agent-interaction/orders/create.ts` exports `recordOrder()` — single entry point all rails call after a confirmed purchase. `features/agent-interaction/orders/types.ts` defines `OrderInput` interface.
@@ -385,9 +389,6 @@ Bots without a `callback_url` get a managed Cloudflare tunnel provisioned at reg
   - Rail 2: `features/agent-interaction/approvals/rail2-fulfillment.ts` (approved) + `app/api/v1/card-wallet/bot/purchase/route.ts` (auto-approved). Webhooks update order via `storage.getOrderByExternalId()` + `storage.updateOrder()`.
   - Rail 5: `features/agent-interaction/approvals/rail5-fulfillment.ts` (approved) + `app/api/v1/bot/rail5/checkout/route.ts` (auto-approved)
 - **API**: `GET /api/v1/orders` (list with query filters), `GET /api/v1/orders/[order_id]` (single order detail). Owner-authenticated.
-- **Pages**: `/orders` (main orders list with cross-rail filters: rail, bot, status, date range), `/orders/[order_id]` (order detail page with product image, timeline, price breakdown, shipping/tracking).
-- **Rail tabs**: All 4 rail pages' Orders tabs now query the central `GET /api/v1/orders?rail=X` endpoint. Clicking an order navigates to `/orders/[order_id]`.
-- **Sidebar**: Orders link added to dashboard sidebar.
 
 ---
 
