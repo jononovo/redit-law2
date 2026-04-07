@@ -1,6 +1,6 @@
 # Webhook Event Types
 
-CreditClaw sends webhook events to your bot's `callback_url` whenever something significant happens — a purchase is approved, a wallet is funded, an order ships, etc. Each event has a specific type string and a structured `data` payload.
+CreditClaw sends webhook events to your bot's `callback_url` whenever something significant happens — a purchase is approved, an order ships, a sale completes, etc. Each event has a specific type string and a structured `data` payload.
 
 All webhook deliveries follow the format described in [Webhook Setup & Signing](/docs/api/webhooks/setup).
 
@@ -45,24 +45,6 @@ Fired when a wallet is first activated and ready for use.
     "wallet_id": "wal_xyz789",
     "rail": "rail1",
     "message": "Wallet is now active and ready for transactions."
-  }
-}
-```
-
-### `wallet.topup.completed`
-
-Fired when an owner tops up (funds) the bot's wallet.
-
-```json
-{
-  "event": "wallet.topup.completed",
-  "timestamp": "2025-01-15T10:00:00.000Z",
-  "bot_id": "bot_abc123",
-  "data": {
-    "wallet_id": "wal_xyz789",
-    "amount": 50.00,
-    "currency": "USD",
-    "new_balance": 150.00
   }
 }
 ```
@@ -117,43 +99,7 @@ Fired when the wallet balance drops below a threshold after a transaction.
     "wallet_id": "wal_xyz789",
     "current_balance": 5.20,
     "currency": "USD",
-    "message": "Wallet balance is low. Request a top-up or notify the owner."
-  }
-}
-```
-
-### `wallet.payment.received`
-
-Fired when a payment is received into the bot's wallet (e.g., from a checkout page or invoice).
-
-```json
-{
-  "event": "wallet.payment.received",
-  "timestamp": "2025-01-15T12:00:00.000Z",
-  "bot_id": "bot_abc123",
-  "data": {
-    "amount": 75.00,
-    "currency": "USD",
-    "source": "checkout_page",
-    "reference_id": "chk_abc123"
-  }
-}
-```
-
-### `wallet.funded`
-
-Fired when a wallet is funded by the owner through the dashboard or API.
-
-```json
-{
-  "event": "wallet.funded",
-  "timestamp": "2025-01-15T12:30:00.000Z",
-  "bot_id": "bot_abc123",
-  "data": {
-    "wallet_id": "wal_xyz789",
-    "amount": 100.00,
-    "currency": "USD",
-    "new_balance": 200.00
+    "message": "Wallet balance is low. Notify the owner to add funds."
   }
 }
 ```
@@ -432,12 +378,9 @@ Your bot should call `GET /api/v1/bot/status` after receiving this event to get 
 | Event | Category | Description |
 |-------|----------|-------------|
 | `wallet.activated` | Wallet | Wallet is active and ready |
-| `wallet.topup.completed` | Wallet | Owner topped up the wallet |
 | `wallet.spend.authorized` | Wallet | Spend request authorized |
 | `wallet.spend.declined` | Wallet | Spend request blocked by guardrails |
 | `wallet.balance.low` | Wallet | Balance dropped below threshold |
-| `wallet.payment.received` | Wallet | Payment received into wallet |
-| `wallet.funded` | Wallet | Wallet funded by owner |
 | `wallet.sale.completed` | Wallet | Sale completed through bot's shop |
 | `purchase.approved` | Purchase | Purchase approved (auto or manual) |
 | `purchase.rejected` | Purchase | Purchase rejected by owner |
@@ -458,7 +401,7 @@ Your bot should call `GET /api/v1/bot/status` after receiving this event to get 
 2. **Respond with 2xx quickly.** Process events asynchronously if needed. CreditClaw treats non-2xx responses as failures and will retry.
 3. **Handle duplicates.** In rare cases the same event may be delivered more than once. Use the `timestamp` and event data to deduplicate.
 4. **Subscribe to `rails.updated`** to keep your bot's view of its payment methods current. Call `GET /api/v1/bot/status` after receiving it.
-5. **Monitor `wallet.balance.low`** so your bot can proactively request a top-up via `POST /api/v1/bot/wallet/topup-request`.
+5. **Monitor `wallet.balance.low`** so your bot can alert the owner when funds are running low.
 
 ---
 

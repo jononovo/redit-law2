@@ -75,9 +75,8 @@ Financial rails for AI agents. Agents can't hold bank accounts — CreditClaw br
 
 ## Features (Current)
 
-- Stripe wallet funding (Rail 1 — live)
+- Crypto wallet funding via Stripe Onramp (Rail 1 — live)
 - Direct wallet debits (Rail 5 — live)
-- Payment links — bots generate Stripe Checkout URLs (live)
 - Virtual card issuance via Stripe Issuing (not yet built)
 - Multi-rail spending controls + approval workflows
 - Bot management, onboarding wizard, bot-owner pairing

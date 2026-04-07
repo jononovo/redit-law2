@@ -197,7 +197,7 @@ Single codebase, three tenants, hostname-based routing.
 Merchant storefronts, checkout experiences, and inbound payment methods — how the world pays our merchants.
 
 **Key folders:** `lib/procurement/`, `lib/procurement-controls/`, `lib/shipping/`, `lib/x402/`, `lib/base-pay/`, `lib/qr-pay/`
-**API routes:** `app/api/v1/checkout/`, `app/api/v1/checkout-pages/`, `app/api/v1/shop/`, `app/api/v1/seller-profile/`, `app/api/v1/procurement-controls/`, `app/api/v1/sales/`, `app/api/v1/merchant-accounts/`, `app/api/v1/shipping-addresses/`, `app/api/v1/base-pay/`, `app/api/v1/qr-pay/`, `app/api/v1/payment-links/`
+**API routes:** `app/api/v1/checkout/`, `app/api/v1/checkout-pages/`, `app/api/v1/shop/`, `app/api/v1/seller-profile/`, `app/api/v1/procurement-controls/`, `app/api/v1/sales/`, `app/api/v1/merchant-accounts/`, `app/api/v1/shipping-addresses/`, `app/api/v1/base-pay/`, `app/api/v1/qr-pay/`
 
 | Component | Key functions / files | Purpose |
 |-----------|----------------------|---------|
@@ -214,8 +214,6 @@ Merchant storefronts, checkout experiences, and inbound payment methods — how 
 | x402 (receive) | `lib/x402/receive.ts`, `lib/x402/checkout.ts`, `app/api/v1/checkout/[id]/pay/x402/` | Autonomous agent payments via HTTP 402 |
 | Base Pay | `lib/base-pay/verify.ts`, `lib/base-pay/sale.ts`, `app/api/v1/checkout/[id]/pay/base-pay/` | One-tap USDC from Base wallet |
 | QR Pay | `lib/qr-pay/eip681.ts`, `app/api/v1/qr-pay/` | USDC transfer via QR code (EIP-681) |
-| Payment Links | `app/api/v1/payment-links/`, `app/api/v1/bot/payments/create-link/` | Bot-generated Stripe Checkout URLs |
-
 **Docs:** `internal_docs/09-agent-shops/`
 
 ---
@@ -265,7 +263,7 @@ This module owns the research and evolution of these standards. When new protoco
 | 6. Agent Plugins | Partial — OpenClaw plugin exists |
 | 7. Platform Management | Running |
 | 8. Multi-tenant Structure | Running — 3 tenants active |
-| 9. Agent Shops | Running — checkout pages, shops, seller profiles, x402/Base Pay/QR Pay/Payment Links live |
+| 9. Agent Shops | Running — checkout pages, shops, seller profiles, x402/Base Pay/QR Pay live |
 | 10. Thought Leadership | Active — ASX rubric v2.0.0, SKILL.md spec published |
 
 ---
