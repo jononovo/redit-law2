@@ -78,7 +78,7 @@ export default async function RootLayout({
       suppressHydrationWarning
     >
       <head>
-        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+        <script suppressHydrationWarning dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
       </head>
       <body>
         <TenantProvider tenant={tenant}>
