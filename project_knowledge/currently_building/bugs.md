@@ -1,14 +1,14 @@
 ---
 name: Bugs
 description: Active bugs on the platform. Point-form, prioritized.
-date: 2026-04-06
+date: 2026-04-07
 ---
 
 # Bugs
 
 ## High
 
-- **7 brands with empty brandData/skillMd** — allbirds, brooklinen, casper, chubbies, everlane, mejuri, outdoor-voices. Pipeline doesn't save `draft` VendorSkill to `brandData` or `checkoutMethods`. Affects both scan paths (`app/api/v1/scan/route.ts`, `lib/scan-queue/process-next.ts`). Also: `/skills/[vendor]` detail page needs null guards for graceful degradation. (Also tracked in `premium-scan/outstanding.md`)
+(none)
 
 ## Medium
 
