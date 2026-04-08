@@ -397,7 +397,142 @@ Stages 4a/4b/4c run in parallel. Stage 5 can begin as soon as any source respond
 - **How many external sources before latency becomes unacceptable?** 2–3 live APIs in parallel is probably the practical limit. Beyond that, consider pre-indexing.
 - **Should we cache external API results?** Short TTL cache (5–15 min) for identical queries would reduce API calls and latency on repeat searches.
 - **Commission/revenue model:** Amazon affiliate links earn commission. Affiliate network links earn commission. Should ranking factor in revenue potential? (Probably not for trust reasons, but worth noting.)
-- **Rate limits under load:** Amazon PA-API starts at 1 req/s. Multiple concurrent agent queries could hit this quickly. Need queuing or caching strategy.
+- **Rate limits under load:** Amazon Creators API starts at 1 req/s. Multiple concurrent agent queries could hit this quickly. Need queuing or caching strategy.
+
+---
+
+## SDK & Developer Experience — Product Search as a Tool Call
+
+The product search API isn't just internal infrastructure — it's an external product. Any agent, platform, or company that wants to offer product discovery to their users should be able to plug in with minimal effort, the same way agents already integrate web search tool calls.
+
+### The Mental Model
+
+Web search tools work like this: agent detects informational intent → extracts query → calls search API → renders results. Product search should work the same way:
+
+```
+Agent detects purchase intent ("buy", "find", "shop for", "I need a...")
+    → Extracts product query ("$2000 gold Rolex")
+    → Calls product search API (single tool call)
+    → Receives structured product results
+    → Renders using provided component (or custom UI)
+```
+
+The developer adds one tool definition to their agent, and their users can now shop through the agent. No product database, no feed management, no ranking logic — we handle all of it.
+
+### Tool Call Definition (What the Developer Adds)
+
+```json
+{
+  "name": "search_products",
+  "description": "Search for products to buy. Use when the user wants to purchase, find, or compare products.",
+  "parameters": {
+    "query": { "type": "string", "description": "Natural language product search query" },
+    "max_price": { "type": "number", "description": "Maximum price in USD (optional)" },
+    "brand": { "type": "string", "description": "Specific brand filter (optional)" }
+  }
+}
+```
+
+### API Response Schema
+
+The API returns a normalized product list regardless of which sources contributed:
+
+```json
+{
+  "query": "gold Rolex watch",
+  "results": [
+    {
+      "id": "prod_abc123",
+      "name": "Rolex Submariner Date 41mm Gold",
+      "brand": "Rolex",
+      "price": { "amount": 1999.00, "currency": "USD" },
+      "image_url": "https://...",
+      "product_url": "https://...",
+      "source": "brand_index",
+      "merchant": { "name": "Bob's Watches", "domain": "bobswatches.com" },
+      "in_stock": true,
+      "relevance_score": 0.94
+    }
+  ],
+  "partial": false,
+  "sources_queried": ["brand_index", "amazon", "rakuten"]
+}
+```
+
+### Streaming vs. Single Response
+
+Two modes, developer's choice:
+
+**Single response (simple):** Wait up to ~1.5s for all sources, return one complete JSON payload. Developer renders all at once. Simpler to integrate, slightly slower.
+
+```
+GET /api/v1/products/search?q=gold+rolex&mode=complete
+→ 200 OK (after ~1s)
+→ { "results": [...all products...], "partial": false }
+```
+
+**Streaming (progressive):** SSE stream that sends batches as each source responds. Developer renders incrementally — first batch appears in ~50ms, more arrive over the next second.
+
+```
+GET /api/v1/products/search?q=gold+rolex&mode=stream
+→ 200 OK (SSE)
+→ event: products
+→ data: { "results": [...local results...], "partial": true, "source": "brand_index" }
+→
+→ event: products
+→ data: { "results": [...amazon results...], "partial": true, "source": "amazon" }
+→
+→ event: done
+→ data: { "total": 12, "sources_completed": ["brand_index", "amazon", "rakuten"] }
+```
+
+### Drop-In UI Component
+
+Provide a ready-made component (React/shadcn) that handles the full rendering lifecycle:
+
+1. **Skeleton cards** appear immediately on query (3–4 placeholder cards with pulsing animation)
+2. **First batch** populates — text content fills in instantly (name, price, merchant), image starts loading
+3. **Images load** asynchronously — each card transitions from placeholder to loaded image independently
+4. **More cards** append to the row as external sources respond — smooth animation, no layout shift
+5. **Final state** — all cards rendered, all images loaded, streaming complete
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│  T+0ms:   [░░░░░░] [░░░░░░] [░░░░░░] [░░░░░░]              │
+│           skeleton  skeleton  skeleton  skeleton              │
+│                                                              │
+│  T+50ms:  [Rolex ] [Cartier] [Omega  ] [░░░░░░]              │
+│           $1,999   $2,100    $1,850    skeleton               │
+│           🖼 loading 🖼 loading 🖼 loaded                      │
+│                                                              │
+│  T+400ms: [Rolex ] [Cartier] [Omega  ] [Rolex  ] [Tudor   ] │
+│           $1,999   $2,100    $1,850    $2,200    $1,750      │
+│           🖼 loaded  🖼 loaded  🖼 loaded  🖼 loading 🖼 loading │
+│           local     local     local     amazon    amazon     │
+└──────────────────────────────────────────────────────────────┘
+```
+
+The component would be:
+- **Self-contained** — single import, works with any React app using shadcn/Tailwind
+- **Configurable** — dark/light mode, card style, grid vs. row layout, max cards to show
+- **SSE-aware** — handles streaming natively, with graceful fallback to single-response mode
+- **Image-optimized** — lazy loading, placeholder blur, progressive decode
+
+### SDK Distribution
+
+| Package | What It Contains |
+|---|---|
+| `@creditclaw/product-search` | API client (typed, SSE support, auth) |
+| `@creditclaw/product-ui` | React component (shadcn cards, skeleton, streaming) |
+| Tool definition JSON | Copy-paste tool call definition for any agent framework |
+
+### Value Proposition for Integrators
+
+- **Zero infrastructure** — no product database, no feed management, no ML models
+- **One tool call** — agent detects intent, sends query, gets products
+- **Drop-in UI** — pre-built component renders results with streaming, skeletons, lazy images
+- **Multi-source** — searches across indexed merchants + Amazon + affiliate networks in one call
+- **Affiliate revenue** — purchases through the component generate commission (shared or pass-through)
 
 ---
 
