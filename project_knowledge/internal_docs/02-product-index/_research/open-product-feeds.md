@@ -115,35 +115,60 @@ No public product API. Client-side rendered. JSON-LD scraping from product pages
 
 APIs from mega-merchants where we have or can establish a direct relationship. Higher data quality, structured catalogs, but requires signup/approval.
 
-### Amazon Product Advertising API (PA-API 5.0)
+### Amazon Creators API
 
 **Status:** Affiliate account created. Should experiment with integration.
 
-**⚠️ Deprecation:** PA-API 5.0 is being deprecated **April 30, 2026**. Amazon is directing developers to the **Creators API** (`https://affiliate-program.amazon.com/creatorsapi/docs/en-us/introduction`). Any integration should target the Creators API or be built with migration in mind.
+**Docs:** `https://affiliate-program.amazon.com/creatorsapi/docs/en-us/introduction`
 
-**Endpoint:** `POST https://webservices.amazon.com/paapi5/searchitems`
+**Operations:** `SearchItems`, `GetItems`, `GetVariations`, `GetBrowseNodes` — same operations as the legacy API, carried over to the new platform.
 
-**Natural language search:** The `Keywords` parameter accepts free-text queries — works exactly like Amazon's search bar. `"buy a $2000 gold Rolex"` would go straight into `Keywords`. Amazon's search engine handles the NLP.
+**Natural language search:** The `keywords` parameter accepts free-text queries — works exactly like Amazon's search bar. `"buy a $2000 gold Rolex"` would go straight into `keywords`. Amazon's search engine handles the NLP.
 
-**Key parameters:**
+**Auth:** OAuth 2.0 via Login with Amazon (LwA). Requires Credential ID + Credential Secret (generated in the Creators API settings). Credentials are region-scoped — one set covers all marketplaces in a region.
+
+**Eligibility:** Must be enrolled in Amazon Associates with 10+ qualified sales in the past 30 days. Access is suspended if sales drop below threshold.
+
+**Key parameters (SearchItems):**
 
 | Parameter | What it does |
 |---|---|
-| `Keywords` | Free-text natural language query |
-| `SearchIndex` | Category scope (`Electronics`, `Apparel`, `All`, etc.) |
-| `Brand` | Filter to specific brand |
-| `MinPrice` / `MaxPrice` | Price range (in cents) |
-| `MinReviewsRating` | Minimum star rating (1–4) |
-| `SortBy` | `Relevance`, `Featured`, `Price:LowToHigh`, `Price:HighToLow` |
-| `DeliveryFlags` | `["Prime"]` for Prime-eligible only |
-| `ItemCount` | Max 10 per request |
-| `Resources` | Explicit field selection (images, title, price, reviews, etc.) |
+| `keywords` | Free-text natural language query |
+| `searchIndex` | Category scope (`Electronics`, `Clothing`, `All`, etc.) |
+| `brand` | Filter to specific brand |
+| `minPrice` / `maxPrice` | Price range (in lowest denomination, e.g. 200000 = $2,000) |
+| `minReviewsRating` | Minimum star rating (1–5) |
+| `sortBy` | `Relevance`, `Featured`, `Price:LowToHigh`, `Price:HighToLow`, `AvgCustomerReviews`, `NewestArrivals` |
+| `condition` | `NEW`, `USED`, `COLLECTIBLE`, `REFURBISHED` |
+| `deliveryFlags` | `["Prime"]` for Prime-eligible only |
+| `itemCount` | Max 10 per request |
+| `itemPage` | Pagination |
+| `resources` | Explicit field selection — must use `OffersV2` (not legacy `Offers`) |
 
-**Response:** Returns up to 10 items per request with ASIN, title, price, images, features, buy URL (with affiliate tag), Prime eligibility, star rating. Pagination via `ItemPage`.
+**Response:** Returns up to 10 items per request with ASIN, title, price (via `OffersV2`), images, features, buy URL (with affiliate tag), Prime eligibility. Pagination via `itemPage`.
 
-**Auth:** AWS Signature Version 4 signing (AccessKey + SecretKey + PartnerTag).
+**Field naming:** All fields use `lowerCamelCase` (not PascalCase).
 
 **Rate limit:** 1 request/second initially, scales with affiliate revenue.
+
+**Python SDK:**
+```python
+from amazon_creatorsapi import AmazonCreatorsApi, Country
+
+api = AmazonCreatorsApi(
+    credential_id="your_credential_id",
+    credential_secret="your_credential_secret",
+    version="2.2",
+    tag="your-affiliate-tag",
+    country=Country.US,
+)
+
+results = api.search_items(keywords="gold Rolex watch", max_price=250000)
+for item in results.items:
+    print(item.item_info.title.display_value)
+```
+
+Async variant available via `amazon_creatorsapi.aio.AsyncAmazonCreatorsApi` for parallel queries.
 
 **Why not index Amazon products locally:** Amazon's catalog is too large and changes too frequently to index. The API already provides real-time search with Amazon's own ranking — we should query it live per request rather than trying to replicate it. This is a key architectural decision: Amazon is a **live query source**, not an **index source**.
 
