@@ -5,7 +5,7 @@ description: All known channels for sourcing product data — open storefront fe
 
 # Open Product Feed Sources
 
-Product data can be sourced through five distinct channels, each with different coverage, cost, and data quality tradeoffs. This document maps the landscape for building out the Product Index.
+Product data can be sourced through six distinct channels, each with different coverage, cost, and data quality tradeoffs. This document maps the landscape for building out the Product Index.
 
 ---
 
@@ -17,6 +17,7 @@ Product data can be sourced through five distinct channels, each with different 
 | Direct APIs | API key (partnership) | Free/rev-share | Single mega-merchant | Excellent |
 | Affiliate Networks | API key (signup) | Free or paid | Aggregated multi-merchant | Good |
 | Scraper Services | API key (paid) | $50–500/mo | Any site | Variable |
+| Google Merchant Center | Merchant's own credentials | N/A | Not accessible to third parties | N/A |
 | Universal Fallbacks | None | Free | Any site with SEO | Basic |
 
 ---
@@ -239,13 +240,47 @@ RapidAPI hosts many purpose-built product/merchant scrape APIs:
 
 ---
 
-## 5. Universal Fallbacks (Any Site, No Auth)
+## 5. Google Merchant Center / Content API — Not a Public Data Source
+
+A common question: can we access merchants' Google Shopping product feeds via Google's APIs?
+
+**Short answer: No.** The Google Content API for Shopping (v2.1) and its replacement (Merchant API, Beta) are strictly authenticated — they require the **merchant's own Google account credentials**. There is no way to query another merchant's product data through Google's APIs. These APIs exist for merchants to manage their own listings, not for third parties to read them.
+
+### What Google Shopping APIs Actually Offer
+
+| API | What It Does | Auth Model | Can We Use It? |
+|---|---|---|---|
+| Content API v2.1 | Merchants manage their own product listings | OAuth2 (merchant's Google account) | No — requires each merchant's credentials |
+| Merchant API (Beta) | Same as Content API, new version | Same | No |
+| Google Shopping CSS API | For Comparison Shopping Service partners | Partnership + OAuth2 | Unlikely — requires CSS partner status |
+| Manufacturer Center API | Brand owners manage product data | Brand's Google account | No |
+
+### What About Public Google Shopping Feeds?
+
+Merchants submit product feeds to Google Merchant Center, but these feeds stay inside Google's system. They are **not publicly accessible**. Common feed URL patterns (`/feed/google-shopping.xml`, `/feeds/google-shopping.xml`, `/product-feed.xml`) were tested against known merchants (allbirds.com, everlane.com, brooklinen.com) — **none returned valid data**. These feeds are typically submitted directly to Google via the Content API or file upload, not hosted at predictable public URLs.
+
+### Alternatives for Structured Product Data at Scale
+
+| Service | What It Does | Cost | Coverage |
+|---|---|---|---|
+| SerpApi Google Shopping | Scrapes Google Shopping search results | $50/mo (5K searches) | Any product Google has indexed |
+| Diffbot Product API | Extracts structured product data from any URL | ~$300/mo | Any product page |
+| UPCitemdb.com | Product lookup by UPC/barcode | Free (100 req/day) | Products with UPCs |
+| Open Food Facts | Open product database (food/cosmetics) | Free | Food & cosmetics only |
+
+Of these, **SerpApi is the most interesting** for federated search — it would let us query Google Shopping results as a live source alongside Amazon. But it's a scraper service, not an official API, with corresponding reliability risks.
+
+---
+
+## 6. Universal Fallbacks (Any Site, No Auth)
 
 These work regardless of platform when no structured feed is available.
 
 ### Sitemaps (`/sitemap.xml`)
 
 Most e-commerce sites expose a sitemap. Product URLs typically follow patterns like `/products/`, `/shop/`, `/p/`. Crawl the sitemap, filter for product URLs, then scrape each page for structured data.
+
+**Shopify sitemaps are auto-generated** and well-structured: `sitemap_products_1.xml` contains all product URLs with `lastmod` dates. Tested on allbirds.com and brooklinen.com — both return clean sitemapindex files with separate product, collection, and page sitemaps.
 
 ### JSON-LD / Schema.org
 
@@ -255,9 +290,9 @@ The `Product` schema is widely adopted for SEO. Even platforms without public AP
 
 ### Google Shopping XML Feeds
 
-Many merchants publish a Google Shopping feed (often at `/feed/google-shopping.xml` or similar). XML files following the Google Merchant Center spec. Fields: `g:id`, `g:title`, `g:description`, `g:price`, `g:availability`, `g:image_link`, `g:gtin`, `g:brand`, `g:google_product_category`.
+~~Many merchants publish a Google Shopping feed at public URLs.~~ **Testing showed this is rare.** Most merchants submit feeds directly to Google Merchant Center via the Content API or file upload — the feeds are not hosted at public URLs. Probing common paths (`/feed/google-shopping.xml`, etc.) returned 404 on all tested sites.
 
-**Discovery:** Check `/robots.txt` for feed URLs, or probe common paths during brand scanning.
+**Better approach:** Focus on the merchant's own native feed (Shopify `/products.json`, WooCommerce Store API, etc.) rather than hunting for Google Shopping XML exports.
 
 ### Open Graph Tags
 
@@ -267,17 +302,82 @@ Every product page has `og:title`, `og:description`, `og:image`, `og:url`. Less 
 
 ## Detection Strategy
 
-During brand scanning, the pipeline could probe for feed availability and store the result:
+### Current State: `platformTech` Is Detected But Not Stored
+
+The scan pipeline asks Perplexity to identify the e-commerce platform (`platformTech` field in `auditSite()`). This is a required field in the audit schema and Perplexity returns it. **However, `buildVendorSkillDraft()` in `scan-utils.ts` does not include `platformTech` in the VendorSkill object stored as `brand_data`.** The `skill-json.ts` reads `brandData.platformTech` for `checkout.platform`, but it's always `null`.
+
+**Fix:** Add `platformTech` to the VendorSkill draft, or persist it as a top-level column on `brand_index`.
+
+### Perplexity Detection vs. Direct HTTP Probing
+
+Perplexity-based detection is a "best guess" based on Perplexity's knowledge of the site. It has no way to actually probe endpoints. For accurate feed detection, direct HTTP fingerprinting is more reliable.
+
+### Live Test Results (April 2026)
+
+**Shopify `/products.json` endpoint — inconsistent even across known Shopify sites:**
+
+| Domain | `/products.json` | Shopify Headers | `_shopify_` Cookies | Actual Platform |
+|---|---|---|---|---|
+| allbirds.com | ✅ 200 | ✅ 9 matches | ✅ 5 | Shopify |
+| brooklinen.com | ✅ 200 | ✅ 9 matches | ✅ 5 | Shopify |
+| everlane.com | ✅ 200 | ✅ 9 matches | ✅ 5 | Shopify |
+| skullcandy.com | ✅ 200 | ✅ Shopify headers | ✅ cookies | Shopify |
+| gymshark.com | ❌ 403 | ✅ cdn.shopify.com in CSP | ❌ | Headless Shopify (Next.js frontend) |
+| bombas.com | ❌ 404 | ❌ none | ❌ | Migrated off Shopify or heavily customized |
+| chubbies.com | ✅ 200 (on bare domain) | ✅ 3 matches | ✅ 1 | Shopify |
+| ruggable.com | ❌ 404 | ❌ none | ❌ | Migrated off Shopify |
+
+**Key finding:** `/products.json` alone is unreliable — only 5/8 sites returned 200. Header fingerprinting (`cdn.shopify.com` in Link headers, `_shopify_` cookies) catches headless Shopify stores too. The most reliable Shopify detection is: `cdn.shopify.com` appears anywhere in response headers.
+
+**WooCommerce Store API — mostly broken for public access:**
+
+| Domain | `/wp-json/wc/store/v1/products` | `/wp-json/` |
+|---|---|---|
+| flavorgod.com | ❌ 400 | ❌ 400 |
+| flaviar.com | ❌ 400 | ❌ 400 |
+
+The WooCommerce Store API frequently returns 400 errors even on known WooCommerce sites. The `/wp-json/` root endpoint is more reliable for detection (returns 200 on WordPress sites), but product data access varies by site configuration.
+
+**Magento detection — HTML fingerprinting works:**
+
+Magento sites reliably contain `Magento_`, `requirejs-config`, or `mage` in their HTML source. No reliable header-based detection.
+
+### Recommended Detection Pipeline
+
+During brand scanning, add a lightweight HTTP probe step (parallel with existing Perplexity calls):
 
 ```
-1. Try /products.json                    → Shopify
-2. Try /wp-json/wc/store/v1/products     → WooCommerce
-3. Try /rss/products                     → BigCommerce
-4. Check for JSON-LD on a product page   → Any platform
-5. Check /sitemap.xml for product URLs   → Fallback crawl
+1. Fetch homepage headers (HEAD request, ~100ms):
+   ├─ cdn.shopify.com in headers?        → feedType = "shopify"
+   ├─ _shopify_ in set-cookie?           → feedType = "shopify"  
+   └─ x-powered-by: Next.js + shopify?   → feedType = "shopify_headless"
+
+2. If feedType == "shopify", verify /products.json (HEAD, ~100ms):
+   ├─ 200 + content-type: application/json? → feedAvailable = true
+   └─ 403/404?                              → feedAvailable = false (headless or blocked)
+
+3. If no Shopify indicators, try WP detection:
+   ├─ /wp-json/ returns 200?             → feedType = "woocommerce"
+   └─ Magento_ in HTML?                  → feedType = "magento"
+
+4. Fallback: check sitemap.xml for product URLs → feedType = "sitemap_crawl"
 ```
 
-Store the detected feed type in `brand_index` (new column or in `brandData` JSONB) so the ingestion pipeline knows which adapter to use per merchant.
+Store `feedType` and `feedAvailable` in `brand_data` alongside `platformTech`.
+
+### Additional Shopify Endpoints Discovered
+
+Beyond `/products.json`, Shopify exposes several other useful public endpoints:
+
+| Endpoint | Returns | Auth | Notes |
+|---|---|---|---|
+| `/products.json?limit=250&page={n}` | Full product catalog | None | Primary ingestion endpoint (already used) |
+| `/collections.json` | All collections with metadata | None | Useful for category mapping |
+| `/collections/all.atom` | Product Atom feed | None | Alternative format, includes all products |
+| `/search/suggest.json?q={query}&resources[type]=product` | Real-time search results | None | Returns title, price, image, URL — lightweight, fast |
+| `/products/{handle}.js` | Single product detail | None | ~5KB, includes variant availability |
+
+**`/search/suggest.json` is particularly valuable** — it's a built-in search API that returns structured product data. Tested and working on all Shopify sites that have it enabled. Returns: title, price, compare_at_price, image, URL, body, tags, vendor, type, availability. Could be used for real-time search without needing to index products at all.
 
 ---
 
@@ -309,7 +409,7 @@ Full re-ingestion is expensive (embedding generation). For stock/price freshness
 | Scraper services | Any site | Low (API wrapper) | Low (cost per request) |
 | datafeedr | Meta-aggregator | Low | Evaluate ROI at $50/mo |
 
-Shopify + WooCommerce storefront feeds cover ~70% of e-commerce. Adding Amazon's direct API and one affiliate network (Rakuten or CJ) covers the mega-merchant and multi-merchant segments. JSON-LD scraping fills the remaining gaps.
+Shopify storefront feeds are the strongest starting point — high reliability, no auth, rich data. WooCommerce coverage is theoretically large (~40% market share) but the Store API is unreliable in practice. Amazon's Creators API and one affiliate network (Rakuten or CJ) cover the mega-merchant and multi-merchant segments. JSON-LD scraping fills the remaining gaps. Google Shopping XML feeds are **not** a viable source — they're private to Google Merchant Center.
 
 ---
 

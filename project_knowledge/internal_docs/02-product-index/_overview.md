@@ -22,7 +22,9 @@ Brand Index (brand_index)
 
 The scan pipeline (Module 1) already collects data that feeds directly into product ingestion:
 
-**Platform detection (`brandData.platformTech`):** The `auditSite()` call in the scan pipeline identifies the merchant's e-commerce platform (Shopify, WooCommerce, Magento, BigCommerce, etc.) and stores it in the `brand_data` JSONB column. This value is also surfaced in `skill.json` under `checkout.platform`. When ingesting products, the pipeline can read `platformTech` to route to the correct adapter — no separate detection step needed.
+**Platform detection (`auditSite` → `platformTech`):** The `auditSite()` call in the scan pipeline asks Perplexity to identify the merchant's e-commerce platform. The field is in the audit response and is listed as a required field in the JSON schema. However, **`platformTech` is currently discarded** — `buildVendorSkillDraft()` in `scan-utils.ts` does not include it in the VendorSkill object that gets stored as `brand_data`. The `skill-json.ts` tries to read `brandData.platformTech` for the `checkout.platform` field, but it is always `null`. This is a gap to fix: either persist `platformTech` in the VendorSkill draft, or store it as a separate field on `brand_index`. Once persisted, it becomes the hook for routing to the correct ingestion adapter.
+
+**Detection reliability (tested April 2026):** Perplexity-based detection is a "best guess" — it's not probing actual endpoints. Direct HTTP fingerprinting is more reliable for Shopify (check for `cdn.shopify.com` in headers, `_shopify_` cookies, or `/products.json` returning 200 with valid JSON). For WooCommerce, check `/wp-json/`. For Magento, look for `Magento_` or `requirejs-config` in HTML. See `_research/open-product-feeds.md` for the full detection matrix with test results.
 
 **Product feed scoring (`product_feed` signal):** The ASX scoring rubric includes a `product_feed` signal (10 pts in the Clarity pillar) that evaluates sitemap quality and product URL discoverability. Brands that score high on this signal are the best candidates for automatic product ingestion — they have accessible, structured product data.
 

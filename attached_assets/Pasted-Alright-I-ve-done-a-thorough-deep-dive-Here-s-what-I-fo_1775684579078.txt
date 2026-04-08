@@ -1,0 +1,35 @@
+Alright, I've done a thorough deep dive. Here's what I found and how it connects to the plans:
+
+What's already built and directly relevant:
+
+Platform detection already exists. The scan pipeline (audit-site.ts) already detects platformTech via Perplexity — it identifies Shopify, WooCommerce, Magento, BigCommerce, etc. and stores it in brandData JSONB. It's also surfaced in skill.json under checkout.platform. So the "detection strategy" we described in the research doc — we already have the data. Every scanned brand already has its platform type. We don't need to probe /products.json to figure out if it's Shopify — we already know.
+
+The ASX scoring rubric already scores product_feed. There's a signal called product_feed worth up to 10 points in the Clarity pillar. It evaluates sitemap quality and product URL discoverability. This means the scoring engine is already rating how accessible a merchant's product data is — a natural place to also flag whether they have a crawlable public product feed.
+
+The Recommend API already tracks execution stages. The response includes stages_executed (e.g. ["intake", "categories", "merchants", "products"]) and timing metadata (query_time_ms, intake_time_ms). This is basically the scaffolding for the federated approach — you'd just add stages like "amazon", "affiliate" and their timing. The response shape is ready for it.
+
+POST already supports skipping stages. The POST endpoint accepts pre-resolved category_ids and skips Perplexity entirely. This maps perfectly to the SDK pattern — an agent that already knows what category it wants can go straight to merchant ranking and product search without the NLP overhead.
+
+Bot API authentication is solid and consistent. Bots use Bearer cck_live_... keys. The withBotApi middleware handles auth, rate limiting, and bot status checks. A product search endpoint for external agents would slot right into this pattern — same auth, same middleware, same conventions.
+
+The Registry API (/api/v1/registry) already exists as a public skill catalog. It's the closest thing to what the SDK would expose — a searchable, filterable, cached JSON endpoint with its own schema ($schema: "https://shopy.sh/schemas/registry/v1"). A product search endpoint would follow the same pattern.
+
+Product listings have no storage layer abstraction. All product queries go through raw SQL in recommend/route.ts. This is fine for now, but federated search would benefit from abstracting product operations into server/storage/ — a searchProducts(query, brandIds) method that the recommend route and a future product search endpoint could both call.
+
+No streaming anywhere in the API yet. The only hint of streaming is in the terms page (unrelated). The recommend API is fully synchronous — single JSON response. So streaming would be a new pattern for the codebase, but Next.js App Router supports it natively via ReadableStream.
+
+Insights that link up to the plan:
+
+You don't need a separate "feed detection" step. The scan already stores platformTech in brandData. When ingesting products, you can just read brandData.platformTech from the brand_index row and route to the right adapter (Shopify → /products.json, WooCommerce → Store API, etc.). The wiring is already there.
+
+The recommend API is the natural home for federated search. It already does query understanding → category resolution → merchant ranking → product attachment. Federated sources (Amazon, affiliates) would plug in at Stage 4 alongside the existing pgvector search. The response shape already supports it.
+
+product_feed scoring signal could drive auto-ingestion priority. Brands that score high on product_feed (good sitemap, structured data) are the best candidates for product ingestion. You could use the existing score to automatically prioritize which brands to crawl first.
+
+The bot skills endpoint is effectively a prototype of the SDK's registry. An agent already calls GET /api/v1/bot/skills to discover merchants and filter by capabilities. A product search SDK is just one more tool call in the same ecosystem — the auth model, response patterns, and "machine-first content" philosophy are all established.
+
+The existing skill.json already exposes platform type to agents. So an agent consuming skill data already knows if a merchant is Shopify-based. If the agent wanted to crawl products itself (instead of going through our search API), the data it needs to choose the right approach is already in the skill file.
+
+Nothing in the plan conflicts with the existing stack. It's all Next.js App Router, Postgres/Drizzle, pgvector — the federated search, streaming, and SDK would be extensions of patterns already in use, not a new stack. The main new things would be the SSE streaming pattern and the external API integrations (Amazon Creators API, affiliate networks).
+
+
