@@ -115,17 +115,37 @@ No public product API. Client-side rendered. JSON-LD scraping from product pages
 
 APIs from mega-merchants where we have or can establish a direct relationship. Higher data quality, structured catalogs, but requires signup/approval.
 
-### Amazon Product Advertising API
+### Amazon Product Advertising API (PA-API 5.0)
 
-**Status:** Affiliate account already created.
+**Status:** Affiliate account created. Should experiment with integration.
 
-**What it provides:** Product search, lookup by ASIN/UPC, pricing, availability, images, reviews, category browsing. Full Amazon catalog access.
+**⚠️ Deprecation:** PA-API 5.0 is being deprecated **April 30, 2026**. Amazon is directing developers to the **Creators API** (`https://affiliate-program.amazon.com/creatorsapi/docs/en-us/introduction`). Any integration should target the Creators API or be built with migration in mind.
 
-**Auth:** API key + secret from affiliate signup. Request signing (HMAC-SHA256).
+**Endpoint:** `POST https://webservices.amazon.com/paapi5/searchitems`
 
-**Rate limit:** 1 request/second initially, scales with revenue.
+**Natural language search:** The `Keywords` parameter accepts free-text queries — works exactly like Amazon's search bar. `"buy a $2000 gold Rolex"` would go straight into `Keywords`. Amazon's search engine handles the NLP.
 
-**Value:** Amazon's catalog is the single largest product database. ASIN cross-referencing enables deduplication against other sources. Price/availability data is near-realtime.
+**Key parameters:**
+
+| Parameter | What it does |
+|---|---|
+| `Keywords` | Free-text natural language query |
+| `SearchIndex` | Category scope (`Electronics`, `Apparel`, `All`, etc.) |
+| `Brand` | Filter to specific brand |
+| `MinPrice` / `MaxPrice` | Price range (in cents) |
+| `MinReviewsRating` | Minimum star rating (1–4) |
+| `SortBy` | `Relevance`, `Featured`, `Price:LowToHigh`, `Price:HighToLow` |
+| `DeliveryFlags` | `["Prime"]` for Prime-eligible only |
+| `ItemCount` | Max 10 per request |
+| `Resources` | Explicit field selection (images, title, price, reviews, etc.) |
+
+**Response:** Returns up to 10 items per request with ASIN, title, price, images, features, buy URL (with affiliate tag), Prime eligibility, star rating. Pagination via `ItemPage`.
+
+**Auth:** AWS Signature Version 4 signing (AccessKey + SecretKey + PartnerTag).
+
+**Rate limit:** 1 request/second initially, scales with affiliate revenue.
+
+**Why not index Amazon products locally:** Amazon's catalog is too large and changes too frequently to index. The API already provides real-time search with Amazon's own ranking — we should query it live per request rather than trying to replicate it. This is a key architectural decision: Amazon is a **live query source**, not an **index source**.
 
 ---
 
@@ -268,6 +288,94 @@ Shopify + WooCommerce storefront feeds cover ~70% of e-commerce. Adding Amazon's
 
 ---
 
+## Federated Product Search — The Aggregation Problem
+
+The product index will pull from multiple sources: our own `product_listings` table, Amazon's API, possibly affiliate network APIs. A query like `"buy a $2000 gold Rolex"` needs to hit all of them and return a unified, ranked result set — fast.
+
+### The Core Challenge
+
+Some sources are **indexed** (our Postgres DB — milliseconds to query) and some are **live** (Amazon API — 200–500ms round-trip). Waiting for all sources to respond before returning anything makes the whole system as slow as the slowest API.
+
+### Three Merging Strategies
+
+| Strategy | How It Works | Latency | Freshness |
+|---|---|---|---|
+| **Index-time** | Pre-ingest everything into one index, query locally | Fast (~50ms) | Stale (hours/days) |
+| **Search-time** | Fan out to all sources live, merge results | Slow (500ms+) | Real-time |
+| **Hybrid** | Local index for our data + live queries for external APIs | Medium | Mixed |
+
+**Hybrid is the right model for us.** We index Shopify/WooCommerce products locally (they don't change minute-to-minute). We query Amazon and affiliate APIs live (their catalogs are too large and dynamic to index). We merge the results.
+
+### Progressive / Streaming Response Pattern
+
+Instead of waiting for all sources to respond before returning, stream results as they arrive:
+
+```
+Agent sends query: "buy a $2000 gold Rolex"
+    │
+    ├─ T+0ms:   Parse query, extract intent (category: watches, brand: Rolex, price: ~$2000)
+    │
+    ├─ T+10ms:  Fire in parallel:
+    │            ├─ Local pgvector search (product_listings)
+    │            ├─ Amazon SearchItems API
+    │            └─ Affiliate network API (if applicable)
+    │
+    ├─ T+30ms:  Local results ready → stream first batch (3–5 products from our index)
+    │
+    ├─ T+300ms: Amazon responds → merge, re-rank, stream additional products
+    │
+    └─ T+500ms: Affiliate API responds → merge final batch, stream remaining
+```
+
+**Implementation options:**
+- **SSE (Server-Sent Events):** Endpoint streams JSON chunks as each source responds. Agent/client renders progressively.
+- **Two-phase response:** Return local results immediately with a `partial: true` flag. Client polls or subscribes for the full merged set.
+- **Timeout-based cutoff:** Wait up to N ms (e.g. 400ms) for all sources. Return whatever has responded. Late results are discarded or cached for next query.
+
+### Unified Ranking Across Sources
+
+Products from different sources have different relevance signals. A normalized scoring model:
+
+| Signal | Source | Weight |
+|---|---|---|
+| Semantic similarity | Local pgvector cosine distance | High |
+| Amazon relevance rank | Position in Amazon's search results | High |
+| Price match to query | Parsed from query intent | Medium |
+| Brand match | Exact brand match from query | High |
+| ASX score of merchant | Brand Index (local sources only) | Low |
+| Availability | In-stock flag | Binary filter |
+
+**Normalization:** Each source returns items with a position (rank 1–10). Normalize to a 0–1 score: `score = 1 - (rank - 1) / max_rank`. Then apply source-specific weights and merge into a single ranked list.
+
+**Deduplication:** Same product from multiple sources (e.g. a Rolex listed on our indexed merchant AND on Amazon). Match by GTIN/UPC if available, fallback to fuzzy title + brand matching. Keep the listing with the best price or highest source trust.
+
+### What This Looks Like for the Recommend API
+
+The current `POST /api/v1/recommend` pipeline would extend to:
+
+```
+Stage 1 — Query Understanding (existing)
+Stage 2 — Category Resolution (existing)
+Stage 3 — Merchant Ranking (existing, for local sources)
+Stage 4 — Product Search (extended):
+    4a. Local: pgvector lateral join (existing, ~30ms)
+    4b. Amazon: SearchItems with Keywords + filters (parallel, ~300ms)
+    4c. Affiliate: network API call (parallel, ~400ms)
+Stage 5 — Merge & Rank (new):
+    Normalize scores, deduplicate, sort, return unified list
+```
+
+Stages 4a/4b/4c run in parallel. Stage 5 can begin as soon as any source responds (progressive merge).
+
+### Open Questions
+
+- **How many external sources before latency becomes unacceptable?** 2–3 live APIs in parallel is probably the practical limit. Beyond that, consider pre-indexing.
+- **Should we cache external API results?** Short TTL cache (5–15 min) for identical queries would reduce API calls and latency on repeat searches.
+- **Commission/revenue model:** Amazon affiliate links earn commission. Affiliate network links earn commission. Should ranking factor in revenue potential? (Probably not for trust reasons, but worth noting.)
+- **Rate limits under load:** Amazon PA-API starts at 1 req/s. Multiple concurrent agent queries could hit this quickly. Need queuing or caching strategy.
+
+---
+
 ## QMD-Style Hybrid Retrieval (Future Direction)
 
 The current retrieval pipeline uses FTS for category matching and vector search for product matching as separate stages. A QMD-inspired approach would fuse these into a unified hybrid pipeline:
@@ -277,3 +385,5 @@ The current retrieval pipeline uses FTS for category matching and vector search 
 3. **Re-ranking** — fuse and sort by combined relevance
 
 This could be implemented entirely within PostgreSQL using `ts_rank` (BM25-equivalent) and `<=>` (cosine distance) in a single query, with application-level score fusion. No external dependencies required.
+
+This pattern applies to the **local** product search (Stage 4a). External sources (Amazon, affiliates) handle their own retrieval — we only need to merge and rank their results alongside ours.
