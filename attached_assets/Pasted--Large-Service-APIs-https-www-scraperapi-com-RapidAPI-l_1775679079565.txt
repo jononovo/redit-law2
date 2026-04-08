@@ -1,0 +1,27 @@
+# Large Service APIs:  https://www.scraperapi.com/    RapidAPI - lists a lot of product/merchant scrape apis  https://rapidapi.com/mahmudulhasandev/api/walmart-data 
+
+https://rapidapi.com/belchiorarkad-FqvHs2EDOtP/api/etsy-api2 
+
+ # Direct APIs  We've already signed up with Amazon as an affiliate. So that we can pull that API.    # Affiliate APIs  
+Rakuten: https://developers.rakutenadvertising.com/guides/product_search/reference  https://developers.rakutenadvertising.com/guides/offers
+
+https://www.datafeedr.com/#pricing  Affiliate.com datafeedr.com - You pay to use ( $50 pm to start.) cj.com - Started signing up already.  There are a lot of of them. And apparently you get money just from referring people.  
+ # Shopify UCP Index  Here is the skill of how to use it: https://clawhub.ai/pushmatrix/shop
+
+
+Shopify's /products.json is a public, unauthenticated endpoint every Shopify store exposes at https://{store}.myshopify.com/products.json. No API key needed.
+Update frequency:
+* It's not real-time — it goes through Shopify's CDN (Fastly) cache layer
+* Typical staleness: 5–15 minutes under normal conditions
+* Cache is automatically invalidated when a merchant edits a product in their admin — so changes propagate fairly quickly after an update
+* Inventory/stock level changes can lag more — not reliable for live availability
+* Worst case on quiet stores: up to a couple hours between cache refreshes
+* Max 250 products per page, paginated with ?page=N
+
+For your Product Index use case, this is actually quite solid. Catalog data (titles, descriptions, prices, images, variants) is what you care about, and that's the reliable part. You're not building a real-time stock checker — you're building a searchable product catalog for agent discovery. A 5–15 minute delay on product data is perfectly fine for that.
+
+So the picture I'm seeing is:
+You could periodically crawl /products.json from Shopify merchants in your Brand Index, ingest those products into your product_listings table with embeddings, and then apply QMD-style hybrid retrieval (BM25 + vector + re-ranking) to route agent queries from category → merchant → product — all backed by data that refreshes itself through the merchant's own catalog updates.
+
+
+====   
