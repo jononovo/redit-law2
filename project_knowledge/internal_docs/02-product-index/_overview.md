@@ -18,6 +18,16 @@ Brand Index (brand_index)
     └── brand_categories        — junction: brand ↔ categories
 ```
 
+## Connection to the Brand Scan Pipeline
+
+The scan pipeline (Module 1) already collects data that feeds directly into product ingestion:
+
+**Platform detection (`brandData.platformTech`):** The `auditSite()` call in the scan pipeline identifies the merchant's e-commerce platform (Shopify, WooCommerce, Magento, BigCommerce, etc.) and stores it in the `brand_data` JSONB column. This value is also surfaced in `skill.json` under `checkout.platform`. When ingesting products, the pipeline can read `platformTech` to route to the correct adapter — no separate detection step needed.
+
+**Product feed scoring (`product_feed` signal):** The ASX scoring rubric includes a `product_feed` signal (10 pts in the Clarity pillar) that evaluates sitemap quality and product URL discoverability. Brands that score high on this signal are the best candidates for automatic product ingestion — they have accessible, structured product data.
+
+**Category mapping (`brand_categories`):** The scan pipeline's `resolveProductCategories()` step maps each brand to Google Product Taxonomy IDs via the `brand_categories` junction table. The recommend API uses these mappings to find merchants matching a query's categories. Products inherit this category context through their `brand_id` relationship.
+
 ## Schema
 
 ### `product_listings` table (`shared/schema.ts`)
@@ -122,6 +132,32 @@ CROSS JOIN LATERAL (
 ```
 Uses `CROSS JOIN LATERAL` — runs a per-merchant cosine similarity search across the top ranked merchants. Returns top 3 products per merchant.
 
+### Response metadata
+
+The response includes execution tracking that provides scaffolding for future federated search:
+
+```json
+{
+  "meta": {
+    "query_time_ms": 245,
+    "intake_time_ms": 180,
+    "stages_executed": ["intake", "categories", "merchants", "products"]
+  }
+}
+```
+
+This pattern extends naturally to additional stages (e.g. `"amazon"`, `"affiliate"`) — each with its own timing — without changing the response shape.
+
+### Existing bot-facing access
+
+The bot skills API (`GET /api/v1/bot/skills`) already exposes the Brand Index to agents with filtering by sector, tier, capabilities, checkout methods, etc. The Registry API (`GET /api/v1/registry`) serves the same data publicly with caching. Both use the `storage.searchBrands()` interface.
+
+Product search for external agents would follow the same pattern: same `withBotApi` auth middleware, same JSON response conventions, same caching headers. The Recommend API is the natural endpoint to extend — or a new `GET /api/v1/products/search` that wraps the same pipeline.
+
+### Storage layer note
+
+Product listing queries currently use raw SQL in `recommend/route.ts` — there is no `productListings` abstraction in `server/storage/`. As product search expands (federated sources, new endpoints), extracting a `searchProducts(query, brandIds)` storage method would centralize the vector search logic.
+
 ## Key Files
 
 | File | Role |
@@ -131,13 +167,19 @@ Uses `CROSS JOIN LATERAL` — runs a per-merchant cosine similarity search acros
 | `scripts/ingest-shopify-products.ts` | Shopify product ingestion CLI |
 | `scripts/refresh-products.ts` | Batch refresh for all indexed merchants |
 | `app/api/v1/recommend/route.ts` | Recommend API with product search |
+| `features/brand-engine/agentic-score/audit-site.ts` | `auditSite()` — detects `platformTech` stored in `brandData` |
+| `features/brand-engine/agentic-score/scoring-engine.ts` | Scoring rubric including `product_feed` signal |
+| `features/brand-engine/procurement-skills/skill-json.ts` | Surfaces `platformTech` in `skill.json` under `checkout.platform` |
+| `app/api/v1/registry/route.ts` | Public brand registry — pattern for future product search endpoint |
 
 ## Current Limitations
 
-- **Shopify-only ingestion** — only the Shopify `/products.json` adapter is built. WooCommerce, BigCommerce, and XML feed adapters are not yet implemented (see `_research/open-product-feeds.md` for opportunities).
+- **Shopify-only ingestion** — only the Shopify `/products.json` adapter is built. WooCommerce, BigCommerce, and XML feed adapters are not yet implemented (see `_research/open-product-feeds.md` for opportunities). Platform detection already exists via `brandData.platformTech` — the gap is adapters, not detection.
 - **Full re-embed on refresh** — every product gets re-embedded even if unchanged
 - **No delta sync** — no `updated_at` tracking to skip unchanged products
 - **No availability-only updates** — stock changes require full product re-processing
 - **Single variant** — only first variant is indexed (misses size/color variants)
 - **No GTIN deduplication** — same product sold by multiple retailers stored as separate entries
-- **No feed detection** — the system doesn't auto-detect which feed type a merchant supports during scanning
+- **No product storage abstraction** — product queries are raw SQL in the recommend route, not centralized in `server/storage/`
+- **No streaming** — the recommend API returns a single synchronous JSON response. SSE/streaming would be needed for federated search where external sources respond at different speeds.
+- **No external sources** — product search is local-only (pgvector). Amazon Creators API, affiliate networks, and other live sources are not yet integrated (see `_research/open-product-feeds.md` for the federated search plan).
