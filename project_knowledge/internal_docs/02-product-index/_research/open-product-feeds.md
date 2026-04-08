@@ -413,6 +413,40 @@ Shopify storefront feeds are the strongest starting point — high reliability, 
 
 ---
 
+## Existing Infrastructure Readiness
+
+Before building new capabilities, it's worth mapping what already exists that directly supports the plans in this document. This section was compiled from a codebase audit (April 2026).
+
+### What's Already Built
+
+**Recommend API pipeline is stage-tracked.** The response includes `stages_executed` (e.g. `["intake", "categories", "merchants", "products"]`) and timing metadata (`query_time_ms`, `intake_time_ms`). Federated sources would be additional stages (`"amazon"`, `"affiliate"`) — the response shape doesn't need to change.
+
+**POST endpoint already supports skipping stages.** `POST /api/v1/recommend` accepts pre-resolved `category_ids` and skips Perplexity entirely. This maps directly to the SDK pattern — an agent that already knows what category it wants can go straight to merchant ranking and product search without NLP overhead.
+
+**Bot API auth is consistent and ready.** Bots authenticate with `Bearer cck_live_...` keys. The `withBotApi` middleware handles auth, rate limiting, and bot status checks. A product search endpoint for external agents would use the same middleware — no new auth patterns needed.
+
+**The Registry API is a pattern for product search.** `GET /api/v1/registry` is a public, searchable, filterable, cached JSON endpoint with its own schema (`$schema: "https://shopy.sh/schemas/registry/v1"`). A product search endpoint would follow the same conventions (caching headers, pagination, consistent JSON structure).
+
+**`product_feed` scoring can drive auto-ingestion priority.** The ASX rubric's `product_feed` signal (10 pts, Clarity pillar) evaluates sitemap quality and product URL discoverability. Brands that score high are the best candidates for automatic product ingestion — they have accessible, structured data. This score is already computed and stored.
+
+**skill.json already exposes platform type to agents** — under `checkout.platform`. When the `platformTech` storage gap is fixed (see Detection Strategy), agents consuming skill data will know if a merchant is Shopify-based. An agent could crawl products itself using the right approach based on this data, or it could go through our search API.
+
+### What's Missing
+
+**No product storage abstraction.** Product queries use raw SQL in `recommend/route.ts`. There's no `searchProducts(query, brandIds)` method in `server/storage/`. Federated search and a dedicated product search endpoint would both benefit from centralizing this.
+
+**No streaming anywhere in the API.** The recommend API returns a single synchronous JSON response. SSE/streaming would be a new pattern for the codebase, but Next.js App Router supports it natively via `ReadableStream`.
+
+**`platformTech` is detected but not persisted.** See Detection Strategy section above. The audit captures it, but `buildVendorSkillDraft()` drops it before storage.
+
+**No external source integrations.** Amazon Creators API, affiliate networks, and SerpApi are not yet integrated. Product search is local-only (pgvector).
+
+### Stack Alignment
+
+Nothing in these plans conflicts with the existing stack. It's all Next.js App Router, Postgres/Drizzle, pgvector. The federated search, streaming, and SDK features would be extensions of patterns already in use — not a new stack. The main new things are the SSE streaming pattern and the external API integrations.
+
+---
+
 ## Federated Product Search — The Aggregation Problem
 
 The product index will pull from multiple sources: our own `product_listings` table, Amazon's API, possibly affiliate network APIs. A query like `"buy a $2000 gold Rolex"` needs to hit all of them and return a unified, ranked result set — fast.
