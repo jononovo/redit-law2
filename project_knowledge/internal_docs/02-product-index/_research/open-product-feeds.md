@@ -526,6 +526,15 @@ The component would be:
 | `@creditclaw/product-ui` | React component (shadcn cards, skeleton, streaming) |
 | Tool definition JSON | Copy-paste tool call definition for any agent framework |
 
+### Agent Platform Plugins
+
+We are building first-party plugins for major agent ecosystems so adoption is frictionless:
+
+- **OpenClaw plugin** — product search as a native OpenClaw tool. Any OpenClaw user can enable it and their agent gets shopping capabilities immediately.
+- **Claude agent plugin** — same integration for the Claude agent ecosystem.
+
+These plugins wrap the same API and component — the plugin handles auth, tool registration, and rendering within each platform's conventions. Developers in those ecosystems don't need to build anything — they just enable the plugin.
+
 ### Value Proposition for Integrators
 
 - **Zero infrastructure** — no product database, no feed management, no ML models
@@ -533,6 +542,7 @@ The component would be:
 - **Drop-in UI** — pre-built component renders results with streaming, skeletons, lazy images
 - **Multi-source** — searches across indexed merchants + Amazon + affiliate networks in one call
 - **Affiliate revenue** — purchases through the component generate commission (shared or pass-through)
+- **Platform plugins** — pre-built plugins for OpenClaw and Claude agents for instant adoption within those ecosystems
 
 ---
 
