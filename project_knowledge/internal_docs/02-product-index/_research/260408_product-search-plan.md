@@ -1,6 +1,8 @@
 ---
 name: "Plan: Product Search & Ingestion (Stage 3)"
 description: Product feed ingestion, per-merchant vector search, GTIN handling. Not yet built. Read this before implementing product-level search.
+created: 2026-04-07
+last_updated: 2026-04-07
 ---
 
 # Plan: Product Search & Ingestion (Stage 3)

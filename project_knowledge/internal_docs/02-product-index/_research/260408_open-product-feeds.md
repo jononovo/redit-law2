@@ -1,6 +1,12 @@
 ---
 name: "Research: Open Product Feed Sources"
 description: All known channels for sourcing product data — open storefront feeds, direct APIs, affiliate networks, scraper services. Read this to understand the landscape before building new ingestion adapters.
+created: 2026-04-07
+last_updated: 2026-04-08
+status: ongoing
+outcome: Documented six source categories, tested Shopify/WooCommerce/Magento detection reliability, confirmed Google Merchant Center is not a viable source. platformTech storage gap identified.
+related:
+  - 02-product-index/_overview.md
 ---
 
 # Open Product Feed Sources

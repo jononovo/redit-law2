@@ -1,6 +1,8 @@
 ---
 name: Internal Documentation Guide
 description: Convention for writing internal developer documentation. Read this before creating or updating any file in project_knowledge/.
+created: 2026-04-04
+last_updated: 2026-04-08
 ---
 
 # Internal Documentation Guide
@@ -65,8 +67,19 @@ Don't update for: cosmetic changes, minor refactors, bug fixes that reveal nothi
 ---
 name: Feature Name
 description: One sentence — what this covers and when to read it.
+created: 2026-04-08
+last_updated: 2026-04-08
 ---
 ```
+
+| Field | Purpose |
+|-------|---------|
+| `name` | Short title |
+| `description` | What this covers and when to read it |
+| `created` | Date the file was first created (YYYY-MM-DD). Set once, never change. |
+| `last_updated` | Date of the most recent meaningful edit (YYYY-MM-DD). Update on every edit. |
+
+**Protocol:** Set both `created` and `last_updated` when creating any new file. Update `last_updated` whenever you make a meaningful change (Tier 1, 2, or 3). Don't bump it for whitespace or formatting-only fixes.
 
 ### Body Sections (use what's relevant)
 
@@ -125,7 +138,8 @@ Cross-cutting research that spans multiple areas goes in `internal_docs/research
 ---
 name: Scanner Rebuild Research
 description: Analysis of broken scanner pipeline and alternative approaches. Led to Perplexity migration.
-date: 2026-04-03
+created: 2026-04-03
+last_updated: 2026-04-03
 status: concluded | ongoing | superseded
 outcome: One sentence — what was decided or built as a result.
 related:
@@ -137,7 +151,8 @@ related:
 |-------|---------|
 | `name` | Short title |
 | `description` | What was researched and why |
-| `date` | When the research was done (YYYY-MM-DD) |
+| `created` | Date the file was first created (YYYY-MM-DD). Set once, never change. |
+| `last_updated` | Date of the most recent meaningful edit (YYYY-MM-DD). Update on every edit — even research docs get updated when new findings are added. |
 | `status` | `concluded` (decision made), `ongoing` (still open), `superseded` (replaced by newer research) |
 | `outcome` | What we decided / what was built as a result |
 | `related` | Which operational docs this research informed |
@@ -180,9 +195,10 @@ When the build cycle is done:
 
 ## Checklist
 
-1. YAML frontmatter with `name` + `description`?
+1. YAML frontmatter with `name` + `description` + `created` + `last_updated`?
 2. Right subfolder?
 3. Explains *why*, not just *what*?
 4. File paths and function names current?
 5. Status accurate (plan vs. implemented)?
 6. Update tier identified and requirements met?
+7. If editing an existing file, did you bump `last_updated`?

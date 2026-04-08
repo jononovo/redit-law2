@@ -1,6 +1,8 @@
 ---
 name: "Product Index — System Overview"
 description: How the product index works. Schema, ingestion, embedding, retrieval. Read this before touching any product-level code.
+created: 2026-04-07
+last_updated: 2026-04-08
 ---
 
 # Product Index — System Overview
