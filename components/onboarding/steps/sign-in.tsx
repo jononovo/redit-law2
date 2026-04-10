@@ -88,7 +88,7 @@ export function SignInStep({ currentStep, totalSteps, onBack, onNext }: SignInSt
     setError(null);
     setLoading(true);
     try {
-      await sendMagicLink(email.trim().toLowerCase(), undefined, showNameField ? name.trim() : undefined);
+      await sendMagicLink(email.trim().toLowerCase(), "/onboarding?step=claim-token", showNameField ? name.trim() : undefined);
       setMagicLinkSent(true);
     } catch (err: any) {
       setError(err?.message || "Failed to send magic link");
