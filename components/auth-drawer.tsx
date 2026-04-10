@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/features/platform-management/auth/auth-context";
+import { useEmailExistsCheck } from "@/features/platform-management/auth/use-email-exists-check";
 import {
   Sheet,
   SheetContent,
@@ -25,13 +26,19 @@ export function AuthDrawer({ children, open: controlledOpen, onOpenChange, redir
   const router = useRouter();
   const { signInWithGoogle, signInWithGithub, sendMagicLink } = useAuth();
   const [email, setEmail] = useState("");
+  const [name, setName] = useState("");
   const [magicLinkSent, setMagicLinkSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [internalOpen, setInternalOpen] = useState(false);
 
+  const { exists, checking, emailLooksValid } = useEmailExistsCheck(email);
+
   const open = controlledOpen !== undefined ? controlledOpen : internalOpen;
   const setOpen = onOpenChange || setInternalOpen;
+
+  const showNameField = emailLooksValid && exists === false;
+  const sendButtonDisabled = loading || !email.trim() || checking || (showNameField && !name.trim());
 
   const handleGoogle = async () => {
     setError(null);
@@ -67,7 +74,7 @@ export function AuthDrawer({ children, open: controlledOpen, onOpenChange, redir
     setError(null);
     setLoading(true);
     try {
-      await sendMagicLink(email.trim(), redirectTo);
+      await sendMagicLink(email.trim().toLowerCase(), redirectTo, showNameField ? name.trim() : undefined);
       setMagicLinkSent(true);
     } catch (err: any) {
       setError(err?.message || "Failed to send magic link");
@@ -150,11 +157,24 @@ export function AuthDrawer({ children, open: controlledOpen, onOpenChange, redir
                   className="h-12 rounded-xl"
                   required
                 />
+                {showNameField && (
+                  <div className="overflow-hidden animate-in slide-in-from-top-2 fade-in duration-300">
+                    <Input
+                      data-testid="input-name-magic-link"
+                      type="text"
+                      placeholder="Your name"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      className="h-12 rounded-xl"
+                      autoFocus
+                    />
+                  </div>
+                )}
                 <Button
                   data-testid="button-send-magic-link"
                   type="submit"
                   className="w-full h-12 rounded-xl bg-primary text-white hover:bg-primary/90 font-semibold cursor-pointer"
-                  disabled={loading || !email.trim()}
+                  disabled={sendButtonDisabled}
                 >
                   <Mail className="w-4 h-4 mr-2" />
                   Send Magic Link

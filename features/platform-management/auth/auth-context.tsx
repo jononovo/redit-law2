@@ -9,6 +9,7 @@ import {
   sendSignInLinkToEmail,
   isSignInWithEmailLink,
   signInWithEmailLink,
+  updateProfile,
   onAuthStateChanged,
   signOut as firebaseSignOut,
 } from "firebase/auth";
@@ -26,7 +27,7 @@ interface AuthContextType {
   loading: boolean;
   signInWithGoogle: () => Promise<void>;
   signInWithGithub: () => Promise<void>;
-  sendMagicLink: (email: string, redirectTo?: string) => Promise<void>;
+  sendMagicLink: (email: string, redirectTo?: string, name?: string) => Promise<void>;
   completeMagicLink: () => Promise<void>;
   logout: () => Promise<void>;
 }
@@ -92,9 +93,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (sessionUser) setUser(sessionUser);
   }, []);
 
-  const sendMagicLink = useCallback(async (email: string, redirectTo?: string) => {
+  const sendMagicLink = useCallback(async (email: string, redirectTo?: string, name?: string) => {
     const continueUrl = new URL(window.location.origin + (redirectTo || "/overview"));
     continueUrl.searchParams.set("email", email);
+    if (name) continueUrl.searchParams.set("name", name);
     const actionCodeSettings = {
       url: continueUrl.toString(),
       handleCodeInApp: true,
@@ -113,8 +115,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!email) return;
     const result = await signInWithEmailLink(auth, email, window.location.href);
     window.localStorage.removeItem("emailForSignIn");
+    const nameFromUrl = urlParams.get("name");
+    if (nameFromUrl && result.user) {
+      try {
+        await updateProfile(result.user, { displayName: nameFromUrl });
+      } catch {}
+    }
     const cleanUrl = new URL(window.location.href);
     cleanUrl.searchParams.delete("email");
+    cleanUrl.searchParams.delete("name");
     cleanUrl.searchParams.delete("oobCode");
     cleanUrl.searchParams.delete("mode");
     cleanUrl.searchParams.delete("apiKey");
