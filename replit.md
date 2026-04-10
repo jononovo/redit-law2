@@ -451,56 +451,27 @@ When building UI, check which tenant(s) the feature applies to and follow the ap
 
 # 8. Agent Shops
 
-The platform's inbound commerce engine. Every wallet holder becomes a seller via checkout pages, storefronts, and invoices. The inverse of outbound payment rails (Module 3) — this handles how the world pays our merchants, including bot-to-bot commerce via x402.
+The platform's inbound commerce engine. Buyers (humans and AI agents) pay into the seller's crypto wallet via checkout pages, storefronts, and invoices. These are not outward payments by agents — all payment methods below are inbound, collecting funds into the merchant's crypto wallet.
 
-→ Full system documentation: `project_knowledge/internal_docs/09-agent-shops/_overview.md`
+→ Full reference: `project_knowledge/internal_docs/09-agent-shops/agent-shops-module.md`
 
-**Core primitives:** `checkout_pages` (public payment URLs, 3 page types: product/event/digital_product), `sales` (transaction records), `seller_profiles` (per-owner identity + shop slug), `invoices` (create/send/track/collect).
+**Inbound checkout payment methods** (all deposit into seller's crypto wallet):
+- **x402** — Autonomous agent-to-agent USDC payments via EIP-3009 on Base
+- **Base Pay** — One-tap USDC payment on Base via `@base-org/account` popup
+- **Stripe Onramp** — Card/bank payment converted to USDC via Stripe's Crypto Onramp
+- **USDC Direct** — Manual on-chain USDC transfer to the seller's wallet address
+- **Testing** — Dev/test mode with mock card form, no real funds
 
-**4 checkout payment methods:** x402 (autonomous agent payments via EIP-3009), Base Pay (one-tap USDC), USDC Direct, Testing mode. (Stripe Onramp is a wallet funding method under Module 3, not a checkout method.)
+**Core modules:**
+- **Checkout Pages** — Public payment URLs (`/pay/[id]`), 3 page types, configurable allowed methods
+- **Sales** — Transaction ledger for every inbound payment received
+- **Seller Profiles** — Per-owner identity powering storefronts (`/s/[slug]`)
+- **Invoices** — Full lifecycle: draft → sent → viewed → paid, with email + PDF delivery
+- **Payments UI** — Modular handler architecture in `features/agent-shops/payments/`
+- **Bot API** — Full parity under `/api/v1/bot/` for checkout pages, sales, seller profile, shop, invoices
 
-**Key tables:** `checkout_pages`, `sales`, `seller_profiles`, `invoices`, `base_pay_payments`
-**Key code:** `server/storage/sales.ts`, `server/storage/seller-profiles.ts`, `server/storage/invoices.ts`, `features/payment-rails/x402/receive.ts`, `features/payment-rails/x402/checkout.ts`, `features/agent-shops/base-pay/`, `features/agent-shops/invoice-email.ts`, `features/agent-shops/invoice-pdf.ts`
-**Public pages:** `/pay/[id]` (checkout), `/s/[slug]` (storefront), `/pay/[id]/success` (confirmation)
 **Dashboard pages:** `/checkout/create`, `/shop`, `/sales`, `/invoices`
-**Bot APIs:** Full parity — checkout pages, sales, seller profile, shop, invoices all have bot endpoints under `/api/v1/bot/`
-**Skill file:** `public/MY-STORE.md`
-
-## Payments UI (`features/agent-shops/payments/`)
-
-Modular client-side payment method selection and execution for both wallet top-ups and checkout pages. Each payment method is a fully self-contained handler component. Pages provide a `PaymentContext` and render either `FundWalletSheet` (top-up) or `CheckoutPaymentPanel` (checkout) — they never touch SDK details.
-- **`types.ts`** — `PaymentContext` (mode, rail, amount, walletAddress, etc.), `PaymentResult`, `PaymentMethodDef`, `PaymentHandlerProps`
-- **`methods.ts`** — `PAYMENT_METHODS` registry + `getAvailableMethods(rail, mode, allowedMethods?)` — filters by rail/mode/allowedMethods
-- **`handlers/stripe-onramp-handler.tsx`** — Self-contained Stripe handler: creates session via API (different endpoint per mode), loads Stripe SDK, mounts widget via `waitForRef()` rAF loop, handles `fulfillment_complete`, fallback to `redirect_url`
-- **`handlers/base-pay-handler.tsx`** — Self-contained Base Pay handler: calls `pay()` from `@base-org/account` (popup), verifies via backend (different endpoint per mode), reports success/error
-- **`handlers/testing-handler.tsx`** — Self-contained Testing handler (checkout only): renders a plain card form (number, expiry, CVV, name, billing address) with no validation. Submits to `POST /api/v1/checkout/[id]/pay/testing`. Creates a sale with `paymentMethod: "testing"`, `status: "test"`, card details in `metadata` JSONB. No wallet updates. Increments checkout page stats normally. Available to all users but not enabled by default — must be toggled on per checkout page.
-- **`handlers/qr-wallet-handler.tsx`** — Self-contained QR/copy-paste handler (topup only): creates QR payment via API, renders QR code (EIP-681 URI) + copy-paste address + network warning. Auto-polls every 5s for 90s, then shows manual "Check Payment" button with 5s cooldown. Credits whatever amount arrives on-chain.
-- **`components/payment-method-selector.tsx`** — Renders vertical list of payment method buttons with amount, label, subtitle
-- **`components/fund-wallet-sheet.tsx`** — Sheet wrapper for top-ups: amount input → method selection → handler rendering. Used by stripe-wallet page (Rail 1). Ready for card-wallet page (Rail 2) with rail-specific method filtering.
-- **`components/checkout-payment-panel.tsx`** — Right panel for checkout pages: amount display/input → method selection → handler rendering. Replaces inline Stripe logic from `/pay/[id]`. Supports `allowedMethods` filtering from checkout page config. Single-method pages auto-select (no selector shown). State machine: select → paying → error (with retry).
-- **Design principle**: Each handler is independent — no shared base class, no shared hooks. One handler can't break another. Adding a new method = new handler file + entry in `methods.ts`.
-- **Checkout page refactor**: `app/pay/[id]/page.tsx` is now a thin shell (~280 lines, down from ~550) — handles data fetching, layout, and context building. All payment logic delegated to `CheckoutPaymentPanel`.
-
-## Base Pay Backend (`features/agent-shops/base-pay/`)
-
-Server-side Base Pay verification and ledger logic (Phase 1).
-- **`types.ts`** — `BasePayVerifyInput`, `BasePayVerifyResult`, `BasePayCheckoutInput`
-- **`verify.ts`** — RPC verification via `getPaymentStatus()`, recipient/amount check. For top-ups, amount mismatch is logged as a warning but not rejected (credits whatever actually arrived). Recipient must still match.
-- **`ledger.ts`** — `creditWalletFromBasePay()` — race-safe wallet crediting (insert pending record first, credit second)
-- **`sale.ts`** — `recordBasePaySale()` — sale recording for checkout (mirrors Stripe flow exactly)
-- **Storage**: `server/storage/base-pay.ts` — `createBasePayPayment`, `getBasePayPaymentByTxId`, `updateBasePayPaymentStatus`
-- **API routes**: `POST /api/v1/base-pay/verify` (authenticated top-up), `POST /api/v1/checkout/[id]/pay/base-pay` (public checkout)
-
-## QR Pay Backend (`features/agent-shops/qr-pay/`)
-
-Server-side QR/copy-paste crypto top-up logic (Phase 3). Credits whatever USDC amount arrives on-chain — no amount enforcement.
-- **`types.ts`** — `QrPayCreateInput`, `QrPayCreateResult`, `QrPayStatusResult`
-- **`eip681.ts`** — `buildEip681Uri()` — builds EIP-681 URI for USDC transfer on Base (chain 8453, contract `0x833589...`)
-- **`ledger.ts`** — `creditWalletFromQrPay()` — fully transactional (single `db.transaction()` wrapping confirm + wallet update + transaction insert). Atomic `WHERE status = 'waiting'` prevents double-crediting.
-- **Schema**: `qr_payments` table (paymentId unique, ownerUid, walletAddress, amountUsdc, eip681Uri, balanceBefore, creditedUsdc, status [waiting/confirmed/expired], createdAt, confirmedAt, expiresAt [60-min TTL])
-- **Storage**: `server/storage/qr-pay.ts` — `createQrPayment`, `getQrPaymentById`, `confirmQrPayment`, `expireQrPayment`, `expireWaitingQrPaymentsForWallet`
-- **API routes**: `POST /api/v1/qr-pay/create` (authenticated, snapshots balanceBefore, generates EIP-681 URI, expires any existing waiting payments for the same wallet), `GET /api/v1/qr-pay/status/[paymentId]` (authenticated, polls on-chain balance, credits delta if > 0)
-- **Concurrent session safety**: Creating a new QR payment expires all existing "waiting" payments for that wallet (prevents balance-delta over-crediting)
+**Key code:** `features/agent-shops/`, `server/storage/sales.ts`, `features/payment-rails/x402/`
 
 ---
 
