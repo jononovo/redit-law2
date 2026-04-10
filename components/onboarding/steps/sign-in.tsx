@@ -169,17 +169,15 @@ export function SignInStep({ currentStep, totalSteps, onBack, onNext }: SignInSt
               required
             />
             {showNameField && (
-              <div className="overflow-hidden animate-in slide-in-from-top-2 fade-in duration-300">
-                <Input
-                  data-testid="input-onboarding-name-magic-link"
-                  type="text"
-                  placeholder="Your name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="h-12 md:h-14 rounded-xl"
-                  autoFocus
-                />
-              </div>
+              <Input
+                data-testid="input-onboarding-name-magic-link"
+                type="text"
+                placeholder="Your name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="h-12 md:h-14 rounded-xl"
+                autoFocus
+              />
             )}
             <Button
               data-testid="button-onboarding-send-magic-link"
