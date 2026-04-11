@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
-import { withBotApi } from "@/lib/agent-management/agent-api/middleware";
+import { withBotApi } from "@/features/platform-management/agent-management/agent-api/middleware";
 import { storage } from "@/server/storage";
 import { rail5CheckoutRequestSchema } from "@/shared/schema";
-import { generateRail5CheckoutId, buildSpawnPayload, buildCheckoutSteps } from "@/lib/rail5";
-import { evaluateMasterGuardrails, centsToMicroUsdc } from "@/lib/guardrails/master";
-import { evaluateCardGuardrails } from "@/lib/guardrails/evaluate";
-import { evaluateApprovalDecision } from "@/lib/guardrails/approval";
-import { GUARDRAIL_DEFAULTS } from "@/lib/guardrails/defaults";
-import { recordOrder } from "@/lib/orders/create";
+import { generateRail5TransactionId, buildSpawnPayload, buildCheckoutSteps } from "@/features/payment-rails/rail5";
+import { evaluateMasterGuardrails, centsToMicroUsdc } from "@/features/agent-interaction/guardrails/master";
+import { evaluateCardGuardrails } from "@/features/agent-interaction/guardrails/evaluate";
+import { evaluateApprovalDecision } from "@/features/agent-interaction/guardrails/approval";
+import { GUARDRAIL_DEFAULTS } from "@/features/agent-interaction/guardrails/defaults";
+import { recordOrder } from "@/features/agent-interaction/orders/create";
 
 export const POST = withBotApi("/api/v1/bot/rail5/checkout", async (request, { bot }) => {
   if (bot.walletStatus !== "active") {
@@ -84,12 +84,10 @@ export const POST = withBotApi("/api/v1/bot/rail5/checkout", async (request, { b
     );
   }
 
-  const checkoutId = generateRail5CheckoutId();
-  const wallet = await storage.getWalletByOwnerUid(card.ownerUid);
-  const walletBalance = wallet?.balanceCents ?? null;
+  const checkoutId = generateRail5TransactionId();
 
   if (approvalDecision.action === "require_approval") {
-    await storage.createRail5Checkout({
+    await storage.createRail5Transaction({
       checkoutId,
       cardId: card.cardId,
       botId: bot.botId,
@@ -100,12 +98,12 @@ export const POST = withBotApi("/api/v1/bot/rail5/checkout", async (request, { b
       amountCents: amount_cents,
       category: category || undefined,
       status: "pending_approval",
-      balanceAfter: walletBalance,
+      balanceAfter: null,
     });
 
     const owner = await storage.getOwnerByUid(card.ownerUid);
     if (owner) {
-      const { notifyOwner } = await import("@/lib/notifications");
+      const { notifyOwner } = await import("@/features/platform-management/notifications");
       await notifyOwner({
         ownerUid: card.ownerUid,
         ownerEmail: owner.email,
@@ -115,7 +113,7 @@ export const POST = withBotApi("/api/v1/bot/rail5/checkout", async (request, { b
         botId: bot.botId,
       }).catch(() => {});
 
-      const { createApproval } = await import("@/lib/approvals/service");
+      const { createApproval } = await import("@/features/agent-interaction/approvals/service");
       createApproval({
         rail: "rail5",
         ownerUid: card.ownerUid,
@@ -140,7 +138,7 @@ export const POST = withBotApi("/api/v1/bot/rail5/checkout", async (request, { b
     });
   }
 
-  await storage.createRail5Checkout({
+  await storage.createRail5Transaction({
     checkoutId,
     cardId: card.cardId,
     botId: bot.botId,
@@ -151,7 +149,7 @@ export const POST = withBotApi("/api/v1/bot/rail5/checkout", async (request, { b
     amountCents: amount_cents,
     category: category || undefined,
     status: "approved",
-    balanceAfter: walletBalance,
+    balanceAfter: null,
   });
 
   const encryptedFilename = `Card-${card.cardName.replace(/[^a-zA-Z0-9-_]/g, "-")}-${card.cardLast4}.md`;

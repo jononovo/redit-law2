@@ -3,16 +3,14 @@
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { BotCard } from "@/components/dashboard/bot-card";
-import { FundModal } from "@/components/dashboard/fund-modal";
 import { ActivityLog } from "@/components/dashboard/activity-log";
 import { WebhookLog } from "@/components/dashboard/webhook-log";
 import { OpsHealth } from "@/components/dashboard/ops-health";
-import { PaymentLinksPanel } from "@/components/dashboard/payment-links";
 import { Bot as BotIcon, Plus, Loader2, Wallet, CreditCard, ExternalLink, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { useAuth } from "@/lib/auth/auth-context";
-import { authFetch } from "@/lib/auth-fetch";
+import { useAuth } from "@/features/platform-management/auth/auth-context";
+import { authFetch } from "@/features/platform-management/auth-fetch";
 import { useToast } from "@/hooks/use-toast";
 import { CryptoWalletItem } from "@/components/wallet/crypto-wallet-item";
 import { CreditCardItem } from "@/components/wallet/credit-card-item";
@@ -25,7 +23,7 @@ import { GuardrailDialog } from "@/components/wallet/dialogs/guardrail-dialog";
 import { LinkBotDialog } from "@/components/wallet/dialogs/link-bot-dialog";
 import { UnlinkBotDialog } from "@/components/wallet/dialogs/unlink-bot-dialog";
 import { TransferDialog } from "@/components/wallet/dialogs/transfer-dialog";
-import { FundWalletSheet } from "@/lib/payments/components/fund-wallet-sheet";
+import { FundWalletSheet } from "@/features/agent-shops/payments/components/fund-wallet-sheet";
 import { FreezeDialog } from "@/components/wallet/dialogs/freeze-dialog";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { ApprovalList, type ApprovalRow } from "@/components/wallet/approval-list";
@@ -46,21 +44,12 @@ interface BotData {
   claimed_at: string | null;
 }
 
-interface BalanceData {
-  balance_cents: number;
-  balance: string;
-  has_wallet: boolean;
-}
-
 export default function DashboardOverview() {
   const router = useRouter();
   const { user } = useAuth();
   const { toast } = useToast();
   const [bots, setBots] = useState<BotData[]>([]);
-  const [balance, setBalance] = useState<BalanceData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [fundOpen, setFundOpen] = useState(false);
-
   const [privyWallets, setPrivyWallets] = useState<Rail1WalletInfo[]>([]);
   const [rail5Cards, setRail5Cards] = useState<NormalizedCard[]>([]);
   const [cardsLoading, setCardsLoading] = useState(true);
@@ -77,17 +66,10 @@ export default function DashboardOverview() {
 
   async function fetchData() {
     try {
-      const [botsRes, balanceRes] = await Promise.all([
-        fetch("/api/v1/bots/mine"),
-        fetch("/api/v1/wallet/balance"),
-      ]);
+      const botsRes = await fetch("/api/v1/bots/mine");
       if (botsRes.ok) {
         const data = await botsRes.json();
         setBots(data.bots || []);
-      }
-      if (balanceRes.ok) {
-        const data = await balanceRes.json();
-        setBalance(data);
       }
     } catch {} finally {
       setLoading(false);
@@ -259,17 +241,11 @@ export default function DashboardOverview() {
 
   return (
     <div className="flex flex-col gap-8 animate-fade-in-up">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="bg-white p-6 rounded-xl border border-neutral-100 shadow-sm" data-testid="stat-total-bots">
           <span className="text-sm font-medium text-neutral-500">Total Bots</span>
           <h3 className="text-2xl font-bold text-neutral-900 tracking-tight mt-2">
             {loading ? "—" : bots.length}
-          </h3>
-        </div>
-        <div className="bg-white p-6 rounded-xl border border-neutral-100 shadow-sm" data-testid="stat-wallet-balance">
-          <span className="text-sm font-medium text-neutral-500">Wallet Balance</span>
-          <h3 className="text-2xl font-bold text-green-600 tracking-tight mt-2">
-            {loading ? "—" : balance?.balance || "$0.00"}
           </h3>
         </div>
         <div className="bg-white p-6 rounded-xl border border-neutral-100 shadow-sm" data-testid="stat-pending-bots">
@@ -279,23 +255,6 @@ export default function DashboardOverview() {
           </h3>
         </div>
       </div>
-
-      {balance?.has_wallet && (
-        <div
-          onClick={() => setFundOpen(true)}
-          className="bg-neutral-900 text-white p-6 rounded-2xl flex items-center justify-between relative overflow-hidden group cursor-pointer"
-          data-testid="card-add-funds"
-        >
-          <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-purple-500/20 opacity-0 group-hover:opacity-100 transition-opacity" />
-          <div className="relative z-10">
-            <h4 className="font-bold">Add Funds</h4>
-            <p className="text-sm text-neutral-400">Top up your bot&apos;s wallet instantly</p>
-          </div>
-          <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center relative z-10 group-hover:bg-white/20 transition-colors">
-            <Wallet className="w-5 h-5 text-white" />
-          </div>
-        </div>
-      )}
 
       <div>
         <div className="flex items-center justify-between mb-6">
@@ -373,7 +332,7 @@ export default function DashboardOverview() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div data-testid="card-privy-wallet">
               <div className="flex items-center gap-2 mb-3">
-                <h3 className="text-sm font-semibold text-neutral-700">Agent Wallet</h3>
+                <h3 className="text-sm font-semibold text-neutral-700">Crypto Wallet</h3>
                 <InfoTooltip text="USDC wallet x402 purchases. Fund with Stripe/Link." />
               </div>
               {firstWallet ? (
@@ -460,19 +419,11 @@ export default function DashboardOverview() {
         )}
       </div>
 
-      <PaymentLinksPanel />
-
       <OpsHealth />
 
       <ActivityLog />
 
       <WebhookLog />
-
-      <FundModal
-        open={fundOpen}
-        onOpenChange={setFundOpen}
-        onSuccess={() => fetchData()}
-      />
 
       <FreezeDialog
         open={!!rail5FreezeTarget}

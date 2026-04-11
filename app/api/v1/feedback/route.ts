@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import sgMail from "@sendgrid/mail";
-import { getSessionUser } from "@/lib/auth/session";
+import { getSessionUser } from "@/features/platform-management/auth/session";
 
 const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY;
 const SUPPORT_EMAIL = process.env.SUPPORT_EMAIL || "support@creditclaw.com";

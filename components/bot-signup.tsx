@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { CreditCard, Bot, User, Copy, Check, Shield, ArrowRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
-const SKILL_URL = "https://creditclaw.com/skill.md";
+const SKILL_URL = "https://creditclaw.com/SKILL.md";
 
 const steps = [
   { num: "1", text: "Send this URL to your agent" },

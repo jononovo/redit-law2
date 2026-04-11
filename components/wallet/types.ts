@@ -1,4 +1,4 @@
-export type RailType = "rail1" | "rail2" | "rail4" | "rail5";
+export type RailType = "rail1" | "rail2" | "rail5";
 
 export type WalletStatus = "active" | "paused" | "frozen" | "pending" | "pending_setup" | "awaiting_bot";
 
@@ -46,26 +46,6 @@ export interface Rail2WalletInfo {
 
 export type CryptoWalletInfo = Rail1WalletInfo | Rail2WalletInfo;
 
-export interface Rail4CardInfo {
-  card_id: string;
-  card_name: string;
-  use_case: string | null;
-  status: string;
-  bot_id: string | null;
-  card_color: string | null;
-  created_at: string;
-  allowance: AllowanceInfo | null;
-}
-
-export interface AllowanceInfo {
-  value: number;
-  currency: string;
-  duration: string;
-  spent_cents: number;
-  remaining_cents: number;
-  resets_at: string;
-}
-
 export interface Rail5CardInfo {
   card_id: string;
   card_name: string;
@@ -81,7 +61,7 @@ export interface Rail5CardInfo {
   created_at: string;
 }
 
-export type CreditCardInfo = Rail4CardInfo | Rail5CardInfo;
+export type CreditCardInfo = Rail5CardInfo;
 
 export interface NormalizedCard {
   card_id: string;
@@ -98,33 +78,6 @@ export interface NormalizedCard {
   line1: string | null;
   line2: string | null;
   detailPath: string;
-}
-
-export function normalizeRail4Card(card: Rail4CardInfo, basePath: string): NormalizedCard {
-  const remaining = card.allowance ? card.allowance.remaining_cents / 100 : 0;
-  const sign = remaining < 0 ? "-" : "";
-  const balance = `${sign}$${Math.abs(remaining).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-  const tooltipParts: string[] = [];
-  if (card.allowance) {
-    tooltipParts.push(formatAllowanceLabel(card.allowance));
-    tooltipParts.push(formatResetsLabel(card.allowance));
-  }
-  return {
-    card_id: card.card_id,
-    card_name: card.card_name,
-    status: card.status,
-    bot_id: card.bot_id,
-    bot_name: null,
-    card_color: resolveCardColor(card.card_color, card.card_id),
-    balance,
-    balanceLabel: "Remaining Allowance",
-    balanceTooltip: tooltipParts.length > 0 ? tooltipParts.join("\n") : null,
-    last4: card.card_id.slice(-4),
-    brand: null,
-    line1: null,
-    line2: null,
-    detailPath: `${basePath}/${card.card_id}`,
-  };
 }
 
 export function normalizeRail5Card(card: Rail5CardInfo, basePath: string): NormalizedCard {
@@ -235,17 +188,6 @@ export function microUsdcToDisplay(microUsdc: number): string {
 
 export function formatCentsToUsd(cents: number): string {
   return `$${(cents / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-}
-
-export function formatAllowanceLabel(a: AllowanceInfo): string {
-  const durationMap: Record<string, string> = { day: "Daily", week: "Weekly", month: "Monthly" };
-  const durLabel = durationMap[a.duration] || a.duration;
-  return `Allowance: $${a.value.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${a.currency} | ${durLabel}`;
-}
-
-export function formatResetsLabel(a: AllowanceInfo): string {
-  const d = new Date(a.resets_at);
-  return `Resets: ${d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`;
 }
 
 export const CARD_COLORS: ("primary" | "blue" | "purple" | "dark")[] = ["purple", "dark", "blue", "primary"];

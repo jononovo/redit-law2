@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSessionUser } from "@/lib/auth/session";
+import { getSessionUser } from "@/features/platform-management/auth/session";
 import { storage } from "@/server/storage";
 import { setPrivyGuardrailsSchema } from "@/shared/schema";
 

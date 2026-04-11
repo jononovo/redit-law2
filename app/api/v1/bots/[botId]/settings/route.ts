@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getCurrentUser } from "@/lib/auth/session";
-import { adminAuth } from "@/lib/firebase/admin";
+import { getCurrentUser } from "@/features/platform-management/auth/session";
+import { adminAuth } from "@/features/platform-management/firebase/admin";
 import { storage } from "@/server/storage";
 import { z } from "zod";
 

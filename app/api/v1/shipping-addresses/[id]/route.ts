@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSessionUser } from "@/lib/auth/session";
+import { getSessionUser } from "@/features/platform-management/auth/session";
 import { storage } from "@/server/storage";
-import { pushShippingFileToBots } from "@/lib/shipping/push-shipping-to-bots";
+import { pushShippingFileToBots } from "@/features/agent-interaction/shipping/push-shipping-to-bots";
 import { z } from "zod";
 
 const updateShippingAddressSchema = z.object({

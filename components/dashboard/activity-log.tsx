@@ -20,7 +20,6 @@ function endpointLabel(ep: string): string {
     "/api/v1/bot/wallet/check": "Wallet Check",
     "/api/v1/bot/wallet/spending": "Spending Rules",
     "/api/v1/bot/wallet/purchase": "Purchase",
-    "/api/v1/bot/wallet/topup-request": "Top-up Request",
     "/api/v1/bot/wallet/transactions": "Transactions",
   };
   return map[ep] || ep;

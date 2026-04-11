@@ -1,4 +1,4 @@
-import { getCurrentUser } from "@/lib/auth/session";
+import { getCurrentUser } from "@/features/platform-management/auth/session";
 import { notFound } from "next/navigation";
 import { AdminLayoutShell } from "./admin-layout-shell";
 

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { withBotApi } from "@/lib/agent-management/agent-api/middleware";
+import { withBotApi } from "@/features/platform-management/agent-management/agent-api/middleware";
 import { storage } from "@/server/storage";
 
 export const GET = withBotApi("/api/v1/bot/rail5/checkout/status", async (request, { bot }) => {
@@ -11,7 +11,7 @@ export const GET = withBotApi("/api/v1/bot/rail5/checkout/status", async (reques
     );
   }
 
-  const checkout = await storage.getRail5CheckoutById(checkoutId);
+  const checkout = await storage.getRail5TransactionById(checkoutId);
   if (!checkout) {
     return NextResponse.json(
       { error: "not_found", message: "Checkout not found." },

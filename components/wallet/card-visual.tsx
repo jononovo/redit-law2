@@ -89,7 +89,7 @@ export function CardVisual({
       !frozen && "hover:scale-[1.02]",
       className
     )}>
-      <div className="absolute inset-0 opacity-20 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] mix-blend-overlay pointer-events-none" />
+      <div className="absolute inset-0 opacity-20 bg-[url('/assets/noise.svg')] mix-blend-overlay pointer-events-none" />
       <div className="absolute -top-[100%] -left-[100%] w-[300%] h-[300%] bg-gradient-to-br from-white/20 via-transparent to-transparent rotate-45 pointer-events-none" />
 
       {frozen && (

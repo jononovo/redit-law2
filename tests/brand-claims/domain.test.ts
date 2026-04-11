@@ -4,7 +4,7 @@ import {
   domainsMatch,
   isFreeEmailProvider,
   canAutoVerifyClaim,
-} from "@/lib/brand-claims/domain";
+} from "@/features/brand-engine/brand-claims/domain";
 
 describe("extractEmailDomain", () => {
   it("extracts domain from standard email", () => {

@@ -7,11 +7,10 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { ArrowRight, ChevronLeft, ChevronRight, Terminal, Loader2, Search } from "lucide-react";
-import { CAPABILITY_LABELS } from "@/lib/procurement-skills/taxonomy/capabilities";
-import { BRAND_TIER_LABELS } from "@/lib/procurement-skills/taxonomy/tiers";
+import { CAPABILITY_LABELS } from "@/features/brand-engine/procurement-skills/taxonomy/capabilities";
+import { BRAND_TIER_LABELS } from "@/features/brand-engine/procurement-skills/taxonomy/tiers";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { ASSIGNABLE_SECTORS } from "@/lib/procurement-skills/taxonomy/sectors";
-import type { VendorSector } from "@/lib/procurement-skills/taxonomy/sectors";
+import { ASSIGNABLE_SECTORS } from "@/features/brand-engine/procurement-skills/taxonomy/sectors";
 import { ScanProgress } from "@/components/scan-progress";
 import { useDomainScan } from "@/hooks/use-domain-scan";
 
@@ -167,6 +166,7 @@ function CapabilityPills({ capabilities }: { capabilities: string[] | null }) {
 }
 
 
+
 function SectorButton({
   label,
   active,
@@ -288,43 +288,75 @@ function SectorFilterBar({
   );
 }
 
+const PAGE_SIZE = 50;
+
 export default function BrandsLanding() {
   const router = useRouter();
   const scan = useDomainScan();
   const [brands, setBrands] = useState<BrandRow[]>([]);
+  const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [activeSector, setActiveSector] = useState<string | null>(null);
   const [inputValue, setInputValue] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const isDomain = inputValue.includes(".");
-  const searchQuery = isDomain ? "" : inputValue.trim().toLowerCase();
-
-  const filteredBrands = searchQuery
-    ? brands.filter(
-        (b) =>
-          b.name.toLowerCase().includes(searchQuery) ||
-          b.domain.toLowerCase().includes(searchQuery) ||
-          b.slug.toLowerCase().includes(searchQuery)
-      )
-    : brands;
+  const searchQuery = isDomain ? "" : inputValue.trim();
 
   useEffect(() => {
-    setLoading(true);
-    const base = "/api/v1/brands?limit=100&lite=true&maturity=verified,official,beta,community,draft";
-    let url = base;
-    if (activeSector === "luxury") {
-      url += "&tier=luxury,ultra_luxury";
-    } else if (activeSector) {
-      url += `&sector=${activeSector}`;
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    if (!searchQuery || searchQuery.length < 2) {
+      setDebouncedQuery("");
+      return;
     }
-    fetch(url)
+    debounceRef.current = setTimeout(() => {
+      setDebouncedQuery(searchQuery);
+    }, 400);
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [searchQuery]);
+
+  const fetchBrands = useCallback((offset: number, append: boolean) => {
+    if (append) {
+      setLoadingMore(true);
+    } else {
+      setLoading(true);
+    }
+    const params = new URLSearchParams({
+      limit: String(PAGE_SIZE),
+      offset: String(offset),
+      lite: "true",
+      maturity: "verified,official,beta,community,draft",
+    });
+    if (debouncedQuery) {
+      params.set("q", debouncedQuery);
+    }
+    if (activeSector === "luxury") {
+      params.set("tier", "luxury,ultra_luxury");
+    } else if (activeSector) {
+      params.set("sector", activeSector);
+    }
+    fetch(`/api/v1/brands?${params}`)
       .then((r) => r.json())
       .then((data) => {
-        setBrands(data.brands || data || []);
+        const incoming = data.brands || data || [];
+        setBrands((prev) => append ? [...prev, ...incoming] : incoming);
+        setTotal(data.total ?? incoming.length);
         setLoading(false);
+        setLoadingMore(false);
       })
-      .catch(() => setLoading(false));
-  }, [activeSector]);
+      .catch(() => {
+        setLoading(false);
+        setLoadingMore(false);
+      });
+  }, [activeSector, debouncedQuery]);
+
+  useEffect(() => {
+    fetchBrands(0, false);
+  }, [fetchBrands]);
 
   useEffect(() => {
     if (scan.status === "done" && scan.result) {
@@ -348,6 +380,11 @@ export default function BrandsLanding() {
     }
   }
 
+  function handleLoadMore() {
+    fetchBrands(brands.length, true);
+  }
+
+  const hasMore = brands.length < total;
   const isScanning = scan.status === "scanning";
 
   return (
@@ -414,11 +451,6 @@ export default function BrandsLanding() {
                   )}
                 </button>
               </div>
-              {searchQuery && !loading && (
-                <p className="text-xs text-neutral-500 mt-2 font-mono" data-testid="text-search-count">
-                  Showing {filteredBrands.length} of {brands.length} skills
-                </p>
-              )}
               <ScanProgress
                 status={scan.status}
                 currentStage={scan.currentStage}
@@ -452,16 +484,16 @@ export default function BrandsLanding() {
                     <div className="inline-block w-5 h-5 border-2 border-neutral-700 border-t-white rounded-full animate-spin" />
                     <p className="text-sm text-neutral-500 mt-3 font-medium">Loading skills...</p>
                   </div>
-                ) : filteredBrands.length === 0 ? (
+                ) : brands.length === 0 ? (
                   <div className="px-5 py-20 text-center">
                     <p className="text-sm text-neutral-500 font-medium">
-                      {searchQuery
+                      {debouncedQuery
                         ? `No skills matching "${inputValue.trim()}".`
                         : activeSector
                           ? `No skills found in ${SECTOR_SHORT_LABELS[activeSector] ?? activeSector}.`
                           : "No skills in the registry yet."}
                     </p>
-                    {(activeSector || searchQuery) && (
+                    {(activeSector || debouncedQuery) && (
                       <button
                         onClick={() => {
                           setActiveSector(null);
@@ -475,39 +507,63 @@ export default function BrandsLanding() {
                     )}
                   </div>
                 ) : (
-                  <div className="divide-y divide-neutral-800/60">
-                    {filteredBrands.map((brand) => (
-                      <Link
-                        key={brand.slug}
-                        href={`/skills/${brand.slug}`}
-                        className="grid grid-cols-1 md:grid-cols-[1fr_90px_90px_220px_28px] gap-2 md:gap-3 px-4 py-3 hover:bg-neutral-800/40 transition-colors items-center group"
-                        data-testid={`row-brand-${brand.slug}`}
-                      >
-                        <div className="flex items-center gap-3">
-                          {brand.logoUrl ? (
-                            <img src={brand.logoUrl} alt="" className="w-6 h-6 rounded-none object-contain bg-neutral-800 p-0.5" />
-                          ) : (
-                            <div className="w-6 h-6 rounded-none bg-neutral-800 flex items-center justify-center text-xs font-bold text-neutral-500">
-                              {brand.name.charAt(0)}
+                  <>
+                    <div className="divide-y divide-neutral-800/60">
+                      {brands.map((brand) => (
+                        <Link
+                          key={brand.slug}
+                          href={`/skills/${brand.slug}`}
+                          className="grid grid-cols-1 md:grid-cols-[1fr_90px_90px_220px_28px] gap-2 md:gap-3 px-4 py-3 hover:bg-neutral-800/40 transition-colors items-center group"
+                          data-testid={`row-brand-${brand.slug}`}
+                        >
+                          <div className="flex items-center gap-3">
+                            {brand.logoUrl ? (
+                              <img src={brand.logoUrl} alt="" className="w-6 h-6 rounded-none object-contain bg-neutral-800 p-0.5" />
+                            ) : (
+                              <div className="w-6 h-6 rounded-none bg-neutral-800 flex items-center justify-center text-xs font-bold text-neutral-500">
+                                {brand.name.charAt(0)}
+                              </div>
+                            )}
+                            <div>
+                              <span className="text-sm font-semibold text-white group-hover:underline">{brand.name}</span>
+                              <span className="text-xs text-neutral-500 ml-2 hidden sm:inline">{brand.domain}</span>
                             </div>
-                          )}
-                          <div>
-                            <span className="text-sm font-semibold text-white group-hover:underline">{brand.name}</span>
-                            <span className="text-xs text-neutral-500 ml-2 hidden sm:inline">{brand.domain}</span>
                           </div>
-                        </div>
-                        <div className="hidden md:block"><SectorLabel sector={brand.sector} /></div>
-                        <div className="hidden md:block"><TierLabel tier={brand.tier} /></div>
-                        <div className="flex items-center gap-2 md:hidden">
-                          <SectorLabel sector={brand.sector} />
-                          <span className="text-neutral-700">·</span>
-                          <TierLabel tier={brand.tier} />
-                        </div>
-                        <CapabilityPills capabilities={brand.capabilities} />
-                        <ChevronRight className="w-4 h-4 text-neutral-600 group-hover:text-neutral-400 transition-colors hidden md:block" />
-                      </Link>
-                    ))}
-                  </div>
+                          <div className="hidden md:block"><SectorLabel sector={brand.sector} /></div>
+                          <div className="hidden md:block"><TierLabel tier={brand.tier} /></div>
+                          <div className="flex items-center gap-2 md:hidden">
+                            <SectorLabel sector={brand.sector} />
+                            <span className="text-neutral-700">·</span>
+                            <TierLabel tier={brand.tier} />
+                          </div>
+                          <CapabilityPills capabilities={brand.capabilities} />
+                          <ChevronRight className="w-4 h-4 text-neutral-600 group-hover:text-neutral-400 transition-colors hidden md:block" />
+                        </Link>
+                      ))}
+                    </div>
+                    <div className="px-4 py-3 border-t border-neutral-800 flex items-center justify-between">
+                      <p className="text-xs text-neutral-500 font-mono" data-testid="text-pagination-count">
+                        Showing {brands.length} of {total} skills
+                      </p>
+                      {hasMore && (
+                        <button
+                          onClick={handleLoadMore}
+                          disabled={loadingMore}
+                          className="inline-flex items-center gap-2 px-4 py-1.5 text-xs font-mono font-medium text-neutral-300 bg-neutral-800 border border-neutral-700 hover:text-white hover:border-neutral-500 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                          data-testid="button-load-more"
+                        >
+                          {loadingMore ? (
+                            <>
+                              <Loader2 className="w-3 h-3 animate-spin" />
+                              Loading...
+                            </>
+                          ) : (
+                            "Load more"
+                          )}
+                        </button>
+                      )}
+                    </div>
+                  </>
                 )}
               </div>
             </div>

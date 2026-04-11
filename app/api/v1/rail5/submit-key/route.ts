@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSessionUser } from "@/lib/auth/session";
+import { getSessionUser } from "@/features/platform-management/auth/session";
 import { storage } from "@/server/storage";
 import { rail5SubmitKeySchema } from "@/shared/schema";
-import { validateKeyMaterial } from "@/lib/rail5";
+import { validateKeyMaterial } from "@/features/payment-rails/rail5";
 
 export async function POST(request: NextRequest) {
   const user = await getSessionUser(request);

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { aggregateBrandRatings } from "@/lib/feedback/aggregate";
+import { aggregateBrandRatings } from "@/features/brand-engine/feedback/aggregate";
 
 export async function POST(request: NextRequest) {
   const internalSecret = process.env.INTERNAL_API_SECRET;

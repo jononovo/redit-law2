@@ -2,7 +2,6 @@
 @source "../app";
 @source "../components";
 @source "../lib";
-@source "../docs";
 @import "tw-animate-css";
 @plugin "@tailwindcss/typography";
 

@@ -1,6 +1,6 @@
-import { pgTable, serial, text, timestamp, integer, boolean, index, bigint, jsonb, numeric, uniqueIndex } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, timestamp, integer, boolean, index, bigint, jsonb, numeric, uniqueIndex, customType } from "drizzle-orm/pg-core";
 import { z } from "zod";
-import { GUARDRAIL_DEFAULTS } from "@/lib/guardrails/defaults";
+import { GUARDRAIL_DEFAULTS } from "@/features/agent-interaction/guardrails/defaults";
 
 export const bots = pgTable("bots", {
   id: serial("id").primaryKey(),
@@ -29,28 +29,6 @@ export const bots = pgTable("bots", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
-export const wallets = pgTable("wallets", {
-  id: serial("id").primaryKey(),
-  botId: text("bot_id").notNull().unique(),
-  ownerUid: text("owner_uid").notNull(),
-  balanceCents: integer("balance_cents").notNull().default(0),
-  currency: text("currency").notNull().default("usd"),
-  isFrozen: boolean("is_frozen").notNull().default(false),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  updatedAt: timestamp("updated_at").notNull().defaultNow(),
-});
-
-export const transactions = pgTable("transactions", {
-  id: serial("id").primaryKey(),
-  walletId: integer("wallet_id").notNull(),
-  type: text("type").notNull(),
-  amountCents: integer("amount_cents").notNull(),
-  stripePaymentIntentId: text("stripe_payment_intent_id"),
-  description: text("description"),
-  balanceAfter: integer("balance_after"),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-});
-
 export const paymentMethods = pgTable("payment_methods", {
   id: serial("id").primaryKey(),
   ownerUid: text("owner_uid").notNull(),
@@ -63,15 +41,6 @@ export const paymentMethods = pgTable("payment_methods", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
-
-export const topupRequests = pgTable("topup_requests", {
-  id: serial("id").primaryKey(),
-  botId: text("bot_id").notNull(),
-  amountCents: integer("amount_cents").notNull(),
-  reason: text("reason"),
-  status: text("status").notNull().default("sent"),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-});
 
 export const apiAccessLogs = pgTable("api_access_logs", {
   id: serial("id").primaryKey(),
@@ -135,24 +104,6 @@ export const notifications = pgTable("notifications", {
   index("notifications_owner_created_idx").on(table.ownerUid, table.createdAt),
 ]);
 
-export const paymentLinks = pgTable("payment_links", {
-  id: serial("id").primaryKey(),
-  paymentLinkId: text("payment_link_id").notNull().unique(),
-  botId: text("bot_id").notNull(),
-  amountCents: integer("amount_cents").notNull(),
-  description: text("description").notNull(),
-  payerEmail: text("payer_email"),
-  stripeCheckoutSessionId: text("stripe_checkout_session_id"),
-  checkoutUrl: text("checkout_url").notNull(),
-  status: text("status").notNull().default("pending"),
-  paidAt: timestamp("paid_at"),
-  expiresAt: timestamp("expires_at").notNull(),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-}, (table) => [
-  index("payment_links_bot_created_idx").on(table.botId, table.createdAt),
-  index("payment_links_stripe_session_idx").on(table.stripeCheckoutSessionId),
-]);
-
 export const pairingCodes = pgTable("pairing_codes", {
   id: serial("id").primaryKey(),
   code: text("code").notNull().unique(),
@@ -166,17 +117,6 @@ export const pairingCodes = pgTable("pairing_codes", {
   index("pairing_codes_code_idx").on(table.code),
   index("pairing_codes_owner_idx").on(table.ownerUid),
 ]);
-
-export const reconciliationLogs = pgTable("reconciliation_logs", {
-  id: serial("id").primaryKey(),
-  walletId: integer("wallet_id").notNull(),
-  botId: text("bot_id").notNull(),
-  expectedCents: integer("expected_cents").notNull(),
-  actualCents: integer("actual_cents").notNull(),
-  diffCents: integer("diff_cents").notNull(),
-  status: text("status").notNull(),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-});
 
 export const registerBotRequestSchema = z.object({
   bot_name: z.string().min(1).max(100),
@@ -193,11 +133,6 @@ export const claimBotRequestSchema = z.object({
   claim_token: z.string().min(1),
 });
 
-export const fundWalletRequestSchema = z.object({
-  amount_cents: z.number().int().min(100).max(100000),
-  payment_method_id: z.number().int().optional(),
-});
-
 export const purchaseRequestSchema = z.object({
   amount_cents: z.number().int().min(1).max(10000000),
   merchant: z.string().min(1).max(200),
@@ -205,23 +140,11 @@ export const purchaseRequestSchema = z.object({
   category: z.string().max(100).optional(),
 });
 
-export const topupRequestSchema = z.object({
-  amount_usd: z.number().min(1).max(10000),
-  reason: z.string().max(500).optional(),
-});
-
-
 export type Bot = typeof bots.$inferSelect;
 export type InsertBot = typeof bots.$inferInsert;
-export type Wallet = typeof wallets.$inferSelect;
-export type InsertWallet = typeof wallets.$inferInsert;
-export type Transaction = typeof transactions.$inferSelect;
-export type InsertTransaction = typeof transactions.$inferInsert;
 export type PaymentMethod = typeof paymentMethods.$inferSelect;
 export type InsertPaymentMethod = typeof paymentMethods.$inferInsert;
 
-export type TopupRequest = typeof topupRequests.$inferSelect;
-export type InsertTopupRequest = typeof topupRequests.$inferInsert;
 export type ApiAccessLog = typeof apiAccessLogs.$inferSelect;
 export type InsertApiAccessLog = typeof apiAccessLogs.$inferInsert;
 export type WebhookDelivery = typeof webhookDeliveries.$inferSelect;
@@ -230,112 +153,8 @@ export type NotificationPreference = typeof notificationPreferences.$inferSelect
 export type InsertNotificationPreference = typeof notificationPreferences.$inferInsert;
 export type Notification = typeof notifications.$inferSelect;
 export type InsertNotification = typeof notifications.$inferInsert;
-export type PaymentLink = typeof paymentLinks.$inferSelect;
-export type InsertPaymentLink = typeof paymentLinks.$inferInsert;
-export type ReconciliationLog = typeof reconciliationLogs.$inferSelect;
-export type InsertReconciliationLog = typeof reconciliationLogs.$inferInsert;
 export type PairingCode = typeof pairingCodes.$inferSelect;
 export type InsertPairingCode = typeof pairingCodes.$inferInsert;
-
-export const rail4Cards = pgTable("rail4_cards", {
-  id: serial("id").primaryKey(),
-  cardId: text("card_id").notNull().unique(),
-  ownerUid: text("owner_uid").notNull(),
-  cardName: text("card_name").notNull().default("Untitled Card"),
-  useCase: text("use_case"),
-  botId: text("bot_id").unique(),
-  decoyFilename: text("decoy_filename").notNull(),
-  realProfileIndex: integer("real_profile_index").notNull(),
-  missingDigitPositions: integer("missing_digit_positions").array().notNull(),
-  missingDigitsValue: text("missing_digits_value").notNull(),
-  expiryMonth: integer("expiry_month"),
-  expiryYear: integer("expiry_year"),
-  ownerName: text("owner_name"),
-  ownerZip: text("owner_zip"),
-  ownerIp: text("owner_ip"),
-  status: text("status").notNull().default("pending_setup"),
-  cardColor: text("card_color"),
-  fakeProfilesJson: text("fake_profiles_json").notNull(),
-  profilePermissions: text("profile_permissions"),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  updatedAt: timestamp("updated_at").notNull().defaultNow(),
-}, (table) => [
-  index("rail4_cards_card_id_idx").on(table.cardId),
-  index("rail4_cards_owner_uid_idx").on(table.ownerUid),
-  index("rail4_cards_bot_id_idx").on(table.botId),
-  index("rail4_cards_status_idx").on(table.status),
-]);
-
-export const obfuscationEvents = pgTable("obfuscation_events", {
-  id: serial("id").primaryKey(),
-  cardId: text("card_id").notNull(),
-  botId: text("bot_id"),
-  profileIndex: integer("profile_index").notNull(),
-  merchantName: text("merchant_name").notNull(),
-  merchantSlug: text("merchant_slug").notNull(),
-  itemName: text("item_name").notNull(),
-  amountCents: integer("amount_cents").notNull(),
-  status: text("status").notNull().default("pending"),
-  confirmationId: text("confirmation_id"),
-  occurredAt: timestamp("occurred_at"),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-}, (table) => [
-  index("obfuscation_events_card_id_idx").on(table.cardId),
-  index("obfuscation_events_card_status_idx").on(table.cardId, table.status),
-  index("obfuscation_events_bot_id_idx").on(table.botId),
-  index("obfuscation_events_bot_status_idx").on(table.botId, table.status),
-  index("obfuscation_events_status_idx").on(table.status),
-]);
-
-export const obfuscationState = pgTable("obfuscation_state", {
-  id: serial("id").primaryKey(),
-  cardId: text("card_id").notNull().unique(),
-  botId: text("bot_id").unique(),
-  phase: text("phase").notNull().default("warmup"),
-  active: boolean("active").notNull().default(true),
-  activatedAt: timestamp("activated_at").notNull().defaultNow(),
-  lastOrganicAt: timestamp("last_organic_at"),
-  lastObfuscationAt: timestamp("last_obfuscation_at"),
-  organicCount: integer("organic_count").notNull().default(0),
-  obfuscationCount: integer("obfuscation_count").notNull().default(0),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  updatedAt: timestamp("updated_at").notNull().defaultNow(),
-});
-
-export const profileAllowanceUsage = pgTable("profile_allowance_usage", {
-  id: serial("id").primaryKey(),
-  cardId: text("card_id").notNull(),
-  botId: text("bot_id"),
-  profileIndex: integer("profile_index").notNull(),
-  windowStart: timestamp("window_start").notNull(),
-  spentCents: integer("spent_cents").notNull().default(0),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-}, (table) => [
-  index("profile_allowance_card_profile_idx").on(table.cardId, table.profileIndex),
-  index("profile_allowance_bot_profile_idx").on(table.botId, table.profileIndex),
-]);
-
-export const checkoutConfirmations = pgTable("checkout_confirmations", {
-  id: serial("id").primaryKey(),
-  confirmationId: text("confirmation_id").notNull().unique(),
-  cardId: text("card_id").notNull(),
-  botId: text("bot_id").notNull(),
-  profileIndex: integer("profile_index").notNull(),
-  amountCents: integer("amount_cents").notNull(),
-  merchantName: text("merchant_name").notNull(),
-  merchantUrl: text("merchant_url").notNull(),
-  itemName: text("item_name").notNull(),
-  category: text("category"),
-  status: text("status").notNull().default("pending"),
-  hmacToken: text("hmac_token"),
-  expiresAt: timestamp("expires_at"),
-  decidedAt: timestamp("decided_at"),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-}, (table) => [
-  index("checkout_confirmations_card_idx").on(table.cardId),
-  index("checkout_confirmations_bot_idx").on(table.botId),
-  index("checkout_confirmations_confirmation_idx").on(table.confirmationId),
-]);
 
 export const waitlistEntries = pgTable("waitlist_entries", {
   id: serial("id").primaryKey(),
@@ -347,62 +166,9 @@ export const waitlistEntries = pgTable("waitlist_entries", {
 export type WaitlistEntry = typeof waitlistEntries.$inferSelect;
 export type InsertWaitlistEntry = typeof waitlistEntries.$inferInsert;
 
-export type Rail4Card = typeof rail4Cards.$inferSelect;
-export type InsertRail4Card = typeof rail4Cards.$inferInsert;
-export type ObfuscationEvent = typeof obfuscationEvents.$inferSelect;
-export type InsertObfuscationEvent = typeof obfuscationEvents.$inferInsert;
-export type ObfuscationState = typeof obfuscationState.$inferSelect;
-export type InsertObfuscationState = typeof obfuscationState.$inferInsert;
-export type ProfileAllowanceUsage = typeof profileAllowanceUsage.$inferSelect;
-export type InsertProfileAllowanceUsage = typeof profileAllowanceUsage.$inferInsert;
-export type CheckoutConfirmation = typeof checkoutConfirmations.$inferSelect;
-export type InsertCheckoutConfirmation = typeof checkoutConfirmations.$inferInsert;
-
-export const profilePermissionSchema = z.object({
-  profile_index: z.number().int().min(1).max(6),
-  allowance_duration: z.enum(["day", "week", "month"]),
-  allowance_currency: z.string().default("USD"),
-  allowance_value: z.number().min(0),
-  human_permission_required: z.enum(["all", "none"]),
-  creditclaw_permission_required: z.literal("all"),
-});
-
-export type ProfilePermission = z.infer<typeof profilePermissionSchema>;
-
-export const rail4InitializeSchema = z.object({
-  card_id: z.string().min(1),
-});
-
-export const rail4SubmitOwnerDataSchema = z.object({
-  card_id: z.string().min(1),
-  missing_digits: z.string().length(3).regex(/^\d{3}$/),
-  expiry_month: z.number().int().min(1).max(12),
-  expiry_year: z.number().int().min(2025).max(2040),
-  owner_name: z.string().max(200).optional(),
-  owner_zip: z.string().min(3).max(20),
-  profile_permissions: profilePermissionSchema.optional(),
-});
-
-export const unifiedCheckoutSchema = z.object({
-  profile_index: z.number().int().min(1).max(6),
-  merchant_name: z.string().min(1).max(200),
-  merchant_url: z.string().min(1).max(2000),
-  item_name: z.string().min(1).max(500),
-  amount_cents: z.number().int().min(1).max(10000000),
-  category: z.string().max(100).optional(),
-  task_id: z.string().optional(),
-  card_id: z.string().optional(),
-});
-
 export const waitlistEmailSchema = z.object({
   email: z.string().email(),
   source: z.string().optional(),
-});
-
-export const createPaymentLinkSchema = z.object({
-  amount_usd: z.number().min(0.50).max(10000.00),
-  description: z.string().min(1).max(500),
-  payer_email: z.string().email().optional(),
 });
 
 export const updateNotificationPreferencesSchema = z.object({
@@ -662,39 +428,9 @@ export const upsertMasterGuardrailsSchema = z.object({
   max_per_tx_usdc: z.number().int().min(1).max(100000).optional(),
   daily_budget_usdc: z.number().int().min(1).max(1000000).optional(),
   monthly_budget_usdc: z.number().int().min(1).max(10000000).optional(),
-  approval_mode: z.enum(["ask_for_everything", "auto_approve_under_threshold", "auto_approve_by_category"]).optional(),
+  approval_mode: z.enum(["ask_for_everything", "auto_approve_under_threshold"]).optional(),
   require_approval_above: z.number().int().min(0).nullable().optional(),
   enabled: z.boolean().optional(),
-});
-
-// ─── Rail 4 Guardrails (card-rail, cents) ─────────────────────────────────────
-
-export const rail4Guardrails = pgTable("rail4_guardrails", {
-  id: serial("id").primaryKey(),
-  cardId: text("card_id").notNull(),
-  maxPerTxCents: integer("max_per_tx_cents").notNull().default(GUARDRAIL_DEFAULTS.rail4.maxPerTxCents),
-  dailyBudgetCents: integer("daily_budget_cents").notNull().default(GUARDRAIL_DEFAULTS.rail4.dailyBudgetCents),
-  monthlyBudgetCents: integer("monthly_budget_cents").notNull().default(GUARDRAIL_DEFAULTS.rail4.monthlyBudgetCents),
-  recurringAllowed: boolean("recurring_allowed").notNull().default(GUARDRAIL_DEFAULTS.rail4.recurringAllowed),
-  autoPauseOnZero: boolean("auto_pause_on_zero").notNull().default(GUARDRAIL_DEFAULTS.rail4.autoPauseOnZero),
-  notes: text("notes"),
-  updatedAt: timestamp("updated_at").notNull().defaultNow(),
-  updatedBy: text("updated_by"),
-}, (table) => [
-  index("rail4_guardrails_card_id_idx").on(table.cardId),
-]);
-
-export type Rail4Guardrail = typeof rail4Guardrails.$inferSelect;
-export type InsertRail4Guardrail = typeof rail4Guardrails.$inferInsert;
-
-export const upsertRail4GuardrailsSchema = z.object({
-  card_id: z.string().min(1),
-  max_per_tx_cents: z.number().int().min(0).max(10000000).optional(),
-  daily_budget_cents: z.number().int().min(0).max(10000000).optional(),
-  monthly_budget_cents: z.number().int().min(0).max(100000000).optional(),
-  recurring_allowed: z.boolean().optional(),
-  auto_pause_on_zero: z.boolean().optional(),
-  notes: z.string().max(2000).nullable().optional(),
 });
 
 // ─── Rail 5 Guardrails (card-rail, cents) ─────────────────────────────────────
@@ -752,7 +488,7 @@ export type ProcurementControl = typeof procurementControls.$inferSelect;
 export type InsertProcurementControl = typeof procurementControls.$inferInsert;
 
 export const upsertProcurementControlsSchema = z.object({
-  scope: z.enum(["master", "rail1", "rail2", "rail4", "rail5"]),
+  scope: z.enum(["master", "rail1", "rail2", "rail5"]),
   scope_ref_id: z.string().nullable().optional(),
   allowlisted_domains: z.array(z.string()).optional(),
   blocklisted_domains: z.array(z.string()).optional(),
@@ -803,7 +539,7 @@ export const rail5Cards = pgTable("rail5_cards", {
   index("rail5_cards_status_idx").on(table.status),
 ]);
 
-export const rail5Checkouts = pgTable("rail5_checkouts", {
+export const rail5Transactions = pgTable("rail5_transactions", {
   id: serial("id").primaryKey(),
   checkoutId: text("checkout_id").notNull().unique(),
   cardId: text("card_id").notNull(),
@@ -821,16 +557,16 @@ export const rail5Checkouts = pgTable("rail5_checkouts", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 }, (table) => [
-  index("rail5_checkouts_checkout_id_idx").on(table.checkoutId),
-  index("rail5_checkouts_card_id_idx").on(table.cardId),
-  index("rail5_checkouts_bot_id_idx").on(table.botId),
-  index("rail5_checkouts_status_idx").on(table.status),
+  index("rail5_transactions_checkout_id_idx").on(table.checkoutId),
+  index("rail5_transactions_card_id_idx").on(table.cardId),
+  index("rail5_transactions_bot_id_idx").on(table.botId),
+  index("rail5_transactions_status_idx").on(table.status),
 ]);
 
 export type Rail5Card = typeof rail5Cards.$inferSelect;
 export type InsertRail5Card = typeof rail5Cards.$inferInsert;
-export type Rail5Checkout = typeof rail5Checkouts.$inferSelect;
-export type InsertRail5Checkout = typeof rail5Checkouts.$inferInsert;
+export type Rail5Transaction = typeof rail5Transactions.$inferSelect;
+export type InsertRail5Transaction = typeof rail5Transactions.$inferInsert;
 
 export const rail5InitializeSchema = z.object({
   card_name: z.string().min(1).max(200),
@@ -1052,7 +788,7 @@ export type InsertOrder = typeof orders.$inferInsert;
 
 export const insertOrderSchema = z.object({
   ownerUid: z.string().min(1),
-  rail: z.enum(["rail1", "rail2", "rail4", "rail5"]),
+  rail: z.enum(["rail1", "rail2", "rail5"]),
   botId: z.string().optional().nullable(),
   botName: z.string().optional().nullable(),
   walletId: z.number().int().optional().nullable(),
@@ -1483,7 +1219,7 @@ export const insertBrandFeedbackSchema = z.object({
   searchAccuracy: z.number().int().min(1).max(5),
   stockReliability: z.number().int().min(1).max(5),
   checkoutCompletion: z.number().int().min(1).max(5),
-  checkoutMethod: z.enum(["native_api", "browser_automation", "x402", "acp", "self_hosted_card", "crossmint_world"]),
+  checkoutMethod: z.enum(["native_api", "browser_automation", "x402", "acp", "crossmint_world"]),
   outcome: z.enum(["success", "checkout_failed", "search_failed", "out_of_stock", "price_mismatch", "flow_changed"]),
   comment: z.string().max(500).optional(),
 });
@@ -1562,3 +1298,69 @@ export const brandCategories = pgTable("brand_categories", {
   index("brand_categories_category_idx").on(table.categoryId),
   uniqueIndex("brand_categories_brand_category_uniq").on(table.brandId, table.categoryId),
 ]);
+
+const tsvector = customType<{ data: string }>({
+  dataType() {
+    return "tsvector";
+  },
+});
+
+export const categoryKeywords = pgTable("category_keywords", {
+  id: serial("id").primaryKey(),
+  categoryId: integer("category_id").notNull(),
+  categoryName: text("category_name").notNull(),
+  categoryPath: text("category_path").notNull(),
+  keywords: text("keywords").array().notNull(),
+  keywordsTsv: tsvector("keywords_tsv"),
+  generatedAt: timestamp("generated_at").notNull().defaultNow(),
+}, (table) => [
+  uniqueIndex("category_keywords_category_id_uniq").on(table.categoryId),
+  index("category_keywords_tsv_idx").using("gin", table.keywordsTsv),
+]);
+
+export type CategoryKeyword = typeof categoryKeywords.$inferSelect;
+export type InsertCategoryKeyword = typeof categoryKeywords.$inferInsert;
+
+const vector384 = customType<{ data: number[] }>({
+  dataType() {
+    return "vector(384)";
+  },
+  toDriver(value: number[]) {
+    return `[${value.join(",")}]`;
+  },
+  fromDriver(value: unknown) {
+    if (typeof value === "string") {
+      return value.replace(/[\[\]]/g, "").split(",").map(Number);
+    }
+    return value as number[];
+  },
+});
+
+export const productListings = pgTable("product_listings", {
+  id: serial("id").primaryKey(),
+  brandId: integer("brand_id").notNull(),
+  name: text("name").notNull(),
+  description: text("description"),
+  priceCents: integer("price_cents").notNull(),
+  currency: text("currency").notNull().default("USD"),
+  inStock: boolean("in_stock").notNull().default(true),
+  imageUrl: text("image_url"),
+  productUrl: text("product_url").notNull(),
+  categoryId: integer("category_id"),
+  brandName: text("brand_name"),
+  upc: text("upc"),
+  gtin: text("gtin"),
+  mpn: text("mpn"),
+  feedSource: text("feed_source"),
+  feedItemId: text("feed_item_id"),
+  embedding: vector384("embedding"),
+  lastSynced: timestamp("last_synced").notNull().defaultNow(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (table) => [
+  uniqueIndex("product_listings_brand_feed_uniq").on(table.brandId, table.feedItemId),
+  index("product_listings_brand_id_idx").on(table.brandId),
+  index("product_listings_category_id_idx").on(table.categoryId),
+]);
+
+export type ProductListing = typeof productListings.$inferSelect;
+export type InsertProductListing = typeof productListings.$inferInsert;

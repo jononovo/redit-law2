@@ -9,8 +9,8 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/wallet/status-badge";
-import { useAuth } from "@/lib/auth/auth-context";
-import { authFetch } from "@/lib/auth-fetch";
+import { useAuth } from "@/features/platform-management/auth/auth-context";
+import { authFetch } from "@/features/platform-management/auth-fetch";
 import { useToast } from "@/hooks/use-toast";
 
 const ORDER_TIMELINE_STEPS = [
@@ -80,9 +80,8 @@ function formatCents(cents: number | null | undefined, currency = "USD"): string
 }
 
 const RAIL_LABELS: Record<string, string> = {
-  rail1: "Rail 1 — Stripe Wallet",
+  rail1: "Rail 1 — Crypto Wallet",
   rail2: "Rail 2 — Card Wallet",
-  rail4: "Rail 4 — Self-Hosted Card",
   rail5: "Rail 5 — Sub-Agent Card",
 };
 

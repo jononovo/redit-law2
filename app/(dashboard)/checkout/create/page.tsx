@@ -11,8 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { StatusBadge } from "@/components/wallet/status-badge";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerFooter, DrawerClose } from "@/components/ui/drawer";
-import { useAuth } from "@/lib/auth/auth-context";
-import { authFetch } from "@/lib/auth-fetch";
+import { useAuth } from "@/features/platform-management/auth/auth-context";
+import { authFetch } from "@/features/platform-management/auth-fetch";
 
 interface WalletOption {
   id: number;
@@ -374,7 +374,7 @@ export default function CreateCheckoutPage() {
             Wallet <span className="text-red-500">*</span>
           </Label>
           {wallets.length === 0 ? (
-            <p className="text-sm text-neutral-400">No active wallets found. Create a Stripe Wallet first.</p>
+            <p className="text-sm text-neutral-400">No active wallets found. Create a Crypto Wallet first.</p>
           ) : (
             <Select value={walletId} onValueChange={setWalletId}>
               <SelectTrigger data-testid="select-checkout-wallet">

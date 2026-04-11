@@ -3,7 +3,7 @@ import fs from "fs";
 import path from "path";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, FileText } from "lucide-react";
-import { sections, findPage, getAllPagesFlat, getAudienceFromSlug, getTenantFromSlug } from "@/docs/content/sections";
+import { sections, findPage, getAllPagesFlat } from "@/app/docs/content/sections";
 import { DocRenderer } from "./doc-renderer";
 import { CopyMarkdownButton } from "./copy-markdown-button";
 
@@ -33,10 +33,8 @@ export default async function DocPage({ params }: Props) {
     notFound();
   }
 
-  const { section, page, pageIndex } = found;
-  const audience = getAudienceFromSlug(slug);
-  const tenant = getTenantFromSlug(slug);
-  const allPages = getAllPagesFlat(audience, tenant);
+  const { section, page } = found;
+  const allPages = getAllPagesFlat();
 
   const currentIndex = allPages.findIndex(
     (p) => p.path === `/docs/${section.slug}/${page.slug}`
@@ -44,7 +42,7 @@ export default async function DocPage({ params }: Props) {
   const prevPage = currentIndex > 0 ? allPages[currentIndex - 1] : null;
   const nextPage = currentIndex < allPages.length - 1 ? allPages[currentIndex + 1] : null;
 
-  const mdPath = path.join(process.cwd(), "docs", "content", ...section.slug.split("/"), `${page.slug}.md`);
+  const mdPath = path.join(process.cwd(), "app", "docs", "content", ...section.slug.split("/"), `${page.slug}.md`);
   let content = "";
   try {
     content = fs.readFileSync(mdPath, "utf-8");

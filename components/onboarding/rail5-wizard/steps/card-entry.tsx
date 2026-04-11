@@ -3,9 +3,9 @@
 import { Loader2, ArrowRight, ArrowLeft, Lock, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { wt } from "@/lib/wizard-typography";
-import { Rail5InteractiveCard } from "@/lib/card/onboarding-rail5/interactive-card";
-import { type CardBrand } from "@/lib/card/card-brand";
-import { type CardFieldErrors } from "@/lib/card/hooks";
+import { Rail5InteractiveCard } from "@/features/payment-rails/card/onboarding-rail5/interactive-card";
+import { type CardBrand } from "@/features/payment-rails/card/card-brand";
+import { type CardFieldErrors } from "@/features/payment-rails/card/hooks";
 
 interface CardEntryProps {
   cardNumber: string;

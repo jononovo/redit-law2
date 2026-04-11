@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSessionUser } from "@/lib/auth/session";
+import { getSessionUser } from "@/features/platform-management/auth/session";
 import { storage } from "@/server/storage";
-import { resolveApproval } from "@/lib/approvals/service";
-import "@/lib/approvals/callbacks";
+import { resolveApproval } from "@/features/agent-interaction/approvals/service";
+import "@/features/agent-interaction/approvals/callbacks";
 
 export async function POST(request: NextRequest) {
   try {

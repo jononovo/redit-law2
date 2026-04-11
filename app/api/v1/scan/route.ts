@@ -1,22 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { storage } from "@/server/storage";
-import { normalizeDomain, domainToSlug } from "@/lib/agentic-score";
-import { SCORING_RUBRIC } from "@/lib/agentic-score/rubric";
-import { computeScoreFromRubric } from "@/lib/agentic-score/scoring-engine";
-import { auditSite, auditToEvidence } from "@/lib/agentic-score/audit-site";
-import { classifyBrand } from "@/lib/agentic-score/classify-brand";
+import { normalizeDomain, domainToSlug } from "@/features/brand-engine/agentic-score";
+import { SCORING_RUBRIC } from "@/features/brand-engine/agentic-score/rubric";
+import { computeScoreFromRubric } from "@/features/brand-engine/agentic-score/scoring-engine";
+import { auditSite, auditToEvidence } from "@/features/brand-engine/agentic-score/audit-site";
+import { classifyBrand } from "@/features/brand-engine/agentic-score/classify-brand";
 import {
   buildVendorSkillDraft,
   mergeArrayField,
   domainToLabel,
-} from "@/lib/agentic-score/scan-utils";
-import { generateVendorSkill } from "@/lib/procurement-skills/generator";
-import type { VendorSkill } from "@/lib/procurement-skills/types";
-import { resolveProductCategories } from "@/lib/agentic-score/resolve-categories";
-import type { VendorSector } from "@/lib/procurement-skills/taxonomy/sectors";
-import type { BrandType } from "@/lib/procurement-skills/taxonomy/brand-types";
-import type { ScoreLabel } from "@/lib/agentic-score";
+  resolveMaturity,
+} from "@/features/brand-engine/agentic-score/scan-utils";
+import { generateVendorSkill } from "@/features/brand-engine/procurement-skills/generator";
+import type { VendorSkill } from "@/features/brand-engine/procurement-skills/types";
+import { resolveProductCategories } from "@/features/brand-engine/agentic-score/resolve-categories";
+import type { VendorSector } from "@/features/brand-engine/procurement-skills/taxonomy/sectors";
+import type { BrandType } from "@/features/brand-engine/procurement-skills/taxonomy/brand-types";
+import type { ScoreLabel } from "@/features/brand-engine/agentic-score";
 
 const CACHE_WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
 const RATE_LIMIT_WINDOW_MS = 60 * 1000;
@@ -182,7 +183,7 @@ export async function POST(request: NextRequest) {
 
     let finalSector: string = resolvedSector;
 
-    let categoryResult: { categories: import("@/lib/agentic-score/resolve-categories").ResolvedCategory[]; resolvedSector: VendorSector } | null = null;
+    let categoryResult: { categories: import("@/features/brand-engine/agentic-score/resolve-categories").ResolvedCategory[]; resolvedSector: VendorSector } | null = null;
     try {
       categoryResult = await resolveProductCategories(
         domain,
@@ -209,7 +210,12 @@ export async function POST(request: NextRequest) {
       brandType: resolvedBrandType,
       submittedBy: existing?.submittedBy ?? "asx-scanner",
       submitterType: existing?.submitterType ?? "auto_scan",
-      maturity: existing?.maturity ?? "draft",
+      maturity: resolveMaturity(
+        existing?.maturity ?? null,
+        scoreResult.overallScore != null,
+        !!(skillMd ?? existing?.skillMd),
+        !!(draft ?? (existing?.brandData && JSON.stringify(existing.brandData) !== '{}')),
+      ),
       brandData: draft ?? existing?.brandData ?? {},
       overallScore: scoreResult.overallScore,
       scoreBreakdown: scoreResult.breakdown,

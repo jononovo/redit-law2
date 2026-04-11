@@ -5,8 +5,8 @@ import { Nav } from "@/components/nav";
 import { Footer } from "@/components/footer";
 import { storage } from "@/server/storage";
 import { VendorCard } from "@/app/skills/vendor-card";
-import { SECTOR_LABELS, VendorSector } from "@/lib/procurement-skills/types";
-import { isSectorLuxuryFilter, LUXURY_TIERS } from "@/lib/procurement-skills/taxonomy/sectors";
+import { SECTOR_LABELS, VendorSector } from "@/features/brand-engine/procurement-skills/types";
+import { isSectorLuxuryFilter, LUXURY_TIERS } from "@/features/brand-engine/procurement-skills/taxonomy/sectors";
 import { ArrowLeft, ArrowRight, Layers } from "lucide-react";
 import type { Metadata } from "next";
 

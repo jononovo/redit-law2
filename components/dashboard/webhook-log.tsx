@@ -22,7 +22,6 @@ interface Delivery {
 function eventLabel(eventType: string): string {
   const map: Record<string, string> = {
     "wallet.activated": "Wallet Activated",
-    "wallet.topup.completed": "Top-up Completed",
     "wallet.spend.authorized": "Purchase Approved",
     "wallet.spend.declined": "Purchase Declined",
     "wallet.balance.low": "Balance Low",

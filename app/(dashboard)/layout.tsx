@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AppSidebar } from "@/components/dashboard/sidebar";
 import { Header } from "@/components/dashboard/header";
-import { useAuth } from "@/lib/auth/auth-context";
+import { useAuth } from "@/features/platform-management/auth/auth-context";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { NewCardModal } from "@/components/dashboard/new-card-modal";
 
@@ -16,20 +16,20 @@ export default function DashboardLayout({
   const { user, loading, completeMagicLink } = useAuth();
   const router = useRouter();
   const [newCardModalOpen, setNewCardModalOpen] = useState(false);
+  const [magicLinkDone, setMagicLinkDone] = useState(false);
 
   useEffect(() => {
-    completeMagicLink();
+    completeMagicLink().finally(() => {
+      setMagicLinkDone(true);
+    });
   }, [completeMagicLink]);
 
-  // DEV ONLY: 2-second delay before redirect to prevent false logouts caused by
-  // Firebase token refresh race conditions in the Replit dev environment (cross-origin issues).
-  // REMOVE THIS IN PRODUCTION — it is not needed when the app runs on its own domain.
   useEffect(() => {
-    if (!loading && !user) {
+    if (!loading && !user && magicLinkDone) {
       const timeout = setTimeout(() => router.push("/"), 2000);
       return () => clearTimeout(timeout);
     }
-  }, [user, loading, router]);
+  }, [user, loading, magicLinkDone, router]);
 
   if (loading) {
     return (

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { Loader2, Plus, Wallet, ArrowRight, Shield, Eye, Copy, Snowflake, Play } from "lucide-react";
+import { authFetch } from "@/features/platform-management/auth-fetch";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -11,17 +12,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { CardVisual } from "@/components/wallet/card-visual";
 import { WalletActionBar } from "@/components/wallet/wallet-action-bar";
-import { stableCardColor, formatCentsToUsd } from "@/components/wallet/types";
-
-interface CardData {
-  id: number;
-  botId: string;
-  botName: string;
-  balanceCents: number;
-  currency: string;
-  isFrozen: boolean;
-  createdAt: string;
-}
+import { normalizeRail5Card, type NormalizedCard } from "@/components/wallet/types";
 
 interface SpendingLimits {
   bot_id: string;
@@ -32,7 +23,7 @@ interface SpendingLimits {
   blocked_categories: string[];
 }
 
-function LimitsPopover({ botId, cardId }: { botId: string; cardId: number }) {
+function LimitsPopover({ botId, cardId }: { botId: string; cardId: string }) {
   const [limits, setLimits] = useState<SpendingLimits | null>(null);
   const [loading, setLoading] = useState(false);
   const [fetched, setFetched] = useState(false);
@@ -89,8 +80,7 @@ function LimitsPopover({ botId, cardId }: { botId: string; cardId: number }) {
                 <span className="text-xs text-neutral-500">Approval</span>
                 <span className="text-xs font-semibold text-neutral-700" data-testid="text-approval-mode">
                   {limits.approval_mode === "ask_for_everything" ? "Ask every time" :
-                   limits.approval_mode === "auto_approve_under_threshold" ? "Auto under threshold" :
-                   "Auto by category"}
+                   "Auto under threshold"}
                 </span>
               </div>
             </div>
@@ -117,15 +107,15 @@ function LimitsPopover({ botId, cardId }: { botId: string; cardId: number }) {
 
 export default function CardsPage() {
   const { toast } = useToast();
-  const [cards, setCards] = useState<CardData[]>([]);
+  const [cards, setCards] = useState<NormalizedCard[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchCards = useCallback(async () => {
     try {
-      const res = await fetch("/api/v1/wallets");
+      const res = await authFetch("/api/v1/rail5/cards");
       if (res.ok) {
         const data = await res.json();
-        setCards(data.cards || []);
+        setCards((data.cards || []).map((c: any) => normalizeRail5Card(c, "/sub-agent-cards")));
       }
     } catch {
     } finally {
@@ -137,28 +127,29 @@ export default function CardsPage() {
     fetchCards();
   }, [fetchCards]);
 
-  async function handleFreeze(card: CardData) {
-    const newFrozen = !card.isFrozen;
-    setCards((prev) => prev.map((c) => (c.id === card.id ? { ...c, isFrozen: newFrozen } : c)));
+  async function handleFreeze(card: NormalizedCard) {
+    const isFrozen = card.status === "frozen";
+    const newStatus = isFrozen ? "active" : "frozen";
+    setCards((prev) => prev.map((c) => (c.card_id === card.card_id ? { ...c, status: newStatus } : c)));
 
     try {
-      const res = await fetch(`/api/v1/wallets/${card.id}/freeze`, {
-        method: "POST",
+      const res = await authFetch(`/api/v1/rail5/cards/${card.card_id}`, {
+        method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ frozen: newFrozen }),
+        body: JSON.stringify({ status: newStatus }),
       });
 
       if (!res.ok) {
-        setCards((prev) => prev.map((c) => (c.id === card.id ? { ...c, isFrozen: !newFrozen } : c)));
+        setCards((prev) => prev.map((c) => (c.card_id === card.card_id ? { ...c, status: isFrozen ? "frozen" : "active" } : c)));
         toast({ title: "Failed to update", description: "Please try again.", variant: "destructive" });
       } else {
         toast({
-          title: newFrozen ? "Wallet frozen" : "Wallet unfrozen",
-          description: newFrozen ? "All spending is paused." : "Spending is resumed.",
+          title: isFrozen ? "Card unfrozen" : "Card frozen",
+          description: isFrozen ? "Spending is resumed." : "All spending is paused.",
         });
       }
     } catch {
-      setCards((prev) => prev.map((c) => (c.id === card.id ? { ...c, isFrozen: !newFrozen } : c)));
+      setCards((prev) => prev.map((c) => (c.card_id === card.card_id ? { ...c, status: isFrozen ? "frozen" : "active" } : c)));
       toast({ title: "Network error", description: "Please try again.", variant: "destructive" });
     }
   }
@@ -170,22 +161,6 @@ export default function CardsPage() {
 
   return (
     <div className="flex flex-col gap-8 animate-fade-in-up">
-      <div className="rounded-2xl bg-blue-50 border border-blue-100 p-5 flex items-center gap-4" data-testid="banner-wallets-redirect">
-        <div className="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center shrink-0">
-          <Wallet className="w-6 h-6 text-blue-600" />
-        </div>
-        <div className="flex-1">
-          <p className="font-bold text-neutral-900" data-testid="text-wallets-banner-title">Wallet-funded cards are coming soon</p>
-          <p className="text-sm text-neutral-500 font-medium" data-testid="text-wallets-banner-desc">This is where wallet-funded cards will live. For now, head to Self-Hosted Cards to get started.</p>
-        </div>
-        <Link href="/self-hosted">
-          <Button className="rounded-full gap-2 shrink-0" data-testid="button-go-self-hosted">
-            Self-Hosted Cards
-            <ArrowRight className="w-4 h-4" />
-          </Button>
-        </Link>
-      </div>
-
       <div className="flex justify-between items-center">
         <p className="text-neutral-500">Manage your virtual and physical cards.</p>
         <Dialog>
@@ -225,20 +200,23 @@ export default function CardsPage() {
         </div>
       ) : cards.length === 0 ? (
         <div className="text-center py-24" data-testid="text-no-cards">
-          <p className="text-lg text-neutral-400 font-medium">No wallets yet.</p>
-          <p className="text-sm text-neutral-400 mt-2">Connect a bot and fund its wallet to see it here.</p>
+          <p className="text-lg text-neutral-400 font-medium">No cards yet.</p>
+          <p className="text-sm text-neutral-400 mt-2">Add a card and pair it with a bot to see it here.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {cards.map((card, index) => (
-            <div className="flex flex-col gap-4" key={card.id} data-testid={`card-wallet-${card.id}`}>
+          {cards.map((card) => (
+            <div className="flex flex-col gap-4" key={card.card_id} data-testid={`card-wallet-${card.card_id}`}>
               <CardVisual
-                color={stableCardColor(card.botId)}
-                balance={formatCentsToUsd(card.balanceCents)}
-                balanceLabel="Current Balance"
-                last4={card.botId.slice(-4)}
-                holder={card.botName.toUpperCase()}
-                frozen={card.isFrozen}
+                color={card.card_color}
+                balance={card.balance}
+                balanceLabel={card.balanceLabel}
+                last4={card.last4}
+                holder={(card.bot_name || card.card_name).toUpperCase()}
+                frozen={card.status === "frozen"}
+                line1={card.line1 ?? undefined}
+                line2={card.line2 ?? undefined}
+                brand={card.brand ?? undefined}
               />
               <WalletActionBar
                 actions={[
@@ -246,31 +224,31 @@ export default function CardsPage() {
                     icon: Shield,
                     label: "Limits",
                     onClick: () => {},
-                    "data-testid": `button-limits-${card.id}`,
+                    "data-testid": `button-limits-${card.card_id}`,
                   },
                   {
-                    icon: card.isFrozen ? Play : Snowflake,
-                    label: card.isFrozen ? "Unfreeze" : "Freeze",
+                    icon: card.status === "frozen" ? Play : Snowflake,
+                    label: card.status === "frozen" ? "Unfreeze" : "Freeze",
                     onClick: () => handleFreeze(card),
-                    className: `flex-1 text-xs gap-2 ${card.isFrozen ? "text-blue-600" : "text-neutral-600"} cursor-pointer hover:bg-neutral-100 rounded-lg transition-colors`,
-                    "data-testid": `button-freeze-${card.id}`,
+                    className: `flex-1 text-xs gap-2 ${card.status === "frozen" ? "text-blue-600" : "text-neutral-600"} cursor-pointer hover:bg-neutral-100 rounded-lg transition-colors`,
+                    "data-testid": `button-freeze-${card.card_id}`,
                   },
                 ]}
                 menuItems={[
                   {
                     icon: Eye,
-                    label: "View Transactions",
-                    onClick: () => window.location.href = "/transactions",
-                    "data-testid": `menu-transactions-${card.id}`,
+                    label: "View Orders",
+                    onClick: () => window.location.href = "/transactions?tab=orders",
+                    "data-testid": `menu-transactions-${card.card_id}`,
                   },
                   {
                     icon: Copy,
                     label: "Copy Bot ID",
-                    onClick: () => handleCopyBotId(card.botId),
-                    "data-testid": `menu-copy-botid-${card.id}`,
+                    onClick: () => handleCopyBotId(card.bot_id || ""),
+                    "data-testid": `menu-copy-botid-${card.card_id}`,
                   },
                 ]}
-                menuTestId={`button-more-${card.id}`}
+                menuTestId={`button-more-${card.card_id}`}
               />
             </div>
           ))}

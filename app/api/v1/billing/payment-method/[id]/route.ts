@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getCurrentUser } from "@/lib/auth/session";
-import { detachPaymentMethod } from "@/lib/stripe";
+import { getCurrentUser } from "@/features/platform-management/auth/session";
+import { detachPaymentMethod } from "@/features/payment-rails/stripe";
 import { storage } from "@/server/storage";
 
 export async function DELETE(

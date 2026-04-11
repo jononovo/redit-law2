@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getCurrentUser } from "@/lib/auth/session";
-import { addToQueue, getQueueStats, clearCompleted, retryFailed, removeEntry } from "@/lib/scan-queue/process-next";
+import { getCurrentUser } from "@/features/platform-management/auth/session";
+import { addToQueue, getQueueStats, clearCompleted, retryFailed, removeEntry } from "@/features/brand-engine/scan-queue/process-next";
 
 async function requireAdmin() {
   const user = await getCurrentUser();
@@ -43,6 +43,7 @@ export async function POST(request: NextRequest) {
   }
 
   const domains: string[] = body.domains;
+  const allowRescans: boolean = body.allowRescans === true;
   if (!Array.isArray(domains) || domains.length === 0) {
     return NextResponse.json(
       { error: "domains must be a non-empty array of strings" },
@@ -50,6 +51,6 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const result = await addToQueue(domains);
+  const result = await addToQueue(domains, allowRescans);
   return NextResponse.json(result);
 }

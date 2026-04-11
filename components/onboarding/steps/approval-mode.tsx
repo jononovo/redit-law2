@@ -1,9 +1,9 @@
 "use client";
 
 import { WizardStep } from "../wizard-step";
-import { ShieldCheck, Zap, Tag } from "lucide-react";
+import { ShieldCheck, Zap } from "lucide-react";
 
-export type ApprovalModeValue = "ask_for_everything" | "auto_approve_under_threshold" | "auto_approve_by_category";
+export type ApprovalModeValue = "ask_for_everything" | "auto_approve_under_threshold";
 
 interface ApprovalModeProps {
   currentStep: number;
@@ -17,7 +17,6 @@ interface ApprovalModeProps {
 const options: { value: ApprovalModeValue; label: string; subtitle: string; Icon: typeof ShieldCheck }[] = [
   { value: "ask_for_everything", label: "Ask me every time", subtitle: "Most secure. You approve every transaction.", Icon: ShieldCheck },
   { value: "auto_approve_under_threshold", label: "Auto-approve small purchases", subtitle: "You only get asked for bigger ones.", Icon: Zap },
-  { value: "auto_approve_by_category", label: "Auto-approve by category", subtitle: "You pick what's okay, everything else needs approval.", Icon: Tag },
 ];
 
 export function ApprovalMode({ currentStep, totalSteps, onBack, onNext, defaultMode, Wrapper }: ApprovalModeProps) {

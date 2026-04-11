@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { withBotApi } from "@/lib/agent-management/agent-api/middleware";
+import { withBotApi } from "@/features/platform-management/agent-management/agent-api/middleware";
 import { storage } from "@/server/storage";
-import { generateInvoicePdf, pdfToBase64 } from "@/lib/invoice-pdf";
-import { sendInvoiceEmail } from "@/lib/invoice-email";
+import { generateInvoicePdf, pdfToBase64 } from "@/features/agent-shops/invoice-pdf";
+import { sendInvoiceEmail } from "@/features/agent-shops/invoice-email";
 
 export const POST = withBotApi("/api/v1/bot/invoices/send", async (request, { bot }) => {
   const wallet = await storage.privyGetWalletByBotId(bot.botId);

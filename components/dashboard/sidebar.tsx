@@ -16,15 +16,14 @@ import {
   Store,
   ShoppingBag,
   ExternalLink,
-  Package,
   FileText
 } from "lucide-react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
-import { useAuth } from "@/lib/auth/auth-context";
-import type { Tier } from "@/lib/feature-flags/tiers";
+import { useAuth } from "@/features/platform-management/auth/auth-context";
+import type { Tier } from "@/features/platform-management/feature-flags/tiers";
 import {
   Sidebar as SidebarShell,
   SidebarHeader,
@@ -46,11 +45,10 @@ interface NavItem {
 
 const mainNavItems: NavItem[] = [
   { icon: LayoutDashboard, label: "Overview", href: "/overview" },
-  { icon: Wallet, label: "Stripe Wallet", subtitle: "USDC for x402", href: "/stripe-wallet", tag: "beta", tooltip: "USDC wallet x402 purchases. Fund with Stripe/Link." },
-  { icon: ShoppingCart, label: "Shop Wallet", subtitle: "USDC for Shopping API", href: "/card-wallet", tag: "coming soon", tooltip: "USDC wallet for Shopping at Amazon/Shopify.", requiredAccess: "admin" },
   { icon: Lock, label: "My Card", subtitle: "Encrypted", href: "/sub-agent-cards", tag: "beta", tooltip: "Self-hosted: Agent uses your card. Secured with: Encryption & Ephemeral Sub-Agent." },
-  { icon: Shield, label: "My Card", subtitle: "Split-Knowledge", href: "/self-hosted", tag: "legacy", tooltip: "Self-hosted: Agent uses your card. Secured with: Obfuscation & Split-Knowledge.", requiredAccess: "admin" },
-  { icon: Package, label: "Orders", href: "/orders" },
+  { icon: Wallet, label: "Crypto Wallet", subtitle: "USDC for x402", href: "/stripe-wallet", tag: "beta", tooltip: "USDC wallet x402 purchases. Fund with Stripe/Link." },
+  // Shop Wallet hidden — Rail 2/Crossmint not yet functional
+  // { icon: ShoppingCart, label: "Shop Wallet", subtitle: "USDC for Shopping API", href: "/card-wallet", tag: "coming soon", tooltip: "USDC wallet for Shopping at Amazon/Shopify.", requiredAccess: "admin" },
   { icon: Activity, label: "Transactions", href: "/transactions" },
   { icon: CreditCard, label: "Virtual Cards", href: "/cards", inactive: true, requiredAccess: "admin" },
 ];

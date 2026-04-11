@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { getCurrentUser } from "@/lib/auth/session";
-import { retryPendingWebhooksForBot } from "@/lib/webhooks";
+import { getCurrentUser } from "@/features/platform-management/auth/session";
+import { retryPendingWebhooksForBot } from "@/features/agent-interaction/webhooks";
 import { storage } from "@/server/storage";
 
 export async function POST() {

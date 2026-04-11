@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSessionUser } from "@/lib/auth/session";
+import { getSessionUser } from "@/features/platform-management/auth/session";
 import { storage } from "@/server/storage";
-import { fireRailsUpdated } from "@/lib/webhooks";
+import { fireRailsUpdated } from "@/features/agent-interaction/webhooks";
 
 export async function DELETE(
   request: NextRequest,
@@ -14,23 +14,6 @@ export async function DELETE(
 
   const { cardId } = await params;
   const rail = request.nextUrl.searchParams.get("rail");
-
-  if (rail === "rail4") {
-    const card = await storage.getRail4CardByCardId(cardId);
-    if (!card || card.ownerUid !== user.uid) {
-      return NextResponse.json({ error: "card_not_found" }, { status: 404 });
-    }
-
-    if (card.botId) {
-      const bot = await storage.getBotByBotId(card.botId);
-      if (bot) {
-        fireRailsUpdated(bot, "card_removed" as const, "rail4", { card_id: cardId }).catch(() => {});
-      }
-    }
-
-    await storage.deleteRail4CardByCardId(cardId);
-    return NextResponse.json({ deleted: true });
-  }
 
   if (rail === "rail5") {
     const card = await storage.getRail5CardByCardId(cardId);
@@ -53,5 +36,5 @@ export async function DELETE(
     return NextResponse.json({ deleted: true });
   }
 
-  return NextResponse.json({ error: "invalid_rail", message: "Query parameter 'rail' must be 'rail4' or 'rail5'." }, { status: 400 });
+  return NextResponse.json({ error: "invalid_rail", message: "Query parameter 'rail' must be 'rail5'." }, { status: 400 });
 }

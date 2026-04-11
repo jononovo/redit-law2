@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getCurrentUser } from "@/lib/auth/session";
-import { startScheduler, stopScheduler, getSchedulerStatus } from "@/lib/scan-queue/scheduler";
+import { getCurrentUser } from "@/features/platform-management/auth/session";
+import { startScheduler, stopScheduler, getSchedulerStatus } from "@/features/brand-engine/scan-queue/scheduler";
 
 async function requireAdmin() {
   const user = await getCurrentUser();

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { storage } from "@/server/storage";
-import { parseSearchParams, DEFAULT_MATURITIES } from "@/lib/catalog/parse-filters";
+import { parseSearchParams, DEFAULT_MATURITIES } from "@/features/brand-engine/catalog/parse-filters";
 
 export async function GET(request: NextRequest) {
   const url = new URL(request.url);

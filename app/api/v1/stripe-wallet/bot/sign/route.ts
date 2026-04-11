@@ -1,15 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { storage } from "@/server/storage";
 import { privyBotSignSchema } from "@/shared/schema";
-import { signTypedData } from "@/lib/rail1/wallet/sign";
-import { buildTransferWithAuthorizationTypedData, generateNonce, buildXPaymentHeader, usdToMicroUsdc, microUsdcToUsd } from "@/lib/rail1/x402";
-import { authenticateBot } from "@/lib/agent-management/auth";
-import { evaluateGuardrails } from "@/lib/guardrails/evaluate";
-import { evaluateProcurementControls } from "@/lib/procurement-controls/evaluate";
-import { evaluateMasterGuardrails } from "@/lib/guardrails/master";
-import { evaluateApprovalDecision } from "@/lib/guardrails/approval";
-import { createApproval } from "@/lib/approvals/service";
-import { recordOrder } from "@/lib/orders/create";
+import { signTypedData } from "@/features/payment-rails/rail1/wallet/sign";
+import { buildTransferWithAuthorizationTypedData, generateNonce, buildXPaymentHeader, usdToMicroUsdc, microUsdcToUsd } from "@/features/payment-rails/rail1/x402";
+import { authenticateBot } from "@/features/platform-management/agent-management/auth";
+import { evaluateGuardrails } from "@/features/agent-interaction/guardrails/evaluate";
+import { evaluateProcurementControls } from "@/features/agent-interaction/procurement-controls/evaluate";
+import { evaluateMasterGuardrails } from "@/features/agent-interaction/guardrails/master";
+import { evaluateApprovalDecision } from "@/features/agent-interaction/guardrails/approval";
+import { createApproval } from "@/features/agent-interaction/approvals/service";
+import { recordOrder } from "@/features/agent-interaction/orders/create";
 
 async function handler(request: NextRequest, botId: string) {
   try {
@@ -23,7 +23,7 @@ async function handler(request: NextRequest, botId: string) {
 
     const wallet = await storage.privyGetWalletByBotId(botId);
     if (!wallet) {
-      return NextResponse.json({ error: "No Stripe Wallet found for this bot" }, { status: 404 });
+      return NextResponse.json({ error: "No Crypto Wallet found for this bot" }, { status: 404 });
     }
 
     if (wallet.status !== "active") {

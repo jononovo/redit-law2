@@ -5,7 +5,7 @@ import { Search, Settings, LogOut, LifeBuoy, BookOpen } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useAuth } from "@/lib/auth/auth-context";
+import { useAuth } from "@/features/platform-management/auth/auth-context";
 import { NotificationPopover } from "./notification-popover";
 import { FeedbackDialog } from "./feedback-dialog";
 import { SidebarTrigger } from "@/components/ui/sidebar";

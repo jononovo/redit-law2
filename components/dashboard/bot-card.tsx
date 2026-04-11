@@ -1,9 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Bot, Clock, CheckCircle, Shield, ChevronDown, ChevronUp, MoreVertical, Settings } from "lucide-react";
+import { Bot, Clock, CheckCircle, MoreVertical, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { SpendingEditor } from "@/components/dashboard/spending-editor";
 import { BotSettingsDialog } from "@/components/dashboard/bot-settings-dialog";
 import {
   DropdownMenu,
@@ -27,7 +26,6 @@ interface BotCardProps {
 
 export function BotCard({ botName, botId, description, walletStatus, webhookStatus, tunnelStatus, callbackUrl, createdAt, claimedAt, onUpdated }: BotCardProps) {
   const isActive = walletStatus === "active";
-  const [spendingOpen, setSpendingOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
 
   return (
@@ -89,27 +87,8 @@ export function BotCard({ botName, botId, description, walletStatus, webhookStat
               <span>Claimed {new Date(claimedAt).toLocaleDateString()}</span>
             )}
           </div>
-          {isActive && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-xs gap-1.5 text-neutral-500 hover:text-neutral-900"
-              onClick={() => setSpendingOpen(!spendingOpen)}
-              data-testid={`button-spending-${botId}`}
-            >
-              <Shield className="w-3.5 h-3.5" />
-              Spending Rules
-              {spendingOpen ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-            </Button>
-          )}
         </div>
       </div>
-
-      {spendingOpen && isActive && (
-        <div className="border-t border-neutral-100 p-6">
-          <SpendingEditor botId={botId} botName={botName} />
-        </div>
-      )}
 
       <BotSettingsDialog
         open={settingsOpen}

@@ -11,7 +11,7 @@ export default function TermsPage() {
 
       <main>
         <section className="pt-40 pb-24 bg-neutral-900 text-white relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-full h-full bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20" />
+          <div className="absolute top-0 right-0 w-full h-full bg-[url('/assets/noise.svg')] opacity-20" />
           <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-blue-500/10 rounded-full blur-[120px] pointer-events-none" />
           <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-purple-500/10 rounded-full blur-[100px] pointer-events-none" />
 
@@ -75,7 +75,7 @@ export default function TermsPage() {
                       <strong className="text-neutral-900">CreditClaw is NOT a bank, financial institution, money services business, money transmitter, or payment processor.</strong> We do not hold deposits, issue credit, extend loans, or provide any banking services. We are a software platform that facilitates the configuration and enforcement of spending controls on prepaid balances. All payment processing is handled by third-party providers, including but not limited to Stripe, Inc.
                     </p>
                     <p>
-                      The Service includes, but is not limited to: wallet creation and management; bot registration and pairing; spending limit configuration (per-transaction, daily, and monthly caps); category-based merchant blocking; approval workflows for transactions above configurable thresholds; webhook notifications; API access for bot integrations; self-hosted card management via split-knowledge encryption; sub-agent card provisioning; and procurement skill management.
+                      The Service includes, but is not limited to: wallet creation and management; bot registration and pairing; spending limit configuration (per-transaction, daily, and monthly caps); category-based merchant blocking; approval workflows for transactions above configurable thresholds; webhook notifications; API access for bot integrations; sub-agent card provisioning; and procurement skill management.
                     </p>
                     <p>
                       CreditClaw does not guarantee the availability, accuracy, completeness, or reliability of the Service. The Service is provided on a best-effort basis, and we make no representations regarding uptime, latency, or the successful execution of any transaction or spending control. Features may be added, modified, or removed at any time without notice.
@@ -179,23 +179,8 @@ export default function TermsPage() {
                   </div>
                 </div>
 
-                <div className="p-8 rounded-3xl bg-neutral-50 border border-neutral-100" data-testid="section-self-hosted">
-                  <h2 className="text-2xl font-extrabold text-neutral-900 mb-6">8. Self-Hosted Cards (Split-Knowledge Model)</h2>
-                  <div className="space-y-4 text-neutral-600 font-medium leading-relaxed">
-                    <p>
-                      CreditClaw offers a self-hosted card feature that utilizes a split-knowledge encryption model. Under this model, you are responsible for encrypting your card data (including card numbers, expiration dates, CVVs, and billing information) on your own device before transmitting any data to CreditClaw. CreditClaw stores only the decryption keys necessary to facilitate authorized transactions, while the encrypted card data itself is stored separately.
-                    </p>
-                    <p>
-                      <strong className="text-neutral-900">You are solely responsible for the security, accuracy, and integrity of the card data you encrypt and store.</strong> CreditClaw does not have access to your plaintext card data and cannot verify its accuracy, validity, or authorization status. You represent and warrant that you are authorized to use any payment card whose data you provide to the Service, and that your use of such card data complies with all applicable laws, regulations, and card network rules.
-                    </p>
-                    <p>
-                      CreditClaw shall not be liable for any card misuse, fraud, unauthorized access, data breaches, or financial loss arising from the self-hosted card feature. This includes, but is not limited to, losses resulting from: compromised encryption keys, weak encryption practices, unauthorized access to your encrypted card files, interception of card data during transmission, misuse of card data by bots or sub-agents, or any third-party access to your card information. You acknowledge that by using the self-hosted card feature, you accept all risks associated with managing and securing your own payment card data.
-                    </p>
-                  </div>
-                </div>
-
                 <div className="p-8 rounded-3xl bg-neutral-50 border border-neutral-100" data-testid="section-sub-agent">
-                  <h2 className="text-2xl font-extrabold text-neutral-900 mb-6">9. Sub-Agent Cards</h2>
+                  <h2 className="text-2xl font-extrabold text-neutral-900 mb-6">8. Sub-Agent Cards</h2>
                   <div className="space-y-4 text-neutral-600 font-medium leading-relaxed">
                     <p>
                       CreditClaw may offer the ability to provision ephemeral sub-agent cards, which allow secondary autonomous agents (sub-agents) to access encrypted card data for the purpose of executing transactions. You are solely responsible for all encrypted card files associated with sub-agent cards, including their creation, storage, distribution, and revocation.

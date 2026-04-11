@@ -45,7 +45,6 @@ const railLabels: Record<string, string> = {
   core: "Core",
   rail1: "Stripe",
   rail2: "Shop",
-  rail4: "Card (SK)",
   rail5: "Card (Enc)",
 };
 

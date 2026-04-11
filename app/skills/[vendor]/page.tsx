@@ -1,8 +1,8 @@
 import { cache } from "react";
 import { notFound } from "next/navigation";
 import { storage } from "@/server/storage";
-import { generateVendorSkill } from "@/lib/procurement-skills/generator";
-import type { VendorSkill, VendorSector, SkillMaturity } from "@/lib/procurement-skills/types";
+import { generateVendorSkill } from "@/features/brand-engine/procurement-skills/generator";
+import type { VendorSkill, VendorSector, SkillMaturity } from "@/features/brand-engine/procurement-skills/types";
 import type { Metadata } from "next";
 import { SkillDetailContent } from "./skill-detail-content";
 

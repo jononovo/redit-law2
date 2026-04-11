@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getCurrentUser } from "@/lib/auth/session";
+import { getCurrentUser } from "@/features/platform-management/auth/session";
 import { db } from "@/server/db";
 import { sql } from "drizzle-orm";
 
@@ -17,33 +17,14 @@ export async function GET(request: NextRequest) {
 
   const countResult = await db.execute(sql`
     SELECT
-      (SELECT count(*) FROM transactions)::int +
       (SELECT count(*) FROM privy_transactions)::int +
       (SELECT count(*) FROM crossmint_transactions)::int +
-      (SELECT count(*) FROM rail5_checkouts)::int +
-      (SELECT count(*) FROM checkout_confirmations)::int
+      (SELECT count(*) FROM rail5_transactions)::int
     AS total
   `);
   const total = Number(countResult.rows[0]?.total ?? 0);
 
   const rows = await db.execute(sql`
-    (
-      SELECT
-        t.id,
-        'core' AS rail,
-        t.type,
-        t.amount_cents AS amount_raw,
-        'cents' AS amount_unit,
-        t.description,
-        t.status,
-        t.created_at,
-        o.email AS owner_email,
-        w.bot_id
-      FROM transactions t
-      LEFT JOIN wallets w ON w.id = t.wallet_id
-      LEFT JOIN owners o ON o.uid = w.owner_uid
-    )
-    UNION ALL
     (
       SELECT
         pt.id,
@@ -90,25 +71,8 @@ export async function GET(request: NextRequest) {
         rc.created_at,
         o.email AS owner_email,
         rc.bot_id
-      FROM rail5_checkouts rc
+      FROM rail5_transactions rc
       LEFT JOIN owners o ON o.uid = rc.owner_uid
-    )
-    UNION ALL
-    (
-      SELECT
-        cc.id,
-        'rail4' AS rail,
-        'checkout' AS type,
-        cc.amount_cents AS amount_raw,
-        'cents' AS amount_unit,
-        cc.merchant_name AS description,
-        cc.status,
-        cc.created_at,
-        o.email AS owner_email,
-        cc.bot_id
-      FROM checkout_confirmations cc
-      LEFT JOIN rail4_cards r4 ON r4.card_id = cc.card_id
-      LEFT JOIN owners o ON o.uid = r4.owner_uid
     )
     ORDER BY created_at DESC, rail ASC, id DESC
     LIMIT ${PAGE_SIZE}

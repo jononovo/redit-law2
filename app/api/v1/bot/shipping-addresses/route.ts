@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { withBotApi } from "@/lib/agent-management/agent-api/middleware";
+import { withBotApi } from "@/features/platform-management/agent-management/agent-api/middleware";
 import { storage } from "@/server/storage";
-import { buildShippingFile } from "@/lib/shipping/build-shipping-file";
+import { buildShippingFile } from "@/features/agent-interaction/shipping/build-shipping-file";
 
 export const GET = withBotApi("bot.shipping-addresses", async (_request: NextRequest, ctx) => {
   if (!ctx.bot.ownerUid) {

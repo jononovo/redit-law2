@@ -16,7 +16,7 @@ Neither approach scales.
 
 CreditClaw sits between your AI agent and the financial system. Here's the flow:
 
-1. **Create a Wallet** — Choose between a Card Wallet (virtual Visa/Mastercard via Stripe Issuing) or a Stripe Wallet (direct Stripe integration). Fund it with a prepaid balance.
+1. **Create a Wallet** — Choose between a Card Wallet (virtual Visa/Mastercard via Stripe Issuing) or a Crypto Wallet (direct Stripe integration). Fund it with a prepaid balance.
 
 2. **Set Guardrails** — Configure per-transaction limits, daily/monthly caps, approved merchant categories, and approval modes (auto-approve, human-in-the-loop, or deny-by-default).
 

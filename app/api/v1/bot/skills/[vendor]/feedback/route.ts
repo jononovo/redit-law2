@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { authenticateBot } from "@/lib/agent-management/auth";
-import { getCurrentUser } from "@/lib/auth/session";
+import { authenticateBot } from "@/features/platform-management/agent-management/auth";
+import { getCurrentUser } from "@/features/platform-management/auth/session";
 import { storage } from "@/server/storage";
 import { insertBrandFeedbackSchema } from "@/shared/schema";
 

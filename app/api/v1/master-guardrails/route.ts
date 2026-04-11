@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSessionUser } from "@/lib/auth/session";
+import { getSessionUser } from "@/features/platform-management/auth/session";
 import { storage } from "@/server/storage";
 import { upsertMasterGuardrailsSchema } from "@/shared/schema";
-import { microUsdcToUsd } from "@/lib/guardrails/master";
-import { GUARDRAIL_DEFAULTS } from "@/lib/guardrails/defaults";
+import { microUsdcToUsd } from "@/features/agent-interaction/guardrails/master";
+import { GUARDRAIL_DEFAULTS } from "@/features/agent-interaction/guardrails/defaults";
 
 export async function GET(request: NextRequest) {
   try {
@@ -36,13 +36,13 @@ export async function GET(request: NextRequest) {
         daily: {
           rail1_usd: microUsdcToUsd(dailySpend.rail1),
           rail2_usd: microUsdcToUsd(dailySpend.rail2),
-          rail4_usd: microUsdcToUsd(dailySpend.rail4),
+          rail5_usd: microUsdcToUsd(dailySpend.rail5),
           total_usd: microUsdcToUsd(dailySpend.total),
         },
         monthly: {
           rail1_usd: microUsdcToUsd(monthlySpend.rail1),
           rail2_usd: microUsdcToUsd(monthlySpend.rail2),
-          rail4_usd: microUsdcToUsd(monthlySpend.rail4),
+          rail5_usd: microUsdcToUsd(monthlySpend.rail5),
           total_usd: microUsdcToUsd(monthlySpend.total),
         },
       },

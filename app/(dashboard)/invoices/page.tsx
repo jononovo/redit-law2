@@ -8,8 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { StatusBadge } from "@/components/wallet/status-badge";
-import { useAuth } from "@/lib/auth/auth-context";
-import { authFetch } from "@/lib/auth-fetch";
+import { useAuth } from "@/features/platform-management/auth/auth-context";
+import { authFetch } from "@/features/platform-management/auth-fetch";
 import Link from "next/link";
 
 interface InvoiceDTO {

@@ -8,8 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { StatusBadge } from "@/components/wallet/status-badge";
-import { useAuth } from "@/lib/auth/auth-context";
-import { authFetch } from "@/lib/auth-fetch";
+import { useAuth } from "@/features/platform-management/auth/auth-context";
+import { authFetch } from "@/features/platform-management/auth-fetch";
 import type { Order } from "@/shared/schema";
 
 interface BotOption {
@@ -78,9 +78,8 @@ export function OrdersPanel({ onConfigureGuardrails }: OrdersPanelProps) {
 
   const railLabel = (rail: string) => {
     const labels: Record<string, string> = {
-      rail1: "Stripe Wallet",
+      rail1: "Crypto Wallet",
       rail2: "Card Wallet",
-      rail4: "My Card (Split)",
       rail5: "My Card (Encrypted)",
     };
     return labels[rail] || rail;
@@ -90,7 +89,6 @@ export function OrdersPanel({ onConfigureGuardrails }: OrdersPanelProps) {
     const colors: Record<string, string> = {
       rail1: "bg-blue-50 text-blue-700",
       rail2: "bg-purple-50 text-purple-700",
-      rail4: "bg-amber-50 text-amber-700",
       rail5: "bg-emerald-50 text-emerald-700",
     };
     return colors[rail] || "bg-neutral-50 text-neutral-700";
@@ -138,9 +136,8 @@ export function OrdersPanel({ onConfigureGuardrails }: OrdersPanelProps) {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Rails</SelectItem>
-                <SelectItem value="rail1">Stripe Wallet</SelectItem>
+                <SelectItem value="rail1">Crypto Wallet</SelectItem>
                 <SelectItem value="rail2">Card Wallet</SelectItem>
-                <SelectItem value="rail4">My Card (Split)</SelectItem>
                 <SelectItem value="rail5">My Card (Encrypted)</SelectItem>
               </SelectContent>
             </Select>
@@ -214,7 +211,7 @@ export function OrdersPanel({ onConfigureGuardrails }: OrdersPanelProps) {
             <div
               key={order.id}
               className="bg-white rounded-xl border border-neutral-100 p-4 cursor-pointer hover:border-violet-200 hover:shadow-sm transition-all"
-              onClick={() => router.push(`/app/orders/${order.id}`)}
+              onClick={() => router.push(`/orders/${order.id}`)}
               data-testid={`order-card-${order.id}`}
             >
               <div className="flex items-center justify-between">

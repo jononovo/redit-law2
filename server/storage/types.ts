@@ -1,23 +1,13 @@
 import {
   type Owner, type InsertOwner,
   type Bot, type InsertBot,
-  type Wallet, type InsertWallet,
-  type Transaction, type InsertTransaction,
   type PaymentMethod, type InsertPaymentMethod,
-  type TopupRequest, type InsertTopupRequest,
   type ApiAccessLog, type InsertApiAccessLog,
   type WebhookDelivery, type InsertWebhookDelivery,
   type NotificationPreference, type InsertNotificationPreference,
   type Notification, type InsertNotification,
-  type PaymentLink, type InsertPaymentLink,
-  type ReconciliationLog, type InsertReconciliationLog,
   type PairingCode, type InsertPairingCode,
   type WaitlistEntry, type InsertWaitlistEntry,
-  type Rail4Card, type InsertRail4Card,
-  type ObfuscationEvent, type InsertObfuscationEvent,
-  type ObfuscationState, type InsertObfuscationState,
-  type ProfileAllowanceUsage,
-  type CheckoutConfirmation, type InsertCheckoutConfirmation,
   type PrivyWallet, type InsertPrivyWallet,
   type PrivyGuardrail, type InsertPrivyGuardrail,
   type PrivyTransaction, type InsertPrivyTransaction,
@@ -25,12 +15,11 @@ import {
   type CrossmintGuardrail, type InsertCrossmintGuardrail,
   type CrossmintTransaction, type InsertCrossmintTransaction,
   type MasterGuardrail, type InsertMasterGuardrail,
-  type Rail4Guardrail, type InsertRail4Guardrail,
   type Rail5Guardrail, type InsertRail5Guardrail,
   type ProcurementControl, type InsertProcurementControl,
   type UnifiedApproval, type InsertUnifiedApproval,
   type Rail5Card, type InsertRail5Card,
-  type Rail5Checkout, type InsertRail5Checkout,
+  type Rail5Transaction, type InsertRail5Transaction,
   type Order, type InsertOrder,
   type CheckoutPage, type InsertCheckoutPage,
   type Sale, type InsertSale,
@@ -46,13 +35,14 @@ import {
   type BrandFeedback, type InsertBrandFeedback,
 } from "@/shared/schema";
 
-import type { OrderFilters } from "./orders";
-import type { SaleFilters } from "./sales";
-import type { InvoiceFilters } from "./invoices";
-import type { BrandSearchFilters } from "./brand-index";
+import type { OrderFilters } from "./agent-interaction/orders";
+import type { SaleFilters } from "./agent-shops/sales";
+import type { InvoiceFilters } from "./agent-shops/invoices";
+import type { BrandSearchFilters } from "./brand-engine/brand-index";
 
 export interface IStorage {
   getOwnerByUid(uid: string): Promise<Owner | null>;
+  getOwnerByEmail(email: string): Promise<Owner | null>;
   upsertOwner(uid: string, data: Partial<InsertOwner>): Promise<Owner>;
 
   createBot(data: InsertBot): Promise<Bot>;
@@ -66,14 +56,6 @@ export interface IStorage {
   updateBotProfile(botId: string, ownerUid: string, data: { callbackUrl?: string; botName?: string; description?: string | null }): Promise<{ bot: Bot; newWebhookSecret: string | null }>;
   checkDuplicateRegistration(botName: string, ownerEmail: string): Promise<boolean>;
 
-  createWallet(data: InsertWallet): Promise<Wallet>;
-  getWalletByBotId(botId: string): Promise<Wallet | null>;
-  getWalletByOwnerUid(ownerUid: string): Promise<Wallet | null>;
-  creditWallet(walletId: number, amountCents: number): Promise<Wallet>;
-
-  createTransaction(data: InsertTransaction): Promise<Transaction>;
-  getTransactionsByWalletId(walletId: number, limit?: number): Promise<Transaction[]>;
-
   getPaymentMethod(ownerUid: string): Promise<PaymentMethod | null>;
   getPaymentMethods(ownerUid: string): Promise<PaymentMethod[]>;
   getPaymentMethodById(id: number, ownerUid: string): Promise<PaymentMethod | null>;
@@ -82,12 +64,6 @@ export interface IStorage {
   setDefaultPaymentMethod(id: number, ownerUid: string): Promise<PaymentMethod | null>;
 
   getBotsByApiKeyPrefix(prefix: string): Promise<Bot[]>;
-  debitWallet(walletId: number, amountCents: number): Promise<Wallet | null>;
-  getDailySpend(walletId: number): Promise<number>;
-  getMonthlySpend(walletId: number): Promise<number>;
-
-
-  createTopupRequest(data: InsertTopupRequest): Promise<TopupRequest>;
 
   createAccessLog(data: InsertApiAccessLog): Promise<void>;
   getAccessLogsByBotIds(botIds: string[], limit?: number): Promise<ApiAccessLog[]>;
@@ -106,18 +82,7 @@ export interface IStorage {
   markNotificationsRead(ids: number[], ownerUid: string): Promise<void>;
   markAllNotificationsRead(ownerUid: string): Promise<void>;
 
-  getWalletsByOwnerUid(ownerUid: string): Promise<Wallet[]>;
-  getTransactionSumByWalletId(walletId: number): Promise<number>;
-  createReconciliationLog(data: InsertReconciliationLog): Promise<ReconciliationLog>;
   getFailedWebhookCount24h(botIds: string[]): Promise<number>;
-
-  createPaymentLink(data: InsertPaymentLink): Promise<PaymentLink>;
-  getPaymentLinksByBotId(botId: string, limit?: number, status?: string): Promise<PaymentLink[]>;
-  getPaymentLinkByStripeSession(sessionId: string): Promise<PaymentLink | null>;
-  getPaymentLinkByPaymentLinkId(paymentLinkId: string): Promise<PaymentLink | null>;
-  getPaymentLinksByOwnerUid(ownerUid: string, limit?: number): Promise<PaymentLink[]>;
-  updatePaymentLinkStatus(id: number, status: string, paidAt?: Date): Promise<PaymentLink | null>;
-  completePaymentLink(id: number): Promise<PaymentLink | null>;
 
   createPairingCode(data: InsertPairingCode): Promise<PairingCode>;
   getPairingCodeByCode(code: string): Promise<PairingCode | null>;
@@ -126,10 +91,6 @@ export interface IStorage {
 
   addWaitlistEntry(data: InsertWaitlistEntry): Promise<WaitlistEntry>;
   getWaitlistEntryByEmail(email: string): Promise<WaitlistEntry | null>;
-
-  freezeWallet(walletId: number, ownerUid: string): Promise<Wallet | null>;
-  unfreezeWallet(walletId: number, ownerUid: string): Promise<Wallet | null>;
-  getWalletsWithBotsByOwnerUid(ownerUid: string): Promise<(Wallet & { botName: string; botId: string })[]>;
 
   crossmintCreateWallet(data: InsertCrossmintWallet): Promise<CrossmintWallet>;
   crossmintGetWalletById(id: number): Promise<CrossmintWallet | null>;
@@ -174,47 +135,10 @@ export interface IStorage {
   privyGetDailySpend(walletId: number): Promise<number>;
   privyGetMonthlySpend(walletId: number): Promise<number>;
 
-  createRail4Card(data: InsertRail4Card): Promise<Rail4Card>;
-  getRail4CardByCardId(cardId: string): Promise<Rail4Card | null>;
-  getRail4CardByBotId(botId: string): Promise<Rail4Card | null>;
-  getRail4CardsByBotId(botId: string): Promise<Rail4Card[]>;
-  countCardsByBotId(botId: string): Promise<number>;
-  getRail4CardsByOwnerUid(ownerUid: string): Promise<Rail4Card[]>;
-  updateRail4CardByCardId(cardId: string, data: Partial<InsertRail4Card>): Promise<Rail4Card | null>;
-  updateRail4Card(botId: string, data: Partial<InsertRail4Card>): Promise<Rail4Card | null>;
-  deleteRail4CardByCardId(cardId: string): Promise<void>;
-  deleteRail4Card(botId: string): Promise<void>;
-
-  createObfuscationEvent(data: InsertObfuscationEvent): Promise<ObfuscationEvent>;
-  getObfuscationEventsByCardId(cardId: string, limit?: number): Promise<ObfuscationEvent[]>;
-  getObfuscationEventsByBotId(botId: string, limit?: number): Promise<ObfuscationEvent[]>;
-  getPendingObfuscationEvents(cardId: string): Promise<ObfuscationEvent[]>;
-  completeObfuscationEvent(id: number, occurredAt: Date): Promise<ObfuscationEvent | null>;
-  updateObfuscationEventConfirmation(id: number, confirmationId: string): Promise<void>;
-
-  getObfuscationState(cardId: string): Promise<ObfuscationState | null>;
-  createObfuscationState(data: InsertObfuscationState): Promise<ObfuscationState>;
-  updateObfuscationState(cardId: string, data: Partial<InsertObfuscationState>): Promise<ObfuscationState | null>;
-  getActiveObfuscationStates(): Promise<ObfuscationState[]>;
-
-  getProfileAllowanceUsage(cardId: string, profileIndex: number, windowStart: Date): Promise<ProfileAllowanceUsage | null>;
-  upsertProfileAllowanceUsage(cardId: string, profileIndex: number, windowStart: Date, addCents: number): Promise<ProfileAllowanceUsage>;
-
-  createCheckoutConfirmation(data: InsertCheckoutConfirmation): Promise<CheckoutConfirmation>;
-  getCheckoutConfirmation(confirmationId: string): Promise<CheckoutConfirmation | null>;
-  updateCheckoutConfirmationStatus(confirmationId: string, status: string): Promise<CheckoutConfirmation | null>;
-  getPendingConfirmationsByBotIds(botIds: string[]): Promise<CheckoutConfirmation[]>;
-  getPendingConfirmationsByCardIds(cardIds: string[]): Promise<CheckoutConfirmation[]>;
-
   getMasterGuardrails(ownerUid: string): Promise<MasterGuardrail | null>;
   upsertMasterGuardrails(ownerUid: string, data: Partial<InsertMasterGuardrail>): Promise<MasterGuardrail>;
-  getMasterDailySpend(ownerUid: string): Promise<{ rail1: number; rail2: number; rail4: number; total: number }>;
-  getMasterMonthlySpend(ownerUid: string): Promise<{ rail1: number; rail2: number; rail4: number; total: number }>;
-
-  getRail4Guardrails(cardId: string): Promise<Rail4Guardrail | null>;
-  upsertRail4Guardrails(cardId: string, data: Partial<InsertRail4Guardrail>): Promise<Rail4Guardrail>;
-  getRail4DailySpendCents(cardId: string): Promise<number>;
-  getRail4MonthlySpendCents(cardId: string): Promise<number>;
+  getMasterDailySpend(ownerUid: string): Promise<{ rail1: number; rail2: number; rail5: number; total: number }>;
+  getMasterMonthlySpend(ownerUid: string): Promise<{ rail1: number; rail2: number; rail5: number; total: number }>;
 
   getRail5Guardrails(cardId: string): Promise<Rail5Guardrail | null>;
   upsertRail5Guardrails(cardId: string, data: Partial<InsertRail5Guardrail>): Promise<Rail5Guardrail>;
@@ -234,10 +158,10 @@ export interface IStorage {
   deleteRail5Card(cardId: string): Promise<void>;
   getRail5CardByTestToken(token: string): Promise<Rail5Card | null>;
 
-  createRail5Checkout(data: InsertRail5Checkout): Promise<Rail5Checkout>;
-  getRail5CheckoutById(checkoutId: string): Promise<Rail5Checkout | null>;
-  updateRail5Checkout(checkoutId: string, data: Partial<InsertRail5Checkout>): Promise<Rail5Checkout | null>;
-  getRail5CheckoutsByCardId(cardId: string, limit?: number): Promise<Rail5Checkout[]>;
+  createRail5Transaction(data: InsertRail5Transaction): Promise<Rail5Transaction>;
+  getRail5TransactionById(checkoutId: string): Promise<Rail5Transaction | null>;
+  updateRail5Transaction(checkoutId: string, data: Partial<InsertRail5Transaction>): Promise<Rail5Transaction | null>;
+  getRail5TransactionsByCardId(cardId: string, limit?: number): Promise<Rail5Transaction[]>;
 
   createUnifiedApproval(data: InsertUnifiedApproval): Promise<UnifiedApproval>;
   getUnifiedApprovalById(approvalId: string): Promise<UnifiedApproval | null>;
@@ -245,7 +169,7 @@ export interface IStorage {
   decideUnifiedApproval(approvalId: string, decision: string): Promise<UnifiedApproval | null>;
   closeUnifiedApprovalByRailRef(rail: string, railRef: string, decision: string): Promise<void>;
   getUnifiedApprovalsByOwnerUid(ownerUid: string, status?: string): Promise<UnifiedApproval[]>;
-  getApprovalHistory(ownerUid: string, filters?: import("./approvals").ApprovalFilters): Promise<UnifiedApproval[]>;
+  getApprovalHistory(ownerUid: string, filters?: import("./agent-interaction/approvals").ApprovalFilters): Promise<UnifiedApproval[]>;
 
   createOrder(data: InsertOrder): Promise<Order>;
   getOrderById(id: number): Promise<Order | null>;

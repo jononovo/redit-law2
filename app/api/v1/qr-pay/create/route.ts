@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
 import { z } from "zod";
-import { getSessionUser } from "@/lib/auth/session";
-import { getOnChainUsdcBalance } from "@/lib/rail1/wallet/balance";
-import { buildEip681Uri } from "@/lib/qr-pay/eip681";
+import { getSessionUser } from "@/features/platform-management/auth/session";
+import { getOnChainUsdcBalance } from "@/features/payment-rails/rail1/wallet/balance";
+import { buildEip681Uri } from "@/features/agent-shops/qr-pay/eip681";
 import { storage } from "@/server/storage";
 
 const QR_PAY_TTL_MS = 60 * 60 * 1000;

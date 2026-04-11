@@ -1,14 +1,18 @@
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
-import { getSectionsByAudience, normalizeTenantId } from "@/docs/content/sections";
+import { sections } from "@/app/docs/content/sections";
+import { getStaticTenantConfig } from "@/features/platform-management/tenants/tenant-configs";
 
 export default async function DocsIndexPage() {
   const cookieStore = await cookies();
-  const tenantId = normalizeTenantId(cookieStore.get("tenant-id")?.value);
+  const tenantId = cookieStore.get("tenant-id")?.value || "creditclaw";
+  const tenantConfig = getStaticTenantConfig(tenantId);
 
-  const userSections = getSectionsByAudience("user", tenantId);
-  const devSections = getSectionsByAudience("developer", tenantId);
-  const firstSection = userSections[0] || devSections[0];
+  if (tenantConfig.docsEntrySlug) {
+    redirect(`/docs/${tenantConfig.docsEntrySlug}`);
+  }
+
+  const firstSection = sections[0];
   const firstPage = firstSection?.pages[0];
 
   if (firstSection && firstPage) {

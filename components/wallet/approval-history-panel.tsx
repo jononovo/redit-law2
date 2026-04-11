@@ -7,22 +7,20 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { StatusBadge } from "@/components/wallet/status-badge";
-import { useAuth } from "@/lib/auth/auth-context";
-import { authFetch } from "@/lib/auth-fetch";
+import { useAuth } from "@/features/platform-management/auth/auth-context";
+import { authFetch } from "@/features/platform-management/auth-fetch";
 import { useToast } from "@/hooks/use-toast";
 import type { UnifiedApproval } from "@/shared/schema";
 
 const RAIL_LABELS: Record<string, string> = {
-  rail1: "Stripe Wallet",
+  rail1: "Crypto Wallet",
   rail2: "Card Wallet",
-  rail4: "Split-Knowledge",
   rail5: "Sub-Agent",
 };
 
 const RAIL_COLORS: Record<string, string> = {
   rail1: "bg-blue-50 text-blue-700",
   rail2: "bg-purple-50 text-purple-700",
-  rail4: "bg-amber-50 text-amber-700",
   rail5: "bg-emerald-50 text-emerald-700",
 };
 
@@ -31,13 +29,19 @@ function isPending(approval: UnifiedApproval): boolean {
   return new Date(approval.expiresAt) > new Date();
 }
 
-export function ApprovalHistoryPanel() {
+interface ApprovalHistoryPanelProps {
+  defaultRail?: string;
+  onPendingCount?: (count: number) => void;
+  onDecisionComplete?: () => void;
+}
+
+export function ApprovalHistoryPanel({ defaultRail, onPendingCount, onDecisionComplete }: ApprovalHistoryPanelProps = {}) {
   const { user } = useAuth();
   const { toast } = useToast();
   const [approvals, setApprovals] = useState<UnifiedApproval[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const [railFilter, setRailFilter] = useState("all");
+  const [railFilter, setRailFilter] = useState(defaultRail || "all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [botFilter, setBotFilter] = useState("all");
   const [dateFrom, setDateFrom] = useState("");
@@ -62,11 +66,16 @@ export function ApprovalHistoryPanel() {
 
         const names = [...new Set(list.map((a: UnifiedApproval) => a.botName).filter(Boolean))];
         setBotNames(names);
+
+        if (onPendingCount) {
+          const pendingCount = list.filter(isPending).length;
+          onPendingCount(pendingCount);
+        }
       }
     } catch {} finally {
       setLoading(false);
     }
-  }, [railFilter, statusFilter, botFilter, dateFrom, dateTo]);
+  }, [railFilter, statusFilter, botFilter, dateFrom, dateTo, onPendingCount]);
 
   useEffect(() => {
     if (user) {
@@ -85,6 +94,7 @@ export function ApprovalHistoryPanel() {
       if (res.ok) {
         toast({ title: decision === "approve" ? "Approved" : "Rejected" });
         fetchApprovals();
+        onDecisionComplete?.();
       } else {
         const data = await res.json();
         toast({ title: "Error", description: data.error || "Failed to process decision", variant: "destructive" });
@@ -92,7 +102,7 @@ export function ApprovalHistoryPanel() {
     } catch {
       toast({ title: "Error", variant: "destructive" });
     }
-  }, [fetchApprovals, toast]);
+  }, [fetchApprovals, toast, onDecisionComplete]);
 
   if (loading) {
     return (
@@ -109,22 +119,23 @@ export function ApprovalHistoryPanel() {
           <Filter className="w-4 h-4 text-neutral-400" />
           <span className="text-sm font-medium text-neutral-700">Filters</span>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
-          <div>
-            <Label className="text-xs text-neutral-500">Rail</Label>
-            <Select value={railFilter} onValueChange={setRailFilter}>
-              <SelectTrigger data-testid="select-approval-rail-filter">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Rails</SelectItem>
-                <SelectItem value="rail1">Stripe Wallet</SelectItem>
-                <SelectItem value="rail2">Card Wallet</SelectItem>
-                <SelectItem value="rail4">Split-Knowledge</SelectItem>
-                <SelectItem value="rail5">Sub-Agent</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+        <div className={`grid grid-cols-1 sm:grid-cols-2 ${defaultRail ? "lg:grid-cols-4" : "lg:grid-cols-5"} gap-3`}>
+          {!defaultRail && (
+            <div>
+              <Label className="text-xs text-neutral-500">Rail</Label>
+              <Select value={railFilter} onValueChange={setRailFilter}>
+                <SelectTrigger data-testid="select-approval-rail-filter">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Rails</SelectItem>
+                  <SelectItem value="rail1">Crypto Wallet</SelectItem>
+                  <SelectItem value="rail2">Card Wallet</SelectItem>
+                  <SelectItem value="rail5">Sub-Agent</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           <div>
             <Label className="text-xs text-neutral-500">Status</Label>

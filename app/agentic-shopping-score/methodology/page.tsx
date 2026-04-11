@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { Nav } from "@/components/nav";
 import { Footer } from "@/components/footer";
-import { SCORING_RUBRIC } from "@/lib/agentic-score/rubric";
-import type { RubricPillar } from "@/lib/agentic-score/rubric";
+import { SCORING_RUBRIC } from "@/features/brand-engine/agentic-score/rubric";
+import type { RubricPillar } from "@/features/brand-engine/agentic-score/rubric";
 import { Layers, Zap, Shield, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 

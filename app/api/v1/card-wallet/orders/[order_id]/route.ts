@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSessionUser } from "@/lib/auth/session";
+import { getSessionUser } from "@/features/platform-management/auth/session";
 import { storage } from "@/server/storage";
-import { getOrderStatus } from "@/lib/procurement/crossmint-worldstore/purchase";
+import { getOrderStatus } from "@/features/agent-interaction/procurement/crossmint-worldstore/purchase";
 
 export async function GET(
   request: NextRequest,

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useCallback, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { X } from "lucide-react";
 import { ChoosePath } from "./steps/choose-path";
 import { RegisterBot } from "./steps/register-bot";
@@ -37,8 +37,17 @@ const STEPS: StepId[] = ["choose-agent-type", "register-bot", "sign-in", "claim-
 
 export function OnboardingWizard() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const stepParam = searchParams.get("step") as StepId | null;
+
   const [state, setState] = useState<WizardState>(initialState);
-  const [currentStepIndex, setCurrentStepIndex] = useState(0);
+  const [currentStepIndex, setCurrentStepIndex] = useState(() => {
+    if (stepParam) {
+      const idx = STEPS.indexOf(stepParam);
+      if (idx !== -1) return idx;
+    }
+    return 0;
+  });
   const [transitionClass, setTransitionClass] = useState("wizard-step-active");
   const [showCardWizard, setShowCardWizard] = useState(false);
 

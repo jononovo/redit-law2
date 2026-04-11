@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { storage } from "@/server/storage";
-import { buildSkillJson } from "@/lib/procurement-skills/skill-json";
+import { buildSkillJson } from "@/features/brand-engine/procurement-skills/skill-json";
 
 export async function GET(
   _request: NextRequest,

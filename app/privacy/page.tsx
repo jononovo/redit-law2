@@ -11,7 +11,7 @@ export default function PrivacyPolicyPage() {
 
       <main>
         <section className="pt-40 pb-24 bg-neutral-900 text-white relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-full h-full bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20" />
+          <div className="absolute top-0 right-0 w-full h-full bg-[url('/assets/noise.svg')] opacity-20" />
           <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-blue-500/10 rounded-full blur-[120px] pointer-events-none" />
           <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-purple-500/10 rounded-full blur-[100px] pointer-events-none" />
 
@@ -89,12 +89,7 @@ export default function PrivacyPolicyPage() {
                       We record detailed transaction data for every purchase, funding event, and wallet operation processed through the Service. This includes transaction amounts, currency, timestamps, merchant names and identifiers, merchant categories, transaction descriptions, approval or denial status, denial reasons, and the specific guardrail or rule that triggered any denial. We also store references to the wallet and bot associated with each transaction.
                     </p>
 
-                    <h3 className="text-lg font-bold text-neutral-800 mt-6">2.5 Self-Hosted Card Metadata</h3>
-                    <p>
-                      For users who utilize our self-hosted card feature, CreditClaw stores encrypted card references — not the actual card numbers, CVCs, or expiration dates. Card data is encrypted client-side using AES-256-GCM encryption before transmission to our servers, and the encryption key is split so that CreditClaw never possesses the complete decryption key. We store only the encrypted payload, a card identifier, the last four digits of the card for display, and metadata such as the card label and associated bot assignment. The actual card data can only be decrypted by the bot at the time of a purchase using a key fragment that is never stored on our servers in plaintext.
-                    </p>
-
-                    <h3 className="text-lg font-bold text-neutral-800 mt-6">2.6 Usage Data</h3>
+                    <h3 className="text-lg font-bold text-neutral-800 mt-6">2.5 Usage Data</h3>
                     <p>
                       We automatically collect certain information when you access the Service, including your Internet Protocol (IP) address, browser type and version, device type and operating system, referring URL, pages visited within the Service, the date and time of your visit, and the duration of your session. This information is collected through server logs and is used for security monitoring, abuse prevention, and platform improvement.
                     </p>

@@ -8,8 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { authFetch } from "@/lib/auth-fetch";
-import { encryptCardDetails, buildEncryptedCardFile, downloadEncryptedFile } from "@/lib/card/onboarding-rail5/encrypt";
+import { authFetch } from "@/features/platform-management/auth-fetch";
+import { encryptCardDetails, buildEncryptedCardFile, downloadEncryptedFile } from "@/features/payment-rails/card/onboarding-rail5/encrypt";
 
 interface CardEntryProps {
   currentStep: number;
@@ -20,7 +20,7 @@ interface CardEntryProps {
   botName?: string;
 }
 
-import { detectCardBrand, brandToApiValue } from "@/lib/card/card-brand";
+import { detectCardBrand, brandToApiValue } from "@/features/payment-rails/card/card-brand";
 
 const MONTHS = Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, "0"));
 const currentYear = new Date().getFullYear();

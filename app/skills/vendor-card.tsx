@@ -41,7 +41,7 @@ import {
   VendorSector,
   BrandTier,
   SkillMaturity,
-} from "@/lib/procurement-skills/types";
+} from "@/features/brand-engine/procurement-skills/types";
 import type { BrandIndex } from "@/shared/schema";
 
 export const MATURITY_CONFIG: Record<SkillMaturity, { label: string; className: string }> = {
@@ -87,7 +87,6 @@ export const CHECKOUT_ICONS: Record<CheckoutMethod, React.ReactNode> = {
   acp: <CreditCard className="w-3 h-3" />,
   x402: <Globe className="w-3 h-3" />,
   crossmint_world: <Globe className="w-3 h-3" />,
-  self_hosted_card: <CreditCard className="w-3 h-3" />,
   browser_automation: <Monitor className="w-3 h-3" />,
 };
 

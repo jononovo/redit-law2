@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getCurrentUser } from "@/lib/auth/session";
-import { adminAuth } from "@/lib/firebase/admin";
+import { getCurrentUser } from "@/features/platform-management/auth/session";
+import { adminAuth } from "@/features/platform-management/firebase/admin";
 import { storage } from "@/server/storage";
 
-const VALID_RAILS = ["card_wallet", "stripe_wallet", "shopping_wallet", "self_hosted_cards", "sub_agent_cards"];
+const VALID_RAILS = ["stripe_wallet", "shopping_wallet", "sub_agent_cards"];
 
 async function getAuthUser(request: NextRequest) {
   const sessionUser = await getCurrentUser();
