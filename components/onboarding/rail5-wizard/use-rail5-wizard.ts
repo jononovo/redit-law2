@@ -7,7 +7,7 @@ import { encryptCardDetails, buildEncryptedCardFile, downloadEncryptedFile } fro
 import { detectCardBrand, brandToApiValue, getMaxDigits } from "@/features/payment-rails/card/card-brand";
 import { type CardFieldErrors } from "@/features/payment-rails/card/hooks";
 import { RAIL5_CARD_DELIVERED } from "@/features/platform-management/agent-management/bot-messaging/templates";
-import { type BotOption, type SavedCardDetails } from "./types";
+import { type BotOption, type SavedCardDetails, randomCardName } from "./types";
 
 interface UseRail5WizardProps {
   onComplete: () => void;
@@ -19,10 +19,8 @@ export function useRail5Wizard({ onComplete, onClose, preselectedBotId }: UseRai
   const { toast } = useToast();
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
-  const [initLoading, setInitLoading] = useState(false);
-  const [initFailed, setInitFailed] = useState(false);
 
-  const [cardName, setCardName] = useState("New Card");
+  const [cardName, setCardName] = useState(() => randomCardName());
   const [cardId, setCardId] = useState("");
 
   const [cardNumber, setCardNumber] = useState("");
@@ -109,24 +107,22 @@ export function useRail5Wizard({ onComplete, onClose, preselectedBotId }: UseRai
   }, []);
 
   useEffect(() => {
-    if (!cardId && !initLoading) {
-      autoInitCard();
-    }
-  }, []);
-
-  useEffect(() => {
-    if (step === 4 && !botsFetched && !botsLoading) {
+    if (step === 5 && !botsFetched && !botsLoading) {
       fetchBots();
     }
   }, [step, botsFetched, botsLoading]);
 
-  async function autoInitCard() {
-    setInitLoading(true);
+  async function handleStep1Next() {
+    if (!cardName.trim()) {
+      toast({ title: "Missing info", description: "Enter a card name.", variant: "destructive" });
+      return;
+    }
+    setLoading(true);
     try {
       const res = await authFetch("/api/v1/rail5/initialize", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ card_name: "New Card", card_brand: "visa", card_last4: "0000" }),
+        body: JSON.stringify({ card_name: cardName.trim(), card_brand: cardBrand, card_last4: "0000" }),
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
@@ -134,19 +130,12 @@ export function useRail5Wizard({ onComplete, onClose, preselectedBotId }: UseRai
       }
       const data = await res.json();
       setCardId(data.card_id);
-      setCardName(data.card_name);
-      setStep(0);
+      setStep(1);
     } catch (e: unknown) {
-      setInitFailed(true);
       toast({ title: "Error", description: e instanceof Error ? e.message : "Failed to initialize card.", variant: "destructive" });
     } finally {
-      setInitLoading(false);
+      setLoading(false);
     }
-  }
-
-  function retryInit() {
-    setInitFailed(false);
-    autoInitCard();
   }
 
   function handleEncryptCard() {
@@ -184,7 +173,7 @@ export function useRail5Wizard({ onComplete, onClose, preselectedBotId }: UseRai
   }
 
   function handleRequestClose() {
-    if (step !== 6) {
+    if (step !== 7) {
       setShowExitConfirm(true);
     } else {
       onClose();
@@ -317,7 +306,7 @@ export function useRail5Wizard({ onComplete, onClose, preselectedBotId }: UseRai
       setCountry("US");
       setShowCountryPicker(false);
 
-      setStep(6);
+      setStep(7);
     } catch (e: unknown) {
       toast({ title: "Error", description: e instanceof Error ? e.message : "Encryption failed.", variant: "destructive" });
     } finally {
@@ -325,7 +314,7 @@ export function useRail5Wizard({ onComplete, onClose, preselectedBotId }: UseRai
     }
   }
 
-  async function handleCardDetailsNext() {
+  function handleCardDetailsNext() {
     const cleanNumber = cardNumber.replace(/\s/g, "");
     const expectedDigits = getMaxDigits(detectedBrand);
     const minCvv = detectedBrand === "amex" ? 4 : 3;
@@ -341,35 +330,7 @@ export function useRail5Wizard({ onComplete, onClose, preselectedBotId }: UseRai
       return;
     }
     setCardErrors({});
-
-    const bin6 = cleanNumber.slice(0, 6);
-    const last4 = cleanNumber.slice(-4);
-    const brandLabel = cardBrand.charAt(0).toUpperCase() + cardBrand.slice(1);
-    let autoName = `${brandLabel} ••${last4}`;
-
-    try {
-      const binRes = await fetch(`/api/v1/bin-lookup?bin=${bin6}`);
-      if (binRes.ok) {
-        const binData = await binRes.json();
-        if (binData.issuer) {
-          autoName = `${binData.issuer} ${brandLabel} ••${last4}`;
-        }
-      }
-    } catch {}
-
-    setCardName(autoName);
-
-    try {
-      await authFetch(`/api/v1/rail5/cards/${cardId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          card_name: autoName,
-        }),
-      });
-    } catch {}
-
-    setStep(3);
+    setStep(4);
   }
 
   async function handleAddressNext() {
@@ -397,9 +358,9 @@ export function useRail5Wizard({ onComplete, onClose, preselectedBotId }: UseRai
       } finally {
         setLoading(false);
       }
-      setStep(5);
+      setStep(6);
     } else {
-      setStep(4);
+      setStep(5);
     }
   }
 
@@ -427,7 +388,7 @@ export function useRail5Wizard({ onComplete, onClose, preselectedBotId }: UseRai
         }),
       });
       if (!res.ok) throw new Error("Failed to update limits");
-      setStep(2);
+      setStep(3);
     } catch {
       toast({ title: "Error", description: "Failed to save spending limits.", variant: "destructive" });
     } finally {
@@ -459,7 +420,7 @@ export function useRail5Wizard({ onComplete, onClose, preselectedBotId }: UseRai
 
   async function handleBotLink() {
     if (!selectedBotId) {
-      setStep(5);
+      setStep(6);
       return;
     }
     setLoading(true);
@@ -470,7 +431,7 @@ export function useRail5Wizard({ onComplete, onClose, preselectedBotId }: UseRai
         body: JSON.stringify({ bot_id: selectedBotId }),
       });
       if (!res.ok) throw new Error("Failed to link bot");
-      setStep(5);
+      setStep(6);
     } catch {
       toast({ title: "Error", description: "Failed to link bot.", variant: "destructive" });
     } finally {
@@ -527,10 +488,8 @@ export function useRail5Wizard({ onComplete, onClose, preselectedBotId }: UseRai
     handleRestartCard,
     handleRequestClose,
     confirmExit,
+    handleStep1Next,
     handleEncryptAndDownload,
-    initLoading,
-    initFailed,
-    retryInit,
     handleCardDetailsNext,
     handleAddressNext,
     handleLimitsNext,

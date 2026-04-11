@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSessionUser } from "@/features/platform-management/auth/session";
 import { storage } from "@/server/storage";
 import { GUARDRAIL_DEFAULTS } from "@/features/agent-interaction/guardrails/defaults";
+import { lookupIssuer } from "@/features/payment-rails/card/bin-lookup";
 
 export async function GET(request: NextRequest) {
   const user = await getSessionUser(request);
@@ -32,6 +33,7 @@ export async function GET(request: NextRequest) {
       bot_name: c.botId ? (botLookup[c.botId] || null) : null,
       card_color: c.cardColor || null,
       card_first6: c.cardFirst6 || null,
+      issuer_name: c.cardFirst6 ? (lookupIssuer(c.cardFirst6) || null) : null,
       exp_month: c.expMonth || null,
       exp_year: c.expYear || null,
       cardholder_name: c.cardholderName || null,

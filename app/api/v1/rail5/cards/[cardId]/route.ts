@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSessionUser } from "@/features/platform-management/auth/session";
 import { storage } from "@/server/storage";
 import { fireRailsUpdated } from "@/features/agent-interaction/webhooks";
+import { lookupIssuer } from "@/features/payment-rails/card/bin-lookup";
 import { z } from "zod";
 
 const patchSchema = z.object({
@@ -164,6 +165,7 @@ export async function GET(
     status: card.status,
     bot_id: card.botId || null,
     card_color: card.cardColor || null,
+    issuer_name: card.cardFirst6 ? (lookupIssuer(card.cardFirst6) || null) : null,
     spending_limit_cents: guard?.maxPerTxCents ?? GUARDRAIL_DEFAULTS.rail5.maxPerTxCents,
     daily_limit_cents: guard?.dailyBudgetCents ?? GUARDRAIL_DEFAULTS.rail5.dailyBudgetCents,
     monthly_limit_cents: guard?.monthlyBudgetCents ?? GUARDRAIL_DEFAULTS.rail5.monthlyBudgetCents,

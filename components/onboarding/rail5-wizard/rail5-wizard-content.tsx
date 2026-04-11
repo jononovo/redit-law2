@@ -1,10 +1,9 @@
 "use client";
 
-import { Loader2, RefreshCw } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { type Rail5SetupWizardContentProps } from "./types";
 import { useRail5Wizard } from "./use-rail5-wizard";
 import { WizardShell } from "./wizard-shell";
+import { NameCard } from "./steps/name-card";
 import { HowItWorks } from "./steps/how-it-works";
 import { SpendingLimits } from "./steps/spending-limits";
 import { CardEntry } from "./steps/card-entry";
@@ -17,32 +16,6 @@ import { TestVerification } from "./steps/test-verification";
 export function Rail5SetupWizardContent({ onComplete, onClose, preselectedBotId, inline = false }: Rail5SetupWizardContentProps) {
   const w = useRail5Wizard({ onComplete, onClose, preselectedBotId });
 
-  if (w.initLoading || w.initFailed) {
-    return (
-      <WizardShell
-        inline={inline}
-        step={0}
-        showExitConfirm={false}
-        onRequestClose={w.handleRequestClose}
-        onConfirmExit={w.confirmExit}
-        onDismissExit={() => {}}
-      >
-        <div className="flex flex-col items-center justify-center py-12 gap-4">
-          {w.initFailed ? (
-            <>
-              <p className="text-sm text-neutral-600">Failed to set up card. Please try again.</p>
-              <Button onClick={w.retryInit} variant="outline" className="gap-2" data-testid="button-retry-init">
-                <RefreshCw className="w-4 h-4" /> Retry
-              </Button>
-            </>
-          ) : (
-            <Loader2 className="w-6 h-6 animate-spin text-primary" />
-          )}
-        </div>
-      </WizardShell>
-    );
-  }
-
   return (
     <WizardShell
       inline={inline}
@@ -53,12 +26,22 @@ export function Rail5SetupWizardContent({ onComplete, onClose, preselectedBotId,
       onDismissExit={() => w.setShowExitConfirm(false)}
     >
       {w.step === 0 && (
-        <HowItWorks
-          onNext={() => w.setStep(1)}
+        <NameCard
+          cardName={w.cardName}
+          setCardName={w.setCardName}
+          loading={w.loading}
+          onNext={w.handleStep1Next}
         />
       )}
 
       {w.step === 1 && (
+        <HowItWorks
+          onBack={() => w.setStep(0)}
+          onNext={() => w.setStep(2)}
+        />
+      )}
+
+      {w.step === 2 && (
         <SpendingLimits
           spendingLimit={w.spendingLimit}
           setSpendingLimit={w.setSpendingLimit}
@@ -71,12 +54,12 @@ export function Rail5SetupWizardContent({ onComplete, onClose, preselectedBotId,
           approvalThreshold={w.approvalThreshold}
           setApprovalThreshold={w.setApprovalThreshold}
           loading={w.loading}
-          onBack={() => w.setStep(0)}
+          onBack={() => w.setStep(1)}
           onNext={w.handleLimitsNext}
         />
       )}
 
-      {w.step === 2 && (
+      {w.step === 3 && (
         <CardEntry
           cardNumber={w.cardNumber}
           setCardNumber={w.setCardNumber}
@@ -95,11 +78,11 @@ export function Rail5SetupWizardContent({ onComplete, onClose, preselectedBotId,
           onEncryptCard={w.handleEncryptCard}
           onRestartCard={w.handleRestartCard}
           onCardDetailsNext={w.handleCardDetailsNext}
-          onBack={() => w.setStep(1)}
+          onBack={() => w.setStep(2)}
         />
       )}
 
-      {w.step === 3 && (
+      {w.step === 4 && (
         <BillingAddress
           address={w.address}
           setAddress={w.setAddress}
@@ -115,12 +98,12 @@ export function Rail5SetupWizardContent({ onComplete, onClose, preselectedBotId,
           setShowCountryPicker={w.setShowCountryPicker}
           addressErrors={w.addressErrors}
           setAddressErrors={w.setAddressErrors}
-          onBack={() => w.setStep(2)}
+          onBack={() => w.setStep(3)}
           onNext={w.handleAddressNext}
         />
       )}
 
-      {w.step === 4 && (
+      {w.step === 5 && (
         <LinkBot
           bots={w.bots}
           selectedBotId={w.selectedBotId}
@@ -129,12 +112,12 @@ export function Rail5SetupWizardContent({ onComplete, onClose, preselectedBotId,
           botsFetched={w.botsFetched}
           setBotsFetched={w.setBotsFetched}
           loading={w.loading}
-          onSkip={() => { w.setSelectedBotId(""); w.setStep(5); }}
+          onSkip={() => { w.setSelectedBotId(""); w.setStep(6); }}
           onLink={w.handleBotLink}
         />
       )}
 
-      {w.step === 5 && (
+      {w.step === 6 && (
         <EncryptDeliver
           selectedBotId={w.selectedBotId}
           encryptionDone={w.encryptionDone}
@@ -144,12 +127,12 @@ export function Rail5SetupWizardContent({ onComplete, onClose, preselectedBotId,
           deliveryAttempted={w.deliveryAttempted}
           loading={w.loading}
           preselectedBotId={w.preselectedBotId}
-          onBack={() => w.setStep(w.preselectedBotId ? 3 : 4)}
+          onBack={() => w.setStep(w.preselectedBotId ? 4 : 5)}
           onEncrypt={w.handleEncryptAndDownload}
         />
       )}
 
-      {w.step === 6 && (
+      {w.step === 7 && (
         <DeliveryResult
           cardId={w.cardId}
           cardName={w.cardName}
@@ -162,12 +145,12 @@ export function Rail5SetupWizardContent({ onComplete, onClose, preselectedBotId,
           directDeliverySucceeded={w.directDeliverySucceeded}
           deliveryResult={w.deliveryResult}
           storedFileContent={w.storedFileContent}
-          onNext={() => w.savedCardDetails ? w.setStep(7) : w.handleDone()}
+          onNext={() => w.savedCardDetails ? w.setStep(8) : w.handleDone()}
           onDone={w.handleDone}
         />
       )}
 
-      {w.step === 7 && (
+      {w.step === 8 && (
         <TestVerification
           cardId={w.cardId}
           cardName={w.cardName}

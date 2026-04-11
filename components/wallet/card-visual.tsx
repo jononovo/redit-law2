@@ -17,6 +17,7 @@ interface CardVisualProps {
   line2?: string;
   status?: string;
   brand?: string;
+  issuer?: string;
   bottomRightLabel?: string;
   bottomRightValue?: string;
 }
@@ -43,6 +44,7 @@ export function CardVisual({
   line2,
   status,
   brand,
+  issuer,
   bottomRightLabel,
   bottomRightValue,
 }: CardVisualProps) {
@@ -179,7 +181,10 @@ export function CardVisual({
                 </>
               )}
               {brandDisplay && (
-                <div className="mt-2 text-xl font-bold italic tracking-tighter opacity-90">{brandDisplay}</div>
+                <div className="mt-2 text-xl font-bold italic tracking-tighter opacity-90" data-testid="text-card-brand">{brandDisplay}</div>
+              )}
+              {issuer && (
+                <div className="text-[10px] font-medium uppercase tracking-wider opacity-70 mt-0.5" data-testid="text-card-issuer">{issuer}</div>
               )}
             </div>
           )}

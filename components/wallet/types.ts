@@ -55,6 +55,7 @@ export interface Rail5CardInfo {
   bot_id: string | null;
   bot_name: string | null;
   card_color: string | null;
+  issuer_name: string | null;
   spending_limit_cents: number;
   daily_limit_cents: number;
   monthly_limit_cents: number;
@@ -75,6 +76,7 @@ export interface NormalizedCard {
   balanceTooltip?: string | null;
   last4: string;
   brand: string | null;
+  issuer: string | null;
   line1: string | null;
   line2: string | null;
   detailPath: string;
@@ -92,6 +94,7 @@ export function normalizeRail5Card(card: Rail5CardInfo, basePath: string): Norma
     balanceLabel: "Spending Limit",
     last4: card.card_last4,
     brand: card.card_brand,
+    issuer: card.issuer_name || null,
     line1: `Daily: ${formatCentsToUsd(card.daily_limit_cents)}`,
     line2: `Monthly: ${formatCentsToUsd(card.monthly_limit_cents)}`,
     detailPath: `${basePath}/${card.card_id}`,
