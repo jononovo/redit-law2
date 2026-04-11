@@ -3,6 +3,7 @@ import { getSessionUser } from "@/features/platform-management/auth/session";
 import { storage } from "@/server/storage";
 import { rail5InitializeSchema } from "@/shared/schema";
 import { generateRail5CardId } from "@/features/payment-rails/rail5";
+import { lookupIssuer } from "@/features/payment-rails/card/bin-lookup";
 
 const CARD_COLORS = ["purple", "dark", "blue", "primary"] as const;
 
@@ -27,17 +28,27 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const { card_name, card_brand, card_last4 } = parsed.data;
+  const { card_name, card_brand, card_last4, card_first6 } = parsed.data;
   const cardId = generateRail5CardId();
+
+  let finalName = card_name;
+  if (card_first6 && card_last4 !== "0000") {
+    const issuer = lookupIssuer(card_first6);
+    const brandLabel = card_brand.charAt(0).toUpperCase() + card_brand.slice(1);
+    finalName = issuer
+      ? `${issuer} ${brandLabel} ••${card_last4}`
+      : `${brandLabel} ••${card_last4}`;
+  }
 
   const cardColor = CARD_COLORS[Math.floor(Math.random() * CARD_COLORS.length)];
 
   const card = await storage.createRail5Card({
     cardId,
     ownerUid: user.uid,
-    cardName: card_name,
+    cardName: finalName,
     cardBrand: card_brand,
     cardLast4: card_last4,
+    cardFirst6: card_first6 || "",
     status: "pending_setup",
     cardColor,
   });

@@ -519,7 +519,7 @@ export const rail5Cards = pgTable("rail5_cards", {
   cardBrand: text("card_brand").notNull().default("visa"),
   status: text("status").notNull().default("pending_setup"),
   cardColor: text("card_color"),
-  cardFirst4: text("card_first4").notNull().default(""),
+  cardFirst6: text("card_first6").notNull().default(""),
   expMonth: text("exp_month").notNull().default(""),
   expYear: text("exp_year").notNull().default(""),
   cardholderName: text("cardholder_name").notNull().default(""),
@@ -572,6 +572,7 @@ export const rail5InitializeSchema = z.object({
   card_name: z.string().min(1).max(200),
   card_last4: z.string().length(4).regex(/^\d{4}$/),
   card_brand: z.enum(["visa", "mastercard", "amex", "discover", "jcb", "diners"]),
+  card_first6: z.string().min(4).max(6).regex(/^\d{4,6}$/).optional(),
 });
 
 export const rail5SubmitKeySchema = z.object({
@@ -581,7 +582,7 @@ export const rail5SubmitKeySchema = z.object({
   tag_hex: z.string().length(32).regex(/^[0-9a-f]{32}$/i),
   card_last4: z.string().length(4).regex(/^\d{4}$/).optional(),
   card_brand: z.enum(["visa", "mastercard", "amex", "discover", "jcb", "diners"]).optional(),
-  card_first4: z.string().length(4).regex(/^\d{4}$/).optional(),
+  card_first6: z.string().min(4).max(6).regex(/^\d{4,6}$/).optional(),
   exp_month: z.string().min(1).max(2).optional(),
   exp_year: z.string().min(2).max(4).optional(),
   cardholder_name: z.string().min(1).max(200).optional(),

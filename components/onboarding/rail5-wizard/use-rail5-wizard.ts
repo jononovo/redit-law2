@@ -7,7 +7,7 @@ import { encryptCardDetails, buildEncryptedCardFile, downloadEncryptedFile } fro
 import { detectCardBrand, brandToApiValue, getMaxDigits } from "@/features/payment-rails/card/card-brand";
 import { type CardFieldErrors } from "@/features/payment-rails/card/hooks";
 import { RAIL5_CARD_DELIVERED } from "@/features/platform-management/agent-management/bot-messaging/templates";
-import { randomCardName, type BotOption, type SavedCardDetails } from "./types";
+import { type BotOption, type SavedCardDetails } from "./types";
 
 interface UseRail5WizardProps {
   onComplete: () => void;
@@ -19,8 +19,10 @@ export function useRail5Wizard({ onComplete, onClose, preselectedBotId }: UseRai
   const { toast } = useToast();
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [initLoading, setInitLoading] = useState(false);
+  const [initFailed, setInitFailed] = useState(false);
 
-  const [cardName, setCardName] = useState(randomCardName);
+  const [cardName, setCardName] = useState("New Card");
   const [cardId, setCardId] = useState("");
 
   const [cardNumber, setCardNumber] = useState("");
@@ -107,10 +109,45 @@ export function useRail5Wizard({ onComplete, onClose, preselectedBotId }: UseRai
   }, []);
 
   useEffect(() => {
-    if (step === 5 && !botsFetched && !botsLoading) {
+    if (!cardId && !initLoading) {
+      autoInitCard();
+    }
+  }, []);
+
+  useEffect(() => {
+    if (step === 4 && !botsFetched && !botsLoading) {
       fetchBots();
     }
   }, [step, botsFetched, botsLoading]);
+
+  async function autoInitCard() {
+    setInitLoading(true);
+    try {
+      const res = await authFetch("/api/v1/rail5/initialize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ card_name: "New Card", card_brand: "visa", card_last4: "0000" }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "Failed to initialize card");
+      }
+      const data = await res.json();
+      setCardId(data.card_id);
+      setCardName(data.card_name);
+      setStep(0);
+    } catch (e: unknown) {
+      setInitFailed(true);
+      toast({ title: "Error", description: e instanceof Error ? e.message : "Failed to initialize card.", variant: "destructive" });
+    } finally {
+      setInitLoading(false);
+    }
+  }
+
+  function retryInit() {
+    setInitFailed(false);
+    autoInitCard();
+  }
 
   function handleEncryptCard() {
     const cleanNumber = cardNumber.replace(/\s/g, "");
@@ -147,7 +184,7 @@ export function useRail5Wizard({ onComplete, onClose, preselectedBotId }: UseRai
   }
 
   function handleRequestClose() {
-    if (step !== 7) {
+    if (step !== 6) {
       setShowExitConfirm(true);
     } else {
       onClose();
@@ -157,32 +194,6 @@ export function useRail5Wizard({ onComplete, onClose, preselectedBotId }: UseRai
   function confirmExit() {
     setShowExitConfirm(false);
     onClose();
-  }
-
-  async function handleStep1Next() {
-    if (!cardName.trim()) {
-      toast({ title: "Missing info", description: "Enter a card name.", variant: "destructive" });
-      return;
-    }
-    setLoading(true);
-    try {
-      const res = await authFetch("/api/v1/rail5/initialize", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ card_name: cardName.trim(), card_brand: cardBrand, card_last4: "0000" }),
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || "Failed to initialize card");
-      }
-      const data = await res.json();
-      setCardId(data.card_id);
-      setStep(1);
-    } catch (e: unknown) {
-      toast({ title: "Error", description: e instanceof Error ? e.message : "Failed to initialize card.", variant: "destructive" });
-    } finally {
-      setLoading(false);
-    }
   }
 
   async function handleEncryptAndDownload() {
@@ -217,7 +228,7 @@ export function useRail5Wizard({ onComplete, onClose, preselectedBotId }: UseRai
           tag_hex: tagHex,
           card_last4: cardNumber.replace(/\s/g, "").slice(-4),
           card_brand: cardBrand,
-          card_first4: cleanNumber.slice(0, 4),
+          card_first6: cleanNumber.slice(0, 6),
           exp_month: expMonth,
           exp_year: expYear,
           cardholder_name: holderName,
@@ -235,7 +246,7 @@ export function useRail5Wizard({ onComplete, onClose, preselectedBotId }: UseRai
       setKeySent(true);
 
       const md = buildEncryptedCardFile(ciphertextBytes, cardName, cardLast4, cardId, {
-        bin: cleanNumber.slice(0, 4),
+        bin: cleanNumber.slice(0, 6),
         expMonth,
         expYear,
         cardholderName: holderName,
@@ -306,7 +317,7 @@ export function useRail5Wizard({ onComplete, onClose, preselectedBotId }: UseRai
       setCountry("US");
       setShowCountryPicker(false);
 
-      setStep(7);
+      setStep(6);
     } catch (e: unknown) {
       toast({ title: "Error", description: e instanceof Error ? e.message : "Encryption failed.", variant: "destructive" });
     } finally {
@@ -314,7 +325,7 @@ export function useRail5Wizard({ onComplete, onClose, preselectedBotId }: UseRai
     }
   }
 
-  function handleCardDetailsNext() {
+  async function handleCardDetailsNext() {
     const cleanNumber = cardNumber.replace(/\s/g, "");
     const expectedDigits = getMaxDigits(detectedBrand);
     const minCvv = detectedBrand === "amex" ? 4 : 3;
@@ -330,7 +341,35 @@ export function useRail5Wizard({ onComplete, onClose, preselectedBotId }: UseRai
       return;
     }
     setCardErrors({});
-    setStep(4);
+
+    const bin6 = cleanNumber.slice(0, 6);
+    const last4 = cleanNumber.slice(-4);
+    const brandLabel = cardBrand.charAt(0).toUpperCase() + cardBrand.slice(1);
+    let autoName = `${brandLabel} ••${last4}`;
+
+    try {
+      const binRes = await fetch(`/api/v1/bin-lookup?bin=${bin6}`);
+      if (binRes.ok) {
+        const binData = await binRes.json();
+        if (binData.issuer) {
+          autoName = `${binData.issuer} ${brandLabel} ••${last4}`;
+        }
+      }
+    } catch {}
+
+    setCardName(autoName);
+
+    try {
+      await authFetch(`/api/v1/rail5/cards/${cardId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          card_name: autoName,
+        }),
+      });
+    } catch {}
+
+    setStep(3);
   }
 
   async function handleAddressNext() {
@@ -358,9 +397,9 @@ export function useRail5Wizard({ onComplete, onClose, preselectedBotId }: UseRai
       } finally {
         setLoading(false);
       }
-      setStep(6);
-    } else {
       setStep(5);
+    } else {
+      setStep(4);
     }
   }
 
@@ -388,7 +427,7 @@ export function useRail5Wizard({ onComplete, onClose, preselectedBotId }: UseRai
         }),
       });
       if (!res.ok) throw new Error("Failed to update limits");
-      setStep(3);
+      setStep(2);
     } catch {
       toast({ title: "Error", description: "Failed to save spending limits.", variant: "destructive" });
     } finally {
@@ -420,7 +459,7 @@ export function useRail5Wizard({ onComplete, onClose, preselectedBotId }: UseRai
 
   async function handleBotLink() {
     if (!selectedBotId) {
-      setStep(6);
+      setStep(5);
       return;
     }
     setLoading(true);
@@ -431,7 +470,7 @@ export function useRail5Wizard({ onComplete, onClose, preselectedBotId }: UseRai
         body: JSON.stringify({ bot_id: selectedBotId }),
       });
       if (!res.ok) throw new Error("Failed to link bot");
-      setStep(6);
+      setStep(5);
     } catch {
       toast({ title: "Error", description: "Failed to link bot.", variant: "destructive" });
     } finally {
@@ -488,8 +527,10 @@ export function useRail5Wizard({ onComplete, onClose, preselectedBotId }: UseRai
     handleRestartCard,
     handleRequestClose,
     confirmExit,
-    handleStep1Next,
     handleEncryptAndDownload,
+    initLoading,
+    initFailed,
+    retryInit,
     handleCardDetailsNext,
     handleAddressNext,
     handleLimitsNext,

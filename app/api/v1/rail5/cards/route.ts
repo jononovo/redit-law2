@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
       bot_id: c.botId || null,
       bot_name: c.botId ? (botLookup[c.botId] || null) : null,
       card_color: c.cardColor || null,
-      card_first4: c.cardFirst4 || null,
+      card_first6: c.cardFirst6 || null,
       exp_month: c.expMonth || null,
       exp_year: c.expYear || null,
       cardholder_name: c.cardholderName || null,
