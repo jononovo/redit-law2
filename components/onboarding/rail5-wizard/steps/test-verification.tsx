@@ -27,7 +27,7 @@ export function TestVerification({ cardId, cardName, cardLast4, savedCardDetails
   const [testPurchaseResult, setTestPurchaseResult] = useState<TestPurchaseResult | null>(null);
   const [testPollingActive, setTestPollingActive] = useState(false);
   const [testPollingTimedOut, setTestPollingTimedOut] = useState(false);
-  const [testStatus, setTestStatus] = useState<"pending" | "in_progress" | "completed">("pending");
+  const [testStatus, setTestStatus] = useState<"pending" | "approval_requested" | "approved" | "in_progress" | "completed">("pending");
   const [copied, setCopied] = useState(false);
   const [discordCopied, setDiscordCopied] = useState(false);
   const testPollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -74,6 +74,12 @@ export function TestVerification({ cardId, cardName, cardLast4, savedCardDetails
           } else if (data.status === "in_progress") {
             setTestStatus("in_progress");
             setOptedIn(true);
+          } else if (data.status === "approved") {
+            setTestStatus("approved");
+            setOptedIn(true);
+          } else if (data.status === "approval_requested") {
+            setTestStatus("approval_requested");
+            setOptedIn(true);
           }
         }
       } catch {}
@@ -102,6 +108,10 @@ export function TestVerification({ cardId, cardName, cardLast4, savedCardDetails
             if (testPollingRef.current) clearInterval(testPollingRef.current);
           } else if (data.status === "in_progress") {
             setTestStatus("in_progress");
+          } else if (data.status === "approved") {
+            setTestStatus("approved");
+          } else if (data.status === "approval_requested") {
+            setTestStatus("approval_requested");
           }
         }
       } catch {}
@@ -136,7 +146,7 @@ export function TestVerification({ cardId, cardName, cardLast4, savedCardDetails
   function handleDiscord() {
     navigator.clipboard.writeText(TEST_RELAY_MESSAGE).then(() => {
       setDiscordCopied(true);
-      toast({ title: "Copied!", description: "Paste this in Discord to send to your bot." });
+      toast({ title: "Copied!", description: "Paste this in Discord to send to your agent." });
       setTimeout(() => setDiscordCopied(false), 2000);
     });
   }
@@ -180,7 +190,7 @@ export function TestVerification({ cardId, cardName, cardLast4, savedCardDetails
 
   return (
     <div className="space-y-6" data-testid="r5-step-test-verification">
-      <StepHeader icon={Shield} iconBg="bg-blue-50" iconColor="text-blue-600" iconSize="lg" title="Test Verification" tooltip="Your bot is completing a sandbox test purchase to verify the card file decrypts correctly." titleTestId="text-test-title" />
+      <StepHeader icon={Shield} iconBg="bg-blue-50" iconColor="text-blue-600" iconSize="lg" title="Test Verification" tooltip="Your agent is completing a sandbox test purchase to verify the card file decrypts correctly." titleTestId="text-test-title" />
 
       <div className="space-y-3" data-testid="r5-test-verification">
         {testPurchaseResult?.status === "completed" ? (
@@ -219,11 +229,35 @@ export function TestVerification({ cardId, cardName, cardLast4, savedCardDetails
             <div className="flex items-center gap-2">
               <Loader2 className="w-5 h-5 text-blue-600 animate-spin" />
               <span className="font-medium text-sm text-blue-800" data-testid="text-verification-in-progress">
-                Your bot is completing the test checkout...
+                Your agent is completing the test checkout...
               </span>
             </div>
             <p className="text-xs text-blue-600 mt-1">
-              Your bot has started the test — it's decrypting the card and filling in the checkout form. This usually takes about a minute.
+              Your agent has loaded the checkout page — it's decrypting the card and filling in the form. This usually takes about a minute.
+            </p>
+          </div>
+        ) : testStatus === "approved" ? (
+          <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="w-5 h-5 text-green-600" />
+              <span className="font-medium text-sm text-blue-800" data-testid="text-verification-approved">
+                Approved! Waiting for your agent to load the checkout page...
+              </span>
+            </div>
+            <p className="text-xs text-blue-600 mt-1">
+              You approved the test purchase. Your agent will now navigate to the checkout page and fill in the card details.
+            </p>
+          </div>
+        ) : testStatus === "approval_requested" ? (
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+            <div className="flex items-center gap-2">
+              <Shield className="w-5 h-5 text-amber-600" />
+              <span className="font-medium text-sm text-amber-800" data-testid="text-verification-approval-requested">
+                Your agent requested approval — check your email
+              </span>
+            </div>
+            <p className="text-xs text-amber-600 mt-1">
+              Your agent is ready to run the test checkout but needs your approval first. Check your email for the approval link.
             </p>
           </div>
         ) : testPollingTimedOut ? (
@@ -235,7 +269,7 @@ export function TestVerification({ cardId, cardName, cardLast4, savedCardDetails
               </span>
             </div>
             <p className="text-xs text-amber-600 mt-1">
-              Your bot hasn't completed the test checkout yet. It may still complete it later — you can check the card's status from your dashboard.
+              Your agent hasn't completed the test checkout yet. It may still complete it later — you can check the card's status from your dashboard.
             </p>
           </div>
         ) : testStatus === "pending" && testPollingActive ? (
@@ -244,17 +278,17 @@ export function TestVerification({ cardId, cardName, cardLast4, savedCardDetails
               <div className="flex items-center gap-2">
                 <Loader2 className="w-5 h-5 text-blue-600 animate-spin" />
                 <span className="font-medium text-sm text-blue-800" data-testid="text-verification-pending">
-                  Waiting for your bot to start the test checkout...
+                  Waiting for your agent to start the test checkout...
                 </span>
               </div>
               <p className="text-xs text-blue-600 mt-1">
-                Your bot was sent test instructions automatically. If it doesn't start within a minute, you can send the instructions manually below.
+                Your agent was sent test instructions automatically. If it doesn't start within a minute, you can send the instructions manually below.
               </p>
             </div>
 
             <div className="space-y-3">
               <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
-                <p className="text-xs text-amber-700 font-medium mb-2">Send this to your bot:</p>
+                <p className="text-xs text-amber-700 font-medium mb-2">Send this to your agent:</p>
                 <pre className="text-xs text-amber-900 whitespace-pre-wrap font-mono bg-amber-100/50 rounded-lg p-3" data-testid="text-test-relay-message">
                   {TEST_RELAY_MESSAGE}
                 </pre>
