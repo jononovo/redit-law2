@@ -91,13 +91,13 @@ export function DeliveryResult({
   return (
     <div className="space-y-6" data-testid="r5-step-success">
       {directDeliverySucceeded ? (
-        <StepHeader icon={CheckCircle2} iconBg="bg-green-50" iconColor="text-green-600" iconSize="lg" title="Bot Received the Card" subtitle={`Your encrypted card file was delivered to ${botDisplayName} via webhook.`} titleTestId="text-delivery-title" />
+        <StepHeader icon={CheckCircle2} iconBg="bg-green-50" iconColor="text-green-600" iconSize="lg" title="Bot Received the Card" tooltip={`Your encrypted card file was delivered to ${botDisplayName} via webhook.`} titleTestId="text-delivery-title" />
       ) : botConfirmed ? (
-        <StepHeader icon={CheckCircle2} iconBg="bg-green-50" iconColor="text-green-600" iconSize="lg" title="Bot Confirmed!" subtitle={`${botDisplayName} picked up and confirmed the card file.`} titleTestId="text-delivery-title" />
+        <StepHeader icon={CheckCircle2} iconBg="bg-green-50" iconColor="text-green-600" iconSize="lg" title="Bot Confirmed!" tooltip={`${botDisplayName} picked up and confirmed the card file.`} titleTestId="text-delivery-title" />
       ) : isWaiting ? (
-        <StepHeader icon={pollingDone ? Send : Loader2} iconBg="bg-amber-50" iconColor={`text-amber-600${pollingDone ? "" : " animate-spin"}`} iconSize="lg" title={pollingDone ? "File Staged for Your Bot" : "Waiting for Your Bot..."} subtitle={pollingDone ? "Your encrypted card file is staged for 24 hours. Your bot can pick it up anytime." : "Your encrypted card file is ready for pickup. Tell your bot to check for messages."} titleTestId="text-delivery-title" />
+        <StepHeader icon={pollingDone ? Send : Loader2} iconBg="bg-amber-50" iconColor={`text-amber-600${pollingDone ? "" : " animate-spin"}`} iconSize="lg" title={pollingDone ? "File Staged for Your Bot" : "Waiting for Your Bot..."} tooltip={pollingDone ? "Your encrypted card file is staged for 24 hours. Your bot can pick it up anytime." : "Your encrypted card file is ready for pickup. Tell your bot to check for messages."} titleTestId="text-delivery-title" />
       ) : (
-        <StepHeader icon={Sparkles} iconBg="bg-green-50" iconColor="text-green-600" iconSize="lg" title="Card Ready!" subtitle="Your encrypted card has been set up successfully." titleTestId="text-delivery-title" />
+        <StepHeader icon={Sparkles} iconBg="bg-green-50" iconColor="text-green-600" iconSize="lg" title="Card Ready!" tooltip="Your encrypted card has been set up successfully." titleTestId="text-delivery-title" />
       )}
 
       {isWaiting && (

@@ -34,7 +34,7 @@ export function SpendingLimits({
 }: SpendingLimitsProps) {
   return (
     <div className="space-y-6" data-testid="r5-step-limits">
-      <StepHeader icon={Shield} iconBg="bg-orange-50" iconColor="text-orange-600" title="Spending Limits" subtitle="Set hardened guardrails for how your bot can spend." />
+      <StepHeader icon={Shield} iconBg="bg-orange-50" iconColor="text-orange-600" title="Spending Limits" tooltip="Set hardened guardrails for how your bot can spend." />
 
       <div className="space-y-4 max-w-sm mx-auto">
         <div className="flex items-center justify-between rounded-lg border border-neutral-200 px-4 py-3">

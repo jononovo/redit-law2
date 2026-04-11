@@ -25,7 +25,7 @@ export function LinkBot({
 }: LinkBotProps) {
   return (
     <div className="space-y-6" data-testid="r5-step-bot">
-      <StepHeader icon={Bot} iconBg="bg-blue-50" iconColor="text-blue-600" title="Link a Bot" subtitle="Choose which bot can use this card for purchases." />
+      <StepHeader icon={Bot} iconBg="bg-blue-50" iconColor="text-blue-600" title="Link a Bot" tooltip="Choose which bot can use this card for purchases." />
 
       {botsLoading && (
         <div className="flex flex-col items-center justify-center py-4 gap-2">
