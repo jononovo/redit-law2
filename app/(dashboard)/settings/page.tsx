@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { PaymentSetup } from "@/components/dashboard/payment-setup";
 import { ShippingAddressManager } from "@/components/dashboard/shipping-address-manager";
 import { useAuth } from "@/features/platform-management/auth/auth-context";
+import { authFetch } from "@/features/platform-management/auth-fetch";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Loader2, Shield, TrendingUp, Zap, CreditCard, Bot, ChevronDown, Smartphone } from "lucide-react";
 
@@ -412,7 +413,7 @@ export default function SettingsPage() {
   const { data, isLoading } = useQuery<{ preferences: Preferences }>({
     queryKey: ["notification-preferences"],
     queryFn: async () => {
-      const res = await fetch("/api/v1/notifications/preferences");
+      const res = await authFetch("/api/v1/notifications/preferences");
       if (!res.ok) throw new Error("Failed to load");
       return res.json();
     },
@@ -420,7 +421,7 @@ export default function SettingsPage() {
 
   const mutation = useMutation({
     mutationFn: async (update: Partial<Record<string, unknown>>) => {
-      const res = await fetch("/api/v1/notifications/preferences", {
+      const res = await authFetch("/api/v1/notifications/preferences", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(update),

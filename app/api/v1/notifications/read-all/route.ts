@@ -1,10 +1,10 @@
-import { NextResponse } from "next/server";
-import { getCurrentUser } from "@/features/platform-management/auth/session";
+import { NextRequest, NextResponse } from "next/server";
+import { getSessionUser } from "@/features/platform-management/auth/session";
 import { storage } from "@/server/storage";
 
-export async function POST() {
+export async function POST(request: NextRequest) {
   try {
-    const user = await getCurrentUser();
+    const user = await getSessionUser(request);
     if (!user) {
       return NextResponse.json({ error: "Authentication required" }, { status: 401 });
     }

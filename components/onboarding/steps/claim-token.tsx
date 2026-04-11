@@ -28,7 +28,8 @@ export function ClaimToken({ currentStep, totalSteps, onBack, onNext, onSkip }: 
     setError(null);
 
     try {
-      const res = await fetch("/api/v1/bots/claim", {
+      const { authFetch } = await import("@/features/platform-management/auth-fetch");
+      const res = await authFetch("/api/v1/bots/claim", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ claim_token: token.trim() }),

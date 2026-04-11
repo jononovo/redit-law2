@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Activity, Loader2, CheckCircle2, XCircle, AlertTriangle, Clock } from "lucide-react";
+import { authFetch } from "@/features/platform-management/auth-fetch";
 
 interface LogEntry {
   id: number;
@@ -55,7 +56,7 @@ export function ActivityLog() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/api/v1/activity-log")
+    authFetch("/api/v1/activity-log")
       .then((res) => (res.ok ? res.json() : { logs: [] }))
       .then((data) => setLogs(data.logs || []))
       .catch(() => {})
