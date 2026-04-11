@@ -152,28 +152,18 @@ async function main() {
     bankBins.get(bankName)!.add(bin6);
   }
 
-  const lookup: Record<string, string> = {};
+  const grouped: Record<string, string[]> = {};
   for (const [bankName, bins] of bankBins) {
-    for (const bin of bins) {
-      if (!lookup[bin]) {
-        lookup[bin] = bankName;
-      }
-    }
+    grouped[bankName] = [...bins].sort();
   }
-
-  const sorted = Object.keys(lookup)
-    .sort()
-    .reduce((acc: Record<string, string>, key) => {
-      acc[key] = lookup[key];
-      return acc;
-    }, {});
 
   const outPath = path.join(process.cwd(), "data", "bin-lookup.json");
   fs.mkdirSync(path.dirname(outPath), { recursive: true });
-  fs.writeFileSync(outPath, JSON.stringify(sorted, null, 2));
+  fs.writeFileSync(outPath, JSON.stringify(grouped));
 
   const fileSize = fs.statSync(outPath).size;
-  const totalBins = Object.keys(sorted).length;
+  let totalBins = 0;
+  for (const bins of Object.values(grouped)) totalBins += bins.length;
 
   console.log(`\nFile: ${outPath}`);
   console.log(`Size: ${(fileSize / 1024).toFixed(1)} KB`);
@@ -214,7 +204,11 @@ async function main() {
   console.log(`\nSample lookups:`);
   const samples = ["438857", "400229", "340000", "601100", "471600", "431261"];
   for (const bin of samples) {
-    console.log(`  ${bin} → ${sorted[bin] || "(not found)"}`);
+    let found = "(not found)";
+    for (const [bankName, bins] of Object.entries(grouped)) {
+      if (bins.includes(bin)) { found = bankName; break; }
+    }
+    console.log(`  ${bin} → ${found}`);
   }
 }
 
