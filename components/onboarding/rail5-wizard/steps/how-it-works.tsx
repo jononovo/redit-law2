@@ -27,7 +27,7 @@ export function HowItWorks({ onBack, onNext }: HowItWorksProps) {
           </div>
           <div className="flex items-start gap-2">
             <Shield className="w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0" />
-            <span>CreditClaw only stores the decryption key — never the card itself.</span>
+            <span>Agent requests decryption approval before every transaction. You approve.</span>
           </div>
           <div className="flex items-start gap-2">
             <Bot className="w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0" />
