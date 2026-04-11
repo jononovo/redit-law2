@@ -30,7 +30,7 @@ export function EncryptDeliver({
         icon={Lock}
         iconBg="bg-purple-50"
         iconColor="text-purple-600"
-        title={selectedBotId ? "Encrypt & Deliver" : "Encrypt & Download"}
+        title={selectedBotId ? "Encrypt & Deliver" : "🔐 Send to Agent"}
         tooltip={selectedBotId
           ? "Your card will be encrypted and delivered directly to your bot."
           : "Your card will be encrypted and downloaded as a file."}
