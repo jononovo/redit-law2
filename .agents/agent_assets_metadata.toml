@@ -6,3 +6,9 @@ id = "cnAOWU3Q_duY2HbMEVzf9"
 uri = "file://docs/axs-technical-plan.md"
 type = "text"
 title = "AXS Technical Plan"
+
+[[outputs]]
+id = "JIZgi5ZuDsQitck0M_YVd"
+uri = "file://project_knowledge/currently_building/bin-lookup-auto-card-naming.md"
+type = "text"
+title = "BIN Lookup & Auto Card Naming — Technical Plan"
