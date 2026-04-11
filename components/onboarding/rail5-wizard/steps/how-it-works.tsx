@@ -16,7 +16,7 @@ export function HowItWorks({ onBack, onNext }: HowItWorksProps) {
       <StepHeader icon={Shield} iconBg="bg-emerald-50" iconColor="text-emerald-600" title="How It Works" />
 
       <div className="bg-emerald-50 rounded-xl p-5 space-y-3">
-        <div className="space-y-2 text-lg md:text-xl text-neutral-600">
+        <div className="space-y-4 text-lg md:text-xl text-neutral-600">
           <div className="flex items-start gap-2">
             <Lock className="w-5 h-5 text-emerald-600 mt-0.5 flex-shrink-0" />
             <span>Card details are <strong>encrypted</strong> and delivered to your agent.</span>
