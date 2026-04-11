@@ -283,6 +283,7 @@ export function useRail5Wizard({ onComplete, onClose, preselectedBotId }: UseRai
           }
         } catch {
         }
+        await delay(800);
       }
 
       downloadEncryptedFile(md, `${baseName}.md`);
