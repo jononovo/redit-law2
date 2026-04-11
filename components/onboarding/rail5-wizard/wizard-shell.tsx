@@ -69,7 +69,7 @@ export function WizardShell({
         </div>
       )}
 
-      {step < TOTAL_STEPS && <StepIndicator current={step} total={TOTAL_STEPS} />}
+      {step < TOTAL_STEPS && <StepIndicator current={step} total={TOTAL_STEPS - 1} />}
 
       {children}
     </>
