@@ -101,12 +101,6 @@ export function Rail5InteractiveCard({
             ].join(", "),
           }}
         />
-        <div
-          className="absolute inset-0 pointer-events-none opacity-[0.03]"
-          style={{
-            backgroundImage: "repeating-linear-gradient(135deg, transparent, transparent 40px, rgba(255,255,255,0.5) 40px, rgba(255,255,255,0.5) 41px)",
-          }}
-        />
 
         <div className="relative h-full flex flex-col p-6">
           <div className="flex items-start justify-end">
