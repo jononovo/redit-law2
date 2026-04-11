@@ -194,6 +194,8 @@ export function useRail5Wizard({ onComplete, onClose, preselectedBotId }: UseRai
     }
     setLoading(true);
     try {
+      const delay = (ms: number) => new Promise(r => setTimeout(r, ms));
+
       const { keyHex, ivHex, tagHex, ciphertextBytes } = await encryptCardDetails({
         number: cardNumber.replace(/\s/g, ""),
         cvv: cardCvv,
@@ -207,6 +209,7 @@ export function useRail5Wizard({ onComplete, onClose, preselectedBotId }: UseRai
         country: country,
       });
       setEncryptionDone(true);
+      await delay(800);
 
       const res = await authFetch("/api/v1/rail5/submit-key", {
         method: "POST",
@@ -234,6 +237,7 @@ export function useRail5Wizard({ onComplete, onClose, preselectedBotId }: UseRai
         throw new Error(err.error || "Failed to submit key");
       }
       setKeySent(true);
+      await delay(800);
 
       const md = buildEncryptedCardFile(ciphertextBytes, cardName, cardLast4, cardId, {
         bin: cleanNumber.slice(0, 6),
@@ -283,6 +287,7 @@ export function useRail5Wizard({ onComplete, onClose, preselectedBotId }: UseRai
 
       downloadEncryptedFile(md, `${baseName}.md`);
       setDownloadDone(true);
+      await delay(800);
 
       setSavedCardDetails({
         cardNumber: cardNumber.replace(/\s/g, ""),
