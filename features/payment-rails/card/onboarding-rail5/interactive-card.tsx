@@ -157,7 +157,7 @@ export function Rail5InteractiveCard({
                             style={{ animation: "blink 1s step-end infinite" }}
                           />
                         )}
-                        <span className={typed ? "text-white" : "text-white/25"}>
+                        <span className={typed ? "text-white" : "text-white/60"}>
                           {typed || "0"}
                         </span>
                       </span>
