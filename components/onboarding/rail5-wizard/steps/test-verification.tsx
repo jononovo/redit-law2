@@ -152,9 +152,9 @@ export function TestVerification({ cardId, cardName, cardLast4, savedCardDetails
   if (!optedIn) {
     return (
       <div className="space-y-6" data-testid="r5-step-test-verification">
-        <StepHeader icon={FlaskConical} iconBg="bg-blue-50" iconColor="text-blue-600" iconSize="lg" title="Test Your Card" tooltip="Do you want your bot to do a test payment in our sandbox?" titleTestId="text-test-title" />
+        <StepHeader icon={FlaskConical} iconBg="bg-blue-50" iconColor="text-blue-600" iconSize="lg" title="Test Your Agent" tooltip="Do you want your agent to do a test payment in our sandbox?" titleTestId="text-test-title" />
         <p className="text-xs text-neutral-400 text-center">
-          This runs a simulated checkout to verify your bot can decrypt and use the card. No real charges.
+          This runs a simulated checkout to verify your agent can decrypt and use the card. No real charges.
         </p>
 
         <div className="flex gap-3">
