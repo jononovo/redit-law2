@@ -23,7 +23,7 @@ export function NameCard({ cardName, setCardName, loading, onNext }: NameCardPro
           value={cardName}
           onChange={(e) => setCardName(e.target.value.slice(0, 200))}
           placeholder="e.g. Titanium Claw"
-          className="text-center text-lg"
+          className="text-left text-lg"
           data-testid="input-card-name"
         />
       </div>
