@@ -3,6 +3,7 @@
 import { Loader2, ArrowLeft, Lock, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { wt } from "@/lib/wizard-typography";
+import { StepHeader } from "../step-header";
 
 interface EncryptDeliverProps {
   selectedBotId: string;
@@ -25,19 +26,15 @@ export function EncryptDeliver({
 }: EncryptDeliverProps) {
   return (
     <div className="space-y-6" data-testid="r5-step-encrypt">
-      <div className="text-center">
-        <div className="w-12 h-12 rounded-2xl bg-purple-50 flex items-center justify-center mx-auto mb-3">
-          <Lock className="w-6 h-6 text-purple-600" />
-        </div>
-        <h2 className={wt.title}>
-          {selectedBotId ? "Encrypt & Deliver" : "Encrypt & Download"}
-        </h2>
-        <p className={`${wt.subtitle} mt-1`}>
-          {selectedBotId
-            ? "Your card will be encrypted and delivered directly to your bot."
-            : "Your card will be encrypted and downloaded as a file."}
-        </p>
-      </div>
+      <StepHeader
+        icon={Lock}
+        iconBg="bg-purple-50"
+        iconColor="text-purple-600"
+        title={selectedBotId ? "Encrypt & Deliver" : "Encrypt & Download"}
+        subtitle={selectedBotId
+          ? "Your card will be encrypted and delivered directly to your bot."
+          : "Your card will be encrypted and downloaded as a file."}
+      />
 
       <div className="bg-neutral-50 rounded-xl p-5 space-y-3">
         <div className="flex items-center gap-3">

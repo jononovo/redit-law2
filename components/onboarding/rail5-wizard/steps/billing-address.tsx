@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { wt } from "@/lib/wizard-typography";
+import { StepHeader } from "../step-header";
 
 interface BillingAddressProps {
   address: string;
@@ -37,12 +38,7 @@ export function BillingAddress({
 }: BillingAddressProps) {
   return (
     <div className="space-y-6" data-testid="r5-step-address">
-      <div className="text-center">
-        <div className="w-12 h-12 rounded-2xl bg-indigo-50 flex items-center justify-center mx-auto mb-3">
-          <CreditCard className="w-6 h-6 text-indigo-600" />
-        </div>
-        <h2 className={wt.title}>Billing Address</h2>
-      </div>
+      <StepHeader icon={CreditCard} iconBg="bg-indigo-50" iconColor="text-indigo-600" title="Billing Address" />
 
       <div className="space-y-4">
         <div>

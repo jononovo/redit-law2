@@ -3,6 +3,7 @@
 import { Loader2, ArrowRight, ArrowLeft, Lock, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { wt } from "@/lib/wizard-typography";
+import { StepHeader } from "../step-header";
 import { Rail5InteractiveCard } from "@/features/payment-rails/card/onboarding-rail5/interactive-card";
 import { type CardBrand } from "@/features/payment-rails/card/card-brand";
 import { type CardFieldErrors } from "@/features/payment-rails/card/hooks";
@@ -41,12 +42,7 @@ export function CardEntry({
 }: CardEntryProps) {
   return (
     <div className="space-y-6" data-testid="r5-step-card-entry">
-      <div className="text-center">
-        <div className="w-12 h-12 rounded-2xl bg-blue-50 flex items-center justify-center mx-auto mb-3">
-          <Lock className="w-6 h-6 text-blue-600" />
-        </div>
-        <h2 className={wt.title}>Enter Card Details</h2>
-      </div>
+      <StepHeader icon={Lock} iconBg="bg-blue-50" iconColor="text-blue-600" title="Enter Card Details" />
 
       <Rail5InteractiveCard
         cardNumber={cardNumber}

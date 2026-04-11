@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { CheckCircle2, Loader2, ArrowRight, Download, Sparkles, ChevronDown, Send, Copy, MessageCircle, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { wt } from "@/lib/wizard-typography";
+import { StepHeader } from "../step-header";
 import { useToast } from "@/hooks/use-toast";
 import { authFetch } from "@/features/platform-management/auth-fetch";
 import { downloadEncryptedFile } from "@/features/payment-rails/card/onboarding-rail5/encrypt";
@@ -89,51 +90,15 @@ export function DeliveryResult({
 
   return (
     <div className="space-y-6" data-testid="r5-step-success">
-      <div className="text-center">
-        {directDeliverySucceeded ? (
-          <>
-            <div className="w-16 h-16 rounded-2xl bg-green-50 flex items-center justify-center mx-auto mb-4">
-              <CheckCircle2 className="w-8 h-8 text-green-600" />
-            </div>
-            <h2 className={`${wt.title} mb-2`} data-testid="text-delivery-title">Bot Received the Card</h2>
-            <p className={`${wt.subtitle} mt-2`}>Your encrypted card file was delivered to {botDisplayName} via webhook.</p>
-          </>
-        ) : botConfirmed ? (
-          <>
-            <div className="w-16 h-16 rounded-2xl bg-green-50 flex items-center justify-center mx-auto mb-4">
-              <CheckCircle2 className="w-8 h-8 text-green-600" />
-            </div>
-            <h2 className={`${wt.title} mb-2`} data-testid="text-delivery-title">Bot Confirmed!</h2>
-            <p className={`${wt.subtitle} mt-2`}>{botDisplayName} picked up and confirmed the card file.</p>
-          </>
-        ) : isWaiting ? (
-          <>
-            <div className="w-16 h-16 rounded-2xl bg-amber-50 flex items-center justify-center mx-auto mb-4">
-              {pollingDone ? (
-                <Send className="w-8 h-8 text-amber-600" />
-              ) : (
-                <Loader2 className="w-8 h-8 text-amber-600 animate-spin" />
-              )}
-            </div>
-            <h2 className={`${wt.title} mb-2`} data-testid="text-delivery-title">
-              {pollingDone ? "File Staged for Your Bot" : "Waiting for Your Bot..."}
-            </h2>
-            <p className={`${wt.subtitle} mt-2`}>
-              {pollingDone
-                ? "Your encrypted card file is staged for 24 hours. Your bot can pick it up anytime."
-                : "Your encrypted card file is ready for pickup. Tell your bot to check for messages."}
-            </p>
-          </>
-        ) : (
-          <>
-            <div className="w-16 h-16 rounded-2xl bg-green-50 flex items-center justify-center mx-auto mb-4">
-              <Sparkles className="w-8 h-8 text-green-600" />
-            </div>
-            <h2 className={`${wt.title} mb-2`} data-testid="text-delivery-title">Card Ready!</h2>
-            <p className={`${wt.subtitle} mt-2`}>Your encrypted card has been set up successfully.</p>
-          </>
-        )}
-      </div>
+      {directDeliverySucceeded ? (
+        <StepHeader icon={CheckCircle2} iconBg="bg-green-50" iconColor="text-green-600" iconSize="lg" title="Bot Received the Card" subtitle={`Your encrypted card file was delivered to ${botDisplayName} via webhook.`} titleTestId="text-delivery-title" />
+      ) : botConfirmed ? (
+        <StepHeader icon={CheckCircle2} iconBg="bg-green-50" iconColor="text-green-600" iconSize="lg" title="Bot Confirmed!" subtitle={`${botDisplayName} picked up and confirmed the card file.`} titleTestId="text-delivery-title" />
+      ) : isWaiting ? (
+        <StepHeader icon={pollingDone ? Send : Loader2} iconBg="bg-amber-50" iconColor={`text-amber-600${pollingDone ? "" : " animate-spin"}`} iconSize="lg" title={pollingDone ? "File Staged for Your Bot" : "Waiting for Your Bot..."} subtitle={pollingDone ? "Your encrypted card file is staged for 24 hours. Your bot can pick it up anytime." : "Your encrypted card file is ready for pickup. Tell your bot to check for messages."} titleTestId="text-delivery-title" />
+      ) : (
+        <StepHeader icon={Sparkles} iconBg="bg-green-50" iconColor="text-green-600" iconSize="lg" title="Card Ready!" subtitle="Your encrypted card has been set up successfully." titleTestId="text-delivery-title" />
+      )}
 
       {isWaiting && (
         <div className="space-y-3">

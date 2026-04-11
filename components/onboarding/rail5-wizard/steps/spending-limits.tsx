@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { wt } from "@/lib/wizard-typography";
+import { StepHeader } from "../step-header";
 
 interface SpendingLimitsProps {
   spendingLimit: string;
@@ -33,15 +34,7 @@ export function SpendingLimits({
 }: SpendingLimitsProps) {
   return (
     <div className="space-y-6" data-testid="r5-step-limits">
-      <div className="text-center">
-        <div className="flex items-center justify-center gap-3">
-          <div className="w-12 h-12 rounded-2xl bg-orange-50 flex items-center justify-center flex-shrink-0">
-            <Shield className="w-6 h-6 text-orange-600" />
-          </div>
-          <h2 className={wt.title}>Spending Limits</h2>
-        </div>
-        <p className={`${wt.subtitle} mt-1`}>Set hardened guardrails for how your bot can spend.</p>
-      </div>
+      <StepHeader icon={Shield} iconBg="bg-orange-50" iconColor="text-orange-600" title="Spending Limits" subtitle="Set hardened guardrails for how your bot can spend." />
 
       <div className="grid grid-cols-2 gap-4">
         <div className="col-span-2 flex items-center justify-between rounded-lg border border-neutral-200 px-4 py-3">

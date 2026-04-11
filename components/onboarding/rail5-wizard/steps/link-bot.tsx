@@ -3,6 +3,7 @@
 import { Loader2, ArrowRight, Bot, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { wt } from "@/lib/wizard-typography";
+import { StepHeader } from "../step-header";
 import { type BotOption } from "../types";
 
 interface LinkBotProps {
@@ -24,13 +25,7 @@ export function LinkBot({
 }: LinkBotProps) {
   return (
     <div className="space-y-6" data-testid="r5-step-bot">
-      <div className="text-center">
-        <div className="w-12 h-12 rounded-2xl bg-blue-50 flex items-center justify-center mx-auto mb-3">
-          <Bot className="w-6 h-6 text-blue-600" />
-        </div>
-        <h2 className={wt.title}>Link a Bot</h2>
-        <p className={`${wt.subtitle} mt-1`}>Choose which bot can use this card for purchases.</p>
-      </div>
+      <StepHeader icon={Bot} iconBg="bg-blue-50" iconColor="text-blue-600" title="Link a Bot" subtitle="Choose which bot can use this card for purchases." />
 
       {botsLoading && (
         <div className="flex flex-col items-center justify-center py-4 gap-2">

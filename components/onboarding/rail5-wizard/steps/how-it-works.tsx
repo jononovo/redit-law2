@@ -3,6 +3,7 @@
 import { ArrowRight, ArrowLeft, Shield, Lock, Download, Bot } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { wt } from "@/lib/wizard-typography";
+import { StepHeader } from "../step-header";
 
 interface HowItWorksProps {
   onBack: () => void;
@@ -12,12 +13,7 @@ interface HowItWorksProps {
 export function HowItWorks({ onBack, onNext }: HowItWorksProps) {
   return (
     <div className="space-y-6" data-testid="r5-step-explanation">
-      <div className="flex items-center justify-center gap-3">
-        <div className="w-12 h-12 rounded-2xl bg-emerald-50 flex items-center justify-center flex-shrink-0">
-          <Shield className="w-6 h-6 text-emerald-600" />
-        </div>
-        <h2 className={wt.title}>How It Works</h2>
-      </div>
+      <StepHeader icon={Shield} iconBg="bg-emerald-50" iconColor="text-emerald-600" title="How It Works" />
 
       <div className="bg-emerald-50 rounded-xl p-5 space-y-3">
         <div className="space-y-2 text-base md:text-lg text-neutral-600">
