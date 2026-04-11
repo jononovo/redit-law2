@@ -47,7 +47,7 @@ export function EncryptDeliver({
           <div className={`w-6 h-6 rounded-full flex items-center justify-center ${keySent ? "bg-green-500" : "bg-neutral-200"}`}>
             {keySent ? <CheckCircle2 className="w-4 h-4 text-white" /> : <span className="text-xs text-neutral-500">2</span>}
           </div>
-          <span className={`${wt.body} text-neutral-700`}>Send decryption key to CreditClaw</span>
+          <span className={`${wt.body} text-neutral-700`}>Secure decryption key at CreditClaw</span>
         </div>
         {selectedBotId && (
           <div className="flex items-center gap-3">
