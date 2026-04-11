@@ -77,7 +77,7 @@ export function EncryptDeliver({
         </Button>
         <Button onClick={onEncrypt} disabled={loading || downloadDone} className={`flex-1 ${wt.primaryButton} gap-2 bg-purple-600 hover:bg-purple-700`} data-testid="button-r5-encrypt">
           {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Lock className="w-4 h-4" />}
-          {downloadDone ? "Done!" : "Encrypt Now"}
+          {downloadDone ? "Done!" : "Send & Download"}
         </Button>
       </div>
     </div>
