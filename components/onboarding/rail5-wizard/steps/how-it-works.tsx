@@ -19,15 +19,15 @@ export function HowItWorks({ onBack, onNext }: HowItWorksProps) {
         <div className="space-y-2 text-lg md:text-xl text-neutral-600">
           <div className="flex items-start gap-2">
             <Lock className="w-5 h-5 text-emerald-600 mt-0.5 flex-shrink-0" />
-            <span>Card details are encrypted and delivered to your agent.</span>
+            <span><strong>Card details are encrypted</strong> and delivered to your agent.</span>
           </div>
           <div className="flex items-start gap-2">
             <Shield className="w-5 h-5 text-emerald-600 mt-0.5 flex-shrink-0" />
-            <span>Agent requests approval before every transaction.</span>
+            <span><strong>Agent requests approval</strong> before every transaction.</span>
           </div>
           <div className="flex items-start gap-2">
             <Bot className="w-5 h-5 text-emerald-600 mt-0.5 flex-shrink-0" />
-            <span>At checkout, a disposable sub-agent decrypts, pays and is deleted.</span>
+            <span>At checkout, a disposable <strong>sub-agent decrypts</strong>, pays and is deleted.</span>
           </div>
           <div className="flex items-start gap-2">
             <EyeOff className="w-5 h-5 text-emerald-600 mt-0.5 flex-shrink-0" />
