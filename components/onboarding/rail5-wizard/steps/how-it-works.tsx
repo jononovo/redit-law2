@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRight, ArrowLeft, Shield, Lock, Download, Bot, EyeOff } from "lucide-react";
+import { ArrowRight, ArrowLeft, Shield, Lock, Bot } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { wt } from "@/lib/wizard-typography";
 import { StepHeader } from "../step-header";
@@ -28,10 +28,6 @@ export function HowItWorks({ onBack, onNext }: HowItWorksProps) {
           <div className="flex items-start gap-2">
             <Bot className="w-5 h-5 text-emerald-600 mt-0.5 flex-shrink-0" />
             <span>A disposable sub-agent decrypts, pays and is deleted.</span>
-          </div>
-          <div className="flex items-start gap-2">
-            <EyeOff className="w-5 h-5 text-emerald-600 mt-0.5 flex-shrink-0" />
-            <span>Card details stay out of agent memory.</span>
           </div>
         </div>
       </div>
