@@ -16,7 +16,7 @@ Download the open-source BIN CSV, filter to top US bank issuers only, normalize 
 - Deduplicate: many BINs share the same issuer — we keep only unique BIN→issuer mappings
 
 ### Step 3: Identify top US issuers
-Rather than keeping all ~160K entries, identify the top ~100 US bank issuers by BIN count (i.e., the banks that appear most frequently in the dataset). This covers the vast majority of cards in circulation:
+Rather than keeping all ~160K entries, identify the top 50 US bank issuers by BIN count (i.e., the banks that appear most frequently in the dataset). This covers the vast majority of cards in circulation:
 - Chase / JPMorgan Chase
 - Capital One
 - Bank of America
@@ -32,7 +32,7 @@ Rather than keeping all ~160K entries, identify the top ~100 US bank issuers by 
 - Barclays
 - Goldman Sachs (Apple Card)
 - Synchrony
-- And ~85 more top issuers
+- And ~35 more top issuers
 
 ### Step 4: Normalize issuer names
 Raw data has messy names like:
@@ -48,13 +48,13 @@ Raw data has messy names like:
 
 Normalization rules:
 1. Apply manual mapping for known top banks (exact name → clean name)
-2. For remaining issuers in the top 100: strip ", N.A.", "(USA)", "BANK", "CORPORATION", "SAVINGS", "FEDERAL" suffixes, then title-case
+2. For remaining issuers in the top 50: strip ", N.A.", "(USA)", "BANK", "CORPORATION", "SAVINGS", "FEDERAL" suffixes, then title-case
 3. Remove trailing commas, extra whitespace
 
 ### Step 5: Generate output file
 - File: `data/bin-lookup.json`
 - Format: `{ "400229": "Capital One", "414709": "Chase", ... }`
-- Only BINs belonging to the top ~100 US issuers are included
+- Only BINs belonging to the top 50 US issuers are included
 - Expected size: well under 500KB (likely under 200KB)
 
 ### Step 6: Processing script
@@ -62,7 +62,7 @@ Normalization rules:
 - One-time script that:
   1. Downloads the CSV (or reads from a local temp file)
   2. Parses and filters (US only, non-empty issuer)
-  3. Ranks issuers by BIN count, takes top 100
+  3. Ranks issuers by BIN count, takes top 50
   4. Normalizes names
   5. Writes `data/bin-lookup.json`
 - Can be deleted after use, but keeping it allows regeneration if the source data updates
@@ -88,7 +88,7 @@ After generating the file, verify:
 
 ## Success criteria
 - `data/bin-lookup.json` exists with clean BIN→issuer mappings
-- Only top US banks included (~100 issuers)
+- Only top US banks included (top 50 issuers)
 - File is small and fast to load
 - Spot-check validations pass
 - Report back with: file size, entry count, top 10 issuers by BIN count, and sample lookups
