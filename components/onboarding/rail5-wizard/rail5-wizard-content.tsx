@@ -26,18 +26,17 @@ export function Rail5SetupWizardContent({ onComplete, onClose, preselectedBotId,
       onDismissExit={() => w.setShowExitConfirm(false)}
     >
       {w.step === 0 && (
+        <HowItWorks
+          onNext={() => w.setStep(1)}
+        />
+      )}
+
+      {w.step === 1 && (
         <NameCard
           cardName={w.cardName}
           setCardName={w.setCardName}
           loading={w.loading}
           onNext={w.handleStep1Next}
-        />
-      )}
-
-      {w.step === 1 && (
-        <HowItWorks
-          onBack={() => w.setStep(0)}
-          onNext={() => w.setStep(2)}
         />
       )}
 
