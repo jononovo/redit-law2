@@ -12,19 +12,19 @@ const BANK_WHITELIST: Record<string, string[]> = {
   "Wells Fargo": ["WELLS FARGO"],
   "American Express": ["AMERICAN EXPRESS"],
   "Discover": ["DISCOVER"],
-  "U.S. Bank": ["U.S. BANK", "US BANK"],
+  "U.S. Bank": ["U.S. BANK", "US BANK", "U.S. BANCORP"],
   "PNC": ["PNC BANK", "PNC FINANCIAL"],
-  "TD Bank": ["TD BANK"],
-  "USAA": ["USAA"],
+  "TD Bank": ["TD BANK", "TORONTO-DOMINION"],
+  "USAA": ["USAA", "UNITED SERVICES AUTOMOBILE"],
   "Navy Federal": ["NAVY FEDERAL"],
-  "Truist": ["TRUIST", "SUNTRUST", "BB&T"],
+  "Truist": ["TRUIST", "SUNTRUST", "BB&T", "BRANCH BANKING AND TRUST"],
   "Fifth Third": ["FIFTH THIRD"],
   "Citizens": ["CITIZENS BANK", "CITIZENS FINANCIAL", "RBS CITIZENS"],
   "Regions": ["REGIONS BANK", "REGIONS FINANCIAL"],
   "KeyBank": ["KEYBANK", "KEY BANK"],
-  "Huntington": ["HUNTINGTON NATIONAL", "HUNTINGTON BANK"],
-  "M&T Bank": ["M&T BANK", "M & T BANK"],
-  "Ally": ["ALLY BANK", "ALLY FINANCIAL"],
+  "Huntington": ["HUNTINGTON NATIONAL", "HUNTINGTON BANK", "THE HUNTINGTON"],
+  "M&T Bank": ["M&T BANK", "M & T BANK", "MANUFACTURERS AND TRADERS"],
+  "Ally": ["ALLY BANK", "ALLY FINANCIAL", "GMAC"],
   "Goldman Sachs": ["GOLDMAN SACHS"],
   "Barclays": ["BARCLAYS"],
   "Synchrony": ["SYNCHRONY"],
@@ -33,8 +33,56 @@ const BANK_WHITELIST: Record<string, string[]> = {
   "First National Omaha": ["FIRST NATIONAL BANK OF OMAHA"],
   "Comenity": ["COMENITY"],
   "Charles Schwab": ["CHARLES SCHWAB"],
-  "PenFed": ["PENTAGON FEDERAL"],
+  "PenFed": ["PENTAGON FEDERAL", "PENFED"],
   "Elan": ["ELAN FINANCIAL"],
+  "Merrick Bank": ["MERRICK BANK"],
+  "BMO": ["BMO HARRIS", "BANK OF MONTREAL", "BMO FINANCIAL"],
+  "Frost": ["FROST BANK", "FROST NATIONAL"],
+  "BOK Financial": ["BOKF", "BOK FINANCIAL", "BANK OF OKLAHOMA"],
+  "Arvest": ["ARVEST"],
+  "Commerce Bank": ["COMMERCE BANK"],
+  "UMB": ["UMB BANK", "UMB FINANCIAL"],
+  "Webster": ["WEBSTER BANK"],
+  "Old National": ["OLD NATIONAL"],
+  "Hancock Whitney": ["HANCOCK WHITNEY", "HANCOCK BANK", "WHITNEY BANK"],
+
+  "HSBC": ["HSBC"],
+  "RBC": ["ROYAL BANK OF CANADA", "RBC FINANCIAL"],
+  "Scotiabank": ["SCOTIABANK", "BANK OF NOVA SCOTIA"],
+  "CIBC": ["CIBC", "CANADIAN IMPERIAL"],
+  "BMO Canada": ["BANK OF MONTREAL"],
+  "Lloyds": ["LLOYDS BANK", "LLOYDS TSB", "LLOYDS BANKING"],
+  "NatWest": ["NATWEST", "NATIONAL WESTMINSTER"],
+  "Standard Chartered": ["STANDARD CHARTERED"],
+  "Santander": ["SANTANDER", "BANCO SANTANDER"],
+  "Deutsche Bank": ["DEUTSCHE BANK"],
+  "Commerzbank": ["COMMERZBANK"],
+  "BNP Paribas": ["BNP PARIBAS"],
+  "Société Générale": ["SOCIETE GENERALE"],
+  "Crédit Agricole": ["CREDIT AGRICOLE"],
+  "ING": ["ING BANK", "ING GROUP"],
+  "Rabobank": ["RABOBANK", "COOPERATIEVE RABOBANK"],
+  "UBS": ["UBS"],
+  "Credit Suisse": ["CREDIT SUISSE"],
+  "UniCredit": ["UNICREDIT"],
+  "Intesa Sanpaolo": ["INTESA SANPAOLO"],
+  "Nordea": ["NORDEA"],
+  "SEB": ["SKANDINAVISKA ENSKILDA"],
+  "Danske Bank": ["DANSKE BANK"],
+  "ANZ": ["AUSTRALIA AND NEW ZEALAND", "ANZ BANK"],
+  "Westpac": ["WESTPAC"],
+  "NAB": ["NATIONAL AUSTRALIA BANK"],
+  "Commonwealth Bank": ["COMMONWEALTH BANK"],
+  "DBS": ["DBS BANK"],
+  "OCBC": ["OVERSEA-CHINESE BANKING", "OCBC BANK"],
+  "UOB": ["UNITED OVERSEAS BANK", "UOB"],
+  "Mizuho": ["MIZUHO"],
+  "MUFG": ["MITSUBISHI UFJ", "MUFG BANK"],
+  "SMBC": ["SUMITOMO MITSUI"],
+  "ICBC": ["INDUSTRIAL AND COMMERCIAL BANK OF CHINA", "ICBC"],
+  "Bank of China": ["BANK OF CHINA"],
+  "China Construction Bank": ["CHINA CONSTRUCTION BANK"],
+  "Agricultural Bank of China": ["AGRICULTURAL BANK OF CHINA"],
 };
 
 function matchBank(issuer: string): string | null {
@@ -93,9 +141,8 @@ async function main() {
     const fields = parseCSVLine(line);
     const bin = fields[binIdx]?.trim();
     const issuer = fields[issuerIdx]?.trim();
-    const alpha2 = fields[alpha2Idx]?.trim();
 
-    if (alpha2 !== "US" || !issuer || !bin || bin.length < 6) continue;
+    if (!issuer || !bin || bin.length < 6) continue;
 
     const bankName = matchBank(issuer);
     if (!bankName) continue;
@@ -108,7 +155,9 @@ async function main() {
   const lookup: Record<string, string> = {};
   for (const [bankName, bins] of bankBins) {
     for (const bin of bins) {
-      lookup[bin] = bankName;
+      if (!lookup[bin]) {
+        lookup[bin] = bankName;
+      }
     }
   }
 
@@ -129,18 +178,41 @@ async function main() {
   console.log(`\nFile: ${outPath}`);
   console.log(`Size: ${(fileSize / 1024).toFixed(1)} KB`);
   console.log(`Total BIN entries: ${totalBins}`);
-  console.log(`Banks: ${bankBins.size}`);
+  console.log(`Banks matched: ${bankBins.size}`);
 
-  console.log(`\nBINs per bank:`);
-  const rankedBanks = [...bankBins.entries()]
+  console.log(`\nUS Banks:`);
+  const usNames = new Set(["Chase","Capital One","Bank of America","Citi","Wells Fargo","American Express","Discover","U.S. Bank","PNC","TD Bank","USAA","Navy Federal","Truist","Fifth Third","Citizens","Regions","KeyBank","Huntington","M&T Bank","Ally","Goldman Sachs","Barclays","Synchrony","First Citizens","Comerica","First National Omaha","Comenity","Charles Schwab","PenFed","Elan","Merrick Bank","BMO","Frost","BOK Financial","Arvest","Commerce Bank","UMB","Webster","Old National","Hancock Whitney"]);
+  const intlNames = new Set([...bankBins.keys()].filter(n => !usNames.has(n)));
+
+  const usBanks = [...bankBins.entries()]
+    .filter(([name]) => usNames.has(name))
     .map(([name, bins]) => ({ name, count: bins.size }))
     .sort((a, b) => b.count - a.count);
-  for (const { name, count } of rankedBanks) {
-    console.log(`  ${name.padEnd(25)} ${count}`);
+  for (const { name, count } of usBanks) {
+    console.log(`  ${name.padEnd(25)} ${count} BINs`);
+  }
+
+  console.log(`\nInternational Banks:`);
+  const intlBanks = [...bankBins.entries()]
+    .filter(([name]) => intlNames.has(name))
+    .map(([name, bins]) => ({ name, count: bins.size }))
+    .sort((a, b) => b.count - a.count);
+  for (const { name, count } of intlBanks) {
+    console.log(`  ${name.padEnd(25)} ${count} BINs`);
+  }
+
+  const whitelistNames = new Set(Object.keys(BANK_WHITELIST));
+  const matched = new Set(bankBins.keys());
+  const unmatched = [...whitelistNames].filter(n => !matched.has(n));
+  if (unmatched.length > 0) {
+    console.log(`\nBanks in whitelist with 0 matches:`);
+    for (const name of unmatched) {
+      console.log(`  ${name}`);
+    }
   }
 
   console.log(`\nSample lookups:`);
-  const samples = ["438857", "400229", "340000", "601100", "471600"];
+  const samples = ["438857", "400229", "340000", "601100", "471600", "431261"];
   for (const bin of samples) {
     console.log(`  ${bin} → ${sorted[bin] || "(not found)"}`);
   }
