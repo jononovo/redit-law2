@@ -27,7 +27,7 @@ export function HowItWorks({ onBack, onNext }: HowItWorksProps) {
           </div>
           <div className="flex items-start gap-2">
             <Bot className="w-5 h-5 text-emerald-600 mt-0.5 flex-shrink-0" />
-            <span>At checkout, a disposable sub-agent decrypts, pays and is deleted.</span>
+            <span>A disposable sub-agent decrypts, pays and is deleted.</span>
           </div>
           <div className="flex items-start gap-2">
             <EyeOff className="w-5 h-5 text-emerald-600 mt-0.5 flex-shrink-0" />
