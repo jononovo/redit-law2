@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Copy, Check } from "lucide-react";
 
-const BOT_INSTRUCTIONS = "Register at creditclaw.com/skill.md";
+const BOT_INSTRUCTIONS = "Register at creditclaw.com/SKILL.md";
 
 interface BotInstructionBlockProps {
   onCopied?: () => void;

@@ -107,7 +107,7 @@ export function buildEncryptedCardFile(
     "2. Your bot will receive the decryption key at checkout time via CreditClaw API",
     "3. Use the decrypt script below to extract card details when needed",
     "",
-    "Full docs: https://creditclaw.com/skill.md#rail-5",
+    "Full docs: https://creditclaw.com/SKILL.md#rail-5",
     "",
     "## Encrypted Card Data",
     "",

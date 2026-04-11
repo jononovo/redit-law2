@@ -9,6 +9,7 @@ import {
   sendSignInLinkToEmail,
   isSignInWithEmailLink,
   signInWithEmailLink,
+  updateProfile,
   onAuthStateChanged,
   signOut as firebaseSignOut,
 } from "firebase/auth";
@@ -26,7 +27,7 @@ interface AuthContextType {
   loading: boolean;
   signInWithGoogle: () => Promise<void>;
   signInWithGithub: () => Promise<void>;
-  sendMagicLink: (email: string, redirectTo?: string) => Promise<void>;
+  sendMagicLink: (email: string, redirectTo?: string, name?: string) => Promise<void>;
   completeMagicLink: () => Promise<void>;
   logout: () => Promise<void>;
 }
@@ -92,9 +93,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (sessionUser) setUser(sessionUser);
   }, []);
 
-  const sendMagicLink = useCallback(async (email: string, redirectTo?: string) => {
+  const sendMagicLink = useCallback(async (email: string, redirectTo?: string, name?: string) => {
+    const continueUrl = new URL(window.location.origin + (redirectTo || "/overview"));
+    continueUrl.searchParams.set("email", email);
+    if (name) continueUrl.searchParams.set("name", name);
     const actionCodeSettings = {
-      url: window.location.origin + (redirectTo || "/overview"),
+      url: continueUrl.toString(),
       handleCodeInApp: true,
     };
     await sendSignInLinkToEmail(auth, email, actionCodeSettings);
@@ -103,13 +107,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const completeMagicLink = useCallback(async () => {
     if (!isSignInWithEmailLink(auth, window.location.href)) return;
-    let email = window.localStorage.getItem("emailForSignIn");
+    const urlParams = new URLSearchParams(window.location.search);
+    let email = urlParams.get("email") || window.localStorage.getItem("emailForSignIn");
     if (!email) {
       email = window.prompt("Please provide your email for confirmation");
     }
     if (!email) return;
     const result = await signInWithEmailLink(auth, email, window.location.href);
     window.localStorage.removeItem("emailForSignIn");
+    const nameFromUrl = urlParams.get("name");
+    if (nameFromUrl && result.user) {
+      try {
+        await updateProfile(result.user, { displayName: nameFromUrl });
+      } catch {}
+    }
+    const cleanUrl = new URL(window.location.href);
+    cleanUrl.searchParams.delete("email");
+    cleanUrl.searchParams.delete("name");
+    cleanUrl.searchParams.delete("oobCode");
+    cleanUrl.searchParams.delete("mode");
+    cleanUrl.searchParams.delete("apiKey");
+    cleanUrl.searchParams.delete("lang");
+    window.history.replaceState({}, "", cleanUrl.pathname + cleanUrl.search);
     const idToken = await result.user.getIdToken();
     const sessionUser = await exchangeTokenForSession(idToken);
     if (sessionUser) setUser(sessionUser);

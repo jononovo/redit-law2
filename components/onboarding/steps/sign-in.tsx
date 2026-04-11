@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/features/platform-management/auth/auth-context";
+import { useEmailExistsCheck } from "@/features/platform-management/auth/use-email-exists-check";
 import { WizardStep } from "../wizard-step";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,9 +19,15 @@ interface SignInStepProps {
 export function SignInStep({ currentStep, totalSteps, onBack, onNext }: SignInStepProps) {
   const { user, loading: authLoading, signInWithGoogle, signInWithGithub, sendMagicLink } = useAuth();
   const [email, setEmail] = useState("");
+  const [name, setName] = useState("");
   const [magicLinkSent, setMagicLinkSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  const { exists, checking, emailLooksValid } = useEmailExistsCheck(email);
+
+  const showNameField = emailLooksValid && exists === false;
+  const sendButtonDisabled = loading || !email.trim() || checking || (showNameField && !name.trim());
 
   const hasAdvanced = useRef(false);
 
@@ -81,7 +88,7 @@ export function SignInStep({ currentStep, totalSteps, onBack, onNext }: SignInSt
     setError(null);
     setLoading(true);
     try {
-      await sendMagicLink(email.trim());
+      await sendMagicLink(email.trim().toLowerCase(), "/onboarding?step=claim-token", showNameField ? name.trim() : undefined);
       setMagicLinkSent(true);
     } catch (err: any) {
       setError(err?.message || "Failed to send magic link");
@@ -161,11 +168,22 @@ export function SignInStep({ currentStep, totalSteps, onBack, onNext }: SignInSt
               className="h-12 md:h-14 rounded-xl"
               required
             />
+            {showNameField && (
+              <Input
+                data-testid="input-onboarding-name-magic-link"
+                type="text"
+                placeholder="Your name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="h-12 md:h-14 rounded-xl"
+                autoFocus
+              />
+            )}
             <Button
               data-testid="button-onboarding-send-magic-link"
               type="submit"
               className={`w-full ${wt.primaryButton} bg-primary text-white hover:bg-primary/90 font-semibold cursor-pointer`}
-              disabled={loading || !email.trim()}
+              disabled={sendButtonDisabled}
             >
               <Mail className="w-4 h-4 mr-2" />
               Send Magic Link

@@ -229,7 +229,7 @@ export function DeliveryResult({
               <p className="font-medium text-neutral-700 text-xs mb-1">For Applications with API</p>
               <p className="text-xs text-neutral-500">
                 See the full Rail 5 integration guide:{" "}
-                <a href="https://creditclaw.com/skill.md#rail-5" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline inline-flex items-center gap-0.5">
+                <a href="https://creditclaw.com/SKILL.md#rail-5" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline inline-flex items-center gap-0.5">
                   creditclaw.com/skill.md <ExternalLink className="w-2.5 h-2.5" />
                 </a>.
                 Use <code className="bg-neutral-200 px-1 py-0.5 rounded text-[10px]">GET /bot/messages</code> to fetch card files programmatically.

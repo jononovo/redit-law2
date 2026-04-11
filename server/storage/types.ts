@@ -42,6 +42,7 @@ import type { BrandSearchFilters } from "./brand-engine/brand-index";
 
 export interface IStorage {
   getOwnerByUid(uid: string): Promise<Owner | null>;
+  getOwnerByEmail(email: string): Promise<Owner | null>;
   upsertOwner(uid: string, data: Partial<InsertOwner>): Promise<Owner>;
 
   createBot(data: InsertBot): Promise<Bot>;

@@ -75,7 +75,7 @@ export function WaitlistForm() {
     <>
       <section className="py-24 bg-neutral-900 text-white relative overflow-hidden">
         
-        <div className="absolute top-0 right-0 w-full h-full bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20" />
+        <div className="absolute top-0 right-0 w-full h-full bg-[url('/assets/noise.svg')] opacity-20" />
         <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-primary/20 rounded-full blur-[120px] pointer-events-none" />
 
         <div className="container mx-auto px-6 max-w-3xl text-center relative z-10">
