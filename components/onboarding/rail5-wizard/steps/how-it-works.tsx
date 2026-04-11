@@ -23,7 +23,7 @@ export function HowItWorks({ onBack, onNext }: HowItWorksProps) {
           </div>
           <div className="flex items-start gap-2">
             <Download className="w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0" />
-            <span>The encrypted file is delivered to your bot.</span>
+            <span>The encrypted file is delivered to your agent.</span>
           </div>
           <div className="flex items-start gap-2">
             <Shield className="w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0" />
