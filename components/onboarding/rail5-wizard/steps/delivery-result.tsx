@@ -143,12 +143,6 @@ export function DeliveryResult({
         </div>
       )}
 
-      {deliveryConfirmed ? (
-        <Button onClick={onNext} className={`w-full ${wt.primaryButton} gap-2 bg-green-600 hover:bg-green-700`} data-testid="button-r5-next-test">
-          <ArrowRight className="w-4 h-4" /> Continue to Test Verification
-        </Button>
-      ) : null}
-
       <div className="bg-neutral-50 rounded-xl p-5 space-y-3 text-sm">
         <div className="flex justify-between">
           <span className="text-neutral-500">Card</span>
@@ -216,18 +210,23 @@ export function DeliveryResult({
         )}
       </div>
 
-      <Button onClick={onDone} className={`w-full ${wt.primaryButton} gap-2 bg-green-600 hover:bg-green-700`} data-testid="button-r5-go-dashboard">
-        <CheckCircle2 className="w-4 h-4" /> Go to Dashboard
-      </Button>
-
-      {!deliveryConfirmed && (
-        <button
-          onClick={onDone}
-          className="w-full text-center text-xs text-neutral-400 hover:text-neutral-600 transition-colors py-2"
-          data-testid="button-r5-skip-test"
-        >
-          Skip — I'll check later
-        </button>
+      {deliveryConfirmed ? (
+        <>
+          <Button onClick={onNext} className={`w-full ${wt.primaryButton} gap-2 bg-green-600 hover:bg-green-700`} data-testid="button-r5-next-test">
+            <ArrowRight className="w-4 h-4" /> Continue to Test Verification
+          </Button>
+          <button
+            onClick={onDone}
+            className="w-full text-center text-xs text-neutral-400 hover:text-neutral-600 transition-colors py-2"
+            data-testid="button-r5-skip-test"
+          >
+            Skip — go to dashboard
+          </button>
+        </>
+      ) : (
+        <Button onClick={onDone} className={`w-full ${wt.primaryButton} gap-2 bg-green-600 hover:bg-green-700`} data-testid="button-r5-go-dashboard">
+          <CheckCircle2 className="w-4 h-4" /> Go to Dashboard
+        </Button>
       )}
     </div>
   );
