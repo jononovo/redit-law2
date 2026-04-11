@@ -216,6 +216,10 @@ export function DeliveryResult({
         )}
       </div>
 
+      <Button onClick={onDone} className={`w-full ${wt.primaryButton} gap-2 bg-green-600 hover:bg-green-700`} data-testid="button-r5-go-dashboard">
+        <CheckCircle2 className="w-4 h-4" /> Go to Dashboard
+      </Button>
+
       {!deliveryConfirmed && (
         <button
           onClick={onDone}
