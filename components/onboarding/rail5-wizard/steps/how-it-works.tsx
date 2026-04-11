@@ -16,21 +16,21 @@ export function HowItWorks({ onBack, onNext }: HowItWorksProps) {
       <StepHeader icon={Shield} iconBg="bg-emerald-50" iconColor="text-emerald-600" title="How It Works" />
 
       <div className="bg-emerald-50 rounded-xl p-5 space-y-3">
-        <div className="space-y-2 text-base md:text-lg text-neutral-600">
+        <div className="space-y-2 text-lg md:text-xl text-neutral-600">
           <div className="flex items-start gap-2">
-            <Lock className="w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0" />
+            <Lock className="w-5 h-5 text-emerald-600 mt-0.5 flex-shrink-0" />
             <span>Card details are encrypted right here in your browser.</span>
           </div>
           <div className="flex items-start gap-2">
-            <Download className="w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0" />
+            <Download className="w-5 h-5 text-emerald-600 mt-0.5 flex-shrink-0" />
             <span>The encrypted file is delivered to your agent.</span>
           </div>
           <div className="flex items-start gap-2">
-            <Shield className="w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0" />
+            <Shield className="w-5 h-5 text-emerald-600 mt-0.5 flex-shrink-0" />
             <span>Agent requests decryption approval before every transaction.</span>
           </div>
           <div className="flex items-start gap-2">
-            <Bot className="w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0" />
+            <Bot className="w-5 h-5 text-emerald-600 mt-0.5 flex-shrink-0" />
             <span>At checkout, a disposable sub-agent gets the key, decrypts, pays and is deleted.</span>
           </div>
         </div>
