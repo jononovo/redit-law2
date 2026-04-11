@@ -34,14 +34,29 @@ export function SpendingLimits({
   return (
     <div className="space-y-6" data-testid="r5-step-limits">
       <div className="text-center">
-        <div className="w-12 h-12 rounded-2xl bg-orange-50 flex items-center justify-center mx-auto mb-3">
-          <Shield className="w-6 h-6 text-orange-600" />
+        <div className="flex items-center justify-center gap-3">
+          <div className="w-12 h-12 rounded-2xl bg-orange-50 flex items-center justify-center flex-shrink-0">
+            <Shield className="w-6 h-6 text-orange-600" />
+          </div>
+          <h2 className={wt.title}>Spending Limits</h2>
         </div>
-        <h2 className={wt.title}>Spending Limits</h2>
         <p className={`${wt.subtitle} mt-1`}>Set hardened guardrails for how your bot can spend.</p>
       </div>
 
       <div className="grid grid-cols-2 gap-4">
+        <div className="col-span-2 flex items-center justify-between rounded-lg border border-neutral-200 px-4 py-3">
+          <div>
+            <p className="text-sm font-medium text-neutral-900">Approve every transaction</p>
+            <p className="text-xs text-neutral-400">You'll be asked to authorize each purchase.</p>
+          </div>
+          <Switch
+            checked={approveAll}
+            onCheckedChange={setApproveAll}
+            className="data-[state=checked]:bg-success"
+            data-testid="switch-r5-approve-all"
+          />
+        </div>
+
         <div>
           <Label htmlFor="r5-per-checkout">Per-Transaction Limit ($)</Label>
           <Input
@@ -79,19 +94,6 @@ export function SpendingLimits({
             value={monthlyLimit}
             onChange={(e) => setMonthlyLimit(e.target.value)}
             data-testid="input-r5-monthly-limit"
-          />
-        </div>
-
-        <div className="flex items-center justify-between rounded-lg border border-neutral-200 px-4 py-3">
-          <div>
-            <p className="text-sm font-medium text-neutral-900">Approve every transaction</p>
-            <p className="text-xs text-neutral-400">You'll be asked to authorize each purchase.</p>
-          </div>
-          <Switch
-            checked={approveAll}
-            onCheckedChange={setApproveAll}
-            className="data-[state=checked]:bg-success"
-            data-testid="switch-r5-approve-all"
           />
         </div>
 
