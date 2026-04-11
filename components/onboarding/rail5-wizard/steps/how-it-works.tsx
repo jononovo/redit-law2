@@ -23,7 +23,7 @@ export function HowItWorks({ onBack, onNext }: HowItWorksProps) {
           </div>
           <div className="flex items-start gap-2">
             <Shield className="w-5 h-5 text-emerald-600 mt-0.5 flex-shrink-0" />
-            <span>Agent requests decryption approval before every transaction.</span>
+            <span>Agent requests approval before every transaction.</span>
           </div>
           <div className="flex items-start gap-2">
             <Bot className="w-5 h-5 text-emerald-600 mt-0.5 flex-shrink-0" />
