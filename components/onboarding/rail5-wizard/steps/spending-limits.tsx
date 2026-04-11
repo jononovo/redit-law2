@@ -64,31 +64,6 @@ export function SpendingLimits({
           <p className="text-xs text-neutral-400 mt-1">Max amount per individual purchase.</p>
         </div>
 
-        <div>
-          <Label htmlFor="r5-daily">Daily Limit ($)</Label>
-          <Input
-            id="r5-daily"
-            type="number"
-            min="1"
-            step="0.01"
-            value={dailyLimit}
-            onChange={(e) => setDailyLimit(e.target.value)}
-            data-testid="input-r5-daily-limit"
-          />
-        </div>
-
-        <div>
-          <Label htmlFor="r5-monthly">Monthly Limit ($)</Label>
-          <Input
-            id="r5-monthly"
-            type="number"
-            min="1"
-            step="0.01"
-            value={monthlyLimit}
-            onChange={(e) => setMonthlyLimit(e.target.value)}
-            data-testid="input-r5-monthly-limit"
-          />
-        </div>
 
         {!approveAll && (
           <div>
