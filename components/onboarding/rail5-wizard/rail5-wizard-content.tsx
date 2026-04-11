@@ -32,15 +32,6 @@ export function Rail5SetupWizardContent({ onComplete, onClose, preselectedBotId,
       )}
 
       {w.step === 1 && (
-        <NameCard
-          cardName={w.cardName}
-          setCardName={w.setCardName}
-          loading={w.loading}
-          onNext={w.handleStep1Next}
-        />
-      )}
-
-      {w.step === 2 && (
         <SpendingLimits
           spendingLimit={w.spendingLimit}
           setSpendingLimit={w.setSpendingLimit}
@@ -53,12 +44,12 @@ export function Rail5SetupWizardContent({ onComplete, onClose, preselectedBotId,
           approvalThreshold={w.approvalThreshold}
           setApprovalThreshold={w.setApprovalThreshold}
           loading={w.loading}
-          onBack={() => w.setStep(1)}
+          onBack={() => w.setStep(0)}
           onNext={w.handleLimitsNext}
         />
       )}
 
-      {w.step === 3 && (
+      {w.step === 2 && (
         <CardEntry
           cardNumber={w.cardNumber}
           setCardNumber={w.setCardNumber}
@@ -77,7 +68,16 @@ export function Rail5SetupWizardContent({ onComplete, onClose, preselectedBotId,
           onEncryptCard={w.handleEncryptCard}
           onRestartCard={w.handleRestartCard}
           onCardDetailsNext={w.handleCardDetailsNext}
-          onBack={() => w.setStep(2)}
+          onBack={() => w.setStep(1)}
+        />
+      )}
+
+      {w.step === 3 && (
+        <NameCard
+          cardName={w.cardName}
+          setCardName={w.setCardName}
+          loading={w.loading}
+          onNext={w.handleStep1Next}
         />
       )}
 

@@ -130,7 +130,23 @@ export function useRail5Wizard({ onComplete, onClose, preselectedBotId }: UseRai
       }
       const data = await res.json();
       setCardId(data.card_id);
-      setStep(1);
+
+      const s = Math.round(parseFloat(spendingLimit || "0") * 100);
+      const d = Math.round(parseFloat(dailyLimit || "0") * 100);
+      const m = Math.round(parseFloat(monthlyLimit || "0") * 100);
+      const a = approveAll ? 0 : Math.round(parseFloat(approvalThreshold || "0") * 100);
+      await authFetch(`/api/v1/rail5/cards/${data.card_id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          spending_limit_cents: s,
+          daily_limit_cents: d,
+          monthly_limit_cents: m,
+          human_approval_above_cents: a,
+        }),
+      });
+
+      setStep(4);
     } catch (e: unknown) {
       toast({ title: "Error", description: e instanceof Error ? e.message : "Failed to initialize card.", variant: "destructive" });
     } finally {
@@ -330,7 +346,7 @@ export function useRail5Wizard({ onComplete, onClose, preselectedBotId }: UseRai
       return;
     }
     setCardErrors({});
-    setStep(4);
+    setStep(3);
   }
 
   async function handleAddressNext() {
@@ -364,36 +380,17 @@ export function useRail5Wizard({ onComplete, onClose, preselectedBotId }: UseRai
     }
   }
 
-  async function handleLimitsNext() {
+  function handleLimitsNext() {
     const s = Math.round(parseFloat(spendingLimit || "0") * 100);
     const d = Math.round(parseFloat(dailyLimit || "0") * 100);
     const m = Math.round(parseFloat(monthlyLimit || "0") * 100);
-    const a = approveAll ? 0 : Math.round(parseFloat(approvalThreshold || "0") * 100);
 
     if (s < 100 || d < 100 || m < 100) {
       toast({ title: "Invalid limits", description: "Limits must be at least $1.00.", variant: "destructive" });
       return;
     }
 
-    setLoading(true);
-    try {
-      const res = await authFetch(`/api/v1/rail5/cards/${cardId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          spending_limit_cents: s,
-          daily_limit_cents: d,
-          monthly_limit_cents: m,
-          human_approval_above_cents: a,
-        }),
-      });
-      if (!res.ok) throw new Error("Failed to update limits");
-      setStep(3);
-    } catch {
-      toast({ title: "Error", description: "Failed to save spending limits.", variant: "destructive" });
-    } finally {
-      setLoading(false);
-    }
+    setStep(2);
   }
 
   async function fetchBots() {
