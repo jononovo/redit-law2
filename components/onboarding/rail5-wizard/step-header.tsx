@@ -21,7 +21,7 @@ export function StepHeader({ icon: Icon, iconBg, iconColor, title, tooltip, icon
   const iconSizeClasses = iconSize === "lg" ? "w-8 h-8" : "w-6 h-6";
 
   const headerContent = (
-    <div className={`flex items-center justify-center gap-3${tooltip ? " cursor-help" : ""}`}>
+    <div className="flex items-center justify-center gap-3">
       <div className={`${sizeClasses} ${iconBg} flex items-center justify-center flex-shrink-0`}>
         <Icon className={`${iconSizeClasses} ${iconColor}`} />
       </div>
@@ -38,7 +38,7 @@ export function StepHeader({ icon: Icon, iconBg, iconColor, title, tooltip, icon
               {headerContent}
             </TooltipTrigger>
             <TooltipContent
-              side="bottom"
+              side="top"
               className="max-w-[280px] text-sm leading-relaxed bg-white text-neutral-600 border border-neutral-200 shadow-md"
             >
               {tooltip}
