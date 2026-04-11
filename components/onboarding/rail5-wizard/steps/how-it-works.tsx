@@ -19,7 +19,7 @@ export function HowItWorks({ onBack, onNext }: HowItWorksProps) {
         <div className="space-y-2 text-lg md:text-xl text-neutral-600">
           <div className="flex items-start gap-2">
             <Lock className="w-5 h-5 text-emerald-600 mt-0.5 flex-shrink-0" />
-            <span><strong>Card details are encrypted</strong> and delivered to your agent.</span>
+            <span>Card <strong>details are encrypted</strong> and delivered to your agent.</span>
           </div>
           <div className="flex items-start gap-2">
             <Shield className="w-5 h-5 text-emerald-600 mt-0.5 flex-shrink-0" />
