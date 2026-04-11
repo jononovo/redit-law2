@@ -12,3 +12,9 @@ id = "JIZgi5ZuDsQitck0M_YVd"
 uri = "file://project_knowledge/currently_building/bin-lookup-auto-card-naming.md"
 type = "text"
 title = "BIN Lookup & Auto Card Naming — Technical Plan"
+
+[[outputs]]
+id = "9_iJBOxdPS8tvnvq6GfXV"
+uri = "file://project_knowledge/currently_building/phase1-bin-data-download.md"
+type = "text"
+title = "Phase 1: BIN Data Download & Processing — Technical Plan"
