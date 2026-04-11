@@ -32,24 +32,6 @@ export function Rail5SetupWizardContent({ onComplete, onClose, preselectedBotId,
       )}
 
       {w.step === 1 && (
-        <SpendingLimits
-          spendingLimit={w.spendingLimit}
-          setSpendingLimit={w.setSpendingLimit}
-          dailyLimit={w.dailyLimit}
-          setDailyLimit={w.setDailyLimit}
-          monthlyLimit={w.monthlyLimit}
-          setMonthlyLimit={w.setMonthlyLimit}
-          approveAll={w.approveAll}
-          setApproveAll={w.setApproveAll}
-          approvalThreshold={w.approvalThreshold}
-          setApprovalThreshold={w.setApprovalThreshold}
-          loading={w.loading}
-          onBack={() => w.setStep(0)}
-          onNext={w.handleLimitsNext}
-        />
-      )}
-
-      {w.step === 2 && (
         <CardEntry
           cardNumber={w.cardNumber}
           setCardNumber={w.setCardNumber}
@@ -68,16 +50,34 @@ export function Rail5SetupWizardContent({ onComplete, onClose, preselectedBotId,
           onEncryptCard={w.handleEncryptCard}
           onRestartCard={w.handleRestartCard}
           onCardDetailsNext={w.handleCardDetailsNext}
-          onBack={() => w.setStep(1)}
+          onBack={() => w.setStep(0)}
         />
       )}
 
-      {w.step === 3 && (
+      {w.step === 2 && (
         <NameCard
           cardName={w.cardName}
           setCardName={w.setCardName}
           loading={w.loading}
           onNext={w.handleStep1Next}
+        />
+      )}
+
+      {w.step === 3 && (
+        <SpendingLimits
+          spendingLimit={w.spendingLimit}
+          setSpendingLimit={w.setSpendingLimit}
+          dailyLimit={w.dailyLimit}
+          setDailyLimit={w.setDailyLimit}
+          monthlyLimit={w.monthlyLimit}
+          setMonthlyLimit={w.setMonthlyLimit}
+          approveAll={w.approveAll}
+          setApproveAll={w.setApproveAll}
+          approvalThreshold={w.approvalThreshold}
+          setApprovalThreshold={w.setApprovalThreshold}
+          loading={w.loading}
+          onBack={() => w.setStep(2)}
+          onNext={w.handleLimitsNext}
         />
       )}
 
