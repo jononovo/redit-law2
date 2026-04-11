@@ -36,8 +36,8 @@ export function SpendingLimits({
     <div className="space-y-6" data-testid="r5-step-limits">
       <StepHeader icon={Shield} iconBg="bg-orange-50" iconColor="text-orange-600" title="Spending Limits" subtitle="Set hardened guardrails for how your bot can spend." />
 
-      <div className="grid grid-cols-2 gap-4">
-        <div className="col-span-2 flex items-center justify-between rounded-lg border border-neutral-200 px-4 py-3">
+      <div className="space-y-4 max-w-sm mx-auto">
+        <div className="flex items-center justify-between rounded-lg border border-neutral-200 px-4 py-3">
           <div>
             <p className="text-sm font-medium text-neutral-900">Approve every transaction</p>
             <p className="text-xs text-neutral-400">You'll be asked to authorize each purchase.</p>
