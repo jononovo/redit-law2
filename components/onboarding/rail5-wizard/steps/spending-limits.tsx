@@ -50,21 +50,6 @@ export function SpendingLimits({
           />
         </div>
 
-        <div>
-          <Label htmlFor="r5-per-checkout">Per-Transaction Limit ($)</Label>
-          <Input
-            id="r5-per-checkout"
-            type="number"
-            min="1"
-            step="0.01"
-            value={spendingLimit}
-            onChange={(e) => setSpendingLimit(e.target.value)}
-            data-testid="input-r5-spending-limit"
-          />
-          <p className="text-xs text-neutral-400 mt-1">Max amount per individual purchase.</p>
-        </div>
-
-
         {!approveAll && (
           <div>
             <Label htmlFor="r5-approval">Human Approval Above ($)</Label>
@@ -80,6 +65,20 @@ export function SpendingLimits({
             <p className="text-xs text-neutral-400 mt-1">Purchases above this amount require your approval.</p>
           </div>
         )}
+
+        <div>
+          <Label htmlFor="r5-per-checkout">Per-Transaction Limit ($)</Label>
+          <Input
+            id="r5-per-checkout"
+            type="number"
+            min="1"
+            step="0.01"
+            value={spendingLimit}
+            onChange={(e) => setSpendingLimit(e.target.value)}
+            data-testid="input-r5-spending-limit"
+          />
+          <p className="text-xs text-neutral-400 mt-1">Max amount per individual purchase.</p>
+        </div>
       </div>
 
       <div className="flex gap-3">
