@@ -1365,3 +1365,52 @@ export const productListings = pgTable("product_listings", {
 
 export type ProductListing = typeof productListings.$inferSelect;
 export type InsertProductListing = typeof productListings.$inferInsert;
+
+export const agentTestSessions = pgTable("agent_test_sessions", {
+  id: serial("id").primaryKey(),
+  testId: text("test_id").notNull().unique(),
+  checkoutPageId: text("checkout_page_id").notNull(),
+  checkoutType: text("checkout_type").notNull().default("basic"),
+  expectedValues: jsonb("expected_values").notNull(),
+  submittedValues: jsonb("submitted_values"),
+  ownerUid: text("owner_uid"),
+  cardId: text("card_id"),
+  cardTestToken: text("card_test_token"),
+  botId: text("bot_id"),
+  approvalRequired: boolean("approval_required").notNull().default(false),
+  status: text("status").notNull().default("created"),
+  totalFields: integer("total_fields").notNull().default(6),
+  fieldsFilled: integer("fields_filled").notNull().default(0),
+  pageLoadedAt: timestamp("page_loaded_at"),
+  firstInteractionAt: timestamp("first_interaction_at"),
+  submittedAt: timestamp("submitted_at"),
+  score: integer("score"),
+  grade: text("grade"),
+  report: jsonb("report"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  expiresAt: timestamp("expires_at"),
+}, (table) => [
+  index("agent_test_sessions_card_id_idx").on(table.cardId),
+  index("agent_test_sessions_owner_uid_idx").on(table.ownerUid),
+  index("agent_test_sessions_status_idx").on(table.status),
+]);
+
+export type AgentTestSession = typeof agentTestSessions.$inferSelect;
+export type InsertAgentTestSession = typeof agentTestSessions.$inferInsert;
+
+export const agentTestFieldEvents = pgTable("agent_test_field_events", {
+  id: serial("id").primaryKey(),
+  testId: text("test_id").notNull(),
+  eventType: text("event_type").notNull(),
+  fieldName: text("field_name"),
+  valueLength: integer("value_length").notNull().default(0),
+  sequenceNum: integer("sequence_num").notNull(),
+  eventTimestamp: timestamp("event_timestamp").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (table) => [
+  index("agent_test_field_events_test_id_idx").on(table.testId),
+  index("agent_test_field_events_test_id_seq_idx").on(table.testId, table.sequenceNum),
+]);
+
+export type AgentTestFieldEvent = typeof agentTestFieldEvents.$inferSelect;
+export type InsertAgentTestFieldEvent = typeof agentTestFieldEvents.$inferInsert;

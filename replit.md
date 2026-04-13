@@ -21,6 +21,7 @@ Tenants share the same database, codebase, and deployment. Routing is hostname-b
 | 6 | Platform Management | Auth, bot lifecycle, pairing, feature flags, admin |
 | 7 | Multi-tenant Structure | Tenant routing, onboarding, per-tenant theming |
 | 8 | Agent Shops | Checkout, storefronts, seller profiles, inbound payments |
+| 9 | Agent Testing | Standalone checkout testing suite — create tests, track field events, auto-score, persisted reports |
 
 Full detail: `project_knowledge/architecture.md`
 
@@ -509,6 +510,34 @@ The platform's inbound commerce engine. Buyers (humans and AI agents) pay into t
 - **Anthropic (@anthropic-ai/sdk):** LLM-powered brand classification for ASX Score Scanner.
 - **Perplexity API:** Site audit and evidence gathering for ASX Score Scanner (via sonar-deep-research model).
 - **react-markdown + remark-gfm + @tailwindcss/typography:** Markdown rendering for documentation pages.
+
+## Agent Checkout Testing Suite (`features/agent-testing/`)
+Standalone module for testing any agent's ability to complete a checkout form with field-level telemetry, multi-dimensional scoring, and persisted reports.
+
+**Architecture:**
+- `constants.ts` — field names, limits, timing constants
+- `types.ts` — SubmittedValues, FieldEventInput, TestReport, ApprovalInfo types
+- `test-card-generator.ts` — generates realistic test card data (Visa BIN, names, zip codes)
+- `storage/agent-testing-storage.ts` — Drizzle-based CRUD for `agent_test_sessions` + `agent_test_field_events` tables
+- `scoring/` — four scorers (accuracy 40%, completion 30%, speed 15%, efficiency 15%) + `report-generator.ts`
+- `hooks/use-checkout-field-tracker.ts` — client-side hook that captures DOM events (focus/blur/input/select/submit_click) and batches them to the events API
+- `components/agent-test-report-card.tsx` — rich report visualization with score ring, per-field breakdown, hesitation gaps
+- `components/agent-test-progress-indicator.tsx` — real-time progress bar during test execution
+
+**API routes** (`app/api/v1/agent-testing/tests/`):
+- `POST /` — create test (generates card, returns test_id + URL + expected values)
+- `GET /[testId]` — poll status (fields_filled, total_fields, status, score, grade)
+- `POST /[testId]/events` — ingest field events (batched, with expiry + event limit enforcement)
+- `POST /[testId]/submit` — submit values + auto-score (returns score/grade)
+- `GET /[testId]/report` — full scored report
+- `GET /[testId]/detail` — resolve card_test_token from test_id (used by /test-checkout page)
+- `GET /by-card/[cardId]` — lookup tests by card (auth required, owner-scoped)
+
+**Integration points:**
+- `/test-checkout` page loads test via `?t=at_xxxx`, renders checkout form, uses field tracker hook
+- `testing-handler.tsx` dual-submits to legacy `/pay/testing` + new `/agent-testing/submit`
+- `rail5-fulfillment.ts` marks test as approved when approval flow completes
+- `test-verification.tsx` (Rail5 wizard step 8) creates agent test, polls status, shows report card
 
 ## Testing (`tests/`)
 Vitest-based automated test suite. Run with `npx vitest run`. Config in `vitest.config.ts` with `@/` path alias. See `tests/_README.md` for coverage map, guidelines on when/how to add tests, and known gaps. Manual curl-based integration tests are in `tests/manual-api-suite.md`.

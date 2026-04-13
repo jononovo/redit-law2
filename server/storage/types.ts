@@ -33,6 +33,8 @@ import {
   type BrandIndex, type InsertBrandIndex,
   type BrandClaim, type InsertBrandClaim,
   type BrandFeedback, type InsertBrandFeedback,
+  type AgentTestSession, type InsertAgentTestSession,
+  type AgentTestFieldEvent, type InsertAgentTestFieldEvent,
 } from "@/shared/schema";
 
 import type { OrderFilters } from "./agent-interaction/orders";
@@ -268,4 +270,14 @@ export interface IStorage {
   verifyClaim(id: number, reviewedBy?: string): Promise<BrandClaim>;
   rejectClaim(id: number, reason: string, reviewedBy: string): Promise<BrandClaim>;
   revokeClaim(id: number): Promise<BrandClaim>;
+
+  createAgentTest(data: InsertAgentTestSession): Promise<AgentTestSession>;
+  getAgentTestByTestId(testId: string): Promise<AgentTestSession | null>;
+  updateAgentTest(testId: string, data: Partial<Omit<InsertAgentTestSession, "testId">>): Promise<AgentTestSession | null>;
+  insertFieldEvents(events: InsertAgentTestFieldEvent[]): Promise<number>;
+  getFieldEventsByTestId(testId: string): Promise<AgentTestFieldEvent[]>;
+  getFieldEventCountByTestId(testId: string): Promise<number>;
+  getAgentTestsByCardId(cardId: string): Promise<AgentTestSession[]>;
+  getAgentTestsByOwnerUid(ownerUid: string): Promise<AgentTestSession[]>;
+  getAgentTestByCardIdAndStatus(cardId: string, status: string): Promise<AgentTestSession | null>;
 }

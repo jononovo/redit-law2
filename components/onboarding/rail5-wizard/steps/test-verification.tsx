@@ -1,13 +1,16 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { CheckCircle2, Loader2, Shield, X, Copy, Send, MessageCircle, FlaskConical } from "lucide-react";
+import { CheckCircle2, Loader2, Shield, Copy, Send, MessageCircle, FlaskConical } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { wt } from "@/lib/wizard-typography";
 import { StepHeader } from "../step-header";
 import { useToast } from "@/hooks/use-toast";
 import { authFetch } from "@/features/platform-management/auth-fetch";
-import { type Step8Props, type TestPurchaseResult, type TestPurchaseApiResponse, FIELD_LABELS } from "../types";
+import { AgentTestReportCard } from "@/features/agent-testing/components/agent-test-report-card";
+import { AgentTestProgressIndicator } from "@/features/agent-testing/components/agent-test-progress-indicator";
+import type { TestReport } from "@/features/agent-testing/types";
+import type { Step8Props } from "../types";
 
 const TEST_RELAY_MESSAGE = `Complete a test purchase to verify your encrypted card file works correctly.
 
@@ -20,39 +23,30 @@ Steps:
 
 This is a sandbox checkout — no real payment will be processed.`;
 
+interface AgentTestStatus {
+  test_id: string;
+  status: string;
+  fields_filled: number;
+  total_fields: number;
+  page_loaded_at: string | null;
+  first_interaction_at: string | null;
+  submitted_at: string | null;
+  score: number | null;
+  grade: string | null;
+}
+
 export function TestVerification({ cardId, cardName, cardLast4, savedCardDetails, onDone }: Step8Props) {
   const { toast } = useToast();
   const [optedIn, setOptedIn] = useState(false);
   const [initialCheckDone, setInitialCheckDone] = useState(false);
-  const [testPurchaseResult, setTestPurchaseResult] = useState<TestPurchaseResult | null>(null);
-  const [testPollingActive, setTestPollingActive] = useState(false);
-  const [testPollingTimedOut, setTestPollingTimedOut] = useState(false);
-  const [testStatus, setTestStatus] = useState<"pending" | "approval_requested" | "approved" | "in_progress" | "completed">("pending");
+  const [agentTestId, setAgentTestId] = useState<string | null>(null);
+  const [testStatus, setTestStatus] = useState<AgentTestStatus | null>(null);
+  const [testReport, setTestReport] = useState<TestReport | null>(null);
+  const [pollingTimedOut, setPollingTimedOut] = useState(false);
   const [copied, setCopied] = useState(false);
   const [discordCopied, setDiscordCopied] = useState(false);
-  const testPollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const testStartRef = useRef(Date.now());
-
-  const normalize = (v: string | undefined | null) => (v || "").trim().toLowerCase();
-
-  const compareFields = (submitted: TestPurchaseApiResponse["submitted_details"]): TestPurchaseResult => {
-    if (!submitted || !savedCardDetails) return { status: "completed", verified: false, fields: {} };
-    const fields: Record<string, { match: boolean }> = {
-      card_number: { match: normalize(submitted.cardNumber) === normalize(savedCardDetails.cardNumber) },
-      card_expiry: { match: normalize(submitted.cardExpiry) === normalize(savedCardDetails.cardExpiry) },
-      card_cvv: { match: normalize(submitted.cardCvv) === normalize(savedCardDetails.cardCvv) },
-      cardholder_name: { match: normalize(submitted.cardholderName) === normalize(savedCardDetails.cardholderName) },
-      billing_address: { match: normalize(submitted.billingAddress) === normalize(savedCardDetails.billingAddress) },
-      billing_city: { match: normalize(submitted.billingCity) === normalize(savedCardDetails.billingCity) },
-      billing_state: { match: normalize(submitted.billingState) === normalize(savedCardDetails.billingState) },
-      billing_zip: { match: normalize(submitted.billingZip) === normalize(savedCardDetails.billingZip) },
-    };
-    return {
-      status: "completed",
-      verified: Object.values(fields).every((f) => f.match),
-      fields,
-    };
-  };
 
   useEffect(() => {
     if (!cardId) {
@@ -62,24 +56,35 @@ export function TestVerification({ cardId, cardName, cardLast4, savedCardDetails
 
     (async () => {
       try {
-        const res = await authFetch(`/api/v1/rail5/cards/${cardId}/test-purchase-status`);
+        const res = await authFetch(`/api/v1/agent-testing/tests/by-card/${cardId}`);
         if (res.ok) {
-          const data: TestPurchaseApiResponse = await res.json();
-          if (data.status === "completed" && data.submitted_details) {
-            const result = compareFields(data.submitted_details);
-            result.sale_id = data.sale_id;
-            setTestPurchaseResult(result);
-            setTestStatus("completed");
+          const data = await res.json();
+          const tests = data.tests ?? [];
+          const latest = tests[tests.length - 1];
+          if (latest?.test_id) {
+            setAgentTestId(latest.test_id);
             setOptedIn(true);
-          } else if (data.status === "in_progress") {
-            setTestStatus("in_progress");
-            setOptedIn(true);
-          } else if (data.status === "approved") {
-            setTestStatus("approved");
-            setOptedIn(true);
-          } else if (data.status === "approval_requested") {
-            setTestStatus("approval_requested");
-            setOptedIn(true);
+
+            if (latest.status === "scored") {
+              try {
+                const reportRes = await fetch(`/api/v1/agent-testing/tests/${latest.test_id}/report`);
+                if (reportRes.ok) {
+                  const report: TestReport = await reportRes.json();
+                  setTestReport(report);
+                  setTestStatus({
+                    test_id: latest.test_id,
+                    status: "scored",
+                    fields_filled: report.scores?.completion?.fields_filled ?? 0,
+                    total_fields: report.scores?.completion?.total_fields ?? 6,
+                    page_loaded_at: null,
+                    first_interaction_at: null,
+                    submitted_at: null,
+                    score: latest.score ?? report.overall_score,
+                    grade: latest.grade ?? report.grade,
+                  });
+                }
+              } catch {}
+            }
           }
         }
       } catch {}
@@ -87,49 +92,64 @@ export function TestVerification({ cardId, cardName, cardLast4, savedCardDetails
     })();
   }, [cardId]);
 
-  useEffect(() => {
-    if (!optedIn || !cardId) return;
-    if (testPurchaseResult?.status === "completed") return;
+  async function createAgentTest() {
+    try {
+      const res = await authFetch("/api/v1/agent-testing/tests", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ card_id: cardId }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setAgentTestId(data.test_id);
+        return data.test_id;
+      }
+    } catch {
+      toast({ title: "Error", description: "Failed to create test. Please try again.", variant: "destructive" });
+    }
+    return null;
+  }
 
-    setTestPollingActive(true);
+  useEffect(() => {
+    if (!optedIn || !agentTestId) return;
+    if (testReport) return;
+
     testStartRef.current = Date.now();
 
-    const pollTest = async () => {
+    const poll = async () => {
       try {
-        const res = await authFetch(`/api/v1/rail5/cards/${cardId}/test-purchase-status`);
+        const res = await fetch(`/api/v1/agent-testing/tests/${agentTestId}`);
         if (res.ok) {
-          const data: TestPurchaseApiResponse = await res.json();
-          if (data.status === "completed" && data.submitted_details) {
-            const result = compareFields(data.submitted_details);
-            result.sale_id = data.sale_id;
-            setTestPurchaseResult(result);
-            setTestStatus("completed");
-            setTestPollingActive(false);
-            if (testPollingRef.current) clearInterval(testPollingRef.current);
-          } else if (data.status === "in_progress") {
-            setTestStatus("in_progress");
-          } else if (data.status === "approved") {
-            setTestStatus("approved");
-          } else if (data.status === "approval_requested") {
-            setTestStatus("approval_requested");
+          const data: AgentTestStatus = await res.json();
+          setTestStatus(data);
+
+          if (data.status === "scored") {
+            if (pollingRef.current) clearInterval(pollingRef.current);
+
+            try {
+              const reportRes = await fetch(`/api/v1/agent-testing/tests/${agentTestId}/report`);
+              if (reportRes.ok) {
+                const report: TestReport = await reportRes.json();
+                setTestReport(report);
+              }
+            } catch {}
           }
         }
       } catch {}
 
       if (Date.now() - testStartRef.current >= 300_000) {
-        setTestPollingTimedOut(true);
-        setTestPollingActive(false);
-        if (testPollingRef.current) clearInterval(testPollingRef.current);
+        setPollingTimedOut(true);
+        if (pollingRef.current) clearInterval(pollingRef.current);
       }
     };
 
-    testPollingRef.current = setInterval(pollTest, 5000);
-    pollTest();
+    pollingRef.current = setInterval(poll, 5000);
+    poll();
 
     return () => {
-      if (testPollingRef.current) clearInterval(testPollingRef.current);
+      if (pollingRef.current) clearInterval(pollingRef.current);
     };
-  }, [optedIn, cardId, testPurchaseResult?.status]);
+  }, [optedIn, agentTestId, testReport]);
 
   function handleCopy() {
     navigator.clipboard.writeText(TEST_RELAY_MESSAGE).then(() => {
@@ -149,6 +169,13 @@ export function TestVerification({ cardId, cardName, cardLast4, savedCardDetails
       toast({ title: "Copied!", description: "Paste this in Discord to send to your agent." });
       setTimeout(() => setDiscordCopied(false), 2000);
     });
+  }
+
+  async function handleOptIn() {
+    setOptedIn(true);
+    if (!agentTestId) {
+      await createAgentTest();
+    }
   }
 
   if (!initialCheckDone) {
@@ -177,7 +204,7 @@ export function TestVerification({ cardId, cardName, cardLast4, savedCardDetails
             Skip
           </Button>
           <Button
-            onClick={() => setOptedIn(true)}
+            onClick={handleOptIn}
             className={`flex-1 ${wt.primaryButton} gap-2`}
             data-testid="button-r5-start-test"
           >
@@ -188,79 +215,38 @@ export function TestVerification({ cardId, cardName, cardLast4, savedCardDetails
     );
   }
 
+  const currentStatus = testStatus?.status ?? "created";
+  const isScored = currentStatus === "scored" && testReport;
+  const isInProgress = currentStatus === "in_progress" || currentStatus === "page_loaded";
+  const isPending = currentStatus === "created" || currentStatus === "approved";
+
   return (
     <div className="space-y-6" data-testid="r5-step-test-verification">
       <StepHeader icon={Shield} iconBg="bg-blue-50" iconColor="text-blue-600" iconSize="lg" title="Test Verification" tooltip="Your agent is completing a sandbox test purchase to verify the card file decrypts correctly." titleTestId="text-test-title" />
 
       <div className="space-y-3" data-testid="r5-test-verification">
-        {testPurchaseResult?.status === "completed" ? (
-          <div className={`rounded-xl p-4 border ${testPurchaseResult.verified ? "bg-green-50 border-green-200" : "bg-red-50 border-red-200"}`}>
-            <div className="flex items-center gap-2 mb-3">
-              {testPurchaseResult.verified ? (
-                <CheckCircle2 className="w-5 h-5 text-green-600" />
-              ) : (
-                <Shield className="w-5 h-5 text-red-600" />
-              )}
-              <span className={`font-semibold text-sm ${testPurchaseResult.verified ? "text-green-800" : "text-red-800"}`} data-testid="text-verification-result">
-                {testPurchaseResult.verified
-                  ? "Card Verified — encryption and decryption working correctly"
-                  : "Verification Failed — some fields did not match"}
-              </span>
-            </div>
-            {testPurchaseResult.fields && (
-              <div className="grid grid-cols-2 gap-1.5">
-                {Object.entries(testPurchaseResult.fields).map(([field, result]) => (
-                  <div key={field} className="flex items-center gap-1.5 text-xs" data-testid={`verification-field-${field}`}>
-                    {result.match ? (
-                      <CheckCircle2 className="w-3.5 h-3.5 text-green-600 flex-shrink-0" />
-                    ) : (
-                      <X className="w-3.5 h-3.5 text-red-600 flex-shrink-0" />
-                    )}
-                    <span className={result.match ? "text-green-700" : "text-red-700"}>
-                      {FIELD_LABELS[field] || field}
-                    </span>
-                  </div>
-                ))}
+        {isScored && testReport ? (
+          <AgentTestReportCard report={testReport} />
+        ) : isInProgress && testStatus ? (
+          <div className="space-y-4">
+            <AgentTestProgressIndicator
+              fieldsFilled={testStatus.fields_filled}
+              totalFields={testStatus.total_fields}
+              status={testStatus.status as any}
+            />
+            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+              <div className="flex items-center gap-2">
+                <Loader2 className="w-5 h-5 text-blue-600 animate-spin" />
+                <span className="font-medium text-sm text-blue-800" data-testid="text-verification-in-progress">
+                  Your agent is completing the test checkout...
+                </span>
               </div>
-            )}
-          </div>
-        ) : testStatus === "in_progress" ? (
-          <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-            <div className="flex items-center gap-2">
-              <Loader2 className="w-5 h-5 text-blue-600 animate-spin" />
-              <span className="font-medium text-sm text-blue-800" data-testid="text-verification-in-progress">
-                Your agent is completing the test checkout...
-              </span>
+              <p className="text-xs text-blue-600 mt-1">
+                Your agent has loaded the checkout page — it's decrypting the card and filling in the form. This usually takes about a minute.
+              </p>
             </div>
-            <p className="text-xs text-blue-600 mt-1">
-              Your agent has loaded the checkout page — it's decrypting the card and filling in the form. This usually takes about a minute.
-            </p>
           </div>
-        ) : testStatus === "approved" ? (
-          <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-            <div className="flex items-center gap-2">
-              <CheckCircle2 className="w-5 h-5 text-green-600" />
-              <span className="font-medium text-sm text-blue-800" data-testid="text-verification-approved">
-                Approved! Waiting for your agent to load the checkout page...
-              </span>
-            </div>
-            <p className="text-xs text-blue-600 mt-1">
-              You approved the test purchase. Your agent will now navigate to the checkout page and fill in the card details.
-            </p>
-          </div>
-        ) : testStatus === "approval_requested" ? (
-          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
-            <div className="flex items-center gap-2">
-              <Shield className="w-5 h-5 text-amber-600" />
-              <span className="font-medium text-sm text-amber-800" data-testid="text-verification-approval-requested">
-                Your agent requested approval — check your email
-              </span>
-            </div>
-            <p className="text-xs text-amber-600 mt-1">
-              Your agent is ready to run the test checkout but needs your approval first. Check your email for the approval link.
-            </p>
-          </div>
-        ) : testPollingTimedOut ? (
+        ) : pollingTimedOut ? (
           <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
             <div className="flex items-center gap-2">
               <Shield className="w-5 h-5 text-amber-600" />
@@ -272,7 +258,7 @@ export function TestVerification({ cardId, cardName, cardLast4, savedCardDetails
               Your agent hasn't completed the test checkout yet. It may still complete it later — you can check the card's status from your dashboard.
             </p>
           </div>
-        ) : testStatus === "pending" && testPollingActive ? (
+        ) : isPending ? (
           <>
             <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
               <div className="flex items-center gap-2">
@@ -341,7 +327,7 @@ export function TestVerification({ cardId, cardName, cardLast4, savedCardDetails
         <CheckCircle2 className="w-4 h-4" /> Go to Dashboard
       </Button>
 
-      {testStatus !== "completed" && (
+      {currentStatus !== "scored" && (
         <button
           onClick={onDone}
           className={`w-full text-center ${wt.body} text-neutral-400 hover:text-neutral-600 transition-colors py-1 cursor-pointer`}
