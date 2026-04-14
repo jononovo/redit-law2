@@ -57,17 +57,6 @@ export default function SearchPage() {
     }
   }, []);
 
-  function handleSearchChange(value: string) {
-    setQuery(value);
-    setShopState((s) => ({ ...s, searchQuery: value }));
-    trackEvent(EVENT_TYPES.SEARCH_INPUT, "search", "searchQuery", value, value.length);
-  }
-
-  function handleSearchSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    trackEvent(EVENT_TYPES.SEARCH_SUBMIT, "search", "searchQuery", query, query.length);
-  }
-
   async function handleProductClick(e: React.MouseEvent, product: ShopProduct) {
     e.preventDefault();
     trackEvent(EVENT_TYPES.PRODUCT_CLICK, "product_select", "product", product.slug, product.slug.length);
@@ -78,28 +67,6 @@ export default function SearchPage() {
 
   return (
     <div data-testid="page-search">
-      <form onSubmit={handleSearchSubmit} className="mb-8">
-        <div className="flex gap-3">
-          <input
-            type="text"
-            data-testid="input-search"
-            value={query}
-            onChange={(e) => handleSearchChange(e.target.value)}
-            placeholder="Search products..."
-            className="flex-1 px-4 py-3 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-            readOnly={isObserver}
-          />
-          <button
-            type="submit"
-            data-testid="button-search-submit"
-            className="px-6 py-3 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors"
-            disabled={isObserver}
-          >
-            Search
-          </button>
-        </div>
-      </form>
-
       {results.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {results.map((product) => (

@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 import Image from "next/image";
 import { useShopTest } from "@/features/agent-testing/full-shop/client/shop-test-context";
 import { EVENT_TYPES } from "@/features/agent-testing/full-shop/shared/constants";
@@ -13,26 +12,16 @@ const CATEGORIES = [
 ];
 
 export default function TestShopHomePage() {
-  const { testId, trackEvent, flushEvents, setCurrentPage, isObserver } = useShopTest();
-  const router = useRouter();
+  const { testId, trackEvent, setCurrentPage } = useShopTest();
   const observeParam = typeof window !== "undefined"
     ? new URLSearchParams(window.location.search).get("observe")
     : null;
   const qs = observeParam ? `?observe=${observeParam}` : "";
 
-  const [searchQuery, setSearchQuery] = useState("");
-
   useEffect(() => {
     setCurrentPage("");
     trackEvent(EVENT_TYPES.SHOP_LANDING, "page_arrival");
   }, [trackEvent, setCurrentPage]);
-
-  async function handleSearch(e: React.FormEvent) {
-    e.preventDefault();
-    if (!searchQuery.trim() || isObserver) return;
-    await flushEvents();
-    router.push(`/test-shop/${testId}/search?q=${encodeURIComponent(searchQuery.trim())}${qs ? "&" + qs.slice(1) : ""}`);
-  }
 
   return (
     <div data-testid="page-shop-home">
@@ -49,28 +38,6 @@ export default function TestShopHomePage() {
         >
           Browse our collection and complete your purchase to test your shopping skills.
         </p>
-
-        <form onSubmit={handleSearch} className="max-w-xl mx-auto mb-12">
-          <div className="flex gap-3">
-            <input
-              type="text"
-              data-testid="input-home-search"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search for sneakers, hoodies, backpacks..."
-              className="flex-1 px-4 py-3 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-lg"
-              readOnly={isObserver}
-            />
-            <button
-              type="submit"
-              data-testid="button-home-search"
-              disabled={isObserver}
-              className="px-6 py-3 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors disabled:opacity-50"
-            >
-              Search
-            </button>
-          </div>
-        </form>
       </section>
 
       <section>

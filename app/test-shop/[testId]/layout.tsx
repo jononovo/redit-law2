@@ -28,7 +28,7 @@ function ObserverBanner() {
 }
 
 function ShopSearchBar() {
-  const { testId, isObserver, shopState } = useShopTest();
+  const { testId, isObserver, shopState, flushEvents } = useShopTest();
   const router = useRouter();
   const observeParam = typeof window !== "undefined"
     ? new URLSearchParams(window.location.search).get("observe")
@@ -39,9 +39,10 @@ function ShopSearchBar() {
 
   const displayQuery = isObserver ? (shopState.searchQuery || "") : query;
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!query.trim() || isObserver) return;
+    await flushEvents();
     router.push(`/test-shop/${testId}/search?q=${encodeURIComponent(query.trim())}${qs ? "&" + qs.slice(1) : ""}`);
   }
 
@@ -89,7 +90,7 @@ function ShopHeader() {
         <a
           href={`/test-shop/${testId}/cart${qs}`}
           data-testid="link-cart"
-          className="relative text-gray-700 hover:text-gray-900 transition-colors flex-shrink-0"
+          className="relative text-gray-700 hover:text-gray-900 transition-colors flex-shrink-0 ml-auto"
         >
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 100 4 2 2 0 000-4z" />
