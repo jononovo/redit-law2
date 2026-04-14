@@ -1,18 +1,52 @@
 "use client";
 
 import { useState } from "react";
+import { Nav } from "@/components/nav";
+import { Footer } from "@/components/footer";
+import { Copy, Check, ExternalLink, Loader2, ShoppingCart, Target, Zap, Route, Clock, Brain } from "lucide-react";
 
-export default function AgentTestLandingPage() {
+interface TestResult {
+  test_id: string;
+  test_url: string;
+  observe_url: string;
+  instructions: string;
+}
+
+function CopyButton({ text, label }: { text: string; label?: string }) {
+  const [copied, setCopied] = useState(false);
+
+  function handleCopy() {
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+
+  return (
+    <button
+      onClick={handleCopy}
+      data-testid={`button-copy-${label ?? "text"}`}
+      className="inline-flex items-center gap-2 px-4 py-2 bg-neutral-100 text-neutral-700 rounded-lg hover:bg-neutral-200 transition-colors text-sm font-semibold"
+    >
+      {copied ? <Check className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
+      {copied ? "Copied!" : "Copy"}
+    </button>
+  );
+}
+
+const SCORING_DIMENSIONS = [
+  { icon: Target, label: "Instruction Following", weight: "35%", description: "Correct product, color, size, and quantity" },
+  { icon: Brain, label: "Data Accuracy", weight: "25%", description: "Address and card details entered correctly" },
+  { icon: Route, label: "Flow Completion", weight: "20%", description: "All 7 pages navigated successfully" },
+  { icon: Clock, label: "Speed", weight: "10%", description: "Total time from start to confirmation" },
+  { icon: Zap, label: "Navigation Efficiency", weight: "10%", description: "Minimal backtracking and errors" },
+];
+
+export default function AgentTestPage() {
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<{
-    test_id: string;
-    test_url: string;
-    observe_url: string;
-    instructions: string;
-  } | null>(null);
+  const [result, setResult] = useState<TestResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  async function handleCreateTest() {
+  async function handleGenerate() {
     setLoading(true);
     setError(null);
     try {
@@ -21,7 +55,7 @@ export default function AgentTestLandingPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ test_type: "full_shop" }),
       });
-      if (!res.ok) throw new Error("Failed to create test");
+      if (!res.ok) throw new Error("Failed to generate test");
       const data = await res.json();
       setResult(data);
     } catch (err: any) {
@@ -32,163 +66,147 @@ export default function AgentTestLandingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-3xl mx-auto px-4 py-16">
-        <div className="text-center mb-12">
-          <h1
-            data-testid="text-landing-title"
-            className="text-4xl font-bold text-gray-900 mb-4"
-          >
-            Agent Shopping Test
-          </h1>
-          <p
-            data-testid="text-landing-description"
-            className="text-lg text-gray-600 max-w-xl mx-auto"
-          >
-            Test how well your AI agent can navigate a realistic e-commerce flow — from search to checkout.
-            Get scored on accuracy, speed, and decision-making.
-          </p>
-        </div>
+    <div className="min-h-screen bg-background text-neutral-900 font-sans">
+      <Nav />
+      <main>
+        <section className="relative py-24 md:py-32 overflow-hidden">
+          <div className="absolute top-10 left-10 w-[500px] h-[500px] bg-primary/10 rounded-full blur-[120px] pointer-events-none" />
+          <div className="absolute bottom-10 right-10 w-[400px] h-[400px] bg-purple-200/15 rounded-full blur-[100px] pointer-events-none" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-blue-200/10 rounded-full blur-[140px] pointer-events-none" />
 
-        <div className="bg-white rounded-xl border border-gray-200 p-8 mb-8">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">How it works</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-            <div className="text-center">
-              <div className="text-3xl mb-2">1️⃣</div>
-              <h3 className="font-medium text-gray-900 mb-1">Create a Test</h3>
-              <p className="text-sm text-gray-500">
-                Generate a unique test with a randomized shopping scenario.
-              </p>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl mb-2">2️⃣</div>
-              <h3 className="font-medium text-gray-900 mb-1">Send to Your Agent</h3>
-              <p className="text-sm text-gray-500">
-                Give your agent the test URL and instructions. Watch in real-time.
-              </p>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl mb-2">3️⃣</div>
-              <h3 className="font-medium text-gray-900 mb-1">Get Scored</h3>
-              <p className="text-sm text-gray-500">
-                See how your agent performed across 5 scoring dimensions.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {!result ? (
-          <div className="text-center">
-            <button
-              data-testid="button-create-test"
-              onClick={handleCreateTest}
-              disabled={loading}
-              className="px-8 py-3 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition-colors disabled:opacity-50 text-lg"
-            >
-              {loading ? "Creating..." : "Create New Test"}
-            </button>
-            {error && (
-              <p data-testid="text-error" className="mt-4 text-red-600">{error}</p>
-            )}
-          </div>
-        ) : (
-          <div className="bg-white rounded-xl border border-gray-200 p-8 space-y-6">
-            <div>
-              <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-2">
-                Test ID
-              </h3>
-              <code
-                data-testid="text-test-id"
-                className="text-lg font-mono text-gray-900 bg-gray-50 px-3 py-1.5 rounded"
+          <div className="container mx-auto px-6 relative z-10">
+            <div className="max-w-2xl mx-auto text-center">
+              <div
+                className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 text-primary rounded-full text-sm font-semibold mb-8 border border-primary/20 animate-fade-in-up"
+                data-testid="badge-agent-test"
               >
-                {result.test_id}
-              </code>
-            </div>
+                <ShoppingCart className="w-4 h-4" />
+                Agent Shopping Test
+              </div>
 
-            <div>
-              <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-2">
-                Agent URL (give this to your agent)
-              </h3>
-              <div className="flex gap-2">
-                <input
-                  data-testid="input-test-url"
-                  type="text"
-                  readOnly
-                  value={result.test_url}
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg font-mono text-sm text-gray-900 bg-gray-50"
-                />
-                <button
-                  data-testid="button-copy-test-url"
-                  onClick={() => navigator.clipboard.writeText(result.test_url)}
-                  className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
-                >
-                  Copy
-                </button>
+              <h1
+                className="text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight mb-6 animate-fade-in-up"
+                style={{ animationDelay: "0.1s" }}
+                data-testid="heading-agent-test"
+              >
+                Can your agent{" "}
+                <span className="bg-gradient-to-r from-primary to-orange-400 bg-clip-text text-transparent">
+                  shop?
+                </span>
+              </h1>
+
+              <p
+                className="text-lg md:text-xl text-neutral-600 leading-relaxed mb-12 max-w-xl mx-auto animate-fade-in-up"
+                style={{ animationDelay: "0.2s" }}
+                data-testid="text-agent-test-subtitle"
+              >
+                Generate a test, copy the message below, and send it to your AI agent.
+                Watch it navigate a real shopping flow and get scored on accuracy, speed, and decision-making.
+              </p>
+
+              {!result ? (
+                <div className="animate-fade-in-up" style={{ animationDelay: "0.3s" }}>
+                  <button
+                    onClick={handleGenerate}
+                    disabled={loading}
+                    data-testid="button-generate-test"
+                    className="inline-flex items-center gap-3 px-8 py-4 bg-primary text-white rounded-full font-bold text-lg hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20 disabled:opacity-50"
+                  >
+                    {loading ? (
+                      <>
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                        Generating...
+                      </>
+                    ) : (
+                      <>
+                        <ShoppingCart className="w-5 h-5" />
+                        Generate Test
+                      </>
+                    )}
+                  </button>
+                  {error && (
+                    <p data-testid="text-error" className="mt-4 text-red-600 font-medium">{error}</p>
+                  )}
+                </div>
+              ) : (
+                <div className="animate-fade-in-up text-left" style={{ animationDelay: "0.1s" }}>
+                  <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm p-6 md:p-8">
+                    <div className="flex items-center justify-between mb-4">
+                      <h2 className="text-lg font-bold text-neutral-900">
+                        Send this to your agent
+                      </h2>
+                      <CopyButton text={result.instructions} label="instructions" />
+                    </div>
+
+                    <div
+                      data-testid="text-instructions"
+                      className="bg-neutral-50 border border-neutral-200 rounded-xl p-5 font-mono text-sm text-neutral-800 whitespace-pre-wrap leading-relaxed max-h-[400px] overflow-y-auto"
+                    >
+                      {result.instructions}
+                    </div>
+
+                    <div className="mt-6 flex flex-col sm:flex-row gap-3">
+                      <a
+                        href={result.observe_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        data-testid="link-watch-agent"
+                        className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-primary text-white rounded-full font-semibold hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20"
+                      >
+                        <ExternalLink className="w-4 h-4" />
+                        Watch Your Agent Live
+                      </a>
+                      <button
+                        onClick={() => { setResult(null); handleGenerate(); }}
+                        data-testid="button-new-test"
+                        className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-neutral-100 text-neutral-700 rounded-full font-semibold hover:bg-neutral-200 transition-colors"
+                      >
+                        Generate Another
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </section>
+
+        <section className="py-20 md:py-28 bg-white border-t border-neutral-100">
+          <div className="container mx-auto px-6">
+            <div className="max-w-3xl mx-auto">
+              <h2
+                className="text-3xl md:text-4xl font-extrabold tracking-tight text-center mb-4"
+                data-testid="heading-how-scored"
+              >
+                How your agent is scored
+              </h2>
+              <p className="text-neutral-500 text-center mb-12 text-lg">
+                Five dimensions, weighted to reflect what matters most in real shopping.
+              </p>
+
+              <div className="grid gap-4">
+                {SCORING_DIMENSIONS.map((dim) => (
+                  <div
+                    key={dim.label}
+                    className="flex items-center gap-5 p-5 rounded-xl border border-neutral-100 hover:border-primary/30 hover:bg-primary/[0.02] transition-colors"
+                    data-testid={`card-dimension-${dim.label.toLowerCase().replace(/\s+/g, "-")}`}
+                  >
+                    <div className="flex-shrink-0 w-11 h-11 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+                      <dim.icon className="w-5 h-5" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-bold text-neutral-900">{dim.label}</div>
+                      <div className="text-sm text-neutral-500">{dim.description}</div>
+                    </div>
+                    <div className="flex-shrink-0 text-sm font-bold text-primary">{dim.weight}</div>
+                  </div>
+                ))}
               </div>
             </div>
-
-            <div>
-              <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-2">
-                Observer URL (watch the agent in real-time)
-              </h3>
-              <div className="flex gap-2">
-                <input
-                  data-testid="input-observe-url"
-                  type="text"
-                  readOnly
-                  value={result.observe_url}
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg font-mono text-sm text-gray-900 bg-gray-50"
-                />
-                <button
-                  data-testid="button-copy-observe-url"
-                  onClick={() => navigator.clipboard.writeText(result.observe_url)}
-                  className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
-                >
-                  Copy
-                </button>
-              </div>
-            </div>
-
-            <div>
-              <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-2">
-                Instructions (send these to your agent)
-              </h3>
-              <pre
-                data-testid="text-instructions"
-                className="bg-gray-50 border border-gray-200 rounded-lg p-4 text-sm text-gray-800 whitespace-pre-wrap font-mono"
-              >
-                {result.instructions}
-              </pre>
-              <button
-                data-testid="button-copy-instructions"
-                onClick={() => navigator.clipboard.writeText(result.instructions)}
-                className="mt-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
-              >
-                Copy Instructions
-              </button>
-            </div>
-
-            <div className="pt-4 border-t border-gray-100 flex gap-4">
-              <a
-                data-testid="link-open-observe"
-                href={result.observe_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="px-6 py-2 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors"
-              >
-                Open Observer View
-              </a>
-              <button
-                data-testid="button-create-another"
-                onClick={() => { setResult(null); handleCreateTest(); }}
-                className="px-6 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-colors"
-              >
-                Create Another
-              </button>
-            </div>
           </div>
-        )}
-      </div>
+        </section>
+      </main>
+      <Footer />
     </div>
   );
 }
