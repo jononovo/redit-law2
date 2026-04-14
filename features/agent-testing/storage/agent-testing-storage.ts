@@ -1,4 +1,4 @@
-import { eq, desc, and } from "drizzle-orm";
+import { eq, desc, and, gt } from "drizzle-orm";
 import { db } from "@/server/db";
 import {
   agentTestSessions,
@@ -59,5 +59,27 @@ export const agentTestingMethods = {
       .where(and(eq(agentTestSessions.cardId, cardId), eq(agentTestSessions.status, status)))
       .limit(1);
     return row ?? null;
+  },
+
+  async getAgentTestByOwnerToken(ownerToken: string): Promise<AgentTestSession | null> {
+    const [row] = await db.select().from(agentTestSessions)
+      .where(eq(agentTestSessions.ownerToken, ownerToken))
+      .limit(1);
+    return row ?? null;
+  },
+
+  async getEventsSince(testId: string, sinceSeqNum: number): Promise<AgentTestFieldEvent[]> {
+    return db.select().from(agentTestFieldEvents)
+      .where(and(
+        eq(agentTestFieldEvents.testId, testId),
+        gt(agentTestFieldEvents.sequenceNum, sinceSeqNum),
+      ))
+      .orderBy(agentTestFieldEvents.sequenceNum);
+  },
+
+  async getEventLogByTestId(testId: string): Promise<AgentTestFieldEvent[]> {
+    return db.select().from(agentTestFieldEvents)
+      .where(eq(agentTestFieldEvents.testId, testId))
+      .orderBy(agentTestFieldEvents.sequenceNum);
   },
 };

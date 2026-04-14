@@ -280,4 +280,7 @@ export interface IStorage {
   getAgentTestsByCardId(cardId: string): Promise<AgentTestSession[]>;
   getAgentTestsByOwnerUid(ownerUid: string): Promise<AgentTestSession[]>;
   getAgentTestByCardIdAndStatus(cardId: string, status: string): Promise<AgentTestSession | null>;
+  getAgentTestByOwnerToken(ownerToken: string): Promise<AgentTestSession | null>;
+  getEventsSince(testId: string, sinceSeqNum: number): Promise<AgentTestFieldEvent[]>;
+  getEventLogByTestId(testId: string): Promise<AgentTestFieldEvent[]>;
 }
