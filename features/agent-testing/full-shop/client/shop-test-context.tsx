@@ -10,13 +10,33 @@ import {
   type ReactNode,
 } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import type { ShopState, CartItem, FullShopScenarioConfig } from "../shared/types";
+import type {
+  ShopState,
+  CartItem,
+  FullShopScenarioConfig,
+  FullShopFieldEvent,
+  DerivedStageGate,
+  PolledEvent,
+} from "../shared/types";
 import { createEmptyShopState } from "../shared/types";
-import { STAGE_PAGE_MAP } from "../shared/constants";
+import { STAGE_PAGE_MAP, FULL_SHOP_STAGES } from "../shared/constants";
+import { deriveStageGatesFromEventLog } from "../shared/derive-stage-gates";
 import { useFullShopTestTracker } from "./use-full-shop-test-tracker";
 import { useEventPoller } from "./use-event-poller";
 import { useStateProjector } from "./use-state-projector";
 import { SHOP_PRODUCT_CATALOG } from "../shared/scenario-definitions";
+
+function deriveCurrentStage(gates: DerivedStageGate[]): string | null {
+  let current: string | null = null;
+  for (let i = 0; i < gates.length; i++) {
+    if (gates[i].eventCount > 0) {
+      current = gates[i].stage;
+    } else {
+      break;
+    }
+  }
+  return current;
+}
 
 interface ShopTestContextValue {
   testId: string;
@@ -26,6 +46,8 @@ interface ShopTestContextValue {
   shopState: ShopState;
   cart: CartItem[];
   scenario: FullShopScenarioConfig | null;
+  stageGates: DerivedStageGate[];
+  currentStage: string | null;
   trackEvent: (
     eventType: string,
     stage: string,
@@ -64,7 +86,13 @@ export function ShopTestContextProvider({ testId, children }: ProviderProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [testStatus, setTestStatus] = useState("created");
   const [scenario, setScenario] = useState<FullShopScenarioConfig | null>(null);
+  const [stageGates, setStageGates] = useState<DerivedStageGate[]>([]);
+  const [currentStage, setCurrentStage] = useState<string | null>(null);
   const initDone = useRef(false);
+
+  const allEventsRef = useRef<FullShopFieldEvent[]>([]);
+  const scenarioRef = useRef<FullShopScenarioConfig | null>(null);
+  useEffect(() => { scenarioRef.current = scenario; }, [scenario]);
 
   const setShopState = useCallback(
     (updater: (prev: ShopState) => ShopState) => {
@@ -131,11 +159,31 @@ export function ShopTestContextProvider({ testId, children }: ProviderProps) {
     onPageChange: handlePageChange,
   });
 
+  const handlePolledEvents = useCallback(
+    (events: PolledEvent[]) => {
+      projectEvents(events);
+
+      const typed: FullShopFieldEvent[] = events
+        .filter((e): e is PolledEvent & { stage: string } => e.stage !== null)
+        .map((e) => ({ ...e, stage: e.stage }));
+
+      if (typed.length > 0) {
+        allEventsRef.current = [...allEventsRef.current, ...typed];
+        if (scenarioRef.current) {
+          const gates = deriveStageGatesFromEventLog(allEventsRef.current, scenarioRef.current);
+          setStageGates(gates);
+          setCurrentStage(deriveCurrentStage(gates));
+        }
+      }
+    },
+    [projectEvents],
+  );
+
   useEventPoller({
     testId,
     ownerToken: observeToken ?? "",
     enabled: isObserver && !isLoading,
-    onEvents: projectEvents,
+    onEvents: handlePolledEvents,
   });
 
   useEffect(() => {
@@ -202,6 +250,8 @@ export function ShopTestContextProvider({ testId, children }: ProviderProps) {
     shopState,
     cart,
     scenario,
+    stageGates,
+    currentStage,
     trackEvent,
     flushEvents: tracker.flush,
     setShopState,

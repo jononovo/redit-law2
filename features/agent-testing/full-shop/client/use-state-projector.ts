@@ -1,23 +1,13 @@
 "use client";
 
 import { useCallback, useRef } from "react";
-import type { ShopState } from "../shared/types";
+import type { ShopState, PolledEvent } from "../shared/types";
 import { createEmptyShopState } from "../shared/types";
 import { EVENT_TYPES, STAGE_PAGE_MAP } from "../shared/constants";
 
 interface ProjectorOptions {
   onStateChange: (state: ShopState) => void;
   onPageChange: (page: string) => void;
-}
-
-interface PolledEvent {
-  event_type: string;
-  field_name: string | null;
-  value_snapshot: string | null;
-  value_length: number;
-  sequence_num: number;
-  stage: string | null;
-  event_timestamp: string;
 }
 
 export function useStateProjector({ onStateChange, onPageChange }: ProjectorOptions) {

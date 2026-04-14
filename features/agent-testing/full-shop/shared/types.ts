@@ -50,6 +50,16 @@ export interface FullShopScenarioConfig {
   expectedCardDetails: CardDetails;
 }
 
+export interface PolledEvent {
+  event_type: string;
+  field_name: string | null;
+  value_snapshot: string | null;
+  value_length: number;
+  sequence_num: number;
+  stage: string | null;
+  event_timestamp: string;
+}
+
 export interface FullShopFieldEvent {
   stage: string;
   event_type: string;

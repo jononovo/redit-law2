@@ -59,10 +59,17 @@ Grades: A (90+), B (80+), C (70+), D (60+), F (<60)
 
 ## Observer Mode
 Append `?observe=<ownerToken>` to the test URL. The owner sees:
-- A purple banner indicating observer mode
+- A purple banner indicating observer mode (CreditClaw accent color)
+- A collapsible **stage progress overlay** on the left side showing all 8 stages with real-time status:
+  - Gray circle = not reached yet
+  - Pulsing red-orange dot (CreditClaw primary) = agent's current stage
+  - Green checkmark = completed correctly
+  - Amber warning = completed but with inaccurate values (wrong product, wrong address, etc.)
 - All form fields in read-only state
 - State updates via adaptive polling (500ms when active, slows to 2s after 3 idle polls)
 - Automatic page navigation mirroring the agent's progress
+
+Stage gate derivation runs client-side using `deriveStageGatesFromEventLog()` — no extra API calls. Events are accumulated in the context and re-derived on each poll batch.
 
 On first load, observer fetches `GET /status` for catch-up (stage snapshot + last sequence number), then starts polling `GET /events?since=N`.
 
@@ -86,7 +93,8 @@ features/agent-testing/full-shop/
 │   ├── address-generator.ts
 │   └── pick-random-scenario.ts
 └── client/           # React hooks + context
-    ├── shop-test-context.tsx      # Dual-mode provider (agent vs observer)
+    ├── shop-test-context.tsx      # Dual-mode provider (agent vs observer), stage gate derivation
+    ├── observer-stage-overlay.tsx  # Collapsible left-side stage progress panel (observer-only)
     ├── use-full-shop-test-tracker.ts  # Batched event posting
     ├── use-event-poller.ts        # Adaptive polling for observer
     └── use-state-projector.ts     # Projects events → ShopState

@@ -3,6 +3,7 @@
 import { Suspense, useState, type ReactNode } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { ShopTestContextProvider, useShopTest } from "@/features/agent-testing/full-shop/client/shop-test-context";
+import { ObserverStageOverlay } from "@/features/agent-testing/full-shop/client/observer-stage-overlay";
 
 function ObserverBanner() {
   const { isObserver, testStatus } = useShopTest();
@@ -11,7 +12,8 @@ function ObserverBanner() {
   return (
     <div
       data-testid="observer-banner"
-      className="bg-indigo-600 text-white text-center text-sm py-1.5 px-4"
+      className="text-white text-center text-sm py-1.5 px-4"
+      style={{ backgroundColor: "hsl(260, 90%, 65%)" }}
     >
       Observer Mode — You are watching the agent in real time
       {testStatus === "scored" && " — Test Complete"}
@@ -109,6 +111,7 @@ function ShopShell({ children }: { children: ReactNode }) {
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <ObserverBanner />
       <ShopHeader />
+      <ObserverStageOverlay />
       <main className="flex-1 max-w-6xl mx-auto w-full px-4 py-6">
         {children}
       </main>

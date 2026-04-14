@@ -6,16 +6,7 @@ import {
   OBSERVER_POLL_INTERVAL_SLOW_MS,
   OBSERVER_IDLE_THRESHOLD,
 } from "../shared/constants";
-
-interface PolledEvent {
-  event_type: string;
-  field_name: string | null;
-  value_snapshot: string | null;
-  value_length: number;
-  sequence_num: number;
-  stage: string | null;
-  event_timestamp: string;
-}
+import type { PolledEvent } from "../shared/types";
 
 interface PollerOptions {
   testId: string;
