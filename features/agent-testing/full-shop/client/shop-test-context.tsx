@@ -278,10 +278,12 @@ export function ShopTestContextProvider({ testId, children }: ProviderProps) {
     async function init() {
       try {
         if (isObserver) {
-          const statusRes = await fetch(
-            `/api/v1/agent-testing/tests/${testId}/status?observe=${observeToken}`,
-          );
-          if (statusRes.status === 410) {
+          const [statusRes, detailRes] = await Promise.all([
+            fetch(`/api/v1/agent-testing/tests/${testId}/status?observe=${observeToken}`),
+            fetch(`/api/v1/agent-testing/tests/${testId}/detail?observe=${observeToken}`),
+          ]);
+
+          if (statusRes.status === 410 || detailRes.status === 410) {
             handleTimeoutRef.current?.();
             return;
           }
@@ -305,13 +307,6 @@ export function ShopTestContextProvider({ testId, children }: ProviderProps) {
             setAgentEventCount((c) => Math.max(c, 1));
           }
 
-          const detailRes = await fetch(
-            `/api/v1/agent-testing/tests/${testId}/detail?observe=${observeToken}`,
-          );
-          if (detailRes.status === 410) {
-            handleTimeoutRef.current?.();
-            return;
-          }
           if (detailRes.ok) {
             const detailData = await detailRes.json();
             if (detailData.scenario) {
