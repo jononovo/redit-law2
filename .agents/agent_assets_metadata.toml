@@ -1,5 +1,22 @@
 uploads = []
-generated = []
+
+[[generated]]
+id = "LX5ORCsXFxakrMIwwpBtb"
+uri = "file://public/assets/images/shop/category-sneakers.png"
+type = "image"
+title = "sneakers category image"
+
+[[generated]]
+id = "TBX1M4Txm9E3RB4xlowLR"
+uri = "file://public/assets/images/shop/category-hoodies.png"
+type = "image"
+title = "hoodies category image"
+
+[[generated]]
+id = "ACZ-WHyEPrQLeypTUm3op"
+uri = "file://public/assets/images/shop/category-backpacks.png"
+type = "image"
+title = "backpacks category image"
 
 [[outputs]]
 id = "cnAOWU3Q_duY2HbMEVzf9"

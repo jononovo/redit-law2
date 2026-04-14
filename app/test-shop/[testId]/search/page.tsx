@@ -9,6 +9,13 @@ import {
   formatPrice,
 } from "@/features/agent-testing/full-shop/shared/scenario-definitions";
 import type { ShopProduct } from "@/features/agent-testing/full-shop/shared/types";
+import Image from "next/image";
+
+const CATEGORY_IMAGES: Record<string, string> = {
+  sneakers: "/assets/images/shop/category-sneakers.png",
+  hoodie: "/assets/images/shop/category-hoodies.png",
+  backpack: "/assets/images/shop/category-backpacks.png",
+};
 
 export default function SearchPage() {
   const { testId, shopState, setShopState, trackEvent, advanceStage, setCurrentPage, isObserver } = useShopTest();
@@ -28,6 +35,8 @@ export default function SearchPage() {
   useEffect(() => {
     if (isObserver) {
       setQuery(shopState.searchQuery || initialQuery);
+    } else {
+      setQuery(initialQuery);
     }
   }, [isObserver, shopState.searchQuery, initialQuery]);
 
@@ -98,10 +107,14 @@ export default function SearchPage() {
               onClick={() => handleProductClick(product)}
               className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-md hover:border-gray-300 transition-all group"
             >
-              <div className="bg-gray-100 h-48 flex items-center justify-center">
-                <span className="text-6xl opacity-40">
-                  {product.category === "sneakers" ? "👟" : product.category === "hoodie" ? "🧥" : "🎒"}
-                </span>
+              <div className="relative bg-gray-50 h-48">
+                <Image
+                  src={CATEGORY_IMAGES[product.category] || CATEGORY_IMAGES.sneakers}
+                  alt={product.name}
+                  fill
+                  data-testid={`img-product-${product.slug}`}
+                  className="object-cover"
+                />
               </div>
               <div className="p-4">
                 <h3

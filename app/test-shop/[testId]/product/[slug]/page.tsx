@@ -4,7 +4,14 @@ import { useEffect, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import { useShopTest } from "@/features/agent-testing/full-shop/client/shop-test-context";
 import { EVENT_TYPES } from "@/features/agent-testing/full-shop/shared/constants";
+import Image from "next/image";
 import { getProductBySlug, formatPrice } from "@/features/agent-testing/full-shop/shared/scenario-definitions";
+
+const CATEGORY_IMAGES: Record<string, string> = {
+  sneakers: "/assets/images/shop/category-sneakers.png",
+  hoodie: "/assets/images/shop/category-hoodies.png",
+  backpack: "/assets/images/shop/category-backpacks.png",
+};
 
 export default function ProductDetailPage() {
   const params = useParams();
@@ -87,10 +94,14 @@ export default function ProductDetailPage() {
   return (
     <div data-testid="page-product-detail" className="max-w-4xl mx-auto">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        <div className="bg-gray-100 rounded-xl h-80 flex items-center justify-center">
-          <span className="text-8xl opacity-30">
-            {product.category === "sneakers" ? "👟" : product.category === "hoodie" ? "🧥" : "🎒"}
-          </span>
+        <div className="relative bg-gray-50 rounded-xl h-80 overflow-hidden">
+          <Image
+            src={CATEGORY_IMAGES[product.category] || CATEGORY_IMAGES.sneakers}
+            alt={product.name}
+            fill
+            data-testid="img-product-detail"
+            className="object-cover"
+          />
         </div>
 
         <div>
