@@ -21,7 +21,7 @@ Tenants share the same database, codebase, and deployment. Routing is hostname-b
 | 6 | Platform Management | Auth, bot lifecycle, pairing, feature flags, admin |
 | 7 | Multi-tenant Structure | Tenant routing, onboarding, per-tenant theming |
 | 8 | Agent Shops | Checkout, storefronts, seller profiles, inbound payments |
-| 9 | Agent Testing | Standalone checkout testing suite — create tests, track field events, auto-score, persisted reports |
+| 9 | Agent Testing | Two test types: (1) Basic checkout — single-page card form test. (2) Full-shop — 7-page e-commerce flow (homepage→search→product→cart→checkout→payment→confirmation) with real-time observer mode, 5-dimension scoring, and DB persistence |
 
 Full detail: `project_knowledge/architecture.md`
 
@@ -532,6 +532,14 @@ Standalone module for testing any agent's ability to complete a checkout form wi
 - `GET /[testId]/report` — full scored report
 - `GET /[testId]/detail` — resolve card_test_token from test_id (used by /test-checkout page)
 - `GET /by-card/[cardId]` — lookup tests by card (auth required, owner-scoped)
+
+**Full-Shop Test (`features/agent-testing/full-shop/`):**
+- `shared/` — types, constants, 9-product catalog, 4 scenario templates, 5 scorers (instruction-following 35%, data-accuracy 25%, flow-completion 20%, speed 10%, nav-efficiency 10%), stage-gate deriver, event narrative builder, report generator
+- `server/` — `address-generator.ts` (static pools), `pick-random-scenario.ts` (random template + address + card)
+- `client/` — `shop-test-context.tsx` (dual-mode provider), tracker (batched events), poller (adaptive 500ms→2s), state projector
+- **Pages** (`app/test-shop/[testId]/`): layout, homepage, search, product/[slug], cart, checkout, payment, confirmation
+- **Landing** (`app/agent-test/`): create test, get agent URL + observer URL + instructions
+- **Observer mode**: append `?observe=<ownerToken>` to watch agent in real-time; all inputs read-only, state driven by polled events
 
 **Integration points:**
 - `/test-checkout` page loads test via `?t=at_xxxx`, renders checkout form, uses field tracker hook
