@@ -1,9 +1,7 @@
 import { randomBytes } from "crypto";
 import { storage } from "@/server/storage";
 
-export const RAIL5_TEST_CHECKOUT_PAGE_ID = "cp_dd5f6ff666dcb31fce0f251a";
-export const RAIL5_TEST_CHECKOUT_URL = `https://creditclaw.com/pay/${RAIL5_TEST_CHECKOUT_PAGE_ID}`;
-export const RAIL5_AGENT_TEST_CHECKOUT_URL = `https://creditclaw.com/test-checkout`;
+export { RAIL5_TEST_CHECKOUT_PAGE_ID, RAIL5_TEST_CHECKOUT_URL, RAIL5_AGENT_TEST_CHECKOUT_URL } from "./constants";
 
 export function generateRail5CardId(): string {
   return "r5card_" + randomBytes(8).toString("hex");

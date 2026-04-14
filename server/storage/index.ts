@@ -1,3 +1,4 @@
+import "server-only";
 import { coreMethods } from "./core";
 import { webhookMethods } from "./agent-interaction/webhooks";
 import { notificationMethods } from "./platform-management/notifications";

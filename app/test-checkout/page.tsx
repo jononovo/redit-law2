@@ -72,7 +72,7 @@ export default function TestCheckoutPage() {
           }
 
           if (!checkoutPageId) {
-            const { RAIL5_TEST_CHECKOUT_PAGE_ID } = await import("@/features/payment-rails/rail5");
+            const { RAIL5_TEST_CHECKOUT_PAGE_ID } = await import("@/features/payment-rails/rail5/constants");
             checkoutPageId = RAIL5_TEST_CHECKOUT_PAGE_ID;
           }
 
