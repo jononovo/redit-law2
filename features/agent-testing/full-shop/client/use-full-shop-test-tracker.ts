@@ -107,7 +107,8 @@ export function useFullShopTestTracker({ testId, enabled, onTimeout }: TrackerOp
       clearTimeout(timerRef.current);
       timerRef.current = null;
     }
-    await flush();
+    const timeout = new Promise<void>((resolve) => setTimeout(resolve, 2000));
+    await Promise.race([flush(), timeout]);
   }, [flush]);
 
   return { trackEvent, flush: forceFlush, setCurrentPage, advanceStage };

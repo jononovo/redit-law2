@@ -20,7 +20,7 @@ export default function ProductDetailPage() {
   const observeParam = searchParams.get("observe");
   const qs = observeParam ? `?observe=${observeParam}` : "";
 
-  const { testId, shopState, setShopState, setCart, trackEvent, advanceStage, setCurrentPage, isObserver } = useShopTest();
+  const { testId, shopState, setShopState, setCart, trackEvent, flushEvents, advanceStage, setCurrentPage, isObserver } = useShopTest();
 
   const product = getProductBySlug(slug);
   const [selectedColor, setSelectedColor] = useState(isObserver ? shopState.selectedColor ?? "" : "");
@@ -71,8 +71,9 @@ export default function ProductDetailPage() {
     trackEvent(eventType, "variant_config", "quantity", String(newQty), String(newQty).length);
   }
 
-  function handleAddToCart() {
+  async function handleAddToCart() {
     if (!selectedColor || !selectedSize) return;
+    trackEvent(EVENT_TYPES.QUANTITY_INCREMENT, "variant_config", "quantity", String(quantity), String(quantity).length);
     trackEvent(EVENT_TYPES.ADD_TO_CART_CLICK, "add_to_cart", "product", product!.slug, product!.slug.length);
     advanceStage("add_to_cart");
 
@@ -86,9 +87,10 @@ export default function ProductDetailPage() {
     }]);
 
     setAdded(true);
+    await flushEvents();
     setTimeout(() => {
       window.location.href = `/test-shop/${testId}/cart${qs}`;
-    }, 800);
+    }, 400);
   }
 
   return (

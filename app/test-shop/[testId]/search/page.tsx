@@ -18,7 +18,7 @@ const CATEGORY_IMAGES: Record<string, string> = {
 };
 
 export default function SearchPage() {
-  const { testId, shopState, setShopState, trackEvent, advanceStage, setCurrentPage, isObserver } = useShopTest();
+  const { testId, shopState, setShopState, trackEvent, flushEvents, advanceStage, setCurrentPage, isObserver } = useShopTest();
   const searchParams = useSearchParams();
   const initialQuery = searchParams.get("q") ?? "";
   const observeParam = searchParams.get("observe");
@@ -68,9 +68,12 @@ export default function SearchPage() {
     trackEvent(EVENT_TYPES.SEARCH_SUBMIT, "search", "searchQuery", query, query.length);
   }
 
-  function handleProductClick(product: ShopProduct) {
+  async function handleProductClick(e: React.MouseEvent, product: ShopProduct) {
+    e.preventDefault();
     trackEvent(EVENT_TYPES.PRODUCT_CLICK, "product_select", "product", product.slug, product.slug.length);
     advanceStage("product_select");
+    await flushEvents();
+    window.location.href = `/test-shop/${testId}/product/${product.slug}${qs}`;
   }
 
   return (
@@ -104,7 +107,7 @@ export default function SearchPage() {
               key={product.slug}
               href={`/test-shop/${testId}/product/${product.slug}${qs}`}
               data-testid={`card-product-${product.slug}`}
-              onClick={() => handleProductClick(product)}
+              onClick={(e) => handleProductClick(e, product)}
               className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-md hover:border-gray-300 transition-all group"
             >
               <div className="relative bg-gray-50 h-48">

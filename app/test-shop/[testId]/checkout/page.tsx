@@ -14,7 +14,7 @@ const US_STATES = [
 
 export default function CheckoutPage() {
   const searchParams = useSearchParams();
-  const { testId, shopState, setShopState, trackEvent, advanceStage, setCurrentPage, isObserver } = useShopTest();
+  const { testId, shopState, setShopState, trackEvent, flushEvents, advanceStage, setCurrentPage, isObserver } = useShopTest();
   const observeParam = searchParams.get("observe");
   const qs = observeParam ? `?observe=${observeParam}` : "";
 
@@ -41,9 +41,10 @@ export default function CheckoutPage() {
     trackEvent(EVENT_TYPES.PAYMENT_METHOD_SELECT, "checkout_options", "paymentMethod", method, method.length);
   }
 
-  function handleContinue(e: React.FormEvent) {
+  async function handleContinue(e: React.FormEvent) {
     e.preventDefault();
     trackEvent(EVENT_TYPES.CONTINUE_TO_PAYMENT_CLICK, "checkout_options");
+    await flushEvents();
     window.location.href = `/test-shop/${testId}/payment${qs}`;
   }
 

@@ -162,11 +162,13 @@ function StageRow({
   const label = STAGE_LABELS[stage as keyof typeof STAGE_LABELS];
 
   const labelColor =
-    status === "active"
-      ? "hsl(222, 47%, 11%)"
-      : status === "pending"
-        ? "hsl(222, 10%, 60%)"
-        : "hsl(222, 47%, 20%)";
+    status === "passed"
+      ? "hsl(142, 50%, 30%)"
+      : status === "inaccurate"
+        ? "hsl(10, 70%, 40%)"
+        : status === "active"
+          ? "hsl(222, 47%, 11%)"
+          : "hsl(222, 10%, 55%)";
 
   const hasDetails = gate && gate.eventCount > 0;
   const lastEvent = gate ? getLastTriggeredEvent(gate) : null;
@@ -194,7 +196,7 @@ function StageRow({
           className="text-sm leading-5 flex-1"
           style={{
             color: labelColor,
-            fontWeight: status === "active" ? 600 : 400,
+            fontWeight: status === "active" || status === "passed" || status === "inaccurate" ? 600 : 400,
           }}
         >
           {label}
@@ -259,31 +261,33 @@ function StageRow({
 
           {hasDetails && lastEvent && (
             <div
-              className="mt-2 pt-2 flex items-start gap-1.5 text-xs"
+              className="mt-2 pt-2 text-xs"
               style={{ borderTop: "1px solid hsl(222, 10%, 85%)" }}
               data-testid={`stage-last-event-${stage}`}
             >
-              {status === "passed" ? (
-                <svg className="w-3 h-3 flex-shrink-0 mt-0.5" style={{ color: "hsl(142, 71%, 45%)" }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                </svg>
-              ) : status === "inaccurate" ? (
-                <svg className="w-3 h-3 flex-shrink-0 mt-0.5" style={{ color: "hsl(10, 85%, 55%)" }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M12 9v2m0 4h.01" />
-                </svg>
-              ) : (
-                <span
-                  className="block w-2 h-2 rounded-full mt-1 flex-shrink-0 animate-pulse"
-                  style={{ backgroundColor: "hsl(10, 85%, 55%)" }}
-                />
-              )}
-              <span className="flex-1" style={{ color: "hsl(222, 47%, 35%)" }}>{lastEvent.label}</span>
-              <span
-                className="flex-shrink-0 tabular-nums"
-                style={{ color: "hsl(222, 10%, 55%)", fontFamily: "'JetBrains Mono', monospace" }}
+              <div className="flex items-start gap-1.5">
+                {status === "passed" ? (
+                  <svg className="w-3 h-3 flex-shrink-0 mt-0.5" style={{ color: "hsl(142, 71%, 45%)" }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                  </svg>
+                ) : status === "inaccurate" ? (
+                  <svg className="w-3 h-3 flex-shrink-0 mt-0.5" style={{ color: "hsl(10, 85%, 55%)" }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M12 9v2m0 4h.01" />
+                  </svg>
+                ) : (
+                  <span
+                    className="block w-2 h-2 rounded-full mt-1 flex-shrink-0 animate-pulse"
+                    style={{ backgroundColor: "hsl(10, 85%, 55%)" }}
+                  />
+                )}
+                <span className="flex-1" style={{ color: "hsl(222, 47%, 35%)" }}>{lastEvent.label}</span>
+              </div>
+              <div
+                className="mt-1 tabular-nums"
+                style={{ color: "hsl(222, 10%, 55%)", fontFamily: "'JetBrains Mono', monospace", fontSize: "10px", marginLeft: "18px" }}
               >
                 {formatTime(lastEvent.timestamp)}
-              </span>
+              </div>
             </div>
           )}
         </div>
