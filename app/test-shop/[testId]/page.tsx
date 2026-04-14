@@ -40,7 +40,7 @@ export default function TestShopHomePage() {
           data-testid="text-shop-title"
           className="text-4xl font-bold text-gray-900 mb-3"
         >
-          Welcome to TestShop
+          Welcome to TestTopia
         </h1>
         <p
           data-testid="text-shop-subtitle"

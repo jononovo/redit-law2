@@ -80,7 +80,7 @@ function ShopHeader() {
           data-testid="link-shop-home"
           className="text-lg font-bold text-gray-900 tracking-tight flex-shrink-0"
         >
-          TestShop
+          TestTopia
         </a>
         <ShopSearchBar />
         <a
@@ -100,7 +100,7 @@ function ShopHeader() {
 function LoadingShell() {
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-      <div className="animate-pulse text-gray-400 text-lg">Loading test shop...</div>
+      <div className="animate-pulse text-gray-400 text-lg">Loading store...</div>
     </div>
   );
 }
