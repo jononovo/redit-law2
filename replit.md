@@ -516,7 +516,7 @@ Two test types: (1) **Basic checkout** — single-page card form test with 4-dim
 
 Observer poller (`use-event-poller.ts`) uses `visibilitychange` listener to immediately refresh when tab regains focus, with `pollInFlightRef` guard against concurrent fetches. All shop page navigations flush event buffer before redirecting to prevent event loss.
 
-Observer ActionOverlay system (`components/ui/action-overlay.tsx`) shows full-screen action states at `z-[45]` (above shop content z-40, below stage sidebar z-50). `AwaitingAgentCard` shows when observer has zero agent events, auto-dismisses when first polled event arrives via `agentEventCount` in context. Late-join observers skip overlay if status API shows `event_count > 0`, non-empty `stage_snapshot`, or `stages_completed > 0`.
+Observer ActionOverlay system (`components/ui/action-overlay.tsx`) shows full-screen action states at `z-[45]` (above shop content z-40, below stage sidebar z-50). Overlay card selection is handled by `use-observer-overlay.ts` hook — returns `"awaiting_agent"` (zero events), `"approval_required"` (status is `awaiting_approval`), or `null`. Dismisses when new events arrive after overlay appeared; never reappears once dismissed by event flow. Late-join observers skip overlay if status API shows `event_count > 0`, non-empty `stage_snapshot`, or `stages_completed > 0`.
 
 Full documentation: `project_knowledge/internal_docs/07-platform-management/agent-shopping-test.md`
 

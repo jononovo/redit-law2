@@ -5,7 +5,8 @@ import { useParams, useRouter } from "next/navigation";
 import { ShopTestContextProvider, useShopTest } from "@/features/agent-testing/full-shop/client/shop-test-context";
 import { ObserverStageOverlay } from "@/features/agent-testing/full-shop/client/observer-stage-overlay";
 import { ActionOverlay } from "@/components/ui/action-overlay";
-import { AwaitingAgentCard } from "@/features/agent-testing/full-shop/client/observer-action-cards";
+import { AwaitingAgentCard, ApprovalRequiredCard } from "@/features/agent-testing/full-shop/client/observer-action-cards";
+import { useObserverOverlay } from "@/features/agent-testing/full-shop/client/use-observer-overlay";
 
 function ObserverBanner() {
   const { isObserver, testStatus } = useShopTest();
@@ -135,14 +136,10 @@ function TimeoutScreen() {
 }
 
 function ObserverActionOverlay() {
-  const { isObserver, isLoading, testStatus, agentEventCount, instructionText, testId } = useShopTest();
+  const { instructionText, testId } = useShopTest();
+  const overlayCard = useObserverOverlay();
 
-  if (!isObserver || isLoading) return null;
-
-  const isTerminal = testStatus === "scored" || testStatus === "submitted" || testStatus === "timed_out";
-  if (isTerminal) return null;
-
-  if (agentEventCount > 0) return null;
+  if (!overlayCard) return null;
 
   const testUrl = typeof window !== "undefined"
     ? `${window.location.origin}/test-shop/${testId}`
@@ -150,7 +147,11 @@ function ObserverActionOverlay() {
 
   return (
     <ActionOverlay open>
-      <AwaitingAgentCard instructionText={instructionText} testUrl={testUrl} />
+      {overlayCard === "awaiting_agent" ? (
+        <AwaitingAgentCard instructionText={instructionText} testUrl={testUrl} />
+      ) : (
+        <ApprovalRequiredCard />
+      )}
     </ActionOverlay>
   );
 }
