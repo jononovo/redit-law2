@@ -151,7 +151,7 @@ export function ShopTestContextProvider({ testId, children }: ProviderProps) {
     [testId, isObserver],
   );
 
-  const handleTimeoutRef = useRef<() => void>();
+  const handleTimeoutRef = useRef<() => void>(undefined);
   const handleTimeout = useCallback(() => {
     setTestStatus("timed_out");
     try {
