@@ -180,6 +180,8 @@ export function ShopTestContextProvider({ testId, children }: ProviderProps) {
     [isObserver, tracker],
   );
 
+  const terminalRef = useRef(false);
+
   const handlePageChange = useCallback(
     (page: string) => {
       const path = page ? `/test-shop/${testId}/${page}` : `/test-shop/${testId}`;
@@ -192,6 +194,14 @@ export function ShopTestContextProvider({ testId, children }: ProviderProps) {
       }
     },
     [testId, router, observeToken],
+  );
+
+  const guardedPageChange = useCallback(
+    (page: string) => {
+      if (terminalRef.current && page !== "confirmation") return;
+      handlePageChange(page);
+    },
+    [handlePageChange],
   );
 
   const handleObserverStateChange = useCallback(
@@ -216,7 +226,7 @@ export function ShopTestContextProvider({ testId, children }: ProviderProps) {
 
   const { projectEvents, initializeFromSnapshot } = useStateProjector({
     onStateChange: handleObserverStateChange,
-    onPageChange: handlePageChange,
+    onPageChange: guardedPageChange,
   });
 
   const handlePolledEvents = useCallback(
@@ -241,7 +251,11 @@ export function ShopTestContextProvider({ testId, children }: ProviderProps) {
 
   const handleStatusChange = useCallback((status: string) => {
     setTestStatus(status);
-  }, []);
+    if ((status === "scored" || status === "submitted") && isObserver) {
+      terminalRef.current = true;
+      handlePageChange("confirmation");
+    }
+  }, [isObserver, handlePageChange]);
 
   useEventPoller({
     testId,
@@ -295,7 +309,10 @@ export function ShopTestContextProvider({ testId, children }: ProviderProps) {
             }
           }
 
-          if (statusData.current_page) {
+          if (statusData.status === "scored" || statusData.status === "submitted") {
+            terminalRef.current = true;
+            handlePageChange("confirmation");
+          } else if (statusData.current_page) {
             let page = statusData.current_page;
             if (page === "product" && statusData.stage_snapshot?.product) {
               page = `product/${statusData.stage_snapshot.product}`;
