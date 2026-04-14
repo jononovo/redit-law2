@@ -13,6 +13,7 @@ interface PollerOptions {
   ownerToken: string;
   enabled: boolean;
   onEvents: (events: PolledEvent[]) => void;
+  onStatusChange?: (status: string) => void;
   onTimeout?: () => void;
   initialSeqNum?: number;
 }
@@ -22,6 +23,7 @@ export function useEventPoller({
   ownerToken,
   enabled,
   onEvents,
+  onStatusChange,
   onTimeout,
   initialSeqNum = -1,
 }: PollerOptions) {
@@ -33,6 +35,8 @@ export function useEventPoller({
 
   const onEventsRef = useRef(onEvents);
   onEventsRef.current = onEvents;
+  const onStatusChangeRef = useRef(onStatusChange);
+  onStatusChangeRef.current = onStatusChange;
   const onTimeoutRef = useRef(onTimeout);
   onTimeoutRef.current = onTimeout;
 
@@ -51,6 +55,10 @@ export function useEventPoller({
 
       const data = await res.json();
       const events: PolledEvent[] = data.events ?? [];
+
+      if (data.status) {
+        onStatusChangeRef.current?.(data.status);
+      }
 
       if (events.length > 0) {
         lastSeqNum.current = events[events.length - 1].sequence_num;

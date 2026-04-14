@@ -239,11 +239,16 @@ export function ShopTestContextProvider({ testId, children }: ProviderProps) {
     [projectEvents],
   );
 
+  const handleStatusChange = useCallback((status: string) => {
+    setTestStatus(status);
+  }, []);
+
   useEventPoller({
     testId,
     ownerToken: observeToken ?? "",
     enabled: isObserver && !isLoading,
     onEvents: handlePolledEvents,
+    onStatusChange: handleStatusChange,
     onTimeout: handleTimeout,
   });
 
@@ -291,7 +296,11 @@ export function ShopTestContextProvider({ testId, children }: ProviderProps) {
           }
 
           if (statusData.current_page) {
-            handlePageChange(statusData.current_page);
+            let page = statusData.current_page;
+            if (page === "product" && statusData.stage_snapshot?.product) {
+              page = `product/${statusData.stage_snapshot.product}`;
+            }
+            handlePageChange(page);
           }
         } else {
           const detailRes = await fetch(

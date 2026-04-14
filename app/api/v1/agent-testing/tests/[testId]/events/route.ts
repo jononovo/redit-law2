@@ -53,6 +53,7 @@ export async function GET(
 
   return NextResponse.json({
     test_id: testId,
+    status: session.status,
     events: events.map(e => ({
       event_type: e.eventType,
       field_name: e.fieldName,

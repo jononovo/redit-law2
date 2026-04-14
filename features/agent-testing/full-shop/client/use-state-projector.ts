@@ -82,8 +82,11 @@ export function useStateProjector({ onStateChange, onPageChange }: ProjectorOpti
         }
 
         if (e.stage) {
-          const mappedPage = STAGE_PAGE_MAP[e.stage];
+          let mappedPage = STAGE_PAGE_MAP[e.stage];
           if (mappedPage !== undefined) {
+            if (mappedPage === "product" && state.selectedProductSlug) {
+              mappedPage = `product/${state.selectedProductSlug}`;
+            }
             latestPage = mappedPage;
           }
         }
