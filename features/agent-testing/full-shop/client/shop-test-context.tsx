@@ -72,6 +72,8 @@ interface ShopTestContextValue {
   shopState: ShopState;
   cart: CartItem[];
   scenario: FullShopScenarioConfig | null;
+  instructionText: string | null;
+  agentEventCount: number;
   stageGates: DerivedStageGate[];
   currentStage: string | null;
   trackEvent: (
@@ -116,8 +118,10 @@ export function ShopTestContextProvider({ testId, children }: ProviderProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [testStatus, setTestStatus] = useState("created");
   const [scenario, setScenario] = useState<FullShopScenarioConfig | null>(null);
+  const [instructionText, setInstructionText] = useState<string | null>(null);
   const [stageGates, setStageGates] = useState<DerivedStageGate[]>([]);
   const [currentStage, setCurrentStage] = useState<string | null>(null);
+  const [agentEventCount, setAgentEventCount] = useState(0);
   const initDone = useRef(false);
 
   const allEventsRef = useRef<FullShopFieldEvent[]>([]);
@@ -239,6 +243,7 @@ export function ShopTestContextProvider({ testId, children }: ProviderProps) {
 
       if (typed.length > 0) {
         allEventsRef.current = [...allEventsRef.current, ...typed];
+        setAgentEventCount((c) => c + typed.length);
         if (scenarioRef.current) {
           const gates = deriveStageGatesFromEventLog(allEventsRef.current, scenarioRef.current);
           setStageGates(gates);
@@ -291,8 +296,13 @@ export function ShopTestContextProvider({ testId, children }: ProviderProps) {
           }
           setTestStatus(statusData.status);
 
-          if (statusData.stage_snapshot) {
+          const hasSnapshot = statusData.stage_snapshot && Object.keys(statusData.stage_snapshot).length > 0;
+          if (hasSnapshot) {
             initializeFromSnapshot(statusData.stage_snapshot);
+            setAgentEventCount((c) => Math.max(c, 1));
+          }
+          if (statusData.stages_completed > 0 || statusData.current_page || statusData.event_count > 0) {
+            setAgentEventCount((c) => Math.max(c, 1));
           }
 
           const detailRes = await fetch(
@@ -306,6 +316,9 @@ export function ShopTestContextProvider({ testId, children }: ProviderProps) {
             const detailData = await detailRes.json();
             if (detailData.scenario) {
               setScenario(detailData.scenario);
+            }
+            if (detailData.instruction_text) {
+              setInstructionText(detailData.instruction_text);
             }
           }
 
@@ -357,6 +370,8 @@ export function ShopTestContextProvider({ testId, children }: ProviderProps) {
     shopState,
     cart,
     scenario,
+    instructionText,
+    agentEventCount,
     stageGates,
     currentStage,
     trackEvent,
