@@ -1,0 +1,86 @@
+The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+
+  Creating an optimized production build ...
+
+> Build error occurred
+
+Error: Turbopack build failed with 6 errors:
+./node_modules/pg/lib/connection-parameters.js:3:13
+Module not found: Can't resolve 'dns'
+  1 | 'use strict'
+  2 |
+> 3 | const dns = require('dns')
+    |             ^^^^^^^^^^^^^^
+  4 |
+  5 | const defaults = require('./defaults')
+  6 |
+
+
+
+Import trace:
+  Client Component Browser:
+    ./node_modules/pg/lib/connection-parameters.js [Client Component Browser]
+    ./node_modules/pg/lib/client.js [Client Component Browser]
+    ./node_modules/pg/lib/index.js [Client Component Browser]
+    ./node_modules/pg/esm/index.mjs [Client Component Browser]
+    ./server/db.ts [Client Component Browser]
+    ./features/agent-testing/storage/agent-testing-storage.ts [Client Component Browser]
+    ./server/storage/index.ts [Client Component Browser]
+    ./features/payment-rails/rail5/index.ts [Client Component Browser]
+    ./app/test-checkout/page.tsx [Client Component Browser]
+    ./app/test-checkout/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+./node_modules/pg-connection-string/index.js:82:70
+Module not found: Can't resolve 'fs'
+  80 |
+  81 |   // Only try to load fs if we expect to read from the disk
+> 82 |   const fs = config.sslcert || config.sslkey || config.sslrootcert ? require('fs') : null
+     |                                                                      ^^^^^^^^^^^^^
+  83 |
+  84 |   if (config.sslcert) {
+  85 |     config.ssl.cert = fs.readFileSync(config.sslcert).toString()
+
+
+
+Import trace:
+  Client Component Browser:
+    ./node_modules/pg-connection-string/index.js [Client Component Browser]
+    ./node_modules/pg/lib/connection-parameters.js [Client Component Browser]
+    ./node_modules/pg/lib/client.js [Client Component Browser]
+    ./node_modules/pg/lib/index.js [Client Component Browser]
+    ./node_modules/pg/esm/index.mjs [Client Component Browser]
+    ./server/db.ts [Client Component Browser]
+    ./features/agent-testing/storage/agent-testing-storage.ts [Client Component Browser]
+    ./server/storage/index.ts [Client Component Browser]
+    ./features/payment-rails/rail5/index.ts [Client Component Browser]
+    ./app/test-checkout/page.tsx [Client Component Browser]
+    ./app/test-checkout/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+./node_modules/pgpass/lib/index.js:4:10
+Module not found: Can't resolve 'fs'
+  2 |
+  3 | var path = require('path')
+> 4 |   , fs = require('fs')
+    |          ^^^^^^^^^^^^^
+  5 |   , helper = require('./helper.js')
+  6 | ;
+  7 |
+
+
+
+Import trace:
+  Client Component Browser:
+    ./node_modules/pgpass/lib/index.js [Client Component Browser]
+    ./node_modules/pg/lib/client.js [C
+npm notice
+npm notice New major version of npm available! 10.8.2 -> 11.12.1
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.12.1
+npm notice To update run: npm install -g npm@11.12.1
+npm notice
+
