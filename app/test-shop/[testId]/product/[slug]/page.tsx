@@ -88,9 +88,7 @@ export default function ProductDetailPage() {
 
     setAdded(true);
     await flushEvents();
-    setTimeout(() => {
-      window.location.href = `/test-shop/${testId}/cart${qs}`;
-    }, 400);
+    window.location.href = `/test-shop/${testId}/cart${qs}`;
   }
 
   return (

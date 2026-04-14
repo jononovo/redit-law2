@@ -514,6 +514,8 @@ The platform's inbound commerce engine. Buyers (humans and AI agents) pay into t
 ## Agent Testing Suite (`features/agent-testing/`)
 Two test types: (1) **Basic checkout** — single-page card form test with 4-dimension scoring. (2) **Full-shop** — 7-page e-commerce flow (homepage→search→product→cart→checkout→payment→confirmation) with real-time observer mode and 5-dimension scoring. Both share the same DB tables (`agent_test_sessions`, `agent_test_field_events`) and API routes (`app/api/v1/agent-testing/tests/`).
 
+Observer poller (`use-event-poller.ts`) uses `visibilitychange` listener to immediately refresh when tab regains focus, with `pollInFlightRef` guard against concurrent fetches. All shop page navigations flush event buffer before redirecting to prevent event loss.
+
 Full documentation: `project_knowledge/internal_docs/07-platform-management/agent-shopping-test.md`
 
 ## Testing (`tests/`)

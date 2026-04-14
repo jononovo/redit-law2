@@ -13,7 +13,7 @@ const CATEGORIES = [
 ];
 
 export default function TestShopHomePage() {
-  const { testId, trackEvent, setCurrentPage, isObserver } = useShopTest();
+  const { testId, trackEvent, flushEvents, setCurrentPage, isObserver } = useShopTest();
   const router = useRouter();
   const observeParam = typeof window !== "undefined"
     ? new URLSearchParams(window.location.search).get("observe")
@@ -27,9 +27,10 @@ export default function TestShopHomePage() {
     trackEvent(EVENT_TYPES.SHOP_LANDING, "page_arrival");
   }, [trackEvent, setCurrentPage]);
 
-  function handleSearch(e: React.FormEvent) {
+  async function handleSearch(e: React.FormEvent) {
     e.preventDefault();
     if (!searchQuery.trim() || isObserver) return;
+    await flushEvents();
     router.push(`/test-shop/${testId}/search?q=${encodeURIComponent(searchQuery.trim())}${qs ? "&" + qs.slice(1) : ""}`);
   }
 
