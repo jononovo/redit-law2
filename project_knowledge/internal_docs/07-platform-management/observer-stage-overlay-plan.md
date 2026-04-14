@@ -25,7 +25,8 @@ Add a collapsible left-side panel (observer-only) to the test shop that shows re
 - Panel overlays on the left side of the viewport, positioned `fixed` so it stays in view during scroll
 - Width: ~220px expanded, ~40px collapsed (just a vertical tab)
 - Sits above the shop content with a subtle shadow; shop content does NOT shift/resize
-- Z-index above shop content but below any modals
+- **Z-index: `z-50`** — must be above the sticky ShopHeader (`z-40`) so the overlay isn't hidden behind it when scrolling. No modals or dropdowns exist in the shop pages, so z-50 is safe.
+- Vertically centered (`top: 50%; transform: translateY(-50%)`) — avoids covering the observer banner at the top or the primary CTA buttons (Add to Cart, Pay Now) which are typically centered/right-aligned
 
 ---
 
@@ -70,9 +71,9 @@ The `deriveStageGatesFromEventLog()` function (in `features/agent-testing/full-s
 
 ### How the Observer Gets This Data
 
-**Option A (recommended): Client-side derivation from polled events**
+**Client-side derivation from polled events**
 
-The observer already receives raw events via `useEventPoller` → `useStateProjector`. We can:
+The observer already receives raw events via `useEventPoller` → `useStateProjector`. We extend this:
 1. Accumulate all raw events in a ref inside the context
 2. On each poll batch, re-run `deriveStageGatesFromEventLog(allEvents, scenario)` client-side
 3. Expose the derived `DerivedStageGate[]` array via context
@@ -82,8 +83,27 @@ This is efficient because:
 - The observer already has access to the `scenario` config (fetched on init)
 - No additional API calls needed
 - Updates in real-time as events arrive
+- Scenario is guaranteed to be available before polling starts (poller is gated on `!isLoading`, and `isLoading` only clears after scenario fetch completes in `init()`)
 
 **Why not a separate API call:** Adding a `/stage-gates` endpoint would mean polling two endpoints. Since the derivation function is shared code and the observer already has all the raw data, computing it client-side is simpler and faster.
+
+### Type Mismatch: PolledEvent vs FullShopFieldEvent
+
+**Issue found:** `deriveStageGatesFromEventLog` expects `FullShopFieldEvent[]` where `stage` is `string`, but the poller returns `PolledEvent` where `stage` is `string | null`.
+
+**Impact:** Events with `stage: null` would be silently filtered out by the derivation function's `.filter(e => e.stage === stage)` — they'd never match any stage. This won't crash but could miss data.
+
+**Solution:** When accumulating events in the context, filter out events with `stage === null` before storing them. This is safe because:
+- Events without a stage have no meaning in stage gate derivation
+- The state projector already handles `null` stages separately (it checks `if (e.stage)`)
+- Map the remaining events to `FullShopFieldEvent` type (the shapes are otherwise identical)
+
+```typescript
+const typed: FullShopFieldEvent[] = newEvents
+  .filter((e): e is PolledEvent & { stage: string } => e.stage !== null)
+  .map(e => ({ ...e, stage: e.stage }));
+allEventsRef.current = [...allEventsRef.current, ...typed];
+```
 
 ### Current Stage Detection
 The "active" stage is determined by finding the highest-numbered stage that has events but the next stage has zero events. This uses the `STAGE_NUMBERS` map from constants.
@@ -96,12 +116,36 @@ The "active" stage is determined by finding the highest-numbered stage that has 
 
 **File:** `features/agent-testing/full-shop/client/shop-test-context.tsx`
 
-Changes:
-- Add `allEventsRef = useRef<FullShopFieldEvent[]>([])` to accumulate raw events
-- In the `onEvents` callback path (the one that feeds `projectEvents`), also append to `allEventsRef`
-- Add `stageGates` state: `useState<DerivedStageGate[]>([])`
-- After each batch of events, if `scenario` is available, call `deriveStageGatesFromEventLog(allEventsRef.current, scenario)` and set state
-- Add `currentStage` derived value (highest stage with events)
+**Event interception approach:** Currently the poller's `onEvents` callback goes directly to `projectEvents`. We wrap it:
+
+```typescript
+const allEventsRef = useRef<FullShopFieldEvent[]>([]);
+const [stageGates, setStageGates] = useState<DerivedStageGate[]>([]);
+const scenarioRef = useRef<FullShopScenarioConfig | null>(null);
+// Keep scenarioRef in sync with scenario state
+useEffect(() => { scenarioRef.current = scenario; }, [scenario]);
+
+const handlePolledEvents = useCallback((events: PolledEvent[]) => {
+  // 1. Forward to state projector (existing behavior, unchanged)
+  projectEvents(events);
+
+  // 2. Accumulate for stage gate derivation (new)
+  const typed: FullShopFieldEvent[] = events
+    .filter((e): e is PolledEvent & { stage: string } => e.stage !== null)
+    .map(e => ({ ...e, stage: e.stage }));
+  if (typed.length > 0) {
+    allEventsRef.current = [...allEventsRef.current, ...typed];
+    if (scenarioRef.current) {
+      setStageGates(deriveStageGatesFromEventLog(allEventsRef.current, scenarioRef.current));
+    }
+  }
+}, [projectEvents]);
+```
+
+Then change the poller's `onEvents` from `projectEvents` to `handlePolledEvents`.
+
+Additional changes:
+- Derive `currentStage` from `stageGates` (highest stage with `eventCount > 0` where next stage has `eventCount === 0`)
 - Expose `stageGates` and `currentStage` on the context value
 
 New context fields:
