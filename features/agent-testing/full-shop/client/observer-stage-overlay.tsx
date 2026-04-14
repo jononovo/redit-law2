@@ -100,23 +100,32 @@ function StageIcon({ status }: { status: StageStatus }) {
   switch (status) {
     case "passed":
       return (
-        <div className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: "hsla(145, 60%, 45%, 0.2)" }}>
-          <svg className="w-3 h-3" style={{ color: "hsl(145, 60%, 45%)" }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div
+          className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0"
+          style={{ backgroundColor: "hsla(142, 71%, 45%, 0.15)" }}
+        >
+          <svg className="w-3.5 h-3.5" style={{ color: "hsl(142, 71%, 45%)" }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
           </svg>
         </div>
       );
     case "inaccurate":
       return (
-        <div className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: "hsla(35, 90%, 55%, 0.2)" }}>
-          <svg className="w-3 h-3" style={{ color: "hsl(35, 90%, 55%)" }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div
+          className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0"
+          style={{ backgroundColor: "hsla(10, 85%, 55%, 0.12)" }}
+        >
+          <svg className="w-3.5 h-3.5" style={{ color: "hsl(10, 85%, 55%)" }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M12 9v2m0 4h.01" />
           </svg>
         </div>
       );
     case "active":
       return (
-        <div className="w-5 h-5 flex items-center justify-center flex-shrink-0">
+        <div
+          className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0"
+          style={{ backgroundColor: "hsla(10, 85%, 55%, 0.12)" }}
+        >
           <span
             className="block w-3 h-3 rounded-full animate-pulse"
             style={{ backgroundColor: "hsl(10, 85%, 55%)" }}
@@ -125,8 +134,11 @@ function StageIcon({ status }: { status: StageStatus }) {
       );
     default:
       return (
-        <div className="w-5 h-5 flex items-center justify-center flex-shrink-0">
-          <span className="block w-2.5 h-2.5 rounded-full" style={{ borderWidth: 2, borderColor: "hsl(220, 15%, 40%)" }} />
+        <div className="w-6 h-6 flex items-center justify-center flex-shrink-0">
+          <span
+            className="block w-3 h-3 rounded-full"
+            style={{ border: "2px solid hsl(222, 10%, 75%)" }}
+          />
         </div>
       );
   }
@@ -148,12 +160,13 @@ function StageRow({
   onToggle: () => void;
 }) {
   const label = STAGE_LABELS[stage as keyof typeof STAGE_LABELS];
+
   const labelColor =
     status === "active"
-      ? "text-white font-semibold"
+      ? "hsl(222, 47%, 11%)"
       : status === "pending"
-        ? "text-gray-500"
-        : "text-gray-300";
+        ? "hsl(222, 10%, 60%)"
+        : "hsl(222, 47%, 20%)";
 
   const hasDetails = gate && gate.eventCount > 0;
   const lastEvent = gate ? getLastTriggeredEvent(gate) : null;
@@ -162,22 +175,35 @@ function StageRow({
     <div data-testid={`stage-row-${stage}`}>
       <button
         onClick={onToggle}
-        className="flex items-center gap-3 w-full text-left group relative"
+        className="flex items-center gap-3 w-full text-left group relative py-0.5"
         data-testid={`button-stage-toggle-${stage}`}
       >
         <div className="flex flex-col items-center">
           <StageIcon status={status} />
           {!isLast && (
             <div
-              className="w-px h-5 mt-0.5"
-              style={{ backgroundColor: status === "pending" ? "hsl(220, 15%, 25%)" : "hsl(220, 15%, 40%)" }}
+              className="w-px h-4 mt-0.5"
+              style={{
+                backgroundColor:
+                  status === "pending" ? "hsl(222, 10%, 85%)" : "hsl(222, 10%, 70%)",
+              }}
             />
           )}
         </div>
-        <span className={`text-sm leading-5 flex-1 ${labelColor}`}>{label}</span>
+        <span
+          className="text-sm leading-5 flex-1"
+          style={{
+            color: labelColor,
+            fontWeight: status === "active" ? 600 : 400,
+          }}
+        >
+          {label}
+        </span>
         <svg
-          className={`w-3 h-3 transition-transform duration-200 flex-shrink-0 ${isExpanded ? "rotate-90" : ""}`}
-          style={{ color: status === "pending" ? "hsl(220, 15%, 35%)" : "hsl(220, 15%, 55%)" }}
+          className={`w-3.5 h-3.5 transition-transform duration-200 flex-shrink-0 ${isExpanded ? "rotate-90" : ""}`}
+          style={{
+            color: status === "pending" ? "hsl(222, 10%, 70%)" : "hsl(222, 47%, 40%)",
+          }}
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -187,28 +213,38 @@ function StageRow({
       </button>
 
       {isExpanded && (
-        <div className="ml-8 mt-1 mb-1 pl-3" style={{ borderLeftWidth: 1, borderLeftColor: "hsl(220, 15%, 25%)" }}>
+        <div
+          className="ml-6 mt-1 mb-2 pl-4 rounded-lg py-2 px-3"
+          style={{
+            backgroundColor: "hsl(210, 40%, 96%)",
+            borderLeft: "3px solid hsl(260, 90%, 65%)",
+          }}
+        >
           {STAGE_DESCRIPTIONS[stage] ? (
-            <p className="text-xs italic" style={{ color: "hsl(220, 15%, 55%)" }}>
+            <p className="text-xs italic" style={{ color: "hsl(222, 47%, 40%)" }}>
               {STAGE_DESCRIPTIONS[stage]}
             </p>
           ) : gate ? (
-            <div className="space-y-0.5">
+            <div className="space-y-1">
               {Object.entries(gate.expectedValues).map(([field, expected]) => {
                 const match = gate.fieldMatches[field];
                 const displayLabel = FIELD_DISPLAY_LABELS[field] ?? field;
                 const displayExpected = maskSensitive(field, expected);
                 return (
-                  <div key={field} className="text-xs flex items-start gap-1.5" data-testid={`stage-field-${stage}-${field}`}>
-                    <span style={{ color: "hsl(220, 15%, 45%)" }}>{displayLabel}:</span>
-                    <span style={{ color: "hsl(220, 15%, 60%)" }}>{displayExpected}</span>
+                  <div
+                    key={field}
+                    className="text-xs flex items-start gap-1.5"
+                    data-testid={`stage-field-${stage}-${field}`}
+                  >
+                    <span style={{ color: "hsl(222, 47%, 40%)" }}>{displayLabel}:</span>
+                    <span style={{ color: "hsl(222, 47%, 25%)" }}>{displayExpected}</span>
                     {match && match.actual && (
                       match.match ? (
-                        <svg className="w-3 h-3 flex-shrink-0 mt-0.5" style={{ color: "hsl(145, 60%, 45%)" }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" style={{ color: "hsl(142, 71%, 45%)" }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                         </svg>
                       ) : (
-                        <svg className="w-3 h-3 flex-shrink-0 mt-0.5" style={{ color: "hsl(0, 70%, 55%)" }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" style={{ color: "hsl(10, 85%, 55%)" }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
                         </svg>
                       )
@@ -218,28 +254,36 @@ function StageRow({
               })}
             </div>
           ) : (
-            <p className="text-xs italic" style={{ color: "hsl(220, 15%, 45%)" }}>Not reached yet</p>
+            <p className="text-xs italic" style={{ color: "hsl(222, 10%, 55%)" }}>Not reached yet</p>
           )}
 
           {hasDetails && lastEvent && (
             <div
-              className="mt-1.5 pt-1.5 flex items-start gap-1.5 text-xs"
-              style={{ borderTopWidth: 1, borderTopColor: "hsl(220, 15%, 22%)" }}
+              className="mt-2 pt-2 flex items-start gap-1.5 text-xs"
+              style={{ borderTop: "1px solid hsl(222, 10%, 85%)" }}
               data-testid={`stage-last-event-${stage}`}
             >
               {status === "passed" ? (
-                <svg className="w-3 h-3 flex-shrink-0 mt-0.5" style={{ color: "hsl(145, 60%, 45%)" }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-3 h-3 flex-shrink-0 mt-0.5" style={{ color: "hsl(142, 71%, 45%)" }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                 </svg>
               ) : status === "inaccurate" ? (
-                <svg className="w-3 h-3 flex-shrink-0 mt-0.5" style={{ color: "hsl(35, 90%, 55%)" }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-3 h-3 flex-shrink-0 mt-0.5" style={{ color: "hsl(10, 85%, 55%)" }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M12 9v2m0 4h.01" />
                 </svg>
               ) : (
-                <span className="block w-2 h-2 rounded-full mt-1 flex-shrink-0 animate-pulse" style={{ backgroundColor: "hsl(10, 85%, 55%)" }} />
+                <span
+                  className="block w-2 h-2 rounded-full mt-1 flex-shrink-0 animate-pulse"
+                  style={{ backgroundColor: "hsl(10, 85%, 55%)" }}
+                />
               )}
-              <span className="flex-1" style={{ color: "hsl(220, 15%, 60%)" }}>{lastEvent.label}</span>
-              <span className="flex-shrink-0 tabular-nums" style={{ color: "hsl(220, 15%, 40%)" }}>{formatTime(lastEvent.timestamp)}</span>
+              <span className="flex-1" style={{ color: "hsl(222, 47%, 35%)" }}>{lastEvent.label}</span>
+              <span
+                className="flex-shrink-0 tabular-nums"
+                style={{ color: "hsl(222, 10%, 55%)", fontFamily: "'JetBrains Mono', monospace" }}
+              >
+                {formatTime(lastEvent.timestamp)}
+              </span>
             </div>
           )}
         </div>
@@ -251,7 +295,7 @@ function StageRow({
 export function ObserverStageOverlay() {
   const { isObserver, stageGates, currentStage, testStatus } = useShopTest();
   const [isExpanded, setIsExpanded] = useState(true);
-  const [expandedStage, setExpandedStage] = useState<string | null>(null);
+  const [expandedStage, setExpandedStage] = useState<string | null>(FULL_SHOP_STAGES[0]);
 
   useEffect(() => {
     if (currentStage) setExpandedStage(currentStage);
@@ -262,7 +306,7 @@ export function ObserverStageOverlay() {
   const isComplete = testStatus === "scored" || testStatus === "submitted";
 
   const toggleStage = (stage: string) => {
-    setExpandedStage((prev) => (prev === stage ? null : stage));
+    setExpandedStage(stage);
   };
 
   if (!isExpanded) {
@@ -270,12 +314,15 @@ export function ObserverStageOverlay() {
       <button
         onClick={() => setIsExpanded(true)}
         data-testid="button-expand-overlay"
-        className="fixed left-0 top-1/2 -translate-y-1/2 z-50 rounded-r-lg px-1.5 py-4 transition-colors"
+        className="fixed left-0 top-1/2 -translate-y-1/2 z-50 px-2 py-5 transition-all"
         style={{
-          backgroundColor: "hsl(220, 20%, 14%)",
-          borderWidth: 1,
+          backgroundColor: "rgba(255, 255, 255, 0.85)",
+          backdropFilter: "blur(12px)",
+          WebkitBackdropFilter: "blur(12px)",
+          borderRadius: "0 16px 16px 0",
+          boxShadow: "4px 4px 20px hsla(260, 90%, 65%, 0.15), 0 2px 8px hsla(10, 85%, 55%, 0.1)",
+          border: "1px solid hsla(222, 10%, 85%, 0.6)",
           borderLeftWidth: 0,
-          borderColor: "hsl(220, 15%, 22%)",
         }}
       >
         <svg className="w-4 h-4" style={{ color: "hsl(260, 90%, 65%)" }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -288,36 +335,44 @@ export function ObserverStageOverlay() {
   return (
     <div
       data-testid="observer-stage-overlay"
-      className="fixed left-0 top-1/2 -translate-y-1/2 z-50 shadow-2xl rounded-r-xl overflow-hidden transition-all duration-300"
+      className="fixed left-0 top-1/2 -translate-y-1/2 z-50 overflow-hidden transition-all duration-300"
       style={{
-        width: 240,
-        backgroundColor: "hsl(220, 20%, 12%)",
-        borderWidth: 1,
+        width: 260,
+        backgroundColor: "rgba(255, 255, 255, 0.88)",
+        backdropFilter: "blur(16px)",
+        WebkitBackdropFilter: "blur(16px)",
+        borderRadius: "0 16px 16px 0",
+        boxShadow: "6px 6px 30px hsla(260, 90%, 65%, 0.12), 0 4px 12px hsla(10, 85%, 55%, 0.08)",
+        border: "1px solid hsla(222, 10%, 85%, 0.5)",
         borderLeftWidth: 0,
-        borderColor: "hsl(220, 15%, 22%)",
       }}
     >
       <div
-        className="flex items-center justify-between px-3 py-2.5"
+        className="flex items-center justify-between px-4 py-3"
         style={{
           background: "linear-gradient(135deg, hsl(10, 85%, 55%), hsl(260, 90%, 65%))",
+          borderRadius: "0 16px 0 0",
         }}
       >
-        <span className="text-white text-xs font-semibold tracking-wide uppercase">
+        <span
+          className="text-white text-xs font-bold tracking-wider uppercase"
+          style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}
+        >
           Agent Progress
         </span>
         <button
           onClick={() => setIsExpanded(false)}
           data-testid="button-collapse-overlay"
-          className="text-white/80 hover:text-white transition-colors"
+          className="text-white/80 hover:text-white transition-colors w-7 h-7 flex items-center justify-center rounded-full"
+          style={{ backgroundColor: "rgba(255,255,255,0.15)" }}
         >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
         </button>
       </div>
 
-      <div className="px-3 py-3">
+      <div className="px-4 py-3">
         {FULL_SHOP_STAGES.map((stage, idx) => {
           const gate = stageGates.find((g) => g.stage === stage);
           return (
@@ -336,11 +391,19 @@ export function ObserverStageOverlay() {
 
       {isComplete && (
         <div
-          className="px-3 py-2 text-center"
-          style={{ borderTopWidth: 1, borderTopColor: "hsl(220, 15%, 22%)" }}
+          className="px-4 py-2.5 text-center"
+          style={{
+            borderTop: "1px solid hsl(222, 10%, 90%)",
+            background: "hsla(142, 71%, 45%, 0.06)",
+          }}
           data-testid="overlay-test-complete"
         >
-          <span className="text-xs font-medium" style={{ color: "hsl(145, 60%, 45%)" }}>Test Complete</span>
+          <span
+            className="text-xs font-semibold"
+            style={{ color: "hsl(142, 71%, 45%)" }}
+          >
+            Test Complete
+          </span>
         </div>
       )}
     </div>
