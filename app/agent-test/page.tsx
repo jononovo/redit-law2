@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Nav } from "@/components/nav";
 import { Footer } from "@/components/footer";
 import { Copy, Check, ExternalLink, ShoppingCart, Target, Zap, Route, Clock, Brain, RefreshCw } from "lucide-react";
