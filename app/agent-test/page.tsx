@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Nav } from "@/components/nav";
 import { Footer } from "@/components/footer";
-import { Copy, Check, ExternalLink, Loader2, ShoppingCart, Target, Zap, Route, Clock, Brain } from "lucide-react";
+import { Copy, Check, ExternalLink, ShoppingCart, Target, Zap, Route, Clock, Brain, RefreshCw } from "lucide-react";
 
 interface TestResult {
   test_id: string;
@@ -12,13 +12,26 @@ interface TestResult {
   instructions: string;
 }
 
-function CopyButton({ text, label }: { text: string; label?: string }) {
+function CopyButton({ text, label, large }: { text: string; label?: string; large?: boolean }) {
   const [copied, setCopied] = useState(false);
 
   function handleCopy() {
     navigator.clipboard.writeText(text);
     setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    setTimeout(() => setCopied(false), 2500);
+  }
+
+  if (large) {
+    return (
+      <button
+        onClick={handleCopy}
+        data-testid={`button-copy-${label ?? "text"}`}
+        className="inline-flex items-center justify-center gap-3 w-full px-8 py-4 bg-primary text-white rounded-full font-bold text-lg hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20"
+      >
+        {copied ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
+        {copied ? "Copied to Clipboard!" : "Copy Message to Clipboard"}
+      </button>
+    );
   }
 
   return (
@@ -33,6 +46,29 @@ function CopyButton({ text, label }: { text: string; label?: string }) {
   );
 }
 
+function PreparingState({ progress }: { progress: number }) {
+  return (
+    <div className="animate-fade-in-up" data-testid="status-preparing">
+      <div className="max-w-md mx-auto">
+        <div className="flex items-center justify-center gap-3 mb-6">
+          <ShoppingCart className="w-6 h-6 text-primary animate-pulse" />
+          <span className="text-lg font-semibold text-neutral-700">Preparing your test...</span>
+        </div>
+        <div className="w-full h-2 bg-neutral-200 rounded-full overflow-hidden">
+          <div
+            className="h-full bg-gradient-to-r from-primary to-orange-400 rounded-full transition-all duration-300 ease-out"
+            style={{ width: `${progress}%` }}
+            data-testid="progress-bar"
+          />
+        </div>
+        <p className="text-sm text-neutral-400 mt-3">
+          {progress < 40 ? "Setting up scenario..." : progress < 75 ? "Generating test data..." : "Almost ready..."}
+        </p>
+      </div>
+    </div>
+  );
+}
+
 const SCORING_DIMENSIONS = [
   { icon: Target, label: "Instruction Following", weight: "35%", description: "Correct product, color, size, and quantity" },
   { icon: Brain, label: "Data Accuracy", weight: "25%", description: "Address and card details entered correctly" },
@@ -42,27 +78,103 @@ const SCORING_DIMENSIONS = [
 ];
 
 export default function AgentTestPage() {
-  const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<TestResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [progress, setProgress] = useState(0);
+  const [preparing, setPreparing] = useState(true);
+  const hasStarted = useRef(false);
 
-  async function handleGenerate() {
-    setLoading(true);
+  useEffect(() => {
+    if (hasStarted.current) return;
+    hasStarted.current = true;
+
+    let progressTimer: ReturnType<typeof setInterval>;
+    let apiDone = false;
+    let apiResult: TestResult | null = null;
+    let apiError: string | null = null;
+    let currentProgress = 0;
+
+    progressTimer = setInterval(() => {
+      if (apiDone && currentProgress >= 100) {
+        clearInterval(progressTimer);
+        setPreparing(false);
+        if (apiResult) setResult(apiResult);
+        if (apiError) setError(apiError);
+        return;
+      }
+
+      if (!apiDone) {
+        currentProgress = Math.min(currentProgress + 3, 70);
+      } else {
+        currentProgress = Math.min(currentProgress + 8, 100);
+      }
+
+      setProgress(currentProgress);
+    }, 80);
+
+    (async () => {
+      try {
+        const res = await fetch("/api/v1/agent-testing/tests", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ test_type: "full_shop" }),
+        });
+        if (!res.ok) throw new Error("Failed to prepare test");
+        apiResult = await res.json();
+      } catch (err: any) {
+        apiError = err.message ?? "Something went wrong";
+      } finally {
+        apiDone = true;
+      }
+    })();
+
+    return () => clearInterval(progressTimer);
+  }, []);
+
+  function handleNewTest() {
+    setResult(null);
     setError(null);
-    try {
-      const res = await fetch("/api/v1/agent-testing/tests", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ test_type: "full_shop" }),
-      });
-      if (!res.ok) throw new Error("Failed to generate test");
-      const data = await res.json();
-      setResult(data);
-    } catch (err: any) {
-      setError(err.message ?? "Something went wrong");
-    } finally {
-      setLoading(false);
-    }
+    setProgress(0);
+    setPreparing(true);
+    hasStarted.current = false;
+
+    let progressTimer: ReturnType<typeof setInterval>;
+    let apiDone = false;
+    let apiResult: TestResult | null = null;
+    let apiError: string | null = null;
+    let currentProgress = 0;
+
+    progressTimer = setInterval(() => {
+      if (apiDone && currentProgress >= 100) {
+        clearInterval(progressTimer);
+        setPreparing(false);
+        if (apiResult) setResult(apiResult);
+        if (apiError) setError(apiError);
+        return;
+      }
+      if (!apiDone) {
+        currentProgress = Math.min(currentProgress + 3, 70);
+      } else {
+        currentProgress = Math.min(currentProgress + 8, 100);
+      }
+      setProgress(currentProgress);
+    }, 80);
+
+    (async () => {
+      try {
+        const res = await fetch("/api/v1/agent-testing/tests", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ test_type: "full_shop" }),
+        });
+        if (!res.ok) throw new Error("Failed to prepare test");
+        apiResult = await res.json();
+      } catch (err: any) {
+        apiError = err.message ?? "Something went wrong";
+      } finally {
+        apiDone = true;
+      }
+    })();
   }
 
   return (
@@ -89,10 +201,7 @@ export default function AgentTestPage() {
                 style={{ animationDelay: "0.1s" }}
                 data-testid="heading-agent-test"
               >
-                Can your agent{" "}
-                <span className="bg-gradient-to-r from-primary to-orange-400 bg-clip-text text-transparent">
-                  shop?
-                </span>
+                Agent Shopping Test
               </h1>
 
               <p
@@ -100,42 +209,33 @@ export default function AgentTestPage() {
                 style={{ animationDelay: "0.2s" }}
                 data-testid="text-agent-test-subtitle"
               >
-                Generate a test, copy the message below, and send it to your AI agent.
-                Watch it navigate a real shopping flow and get scored on accuracy, speed, and decision-making.
+                But can your agent{" "}
+                <span className="font-bold text-neutral-900">shop?</span>{" "}
+                Find out and get a score on speed, accuracy, and efficiency.
               </p>
 
-              {!result ? (
-                <div className="animate-fade-in-up" style={{ animationDelay: "0.3s" }}>
+              {preparing ? (
+                <PreparingState progress={progress} />
+              ) : error ? (
+                <div className="animate-fade-in-up">
+                  <p data-testid="text-error" className="text-red-600 font-medium mb-4">{error}</p>
                   <button
-                    onClick={handleGenerate}
-                    disabled={loading}
-                    data-testid="button-generate-test"
-                    className="inline-flex items-center gap-3 px-8 py-4 bg-primary text-white rounded-full font-bold text-lg hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20 disabled:opacity-50"
+                    onClick={handleNewTest}
+                    data-testid="button-retry"
+                    className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-white rounded-full font-semibold hover:bg-primary/90 transition-colors"
                   >
-                    {loading ? (
-                      <>
-                        <Loader2 className="w-5 h-5 animate-spin" />
-                        Generating...
-                      </>
-                    ) : (
-                      <>
-                        <ShoppingCart className="w-5 h-5" />
-                        Generate Test
-                      </>
-                    )}
+                    <RefreshCw className="w-4 h-4" />
+                    Try Again
                   </button>
-                  {error && (
-                    <p data-testid="text-error" className="mt-4 text-red-600 font-medium">{error}</p>
-                  )}
                 </div>
-              ) : (
-                <div className="animate-fade-in-up text-left" style={{ animationDelay: "0.1s" }}>
+              ) : result ? (
+                <div className="animate-fade-in-up text-left">
                   <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm p-6 md:p-8">
                     <div className="flex items-center justify-between mb-4">
-                      <h2 className="text-lg font-bold text-neutral-900">
+                      <h2 className="text-lg font-bold text-neutral-900" data-testid="text-send-heading">
                         Send this to your agent
                       </h2>
-                      <CopyButton text={result.instructions} label="instructions" />
+                      <CopyButton text={result.instructions} label="instructions-small" />
                     </div>
 
                     <div
@@ -145,28 +245,33 @@ export default function AgentTestPage() {
                       {result.instructions}
                     </div>
 
-                    <div className="mt-6 flex flex-col sm:flex-row gap-3">
+                    <div className="mt-6">
+                      <CopyButton text={result.instructions} label="instructions" large />
+                    </div>
+
+                    <div className="mt-4 flex flex-col sm:flex-row gap-3">
                       <a
                         href={result.observe_url}
                         target="_blank"
                         rel="noopener noreferrer"
                         data-testid="link-watch-agent"
-                        className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-primary text-white rounded-full font-semibold hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20"
+                        className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-neutral-100 text-neutral-700 rounded-full font-semibold hover:bg-neutral-200 transition-colors flex-1"
                       >
                         <ExternalLink className="w-4 h-4" />
                         Watch Your Agent Live
                       </a>
                       <button
-                        onClick={() => { setResult(null); handleGenerate(); }}
+                        onClick={handleNewTest}
                         data-testid="button-new-test"
                         className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-neutral-100 text-neutral-700 rounded-full font-semibold hover:bg-neutral-200 transition-colors"
                       >
-                        Generate Another
+                        <RefreshCw className="w-4 h-4" />
+                        New Test
                       </button>
                     </div>
                   </div>
                 </div>
-              )}
+              ) : null}
             </div>
           </div>
         </section>
