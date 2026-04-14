@@ -283,4 +283,5 @@ export interface IStorage {
   getAgentTestByOwnerToken(ownerToken: string): Promise<AgentTestSession | null>;
   getEventsSince(testId: string, sinceSeqNum: number): Promise<AgentTestFieldEvent[]>;
   getEventLogByTestId(testId: string): Promise<AgentTestFieldEvent[]>;
+  deleteAgentTest(testId: string): Promise<void>;
 }
