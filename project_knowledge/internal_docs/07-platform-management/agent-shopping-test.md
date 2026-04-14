@@ -42,7 +42,7 @@ Single-page card form. Agent fills 6 fields (cardholder name, card number, expir
 
 Simulated 7-page e-commerce flow. Owner creates a test, hands the agent a URL + instructions, watches via observer mode.
 
-### `/agent-test` Landing Page
+### `/agent-shopping-test` Landing Page
 
 - Auto-generates a `full_shop` test on page load (no button click)
 - 3-second progress bar while test is created
@@ -170,7 +170,7 @@ Stage gates derived **client-side** — no extra API calls. We chose this over a
 | `features/agent-testing/full-shop/client/use-state-projector.ts` | Projects events → `ShopState` |
 | `app/test-shop/[testId]/layout.tsx` | Shop layout: header, search bar, observer banner + overlay |
 | `app/test-shop/[testId]/` | 7 shop pages + confirmation |
-| `app/agent-test/` | Landing page — auto-generates test, shows instructions + observe link |
+| `app/agent-shopping-test/` | Landing page — auto-generates test, shows instructions + observe link |
 | `features/agent-testing/storage/agent-testing-storage.ts` | Drizzle CRUD for both test types |
 
 ## API Endpoints
