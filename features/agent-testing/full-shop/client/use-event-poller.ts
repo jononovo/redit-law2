@@ -13,6 +13,7 @@ interface PollerOptions {
   ownerToken: string;
   enabled: boolean;
   onEvents: (events: PolledEvent[]) => void;
+  onTimeout?: () => void;
   initialSeqNum?: number;
 }
 
@@ -21,6 +22,7 @@ export function useEventPoller({
   ownerToken,
   enabled,
   onEvents,
+  onTimeout,
   initialSeqNum = -1,
 }: PollerOptions) {
   const lastSeqNum = useRef(initialSeqNum);
@@ -31,6 +33,8 @@ export function useEventPoller({
 
   const onEventsRef = useRef(onEvents);
   onEventsRef.current = onEvents;
+  const onTimeoutRef = useRef(onTimeout);
+  onTimeoutRef.current = onTimeout;
 
   const poll = useCallback(async () => {
     if (!activeRef.current) return;
@@ -38,6 +42,11 @@ export function useEventPoller({
     try {
       const url = `/api/v1/agent-testing/tests/${testId}/events?since=${lastSeqNum.current}&observe=${ownerToken}`;
       const res = await fetch(url);
+      if (res.status === 410) {
+        activeRef.current = false;
+        onTimeoutRef.current?.();
+        return;
+      }
       if (!res.ok) return;
 
       const data = await res.json();

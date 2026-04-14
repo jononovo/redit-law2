@@ -11,24 +11,29 @@ import type { FullShopFieldEvent } from "../shared/types";
 interface TrackerOptions {
   testId: string;
   enabled: boolean;
+  onTimeout?: () => void;
 }
 
-export function useFullShopTestTracker({ testId, enabled }: TrackerOptions) {
+export function useFullShopTestTracker({ testId, enabled, onTimeout }: TrackerOptions) {
   const buffer = useRef<FullShopFieldEvent[]>([]);
   const seqCounter = useRef(0);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const currentStageRef = useRef<string>("page_arrival");
   const currentPageRef = useRef<string>("");
   const stagesCompletedRef = useRef(0);
+  const onTimeoutRef = useRef(onTimeout);
+  onTimeoutRef.current = onTimeout;
+  const stoppedRef = useRef(false);
 
   const flush = useCallback(async () => {
+    if (stoppedRef.current) return;
     if (buffer.current.length === 0) return;
     const batch = buffer.current.splice(0);
 
     const stageNum = STAGE_NUMBERS[currentStageRef.current as FullShopStage] ?? 0;
 
     try {
-      await fetch(`/api/v1/agent-testing/tests/${testId}/events`, {
+      const res = await fetch(`/api/v1/agent-testing/tests/${testId}/events`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -38,6 +43,12 @@ export function useFullShopTestTracker({ testId, enabled }: TrackerOptions) {
           current_page: currentPageRef.current,
         }),
       });
+      if (res.status === 410) {
+        stoppedRef.current = true;
+        buffer.current = [];
+        onTimeoutRef.current?.();
+        return;
+      }
     } catch (err) {
       console.error("[tracker] flush error:", err);
       buffer.current.unshift(...batch);

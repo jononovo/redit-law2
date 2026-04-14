@@ -149,6 +149,7 @@ Stage gates derived **client-side** — no extra API calls. We chose this over a
 - **Z-index layering:** Overlay = `z-50`, shop header = `z-40`. Overlay must exceed header or it disappears behind it on scroll. No modals exist in the shop, so `z-50` is safe.
 - **Mid-test join:** First poll batch returns full event history → gates computed immediately. No special catch-up logic needed.
 - **Agent state persistence:** `shopState` + `cart` are saved to `sessionStorage` (keyed by `testId`) on every change. This lets shop pages survive hard navigations (`window.location.href`, `<a href>`) and browser refreshes. Observers don't persist — they reconstruct from polled events. Multiple concurrent tests use separate keys (`shop-test-{testId}`) so they never collide.
+- **Session timeouts:** Full-shop tests enforce two guardrails: 3-minute inactivity timeout (no events received) and 5-minute absolute cap (from creation). Both result in hard-deletion of the session + all events — no traces. Checked on every `/events` GET/POST, `/status` GET, and `/detail` GET. Terminal statuses (`submitted`, `scored`) are exempt. Client detects timeout via HTTP 410 or `{ status: "timed_out" }` and shows a "Session Timed Out" screen with "Return to Testing Home" link. `sessionStorage` is cleared on timeout. The `lastActivityAt` column on `agent_test_sessions` tracks the last event batch timestamp.
 
 ---
 

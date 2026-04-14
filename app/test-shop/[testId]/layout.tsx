@@ -102,10 +102,38 @@ function LoadingShell() {
   );
 }
 
+function TimeoutScreen() {
+  return (
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center" data-testid="timeout-screen">
+      <div className="text-center max-w-md px-6">
+        <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-red-100 flex items-center justify-center">
+          <svg className="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+        <h1 className="text-2xl font-bold text-gray-900 mb-2" data-testid="text-timeout-heading">
+          Session Timed Out
+        </h1>
+        <p className="text-gray-500 mb-8" data-testid="text-timeout-message">
+          This test session has expired due to inactivity. No data has been saved.
+        </p>
+        <a
+          href="/agent-shopping-test"
+          data-testid="link-return-home"
+          className="inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors"
+        >
+          Return to Testing Home
+        </a>
+      </div>
+    </div>
+  );
+}
+
 function ShopShell({ children }: { children: ReactNode }) {
-  const { isLoading } = useShopTest();
+  const { isLoading, testStatus } = useShopTest();
 
   if (isLoading) return <LoadingShell />;
+  if (testStatus === "timed_out") return <TimeoutScreen />;
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">

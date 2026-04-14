@@ -151,9 +151,19 @@ export function ShopTestContextProvider({ testId, children }: ProviderProps) {
     [testId, isObserver],
   );
 
+  const handleTimeoutRef = useRef<() => void>();
+  const handleTimeout = useCallback(() => {
+    setTestStatus("timed_out");
+    try {
+      sessionStorage.removeItem(`${STORAGE_KEY_PREFIX}${testId}`);
+    } catch {}
+  }, [testId]);
+  handleTimeoutRef.current = handleTimeout;
+
   const tracker = useFullShopTestTracker({
     testId,
     enabled: !isObserver,
+    onTimeout: handleTimeout,
   });
 
   const trackEvent = useCallback(
@@ -234,6 +244,7 @@ export function ShopTestContextProvider({ testId, children }: ProviderProps) {
     ownerToken: observeToken ?? "",
     enabled: isObserver && !isLoading,
     onEvents: handlePolledEvents,
+    onTimeout: handleTimeout,
   });
 
   useEffect(() => {
@@ -246,11 +257,19 @@ export function ShopTestContextProvider({ testId, children }: ProviderProps) {
           const statusRes = await fetch(
             `/api/v1/agent-testing/tests/${testId}/status?observe=${observeToken}`,
           );
+          if (statusRes.status === 410) {
+            handleTimeoutRef.current?.();
+            return;
+          }
           if (!statusRes.ok) {
             setIsLoading(false);
             return;
           }
           const statusData = await statusRes.json();
+          if (statusData.status === "timed_out") {
+            handleTimeoutRef.current?.();
+            return;
+          }
           setTestStatus(statusData.status);
 
           if (statusData.stage_snapshot) {
@@ -260,6 +279,10 @@ export function ShopTestContextProvider({ testId, children }: ProviderProps) {
           const detailRes = await fetch(
             `/api/v1/agent-testing/tests/${testId}/detail?observe=${observeToken}`,
           );
+          if (detailRes.status === 410) {
+            handleTimeoutRef.current?.();
+            return;
+          }
           if (detailRes.ok) {
             const detailData = await detailRes.json();
             if (detailData.scenario) {
@@ -274,8 +297,16 @@ export function ShopTestContextProvider({ testId, children }: ProviderProps) {
           const detailRes = await fetch(
             `/api/v1/agent-testing/tests/${testId}/detail`,
           );
+          if (detailRes.status === 410) {
+            handleTimeoutRef.current?.();
+            return;
+          }
           if (detailRes.ok) {
             const detailData = await detailRes.json();
+            if (detailData.status === "timed_out") {
+              handleTimeoutRef.current?.();
+              return;
+            }
             setTestStatus(detailData.status);
             if (detailData.scenario) {
               setScenario(detailData.scenario);
