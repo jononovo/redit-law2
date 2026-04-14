@@ -1,6 +1,33 @@
-# Agent Shopping Test — Full-Shop Flow
+# Agent Testing Suite (`features/agent-testing/`)
 
-## Purpose
+Two test types for evaluating AI agent capabilities, sharing the same DB tables and API routes.
+
+---
+
+## Basic Checkout Test
+
+Single-page card form test. Agent fills 6 fields (cardholder name, card number, expiry month/year, CVV, billing ZIP) and submits.
+
+**Architecture:**
+- `constants.ts` — field names, limits, timing constants
+- `types.ts` — SubmittedValues, FieldEventInput, TestReport, ApprovalInfo types
+- `test-card-generator.ts` — generates realistic test card data (Visa BIN, names, zip codes)
+- `storage/agent-testing-storage.ts` — Drizzle-based CRUD for `agent_test_sessions` + `agent_test_field_events` tables
+- `scoring/` — four scorers (accuracy 40%, completion 30%, speed 15%, efficiency 15%) + `report-generator.ts`
+- `hooks/use-checkout-field-tracker.ts` — client-side hook that captures DOM events (focus/blur/input/select/submit_click) and batches them to the events API
+- `components/agent-test-report-card.tsx` — rich report visualization with score ring, per-field breakdown, hesitation gaps
+- `components/agent-test-progress-indicator.tsx` — real-time progress bar during test execution
+
+**Integration points:**
+- `/test-checkout` page loads test via `?t=at_xxxx`, renders checkout form, uses field tracker hook
+- `testing-handler.tsx` dual-submits to legacy `/pay/testing` + new `/agent-testing/submit`
+- `rail5-fulfillment.ts` marks test as approved when approval flow completes
+- `test-verification.tsx` (Rail5 wizard step 8) creates agent test, polls status, shows report card
+
+---
+
+## Full-Shop Test
+
 A simulated 7-page e-commerce experience that scores how well an AI agent can navigate a realistic shopping flow. The owner creates a test, hands the agent a URL + instructions, and watches in real-time via observer mode.
 
 ## Test Flow
@@ -68,17 +95,21 @@ app/test-shop/[testId]/           # Shop pages (layout, home, search, product, c
 app/agent-test/                   # Landing page — create test + get URLs
 ```
 
-## API Endpoints
+## API Endpoints (Shared)
+All routes live under `app/api/v1/agent-testing/tests/`.
+
 | Method | Path | Purpose |
 |---|---|---|
-| POST | `/api/v1/agent-testing/tests` | Create test (`test_type: "full_shop"`) |
-| POST | `/api/v1/agent-testing/tests/[id]/events` | Ingest batched field events |
-| GET | `/api/v1/agent-testing/tests/[id]/events?since=N&observe=token` | Observer polling |
-| GET | `/api/v1/agent-testing/tests/[id]/status?observe=token` | Lightweight status + stage snapshot |
-| POST | `/api/v1/agent-testing/tests/[id]/submit` | Mark test submitted |
-| POST | `/api/v1/agent-testing/tests/[id]/report` | Server re-derives score from raw events |
-| GET | `/api/v1/agent-testing/tests/[id]/report` | Fetch scored report |
-| GET | `/api/v1/agent-testing/tests/[id]/detail` | Test metadata |
+| POST | `/` | Create test (pass `test_type: "full_shop"` or omit for basic checkout) |
+| GET | `/[id]` | Poll status (fields_filled, total_fields, status, score, grade) |
+| POST | `/[id]/events` | Ingest batched field events (with `stage` + `value_snapshot` for full-shop) |
+| GET | `/[id]/events?since=N&observe=token` | Observer polling (full-shop) |
+| GET | `/[id]/status?observe=token` | Lightweight status + stage snapshot (full-shop) |
+| POST | `/[id]/submit` | Submit values + auto-score (basic) or mark submitted (full-shop) |
+| POST | `/[id]/report` | Server re-derives score from raw events (full-shop) |
+| GET | `/[id]/report` | Fetch scored report |
+| GET | `/[id]/detail` | Test metadata (card_test_token for basic, scenario for full-shop with observer token) |
+| GET | `/by-card/[cardId]` | Lookup tests by card (auth required, owner-scoped) |
 
 ## DB Schema
 Two tables (shared with basic checkout tests):

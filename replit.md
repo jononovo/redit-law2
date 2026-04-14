@@ -511,41 +511,10 @@ The platform's inbound commerce engine. Buyers (humans and AI agents) pay into t
 - **Perplexity API:** Site audit and evidence gathering for ASX Score Scanner (via sonar-deep-research model).
 - **react-markdown + remark-gfm + @tailwindcss/typography:** Markdown rendering for documentation pages.
 
-## Agent Checkout Testing Suite (`features/agent-testing/`)
-Standalone module for testing any agent's ability to complete a checkout form with field-level telemetry, multi-dimensional scoring, and persisted reports.
+## Agent Testing Suite (`features/agent-testing/`)
+Two test types: (1) **Basic checkout** — single-page card form test with 4-dimension scoring. (2) **Full-shop** — 7-page e-commerce flow (homepage→search→product→cart→checkout→payment→confirmation) with real-time observer mode and 5-dimension scoring. Both share the same DB tables (`agent_test_sessions`, `agent_test_field_events`) and API routes (`app/api/v1/agent-testing/tests/`).
 
-**Architecture:**
-- `constants.ts` — field names, limits, timing constants
-- `types.ts` — SubmittedValues, FieldEventInput, TestReport, ApprovalInfo types
-- `test-card-generator.ts` — generates realistic test card data (Visa BIN, names, zip codes)
-- `storage/agent-testing-storage.ts` — Drizzle-based CRUD for `agent_test_sessions` + `agent_test_field_events` tables
-- `scoring/` — four scorers (accuracy 40%, completion 30%, speed 15%, efficiency 15%) + `report-generator.ts`
-- `hooks/use-checkout-field-tracker.ts` — client-side hook that captures DOM events (focus/blur/input/select/submit_click) and batches them to the events API
-- `components/agent-test-report-card.tsx` — rich report visualization with score ring, per-field breakdown, hesitation gaps
-- `components/agent-test-progress-indicator.tsx` — real-time progress bar during test execution
-
-**API routes** (`app/api/v1/agent-testing/tests/`):
-- `POST /` — create test (generates card, returns test_id + URL + expected values)
-- `GET /[testId]` — poll status (fields_filled, total_fields, status, score, grade)
-- `POST /[testId]/events` — ingest field events (batched, with expiry + event limit enforcement)
-- `POST /[testId]/submit` — submit values + auto-score (returns score/grade)
-- `GET /[testId]/report` — full scored report
-- `GET /[testId]/detail` — resolve card_test_token from test_id (used by /test-checkout page)
-- `GET /by-card/[cardId]` — lookup tests by card (auth required, owner-scoped)
-
-**Full-Shop Test (`features/agent-testing/full-shop/`):**
-- `shared/` — types, constants, 9-product catalog, 4 scenario templates, 5 scorers (instruction-following 35%, data-accuracy 25%, flow-completion 20%, speed 10%, nav-efficiency 10%), stage-gate deriver, event narrative builder, report generator
-- `server/` — `address-generator.ts` (static pools), `pick-random-scenario.ts` (random template + address + card)
-- `client/` — `shop-test-context.tsx` (dual-mode provider), tracker (batched events), poller (adaptive 500ms→2s), state projector
-- **Pages** (`app/test-shop/[testId]/`): layout, homepage, search, product/[slug], cart, checkout, payment, confirmation
-- **Landing** (`app/agent-test/`): create test, get agent URL + observer URL + instructions
-- **Observer mode**: append `?observe=<ownerToken>` to watch agent in real-time; all inputs read-only, state driven by polled events
-
-**Integration points:**
-- `/test-checkout` page loads test via `?t=at_xxxx`, renders checkout form, uses field tracker hook
-- `testing-handler.tsx` dual-submits to legacy `/pay/testing` + new `/agent-testing/submit`
-- `rail5-fulfillment.ts` marks test as approved when approval flow completes
-- `test-verification.tsx` (Rail5 wizard step 8) creates agent test, polls status, shows report card
+Full documentation: `project_knowledge/internal_docs/07-platform-management/agent-shopping-test.md`
 
 ## Testing (`tests/`)
 Vitest-based automated test suite. Run with `npx vitest run`. Config in `vitest.config.ts` with `@/` path alias. See `tests/_README.md` for coverage map, guidelines on when/how to add tests, and known gaps. Manual curl-based integration tests are in `tests/manual-api-suite.md`.
