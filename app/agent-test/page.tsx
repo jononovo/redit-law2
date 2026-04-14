@@ -77,105 +77,75 @@ const SCORING_DIMENSIONS = [
   { icon: Zap, label: "Navigation Efficiency", weight: "10%", description: "Minimal backtracking and errors" },
 ];
 
-export default function AgentTestPage() {
+function useTestGenerator() {
   const [result, setResult] = useState<TestResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
   const [preparing, setPreparing] = useState(true);
-  const hasStarted = useRef(false);
+  const apiResultRef = useRef<TestResult | null>(null);
+  const apiErrorRef = useRef<string | null>(null);
+  const apiDoneRef = useRef(false);
+  const runIdRef = useRef(0);
 
-  useEffect(() => {
-    if (hasStarted.current) return;
-    hasStarted.current = true;
-
-    let progressTimer: ReturnType<typeof setInterval>;
-    let apiDone = false;
-    let apiResult: TestResult | null = null;
-    let apiError: string | null = null;
-    let currentProgress = 0;
-
-    progressTimer = setInterval(() => {
-      if (apiDone && currentProgress >= 100) {
-        clearInterval(progressTimer);
-        setPreparing(false);
-        if (apiResult) setResult(apiResult);
-        if (apiError) setError(apiError);
-        return;
-      }
-
-      if (!apiDone) {
-        currentProgress = Math.min(currentProgress + 3, 70);
-      } else {
-        currentProgress = Math.min(currentProgress + 8, 100);
-      }
-
-      setProgress(currentProgress);
-    }, 80);
-
-    (async () => {
-      try {
-        const res = await fetch("/api/v1/agent-testing/tests", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ test_type: "full_shop" }),
-        });
-        if (!res.ok) throw new Error("Failed to prepare test");
-        apiResult = await res.json();
-      } catch (err: any) {
-        apiError = err.message ?? "Something went wrong";
-      } finally {
-        apiDone = true;
-      }
-    })();
-
-    return () => clearInterval(progressTimer);
-  }, []);
-
-  function handleNewTest() {
+  function startTest() {
+    const runId = ++runIdRef.current;
+    apiDoneRef.current = false;
+    apiResultRef.current = null;
+    apiErrorRef.current = null;
     setResult(null);
     setError(null);
     setProgress(0);
     setPreparing(true);
-    hasStarted.current = false;
 
-    let progressTimer: ReturnType<typeof setInterval>;
-    let apiDone = false;
-    let apiResult: TestResult | null = null;
-    let apiError: string | null = null;
-    let currentProgress = 0;
+    fetch("/api/v1/agent-testing/tests", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ test_type: "full_shop" }),
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error("Failed to prepare test");
+        return res.json();
+      })
+      .then((data) => { if (runId === runIdRef.current) apiResultRef.current = data; })
+      .catch((err) => { if (runId === runIdRef.current) apiErrorRef.current = err.message ?? "Something went wrong"; })
+      .finally(() => { if (runId === runIdRef.current) apiDoneRef.current = true; });
+  }
 
-    progressTimer = setInterval(() => {
-      if (apiDone && currentProgress >= 100) {
-        clearInterval(progressTimer);
-        setPreparing(false);
-        if (apiResult) setResult(apiResult);
-        if (apiError) setError(apiError);
-        return;
-      }
-      if (!apiDone) {
+  useEffect(() => {
+    startTest();
+  }, []);
+
+  useEffect(() => {
+    if (!preparing) return;
+
+    let currentProgress = progress;
+    const timer = setInterval(() => {
+      const done = apiDoneRef.current;
+
+      if (!done) {
         currentProgress = Math.min(currentProgress + 3, 70);
       } else {
         currentProgress = Math.min(currentProgress + 8, 100);
       }
+
       setProgress(currentProgress);
+
+      if (done && currentProgress >= 100) {
+        clearInterval(timer);
+        setPreparing(false);
+        if (apiResultRef.current) setResult(apiResultRef.current);
+        if (apiErrorRef.current) setError(apiErrorRef.current);
+      }
     }, 80);
 
-    (async () => {
-      try {
-        const res = await fetch("/api/v1/agent-testing/tests", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ test_type: "full_shop" }),
-        });
-        if (!res.ok) throw new Error("Failed to prepare test");
-        apiResult = await res.json();
-      } catch (err: any) {
-        apiError = err.message ?? "Something went wrong";
-      } finally {
-        apiDone = true;
-      }
-    })();
-  }
+    return () => clearInterval(timer);
+  }, [preparing]);
+
+  return { result, error, progress, preparing, startTest };
+}
+
+export default function AgentTestPage() {
+  const { result, error, progress, preparing, startTest } = useTestGenerator();
 
   return (
     <div className="min-h-screen bg-background text-neutral-900 font-sans">
@@ -212,7 +182,7 @@ export default function AgentTestPage() {
                 <div className="animate-fade-in-up">
                   <p data-testid="text-error" className="text-red-600 font-medium mb-4">{error}</p>
                   <button
-                    onClick={handleNewTest}
+                    onClick={startTest}
                     data-testid="button-retry"
                     className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-white rounded-full font-semibold hover:bg-primary/90 transition-colors"
                   >
@@ -253,7 +223,7 @@ export default function AgentTestPage() {
                         Watch Your Agent Live
                       </a>
                       <button
-                        onClick={handleNewTest}
+                        onClick={startTest}
                         data-testid="button-new-test"
                         className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-neutral-100 text-neutral-700 rounded-full font-semibold hover:bg-neutral-200 transition-colors"
                       >
