@@ -9,8 +9,8 @@ import {
   type InsertAgentTestFieldEvent,
 } from "@/shared/schema";
 
-const INACTIVITY_TIMEOUT_MS = 3 * 60 * 1000;
-const ABSOLUTE_TIMEOUT_MS = 10 * 60 * 1000;
+const INACTIVITY_TIMEOUT_MS = 4 * 60 * 1000;
+const ABSOLUTE_TIMEOUT_MS = 12 * 60 * 1000;
 
 const TERMINAL_STATUSES = new Set(["submitted", "scored"]);
 

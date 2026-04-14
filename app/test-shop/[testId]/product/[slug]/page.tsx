@@ -125,9 +125,9 @@ export default function ProductDetailPage() {
                   data-testid={`button-color-${color.toLowerCase()}`}
                   onClick={() => handleColorSelect(color)}
                   disabled={isObserver}
-                  className={`px-4 py-2 rounded-lg border text-sm font-medium transition-all ${
+                  className={`px-4 py-2 rounded-lg border-2 text-sm font-medium transition-all ${
                     selectedColor === color
-                      ? "border-indigo-600 bg-indigo-50 text-indigo-700"
+                      ? "border-indigo-600 bg-indigo-600 text-white shadow-md"
                       : "border-gray-300 text-gray-700 hover:border-gray-400"
                   }`}
                 >
@@ -147,9 +147,9 @@ export default function ProductDetailPage() {
                   data-testid={`button-size-${size.toLowerCase()}`}
                   onClick={() => handleSizeSelect(size)}
                   disabled={isObserver}
-                  className={`px-4 py-2 rounded-lg border text-sm font-medium transition-all ${
+                  className={`px-4 py-2 rounded-lg border-2 text-sm font-medium transition-all ${
                     selectedSize === size
-                      ? "border-indigo-600 bg-indigo-50 text-indigo-700"
+                      ? "border-indigo-600 bg-indigo-600 text-white shadow-md"
                       : "border-gray-300 text-gray-700 hover:border-gray-400"
                   }`}
                 >
