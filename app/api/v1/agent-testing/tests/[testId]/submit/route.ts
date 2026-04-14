@@ -27,6 +27,18 @@ export async function POST(
     return NextResponse.json({ error: "Test has expired" }, { status: 410 });
   }
 
+  if (session.testType === "full_shop") {
+    await storage.updateAgentTest(testId, {
+      status: "submitted",
+      submittedAt: new Date(),
+    });
+    return NextResponse.json({
+      test_id: testId,
+      status: "submitted",
+      message: "Full shop test submitted. Use POST /report to finalize scoring.",
+    });
+  }
+
   let body: any;
   try {
     body = await request.json();
