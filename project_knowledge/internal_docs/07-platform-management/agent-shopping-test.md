@@ -114,7 +114,7 @@ Append `?observe=<ownerToken>` to the test URL.
 
 ### Init Sequence
 
-Observer fetches `GET /status` for catch-up (stage snapshot + last sequence number), then starts polling `GET /events?since=N`.
+Observer fetches `GET /status` and `GET /detail` in parallel (`Promise.all`) for catch-up (stage snapshot, last sequence number, scenario, instruction text), then starts polling `GET /events?since=N`.
 
 ### Stage Overlay
 
@@ -146,10 +146,27 @@ Stage gates derived **client-side** — no extra API calls. We chose this over a
 
 - **Type narrowing required:** `PolledEvent.stage` is `string | null` but `deriveStageGatesFromEventLog` expects `FullShopFieldEvent` where `stage` is `string`. Events with `null` stage are filtered before accumulation. Both types live in `shared/types.ts` (`PolledEvent` was consolidated from 3 former duplicates).
 - **Scenario must be available before polling starts.** Poller is gated on `!isLoading`; `isLoading` only clears after `init()` fetches the scenario. Breaking this gate would cause `deriveStageGatesFromEventLog` to receive `null` scenario.
-- **Z-index layering:** Overlay = `z-50`, shop header = `z-40`. Overlay must exceed header or it disappears behind it on scroll. No modals exist in the shop, so `z-50` is safe.
-- **Mid-test join:** First poll batch returns full event history → gates computed immediately. No special catch-up logic needed.
+- **Z-index layering:** Shop header = `z-40`, ActionOverlay = `z-[45]`, stage sidebar = `z-50`. ActionOverlay sits above shop content but below the stage sidebar so progress remains visible during "Awaiting Agent" / "Approval Required" states.
+- **Mid-test join:** First poll batch returns full event history → gates computed immediately. Init also seeds `agentEventCount` from status API (`event_count > 0`, `stages_completed > 0`, or non-empty `stage_snapshot`) so the ActionOverlay is suppressed for late-joining observers.
 - **Agent state persistence:** `shopState` + `cart` are saved to `sessionStorage` (keyed by `testId`) on every change. This lets shop pages survive hard navigations (`window.location.href`, `<a href>`) and browser refreshes. Observers don't persist — they reconstruct from polled events. Multiple concurrent tests use separate keys (`shop-test-{testId}`) so they never collide.
-- **Session timeouts:** Full-shop tests enforce two guardrails: 3-minute inactivity timeout (no events received) and 5-minute absolute cap (from creation). Both result in hard-deletion of the session + all events — no traces. Checked on every `/events` GET/POST, `/status` GET, and `/detail` GET. Terminal statuses (`submitted`, `scored`) are exempt. Client detects timeout via HTTP 410 or `{ status: "timed_out" }` and shows a "Session Timed Out" screen with "Return to Testing Home" link. `sessionStorage` is cleared on timeout. The `lastActivityAt` column on `agent_test_sessions` tracks the last event batch timestamp.
+- **Session timeouts:** Full-shop tests enforce two guardrails: 3-minute inactivity timeout (no events received) and 10-minute absolute cap (from creation). Both result in hard-deletion of the session + all events — no traces. Checked on every `/events` GET/POST, `/status` GET, and `/detail` GET. Terminal statuses (`submitted`, `scored`) are exempt. Client detects timeout via HTTP 410 or `{ status: "timed_out" }` and shows a "Session Timed Out" screen with "Return to Testing Home" link. `sessionStorage` is cleared on timeout. The `lastActivityAt` column on `agent_test_sessions` tracks the last event batch timestamp.
+- **Tab-return refresh:** Poller listens for `visibilitychange` and triggers an immediate catch-up poll when the tab regains focus. `pollInFlightRef` guards against concurrent fetches.
+
+### ActionOverlay (Observer "Dead Air" States)
+
+Full-screen semi-transparent overlay for observer-only action states. Controlled by `useObserverOverlay()` hook which returns one of three values:
+
+| Card | Condition | Dismiss |
+|---|---|---|
+| `"awaiting_agent"` | Zero events ever received (`agentEventCount === 0`) | First polled event arrives |
+| `"approval_required"` | Test status is `awaiting_approval` and no new events since status changed | Any new event arrives |
+| `null` | Agent is active, test is terminal, or not observer | — |
+
+Universal dismiss rule: **if events are flowing, no overlay.** Once dismissed by event flow, the overlay never reappears. The `dismissedAtRef` in the hook snapshots `agentEventCount` when the approval overlay appears; if count exceeds the snapshot, overlay is permanently dismissed.
+
+Two pre-built card components in `observer-action-cards.tsx`:
+- **AwaitingAgentCard**: Pulsing indicator, instruction text with copy button, browser-use hint
+- **ApprovalRequiredCard**: Bell icon, "open dashboard" link, timer warning
 
 ---
 
@@ -167,9 +184,12 @@ Stage gates derived **client-side** — no extra API calls. We chose this over a
 | `features/agent-testing/full-shop/client/shop-test-context.tsx` | Dual-mode provider (agent vs observer); event accumulation + stage gate derivation; sessionStorage persistence for agent state |
 | `features/agent-testing/full-shop/client/observer-stage-overlay.tsx` | Collapsible left-side stage panel (observer-only) |
 | `features/agent-testing/full-shop/client/use-full-shop-test-tracker.ts` | Batched event posting (agent mode) |
-| `features/agent-testing/full-shop/client/use-event-poller.ts` | Adaptive polling (observer mode) |
+| `features/agent-testing/full-shop/client/use-event-poller.ts` | Adaptive polling with tab-return refresh (observer mode) |
+| `features/agent-testing/full-shop/client/use-observer-overlay.ts` | `useObserverOverlay()` hook — returns which overlay card to show or `null` |
+| `features/agent-testing/full-shop/client/observer-action-cards.tsx` | `AwaitingAgentCard` + `ApprovalRequiredCard` display components |
 | `features/agent-testing/full-shop/client/use-state-projector.ts` | Projects events → `ShopState` |
-| `app/test-shop/[testId]/layout.tsx` | Shop layout: header, search bar, observer banner + overlay |
+| `components/ui/action-overlay.tsx` | Generic full-screen overlay (`z-[45]`, dark backdrop, centered content slot) |
+| `app/test-shop/[testId]/layout.tsx` | Shop layout: header, search bar, observer banner, stage overlay, action overlay |
 | `app/test-shop/[testId]/` | 7 shop pages + confirmation |
 | `app/agent-shopping-test/` | Landing page — auto-generates test, shows instructions + observe link |
 | `features/agent-testing/storage/agent-testing-storage.ts` | Drizzle CRUD for both test types |
