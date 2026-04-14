@@ -69,6 +69,59 @@ function PreparingState({ progress }: { progress: number }) {
   );
 }
 
+function ResultActions({ instructions, observeUrl, onNewTest }: { instructions: string; observeUrl: string; onNewTest: () => void }) {
+  const [hasCopied, setHasCopied] = useState(false);
+
+  function handleCopy() {
+    navigator.clipboard.writeText(instructions);
+    setHasCopied(true);
+  }
+
+  return (
+    <>
+      <div className="mt-6">
+        <button
+          onClick={handleCopy}
+          data-testid="button-copy-instructions"
+          className={`inline-flex items-center justify-center gap-3 w-full px-8 py-4 rounded-full font-bold text-lg transition-colors ${
+            hasCopied
+              ? "bg-neutral-100 text-neutral-500"
+              : "bg-primary text-white hover:bg-primary/90 shadow-lg shadow-primary/20"
+          }`}
+        >
+          {hasCopied ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
+          {hasCopied ? "Copied to Clipboard" : "Copy Message to Clipboard"}
+        </button>
+      </div>
+
+      <div className="mt-4 flex flex-col sm:flex-row gap-3">
+        <a
+          href={observeUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          data-testid="link-watch-agent"
+          className={`inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full font-semibold transition-colors flex-1 ${
+            hasCopied
+              ? "bg-primary text-white hover:bg-primary/90 shadow-lg shadow-primary/20"
+              : "bg-neutral-100 text-neutral-700 hover:bg-neutral-200"
+          }`}
+        >
+          <ExternalLink className="w-4 h-4" />
+          Watch Your Agent Live
+        </a>
+        <button
+          onClick={onNewTest}
+          data-testid="button-new-test"
+          className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-neutral-100 text-neutral-700 rounded-full font-semibold hover:bg-neutral-200 transition-colors"
+        >
+          <RefreshCw className="w-4 h-4" />
+          New Test
+        </button>
+      </div>
+    </>
+  );
+}
+
 const SCORING_DIMENSIONS = [
   { icon: Target, label: "Instruction Following", weight: "35%", description: "Correct product, color, size, and quantity" },
   { icon: Brain, label: "Data Accuracy", weight: "25%", description: "Address and card details entered correctly" },
@@ -207,30 +260,11 @@ export default function AgentTestPage() {
                       {result.instructions}
                     </div>
 
-                    <div className="mt-6">
-                      <CopyButton text={result.instructions} label="instructions" large />
-                    </div>
-
-                    <div className="mt-4 flex flex-col sm:flex-row gap-3">
-                      <a
-                        href={result.observe_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        data-testid="link-watch-agent"
-                        className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-neutral-100 text-neutral-700 rounded-full font-semibold hover:bg-neutral-200 transition-colors flex-1"
-                      >
-                        <ExternalLink className="w-4 h-4" />
-                        Watch Your Agent Live
-                      </a>
-                      <button
-                        onClick={startTest}
-                        data-testid="button-new-test"
-                        className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-neutral-100 text-neutral-700 rounded-full font-semibold hover:bg-neutral-200 transition-colors"
-                      >
-                        <RefreshCw className="w-4 h-4" />
-                        New Test
-                      </button>
-                    </div>
+                    <ResultActions
+                      instructions={result.instructions}
+                      observeUrl={result.observe_url}
+                      onNewTest={startTest}
+                    />
                   </div>
                 </div>
               ) : null}
