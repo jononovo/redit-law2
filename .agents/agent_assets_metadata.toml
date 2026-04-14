@@ -24,3 +24,9 @@ id = "B07VJlO3i2jR0tAqDBRjg"
 uri = "file://.local/plans/agent-checkout-testing-suite.md"
 type = "text"
 title = "Agent Checkout Testing Suite — Technical Plan v3 (Final)"
+
+[[outputs]]
+id = "6qdZ6elNet-KYkJiYFtiL"
+uri = "file://project_knowledge/internal_docs/07-platform-management/agent-shopping-test.md"
+type = "text"
+title = "Agent Shopping Test — Internal Technical Doc"
