@@ -10,7 +10,7 @@ import {
 } from "@/shared/schema";
 
 const INACTIVITY_TIMEOUT_MS = 3 * 60 * 1000;
-const ABSOLUTE_TIMEOUT_MS = 5 * 60 * 1000;
+const ABSOLUTE_TIMEOUT_MS = 10 * 60 * 1000;
 
 const TERMINAL_STATUSES = new Set(["submitted", "scored"]);
 
