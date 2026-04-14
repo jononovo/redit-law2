@@ -30,12 +30,24 @@ Single-page card form test. Agent fills 6 fields (cardholder name, card number, 
 
 A simulated 7-page e-commerce experience that scores how well an AI agent can navigate a realistic shopping flow. The owner creates a test, hands the agent a URL + instructions, and watches in real-time via observer mode.
 
+## `/agent-test` Landing Page
+- Auto-generates a `full_shop` test on page load (no button click required)
+- 3-second progress bar animation while test is created
+- Primary CTA: copy agent instructions to clipboard → button grays out after copy, "Watch Your Agent Live" becomes the highlighted primary action
+- Uses CreditClaw branding (Nav + Footer, brand colors, gradient)
+
 ## Test Flow
 ```
 Homepage → Search → Product Detail → Cart → Checkout → Payment → Confirmation
 ```
 Each page maps to a **stage** tracked by the system:
 `page_arrival` → `search` → `product_select` → `variant_config` → `add_to_cart` → `cart_review` → `checkout_options` → `payment`
+
+## Shop UI
+- **Header** (all pages): persistent search bar + cart icon + "TestShop" home link. Sticky `z-40`.
+- **Homepage**: hero search bar, "Shop by Category" grid with product images
+- **Product images**: AI-generated lifestyle photos at `/assets/images/shop/category-{sneakers,hoodies,backpacks}.png`, used on homepage cards, search results, and product detail pages (replaced emoji placeholders)
+- The shop uses generic styling (not CreditClaw-branded) — it simulates a third-party store
 
 ## Test Lifecycle
 1. **Create** — `POST /api/v1/agent-testing/tests` with `{ test_type: "full_shop" }`
@@ -58,20 +70,46 @@ Each page maps to a **stage** tracked by the system:
 Grades: A (90+), B (80+), C (70+), D (60+), F (<60)
 
 ## Observer Mode
-Append `?observe=<ownerToken>` to the test URL. The owner sees:
-- A purple banner indicating observer mode (CreditClaw accent color)
-- A collapsible **stage progress overlay** on the left side showing all 8 stages with real-time status:
-  - Gray circle = not reached yet
-  - Pulsing red-orange dot (CreditClaw primary) = agent's current stage
-  - Green checkmark = completed correctly
-  - Amber warning = completed but with inaccurate values (wrong product, wrong address, etc.)
-- All form fields in read-only state
-- State updates via adaptive polling (500ms when active, slows to 2s after 3 idle polls)
-- Automatic page navigation mirroring the agent's progress
 
-Stage gate derivation runs client-side using `deriveStageGatesFromEventLog()` — no extra API calls. Events are accumulated in the context and re-derived on each poll batch.
+Append `?observe=<ownerToken>` to the test URL. The owner sees:
+- A purple banner (CreditClaw accent `hsl(260,90%,65%)`) indicating observer mode
+- A collapsible **stage progress overlay** (left side, `z-50`, observer-only)
+- All form fields in read-only state
+- Automatic page navigation mirroring the agent's progress
+- State updates via adaptive polling (500ms when active, slows to 2s after 3 idle polls)
 
 On first load, observer fetches `GET /status` for catch-up (stage snapshot + last sequence number), then starts polling `GET /events?since=N`.
+
+### Stage Overlay
+
+Fixed-position panel on the left (`z-50` above sticky header `z-40`), collapsible to a chevron tab. 8 rows, one per stage:
+
+| State | Icon | Condition |
+|---|---|---|
+| Pending | Gray empty circle | `eventCount === 0` |
+| Active | Pulsing dot (`hsl(10,85%,55%)`) | Highest stage with events where next stage has none |
+| Passed | Green checkmark | `stagePassed === true` (all field values match expected) |
+| Inaccurate | Amber warning | Stage reached but `stagePassed === false` (wrong product/color/address/etc.) |
+
+Stages with no expected fields (page_arrival, add_to_cart, cart_review) are always "passed" if reached.
+
+### Overlay Data Flow
+
+Stage gates are derived **client-side** — no extra API calls.
+
+1. `useEventPoller` polls `GET /events?since=N` → raw `PolledEvent[]`
+2. `handlePolledEvents` in context wraps the existing `projectEvents` call: first projects state (unchanged), then accumulates events in `allEventsRef`
+3. On each batch, runs `deriveStageGatesFromEventLog(allEvents, scenario)` → `DerivedStageGate[]`
+4. Context exposes `stageGates` and `currentStage` consumed by `ObserverStageOverlay`
+
+**Type narrowing:** `PolledEvent.stage` is `string | null`, but `deriveStageGatesFromEventLog` expects `FullShopFieldEvent` where `stage` is `string`. Events with `null` stage are filtered out before accumulation — they have no meaning in stage gate derivation. Both types are defined in `shared/types.ts` (`PolledEvent` consolidated from 3 former duplicates).
+
+**Scenario availability:** Poller is gated on `!isLoading`; `isLoading` only clears after `init()` fetches the scenario. So scenario is always available when events start arriving.
+
+**Edge cases:**
+- Observer joins mid-test: first poll batch returns full event history → gates computed immediately
+- Observer joins before agent: all stages pending, updates as events arrive
+- No scenario loaded: overlay shows all stages pending until scenario + events arrive
 
 ## Scenarios
 4 static templates, each specifying: search term, product, color, size, quantity, shipping method. Paired at creation time with a random shipping address (from static pools of names/streets/cities) and random test card data (Luhn-valid Visa numbers).
@@ -85,22 +123,25 @@ On first load, observer fetches `GET /status` for catch-up (stage snapshot + las
 ## Key Files
 ```
 features/agent-testing/full-shop/
-├── shared/           # Pure functions — importable by client + server
-│   ├── types.ts, constants.ts, scenario-definitions.ts
-│   ├── derive-stage-gates.ts, build-event-narrative.ts
-│   └── scoring/      # 5 scorers + report generator
-├── server/           # Server-only (uses crypto)
+├── shared/
+│   ├── types.ts              # PolledEvent, FullShopFieldEvent, DerivedStageGate, ShopState, scenario/report types
+│   ├── constants.ts          # FULL_SHOP_STAGES, STAGE_LABELS, STAGE_NUMBERS, EVENT_TYPES, scoring weights
+│   ├── scenario-definitions.ts
+│   ├── derive-stage-gates.ts # Pure function: events + scenario → DerivedStageGate[] (per-stage pass/fail, field matches, corrections)
+│   ├── build-event-narrative.ts
+│   └── scoring/              # 5 scorers + report generator
+├── server/
 │   ├── address-generator.ts
 │   └── pick-random-scenario.ts
-└── client/           # React hooks + context
-    ├── shop-test-context.tsx      # Dual-mode provider (agent vs observer), stage gate derivation
-    ├── observer-stage-overlay.tsx  # Collapsible left-side stage progress panel (observer-only)
-    ├── use-full-shop-test-tracker.ts  # Batched event posting
-    ├── use-event-poller.ts        # Adaptive polling for observer
-    └── use-state-projector.ts     # Projects events → ShopState
+└── client/
+    ├── shop-test-context.tsx       # Dual-mode provider; accumulates events + derives stage gates for observer
+    ├── observer-stage-overlay.tsx   # Collapsible left-side stage progress panel (observer-only)
+    ├── use-full-shop-test-tracker.ts
+    ├── use-event-poller.ts         # Adaptive polling for observer
+    └── use-state-projector.ts      # Projects events → ShopState
 
-app/test-shop/[testId]/           # Shop pages (layout, home, search, product, cart, checkout, payment, confirmation)
-app/agent-test/                   # Landing page — create test + get URLs
+app/test-shop/[testId]/   # Layout (header, search bar, observer banner + overlay) + 7 pages + confirmation
+app/agent-test/            # Landing page — auto-generates test, shows instructions + observe link
 ```
 
 ## API Endpoints (Shared)
