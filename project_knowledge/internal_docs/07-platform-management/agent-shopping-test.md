@@ -5,6 +5,7 @@ created: 2026-04-08
 last_updated: 2026-04-14
 ---
 
+
 # Agent Testing Suite
 
 ## Purpose
@@ -105,8 +106,8 @@ Append `?observe=<ownerToken>` to the test URL.
 
 ### What the Owner Sees
 
-- Purple banner (CreditClaw accent `hsl(260,90%,65%)`)
-- Collapsible stage progress overlay (left side, observer-only)
+- Gradient banner (CreditClaw primary→accent: `hsl(10,85%,55%)` → `hsl(260,90%,65%)`)
+- Collapsible stage progress overlay (left side, observer-only, CreditClaw dark theme)
 - All form fields read-only
 - Automatic page navigation mirroring agent progress
 - Adaptive polling: 500ms active, slows to 2s after 3 idle polls
@@ -117,7 +118,7 @@ Observer fetches `GET /status` for catch-up (stage snapshot + last sequence numb
 
 ### Stage Overlay
 
-Fixed-position panel on left, collapsible to a chevron tab. 8 rows, one per stage:
+Dark-themed (`hsl(220,20%,12%)`) fixed panel on left with CreditClaw gradient header, collapsible to a chevron tab. 8 rows, one per stage:
 
 | State | Icon | Condition |
 |---|---|---|
@@ -127,6 +128,10 @@ Fixed-position panel on left, collapsible to a chevron tab. 8 rows, one per stag
 | Inaccurate | Amber warning | Stage reached but `stagePassed === false` |
 
 Stages with no expected fields (page_arrival, add_to_cart, cart_review) — always "passed" if reached.
+
+**Accordion details:** Each stage row has a chevron — clicking it expands that stage (one open at a time). Active stage auto-expands. Expanded view shows:
+- **Expected fields** for the stage (e.g. Search → "Search query: hoodie", Variant → color/size/quantity with expected values). Sensitive fields masked (card → last 4, CVV → `***`). Each field shows a ✓/✗ icon if an actual value has arrived.
+- **Last triggered event** — single line showing the most recent field event for that stage with its timestamp (e.g. `Color: "Red" — 14:32:05`). Uses `FieldMatchResult.timestamp` from `deriveStageGatesFromEventLog`. For fieldless stages, shows the stage description ("Arrive at homepage").
 
 ### Overlay Data Flow
 

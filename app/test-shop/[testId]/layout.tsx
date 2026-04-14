@@ -12,8 +12,8 @@ function ObserverBanner() {
   return (
     <div
       data-testid="observer-banner"
-      className="text-white text-center text-sm py-1.5 px-4"
-      style={{ backgroundColor: "hsl(260, 90%, 65%)" }}
+      className="text-white text-center text-sm py-1.5 px-4 font-medium tracking-wide"
+      style={{ background: "linear-gradient(135deg, hsl(10, 85%, 55%), hsl(260, 90%, 65%))" }}
     >
       Observer Mode — You are watching the agent in real time
       {testStatus === "scored" && " — Test Complete"}
