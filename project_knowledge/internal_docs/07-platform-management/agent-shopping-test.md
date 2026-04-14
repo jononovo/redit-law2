@@ -148,6 +148,7 @@ Stage gates derived **client-side** — no extra API calls. We chose this over a
 - **Scenario must be available before polling starts.** Poller is gated on `!isLoading`; `isLoading` only clears after `init()` fetches the scenario. Breaking this gate would cause `deriveStageGatesFromEventLog` to receive `null` scenario.
 - **Z-index layering:** Overlay = `z-50`, shop header = `z-40`. Overlay must exceed header or it disappears behind it on scroll. No modals exist in the shop, so `z-50` is safe.
 - **Mid-test join:** First poll batch returns full event history → gates computed immediately. No special catch-up logic needed.
+- **Agent state persistence:** `shopState` + `cart` are saved to `sessionStorage` (keyed by `testId`) on every change. This lets shop pages survive hard navigations (`window.location.href`, `<a href>`) and browser refreshes. Observers don't persist — they reconstruct from polled events. Multiple concurrent tests use separate keys (`shop-test-{testId}`) so they never collide.
 
 ---
 
@@ -162,7 +163,7 @@ Stage gates derived **client-side** — no extra API calls. We chose this over a
 | `features/agent-testing/full-shop/shared/scoring/` | 5 scorers + report generator |
 | `features/agent-testing/full-shop/server/address-generator.ts` | Random shipping address from static pools |
 | `features/agent-testing/full-shop/server/pick-random-scenario.ts` | Scenario selection + address/card pairing |
-| `features/agent-testing/full-shop/client/shop-test-context.tsx` | Dual-mode provider (agent vs observer); event accumulation + stage gate derivation |
+| `features/agent-testing/full-shop/client/shop-test-context.tsx` | Dual-mode provider (agent vs observer); event accumulation + stage gate derivation; sessionStorage persistence for agent state |
 | `features/agent-testing/full-shop/client/observer-stage-overlay.tsx` | Collapsible left-side stage panel (observer-only) |
 | `features/agent-testing/full-shop/client/use-full-shop-test-tracker.ts` | Batched event posting (agent mode) |
 | `features/agent-testing/full-shop/client/use-event-poller.ts` | Adaptive polling (observer mode) |

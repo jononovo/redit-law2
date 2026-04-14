@@ -26,6 +26,32 @@ import { useEventPoller } from "./use-event-poller";
 import { useStateProjector } from "./use-state-projector";
 import { SHOP_PRODUCT_CATALOG } from "../shared/scenario-definitions";
 
+const STORAGE_KEY_PREFIX = "shop-test-";
+
+interface PersistedState {
+  shopState: ShopState;
+  cart: CartItem[];
+}
+
+function saveToSession(testId: string, state: ShopState, cart: CartItem[]) {
+  try {
+    sessionStorage.setItem(
+      `${STORAGE_KEY_PREFIX}${testId}`,
+      JSON.stringify({ shopState: state, cart } satisfies PersistedState),
+    );
+  } catch {}
+}
+
+function loadFromSession(testId: string): PersistedState | null {
+  try {
+    const raw = sessionStorage.getItem(`${STORAGE_KEY_PREFIX}${testId}`);
+    if (!raw) return null;
+    return JSON.parse(raw) as PersistedState;
+  } catch {
+    return null;
+  }
+}
+
 function deriveCurrentStage(gates: DerivedStageGate[]): string | null {
   let current: string | null = null;
   for (let i = 0; i < gates.length; i++) {
@@ -81,8 +107,12 @@ export function ShopTestContextProvider({ testId, children }: ProviderProps) {
   const observeToken = searchParams.get("observe");
   const isObserver = !!observeToken;
 
-  const [shopState, setShopStateRaw] = useState<ShopState>(createEmptyShopState);
-  const [cart, setCart] = useState<CartItem[]>([]);
+  const restored = !isObserver ? loadFromSession(testId) : null;
+
+  const [shopState, setShopStateRaw] = useState<ShopState>(
+    () => restored?.shopState ?? createEmptyShopState(),
+  );
+  const [cart, setCartRaw] = useState<CartItem[]>(() => restored?.cart ?? []);
   const [isLoading, setIsLoading] = useState(true);
   const [testStatus, setTestStatus] = useState("created");
   const [scenario, setScenario] = useState<FullShopScenarioConfig | null>(null);
@@ -94,11 +124,31 @@ export function ShopTestContextProvider({ testId, children }: ProviderProps) {
   const scenarioRef = useRef<FullShopScenarioConfig | null>(null);
   useEffect(() => { scenarioRef.current = scenario; }, [scenario]);
 
+  const shopStateRef = useRef(shopState);
+  const cartRef = useRef(cart);
+
   const setShopState = useCallback(
     (updater: (prev: ShopState) => ShopState) => {
-      setShopStateRaw(updater);
+      setShopStateRaw((prev) => {
+        const next = updater(prev);
+        shopStateRef.current = next;
+        if (!isObserver) saveToSession(testId, next, cartRef.current);
+        return next;
+      });
     },
-    [],
+    [testId, isObserver],
+  );
+
+  const setCart = useCallback(
+    (updater: (prev: CartItem[]) => CartItem[]) => {
+      setCartRaw((prev) => {
+        const next = updater(prev);
+        cartRef.current = next;
+        if (!isObserver) saveToSession(testId, shopStateRef.current, next);
+        return next;
+      });
+    },
+    [testId, isObserver],
   );
 
   const tracker = useFullShopTestTracker({
@@ -140,7 +190,7 @@ export function ShopTestContextProvider({ testId, children }: ProviderProps) {
       if (state.selectedProductSlug) {
         const product = SHOP_PRODUCT_CATALOG.find(p => p.slug === state.selectedProductSlug);
         if (product) {
-          setCart([{
+          setCartRaw([{
             productSlug: product.slug,
             productName: product.name,
             color: state.selectedColor ?? "",
