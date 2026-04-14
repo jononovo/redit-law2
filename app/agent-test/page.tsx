@@ -188,14 +188,6 @@ export default function AgentTestPage() {
 
           <div className="container mx-auto px-6 relative z-10">
             <div className="max-w-2xl mx-auto text-center">
-              <div
-                className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 text-primary rounded-full text-sm font-semibold mb-8 border border-primary/20 animate-fade-in-up"
-                data-testid="badge-agent-test"
-              >
-                <ShoppingCart className="w-4 h-4" />
-                Agent Shopping Test
-              </div>
-
               <h1
                 className="text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight mb-6 animate-fade-in-up"
                 style={{ animationDelay: "0.1s" }}
