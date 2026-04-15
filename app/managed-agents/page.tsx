@@ -5,8 +5,7 @@ import { Footer } from "@/components/footer";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Bot, Globe, ShoppingBag, Sparkles, Target, Layers, Zap, BookOpen } from "lucide-react";
 import { AgentConvergenceDiagram } from "@/components/agent-convergence-diagram";
-import { AgentConvergenceV2 } from "@/components/agent-convergence-v2";
-import { AgentConvergenceV3 } from "@/components/agent-convergence-v3";
+import { AgentConvergenceModern } from "@/components/agent-convergence-modern";
 
 const services = [
   {
@@ -82,28 +81,19 @@ export default function ManagedAgentsPage() {
 
             <div className="max-w-5xl mx-auto mb-12">
               <div className="text-center mb-4">
-                <span className="inline-block px-4 py-1.5 rounded-full bg-neutral-900 text-white text-xs font-bold uppercase tracking-wider">Version A — Compact</span>
+                <span className="inline-block px-4 py-1.5 rounded-full bg-neutral-900 text-white text-xs font-bold uppercase tracking-wider">Version A — Original</span>
               </div>
               <div className="rounded-3xl bg-white border border-neutral-100 shadow-sm p-6 md:p-10">
                 <AgentConvergenceDiagram />
               </div>
             </div>
 
-            <div className="max-w-5xl mx-auto mb-12">
-              <div className="text-center mb-4">
-                <span className="inline-block px-4 py-1.5 rounded-full bg-neutral-900 text-white text-xs font-bold uppercase tracking-wider">Version B — Wide with cards</span>
-              </div>
-              <div className="rounded-3xl bg-white border border-neutral-100 shadow-sm p-6 md:p-10">
-                <AgentConvergenceV2 />
-              </div>
-            </div>
-
             <div className="max-w-5xl mx-auto mb-20">
               <div className="text-center mb-4">
-                <span className="inline-block px-4 py-1.5 rounded-full bg-neutral-900 text-white text-xs font-bold uppercase tracking-wider">Version C — Vertical flow</span>
+                <span className="inline-block px-4 py-1.5 rounded-full bg-neutral-900 text-white text-xs font-bold uppercase tracking-wider">Version B — Modern with logos</span>
               </div>
               <div className="rounded-3xl bg-white border border-neutral-100 shadow-sm p-6 md:p-10">
-                <AgentConvergenceV3 />
+                <AgentConvergenceModern />
               </div>
             </div>
 
