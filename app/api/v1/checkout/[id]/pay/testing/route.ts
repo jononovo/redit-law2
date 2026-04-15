@@ -91,6 +91,19 @@ export async function POST(
 
     await storage.incrementCheckoutPageStats(page.checkoutPageId, amountUsdc);
 
+    if (testToken) {
+      try {
+        const cards = await storage.getRail5CardsByOwnerUid(page.ownerUid);
+        const card = cards.find((c) => c.testToken === testToken);
+        if (card && !card.testStartedAt) {
+          await storage.updateRail5Card(card.cardId, { testStartedAt: new Date() });
+          console.log("[Testing Checkout] testStartedAt fallback set for card:", card.cardId);
+        }
+      } catch (e) {
+        console.warn("[Testing Checkout] testStartedAt fallback failed:", e);
+      }
+    }
+
     console.log("[Testing Checkout] Test payment recorded:", {
       checkoutPageId: id,
       saleId,

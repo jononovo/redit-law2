@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import type { PaymentHandlerProps } from "../types";
+import { useCheckoutFieldTracker } from "@/features/agent-testing/hooks/use-checkout-field-tracker";
 
 type HandlerState = "form" | "submitting" | "success" | "error";
 
@@ -46,6 +47,11 @@ export function TestingHandler({ context, onSuccess, onError, onCancel }: Paymen
   const [cardCvv, setCardCvv] = useState("");
   const [cardholderName, setCardholderName] = useState("");
   const [billingZip, setBillingZip] = useState("");
+
+  const { sendSubmitClick, flush } = useCheckoutFieldTracker({
+    testId: context.agentTestId ?? null,
+    enabled: !!context.agentTestId,
+  });
 
   const formatCardNumber = (value: string) => {
     const digits = value.replace(/\D/g, "").slice(0, 16);
@@ -100,31 +106,64 @@ export function TestingHandler({ context, onSuccess, onError, onCancel }: Paymen
 
     setState("submitting");
 
+    if (context.agentTestId) {
+      sendSubmitClick();
+    }
+
     const cardExpiry = `${expiryMonth}/${expiryYear}`;
+    const submittedValues = {
+      cardholderName: cardholderName.trim(),
+      cardNumber: cardNumber.replace(/\s/g, ""),
+      cardExpiry,
+      cardCvv,
+      billingZip: billingZip.trim(),
+    };
 
     try {
-      const testPayUrl = context.testToken
-        ? `/api/v1/checkout/${context.checkoutPageId}/pay/testing?t=${encodeURIComponent(context.testToken)}`
-        : `/api/v1/checkout/${context.checkoutPageId}/pay/testing`;
-      const res = await fetch(testPayUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          card_number: cardNumber.replace(/\s/g, ""),
-          card_expiry: cardExpiry,
-          card_cvv: cardCvv,
-          cardholder_name: cardholderName.trim(),
-          billing_zip: billingZip.trim(),
-          buyer_name: context.buyerName,
-        }),
-      });
+      let saleId: string | undefined;
 
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || "Test payment failed");
+      if (context.testToken) {
+        const testPayUrl = `/api/v1/checkout/${context.checkoutPageId}/pay/testing?t=${encodeURIComponent(context.testToken)}`;
+        const res = await fetch(testPayUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            card_number: submittedValues.cardNumber,
+            card_expiry: submittedValues.cardExpiry,
+            card_cvv: submittedValues.cardCvv,
+            cardholder_name: submittedValues.cardholderName,
+            billing_zip: submittedValues.billingZip,
+            buyer_name: context.buyerName,
+          }),
+        });
+
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.error || "Test payment failed");
+        }
+
+        const data = await res.json();
+        saleId = data.sale_id;
       }
 
-      const data = await res.json();
+      if (context.agentTestId) {
+        await flush();
+
+        try {
+          const submitRes = await fetch(`/api/v1/agent-testing/tests/${context.agentTestId}/submit`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              submitted_values: submittedValues,
+            }),
+          });
+          if (!submitRes.ok) {
+            console.warn("[TestingHandler] Agent test scoring failed:", await submitRes.text());
+          }
+        } catch (e) {
+          console.warn("[TestingHandler] Agent test submit error:", e);
+        }
+      }
 
       setState("success");
       toast({
@@ -136,7 +175,7 @@ export function TestingHandler({ context, onSuccess, onError, onCancel }: Paymen
         onSuccess({
           method: "testing",
           status: "completed",
-          saleId: data.sale_id,
+          saleId,
         });
       }, 1500);
     } catch (err) {

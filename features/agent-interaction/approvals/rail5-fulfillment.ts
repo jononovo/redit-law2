@@ -41,6 +41,20 @@ async function fulfillRail5Approval(approval: UnifiedApproval): Promise<void> {
     });
   }
 
+  const metadata = approval.metadata as Record<string, any> | null;
+  if (metadata?.category === "test" && metadata?.cardId) {
+    try {
+      const tests = await storage.getAgentTestsByCardId(metadata.cardId);
+      const pendingTest = tests.find((t) => t.status === "awaiting_approval" || t.status === "created");
+      if (pendingTest) {
+        await storage.updateAgentTest(pendingTest.testId, { status: "approved" });
+        console.log(`[Approvals] Agent test ${pendingTest.testId} marked approved`);
+      }
+    } catch (e) {
+      console.warn("[Approvals] Failed to update agent test session on approval:", e);
+    }
+  }
+
   console.log(`[Approvals] Rail 5 approved: checkout ${checkoutId}`);
 }
 

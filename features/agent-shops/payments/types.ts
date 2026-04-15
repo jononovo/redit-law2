@@ -12,6 +12,7 @@ export interface PaymentContext {
   buyerEmail?: string;
   buyerName?: string;
   testToken?: string;
+  agentTestId?: string;
 }
 
 export interface PaymentResult {

@@ -1,5 +1,22 @@
 uploads = []
-generated = []
+
+[[generated]]
+id = "LX5ORCsXFxakrMIwwpBtb"
+uri = "file://public/assets/images/shop/category-sneakers.png"
+type = "image"
+title = "sneakers category image"
+
+[[generated]]
+id = "TBX1M4Txm9E3RB4xlowLR"
+uri = "file://public/assets/images/shop/category-hoodies.png"
+type = "image"
+title = "hoodies category image"
+
+[[generated]]
+id = "ACZ-WHyEPrQLeypTUm3op"
+uri = "file://public/assets/images/shop/category-backpacks.png"
+type = "image"
+title = "backpacks category image"
 
 [[outputs]]
 id = "cnAOWU3Q_duY2HbMEVzf9"
@@ -18,3 +35,15 @@ id = "9_iJBOxdPS8tvnvq6GfXV"
 uri = "file://project_knowledge/currently_building/phase1-bin-data-download.md"
 type = "text"
 title = "Phase 1: BIN Data Download & Processing — Technical Plan"
+
+[[outputs]]
+id = "B07VJlO3i2jR0tAqDBRjg"
+uri = "file://.local/plans/agent-checkout-testing-suite.md"
+type = "text"
+title = "Agent Checkout Testing Suite — Technical Plan v3 (Final)"
+
+[[outputs]]
+id = "6qdZ6elNet-KYkJiYFtiL"
+uri = "file://project_knowledge/internal_docs/07-platform-management/agent-shopping-test.md"
+type = "text"
+title = "Agent Shopping Test — Internal Technical Doc"

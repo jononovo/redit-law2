@@ -21,6 +21,7 @@ Tenants share the same database, codebase, and deployment. Routing is hostname-b
 | 6 | Platform Management | Auth, bot lifecycle, pairing, feature flags, admin |
 | 7 | Multi-tenant Structure | Tenant routing, onboarding, per-tenant theming |
 | 8 | Agent Shops | Checkout, storefronts, seller profiles, inbound payments |
+| 9 | Agent Testing | Two test types: (1) Basic checkout — single-page card form test. (2) Full-shop — 7-page e-commerce flow (homepage→search→product→cart→checkout→payment→confirmation) with real-time observer mode, 5-dimension scoring, and DB persistence |
 
 Full detail: `project_knowledge/architecture.md`
 
@@ -509,6 +510,11 @@ The platform's inbound commerce engine. Buyers (humans and AI agents) pay into t
 - **Anthropic (@anthropic-ai/sdk):** LLM-powered brand classification for ASX Score Scanner.
 - **Perplexity API:** Site audit and evidence gathering for ASX Score Scanner (via sonar-deep-research model).
 - **react-markdown + remark-gfm + @tailwindcss/typography:** Markdown rendering for documentation pages.
+
+## Agent Testing Suite (`features/agent-testing/`)
+Two test types: (1) **Basic checkout** — single-page card form test with 4-dimension scoring. (2) **Full-shop** — 7-page e-commerce flow (homepage→search→product→cart→checkout→payment→confirmation) with real-time observer mode and 5-dimension scoring. Both share the same DB tables (`agent_test_sessions`, `agent_test_field_events`) and API routes (`app/api/v1/agent-testing/tests/`).
+
+Full documentation: `project_knowledge/internal_docs/07-platform-management/agent-shopping-test.md`
 
 ## Testing (`tests/`)
 Vitest-based automated test suite. Run with `npx vitest run`. Config in `vitest.config.ts` with `@/` path alias. See `tests/_README.md` for coverage map, guidelines on when/how to add tests, and known gaps. Manual curl-based integration tests are in `tests/manual-api-suite.md`.
