@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { CheckCircle2, Loader2, Shield, X, Copy, Send, MessageCircle, FlaskConical } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { wt } from "@/lib/wizard-typography";
+import { StepHeader } from "../step-header";
 import { useToast } from "@/hooks/use-toast";
 import { authFetch } from "@/features/platform-management/auth-fetch";
 import { type Step8Props, type TestPurchaseResult, type TestPurchaseApiResponse, FIELD_LABELS } from "../types";
@@ -151,18 +152,10 @@ export function TestVerification({ cardId, cardName, cardLast4, savedCardDetails
   if (!optedIn) {
     return (
       <div className="space-y-6" data-testid="r5-step-test-verification">
-        <div className="text-center">
-          <div className="w-16 h-16 rounded-2xl bg-blue-50 flex items-center justify-center mx-auto mb-4">
-            <FlaskConical className="w-8 h-8 text-blue-600" />
-          </div>
-          <h2 className={`${wt.title} mb-2`} data-testid="text-test-title">Test Your Card</h2>
-          <p className={`${wt.subtitle} mt-2`}>
-            Do you want your bot to do a test payment in our sandbox?
-          </p>
-          <p className="text-xs text-neutral-400 mt-3">
-            This runs a simulated checkout to verify your bot can decrypt and use the card. No real charges.
-          </p>
-        </div>
+        <StepHeader icon={FlaskConical} iconBg="bg-blue-50" iconColor="text-blue-600" iconSize="lg" title="Test Your Card" tooltip="Do you want your bot to do a test payment in our sandbox?" titleTestId="text-test-title" />
+        <p className="text-xs text-neutral-400 text-center">
+          This runs a simulated checkout to verify your bot can decrypt and use the card. No real charges.
+        </p>
 
         <div className="flex gap-3">
           <Button
@@ -187,15 +180,7 @@ export function TestVerification({ cardId, cardName, cardLast4, savedCardDetails
 
   return (
     <div className="space-y-6" data-testid="r5-step-test-verification">
-      <div className="text-center">
-        <div className="w-16 h-16 rounded-2xl bg-blue-50 flex items-center justify-center mx-auto mb-4">
-          <Shield className="w-8 h-8 text-blue-600" />
-        </div>
-        <h2 className={`${wt.title} mb-2`} data-testid="text-test-title">Test Verification</h2>
-        <p className={`${wt.subtitle} mt-2`}>
-          Your bot is completing a sandbox test purchase to verify the card file decrypts correctly.
-        </p>
-      </div>
+      <StepHeader icon={Shield} iconBg="bg-blue-50" iconColor="text-blue-600" iconSize="lg" title="Test Verification" tooltip="Your bot is completing a sandbox test purchase to verify the card file decrypts correctly." titleTestId="text-test-title" />
 
       <div className="space-y-3" data-testid="r5-test-verification">
         {testPurchaseResult?.status === "completed" ? (
@@ -319,7 +304,7 @@ export function TestVerification({ cardId, cardName, cardLast4, savedCardDetails
       </div>
 
       <Button onClick={onDone} className={`w-full ${wt.primaryButton} gap-2 bg-green-600 hover:bg-green-700`} data-testid="button-r5-done">
-        <CheckCircle2 className="w-4 h-4" /> Done
+        <CheckCircle2 className="w-4 h-4" /> Go to Dashboard
       </Button>
 
       {testStatus !== "completed" && (

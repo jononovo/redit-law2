@@ -7,7 +7,7 @@ import { encryptCardDetails, buildEncryptedCardFile, downloadEncryptedFile } fro
 import { detectCardBrand, brandToApiValue, getMaxDigits } from "@/features/payment-rails/card/card-brand";
 import { type CardFieldErrors } from "@/features/payment-rails/card/hooks";
 import { RAIL5_CARD_DELIVERED } from "@/features/platform-management/agent-management/bot-messaging/templates";
-import { randomCardName, type BotOption, type SavedCardDetails } from "./types";
+import { type BotOption, type SavedCardDetails, randomCardName } from "./types";
 
 interface UseRail5WizardProps {
   onComplete: () => void;
@@ -20,7 +20,7 @@ export function useRail5Wizard({ onComplete, onClose, preselectedBotId }: UseRai
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
 
-  const [cardName, setCardName] = useState(randomCardName);
+  const [cardName, setCardName] = useState(() => randomCardName());
   const [cardId, setCardId] = useState("");
 
   const [cardNumber, setCardNumber] = useState("");
@@ -112,6 +112,33 @@ export function useRail5Wizard({ onComplete, onClose, preselectedBotId }: UseRai
     }
   }, [step, botsFetched, botsLoading]);
 
+  async function handleStep1Next() {
+    if (!cardName.trim()) {
+      toast({ title: "Missing info", description: "Enter a card name.", variant: "destructive" });
+      return;
+    }
+    setLoading(true);
+    try {
+      const res = await authFetch("/api/v1/rail5/initialize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ card_name: cardName.trim(), card_brand: cardBrand, card_last4: "0000" }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "Failed to initialize card");
+      }
+      const data = await res.json();
+      setCardId(data.card_id);
+
+      setStep(3);
+    } catch (e: unknown) {
+      toast({ title: "Error", description: e instanceof Error ? e.message : "Failed to initialize card.", variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  }
+
   function handleEncryptCard() {
     const cleanNumber = cardNumber.replace(/\s/g, "");
     const expectedDigits = getMaxDigits(detectedBrand);
@@ -159,32 +186,6 @@ export function useRail5Wizard({ onComplete, onClose, preselectedBotId }: UseRai
     onClose();
   }
 
-  async function handleStep1Next() {
-    if (!cardName.trim()) {
-      toast({ title: "Missing info", description: "Enter a card name.", variant: "destructive" });
-      return;
-    }
-    setLoading(true);
-    try {
-      const res = await authFetch("/api/v1/rail5/initialize", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ card_name: cardName.trim(), card_brand: cardBrand, card_last4: "0000" }),
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || "Failed to initialize card");
-      }
-      const data = await res.json();
-      setCardId(data.card_id);
-      setStep(1);
-    } catch (e: unknown) {
-      toast({ title: "Error", description: e instanceof Error ? e.message : "Failed to initialize card.", variant: "destructive" });
-    } finally {
-      setLoading(false);
-    }
-  }
-
   async function handleEncryptAndDownload() {
     const cleanNumber = cardNumber.replace(/\s/g, "");
     if (!cleanNumber || cleanNumber.length < 13 || !cardCvv.trim() || !expMonth || !expYear || !holderName.trim()) {
@@ -193,6 +194,8 @@ export function useRail5Wizard({ onComplete, onClose, preselectedBotId }: UseRai
     }
     setLoading(true);
     try {
+      const delay = (ms: number) => new Promise(r => setTimeout(r, ms));
+
       const { keyHex, ivHex, tagHex, ciphertextBytes } = await encryptCardDetails({
         number: cardNumber.replace(/\s/g, ""),
         cvv: cardCvv,
@@ -206,6 +209,7 @@ export function useRail5Wizard({ onComplete, onClose, preselectedBotId }: UseRai
         country: country,
       });
       setEncryptionDone(true);
+      await delay(800);
 
       const res = await authFetch("/api/v1/rail5/submit-key", {
         method: "POST",
@@ -217,7 +221,7 @@ export function useRail5Wizard({ onComplete, onClose, preselectedBotId }: UseRai
           tag_hex: tagHex,
           card_last4: cardNumber.replace(/\s/g, "").slice(-4),
           card_brand: cardBrand,
-          card_first4: cleanNumber.slice(0, 4),
+          card_first6: cleanNumber.slice(0, 6),
           exp_month: expMonth,
           exp_year: expYear,
           cardholder_name: holderName,
@@ -233,9 +237,10 @@ export function useRail5Wizard({ onComplete, onClose, preselectedBotId }: UseRai
         throw new Error(err.error || "Failed to submit key");
       }
       setKeySent(true);
+      await delay(800);
 
       const md = buildEncryptedCardFile(ciphertextBytes, cardName, cardLast4, cardId, {
-        bin: cleanNumber.slice(0, 4),
+        bin: cleanNumber.slice(0, 6),
         expMonth,
         expYear,
         cardholderName: holderName,
@@ -278,10 +283,12 @@ export function useRail5Wizard({ onComplete, onClose, preselectedBotId }: UseRai
           }
         } catch {
         }
+        await delay(800);
       }
 
       downloadEncryptedFile(md, `${baseName}.md`);
       setDownloadDone(true);
+      await delay(800);
 
       setSavedCardDetails({
         cardNumber: cardNumber.replace(/\s/g, ""),
@@ -330,7 +337,7 @@ export function useRail5Wizard({ onComplete, onClose, preselectedBotId }: UseRai
       return;
     }
     setCardErrors({});
-    setStep(4);
+    setStep(2);
   }
 
   async function handleAddressNext() {
@@ -388,7 +395,7 @@ export function useRail5Wizard({ onComplete, onClose, preselectedBotId }: UseRai
         }),
       });
       if (!res.ok) throw new Error("Failed to update limits");
-      setStep(3);
+      setStep(4);
     } catch {
       toast({ title: "Error", description: "Failed to save spending limits.", variant: "destructive" });
     } finally {

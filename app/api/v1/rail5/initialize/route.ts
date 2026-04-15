@@ -29,7 +29,6 @@ export async function POST(request: NextRequest) {
 
   const { card_name, card_brand, card_last4 } = parsed.data;
   const cardId = generateRail5CardId();
-
   const cardColor = CARD_COLORS[Math.floor(Math.random() * CARD_COLORS.length)];
 
   const card = await storage.createRail5Card({
@@ -38,6 +37,7 @@ export async function POST(request: NextRequest) {
     cardName: card_name,
     cardBrand: card_brand,
     cardLast4: card_last4,
+    cardFirst6: "",
     status: "pending_setup",
     cardColor,
   });

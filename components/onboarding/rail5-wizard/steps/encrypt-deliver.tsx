@@ -3,6 +3,7 @@
 import { Loader2, ArrowLeft, Lock, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { wt } from "@/lib/wizard-typography";
+import { StepHeader } from "../step-header";
 
 interface EncryptDeliverProps {
   selectedBotId: string;
@@ -25,19 +26,15 @@ export function EncryptDeliver({
 }: EncryptDeliverProps) {
   return (
     <div className="space-y-6" data-testid="r5-step-encrypt">
-      <div className="text-center">
-        <div className="w-12 h-12 rounded-2xl bg-purple-50 flex items-center justify-center mx-auto mb-3">
-          <Lock className="w-6 h-6 text-purple-600" />
-        </div>
-        <h2 className={wt.title}>
-          {selectedBotId ? "Encrypt & Deliver" : "Encrypt & Download"}
-        </h2>
-        <p className={`${wt.subtitle} mt-1`}>
-          {selectedBotId
-            ? "Your card will be encrypted and delivered directly to your bot."
-            : "Your card will be encrypted and downloaded as a file."}
-        </p>
-      </div>
+      <StepHeader
+        icon={Lock}
+        iconBg="bg-purple-50"
+        iconColor="text-purple-600"
+        title={selectedBotId ? "Encrypt & Deliver" : "Send to Agent"}
+        tooltip={selectedBotId
+          ? "Your card will be encrypted and delivered directly to your bot."
+          : "Your card will be encrypted and downloaded as a file."}
+      />
 
       <div className="bg-neutral-50 rounded-xl p-5 space-y-3">
         <div className="flex items-center gap-3">
@@ -50,7 +47,7 @@ export function EncryptDeliver({
           <div className={`w-6 h-6 rounded-full flex items-center justify-center ${keySent ? "bg-green-500" : "bg-neutral-200"}`}>
             {keySent ? <CheckCircle2 className="w-4 h-4 text-white" /> : <span className="text-xs text-neutral-500">2</span>}
           </div>
-          <span className={`${wt.body} text-neutral-700`}>Send decryption key to CreditClaw</span>
+          <span className={`${wt.body} text-neutral-700`}>Secure decryption key at CreditClaw</span>
         </div>
         {selectedBotId && (
           <div className="flex items-center gap-3">
@@ -80,7 +77,7 @@ export function EncryptDeliver({
         </Button>
         <Button onClick={onEncrypt} disabled={loading || downloadDone} className={`flex-1 ${wt.primaryButton} gap-2 bg-purple-600 hover:bg-purple-700`} data-testid="button-r5-encrypt">
           {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Lock className="w-4 h-4" />}
-          {downloadDone ? "Done!" : "Encrypt Now"}
+          {downloadDone ? "Done!" : "Send & Download"}
         </Button>
       </div>
     </div>

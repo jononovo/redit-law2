@@ -1,10 +1,10 @@
-import { NextResponse } from "next/server";
-import { getCurrentUser } from "@/features/platform-management/auth/session";
+import { NextRequest, NextResponse } from "next/server";
+import { getSessionUser } from "@/features/platform-management/auth/session";
 import { storage } from "@/server/storage";
 import type { Bot } from "@/shared/schema";
 
-export async function GET() {
-  const user = await getCurrentUser();
+export async function GET(request: NextRequest) {
+  const user = await getSessionUser(request);
   if (!user) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }

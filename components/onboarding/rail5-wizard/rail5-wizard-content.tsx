@@ -26,40 +26,12 @@ export function Rail5SetupWizardContent({ onComplete, onClose, preselectedBotId,
       onDismissExit={() => w.setShowExitConfirm(false)}
     >
       {w.step === 0 && (
-        <NameCard
-          cardName={w.cardName}
-          setCardName={w.setCardName}
-          loading={w.loading}
-          onNext={w.handleStep1Next}
+        <HowItWorks
+          onNext={() => w.setStep(1)}
         />
       )}
 
       {w.step === 1 && (
-        <HowItWorks
-          onBack={() => w.setStep(0)}
-          onNext={() => w.setStep(2)}
-        />
-      )}
-
-      {w.step === 2 && (
-        <SpendingLimits
-          spendingLimit={w.spendingLimit}
-          setSpendingLimit={w.setSpendingLimit}
-          dailyLimit={w.dailyLimit}
-          setDailyLimit={w.setDailyLimit}
-          monthlyLimit={w.monthlyLimit}
-          setMonthlyLimit={w.setMonthlyLimit}
-          approveAll={w.approveAll}
-          setApproveAll={w.setApproveAll}
-          approvalThreshold={w.approvalThreshold}
-          setApprovalThreshold={w.setApprovalThreshold}
-          loading={w.loading}
-          onBack={() => w.setStep(1)}
-          onNext={w.handleLimitsNext}
-        />
-      )}
-
-      {w.step === 3 && (
         <CardEntry
           cardNumber={w.cardNumber}
           setCardNumber={w.setCardNumber}
@@ -78,7 +50,34 @@ export function Rail5SetupWizardContent({ onComplete, onClose, preselectedBotId,
           onEncryptCard={w.handleEncryptCard}
           onRestartCard={w.handleRestartCard}
           onCardDetailsNext={w.handleCardDetailsNext}
+          onBack={() => w.setStep(0)}
+        />
+      )}
+
+      {w.step === 2 && (
+        <NameCard
+          cardName={w.cardName}
+          setCardName={w.setCardName}
+          loading={w.loading}
+          onNext={w.handleStep1Next}
+        />
+      )}
+
+      {w.step === 3 && (
+        <SpendingLimits
+          spendingLimit={w.spendingLimit}
+          setSpendingLimit={w.setSpendingLimit}
+          dailyLimit={w.dailyLimit}
+          setDailyLimit={w.setDailyLimit}
+          monthlyLimit={w.monthlyLimit}
+          setMonthlyLimit={w.setMonthlyLimit}
+          approveAll={w.approveAll}
+          setApproveAll={w.setApproveAll}
+          approvalThreshold={w.approvalThreshold}
+          setApprovalThreshold={w.setApprovalThreshold}
+          loading={w.loading}
           onBack={() => w.setStep(2)}
+          onNext={w.handleLimitsNext}
         />
       )}
 

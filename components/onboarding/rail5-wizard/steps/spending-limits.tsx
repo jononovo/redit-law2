@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { wt } from "@/lib/wizard-typography";
+import { StepHeader } from "../step-header";
 
 interface SpendingLimitsProps {
   spendingLimit: string;
@@ -33,55 +34,9 @@ export function SpendingLimits({
 }: SpendingLimitsProps) {
   return (
     <div className="space-y-6" data-testid="r5-step-limits">
-      <div className="text-center">
-        <div className="w-12 h-12 rounded-2xl bg-orange-50 flex items-center justify-center mx-auto mb-3">
-          <Shield className="w-6 h-6 text-orange-600" />
-        </div>
-        <h2 className={wt.title}>Spending Limits</h2>
-        <p className={`${wt.subtitle} mt-1`}>Set hardened guardrails for how your bot can spend.</p>
-      </div>
+      <StepHeader icon={Shield} iconBg="bg-orange-50" iconColor="text-orange-600" title="Spending Limits" tooltip="Set hardened guardrails for how your bot can spend." />
 
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <Label htmlFor="r5-per-checkout">Per-Transaction Limit ($)</Label>
-          <Input
-            id="r5-per-checkout"
-            type="number"
-            min="1"
-            step="0.01"
-            value={spendingLimit}
-            onChange={(e) => setSpendingLimit(e.target.value)}
-            data-testid="input-r5-spending-limit"
-          />
-          <p className="text-xs text-neutral-400 mt-1">Max amount per individual purchase.</p>
-        </div>
-
-        <div>
-          <Label htmlFor="r5-daily">Daily Limit ($)</Label>
-          <Input
-            id="r5-daily"
-            type="number"
-            min="1"
-            step="0.01"
-            value={dailyLimit}
-            onChange={(e) => setDailyLimit(e.target.value)}
-            data-testid="input-r5-daily-limit"
-          />
-        </div>
-
-        <div>
-          <Label htmlFor="r5-monthly">Monthly Limit ($)</Label>
-          <Input
-            id="r5-monthly"
-            type="number"
-            min="1"
-            step="0.01"
-            value={monthlyLimit}
-            onChange={(e) => setMonthlyLimit(e.target.value)}
-            data-testid="input-r5-monthly-limit"
-          />
-        </div>
-
+      <div className="space-y-4 max-w-sm mx-auto">
         <div className="flex items-center justify-between rounded-lg border border-neutral-200 px-4 py-3">
           <div>
             <p className="text-sm font-medium text-neutral-900">Approve every transaction</p>
@@ -110,6 +65,20 @@ export function SpendingLimits({
             <p className="text-xs text-neutral-400 mt-1">Purchases above this amount require your approval.</p>
           </div>
         )}
+
+        <div>
+          <Label htmlFor="r5-per-checkout">Per-Transaction Limit ($)</Label>
+          <Input
+            id="r5-per-checkout"
+            type="number"
+            min="1"
+            step="0.01"
+            value={spendingLimit}
+            onChange={(e) => setSpendingLimit(e.target.value)}
+            data-testid="input-r5-spending-limit"
+          />
+          <p className="text-xs text-neutral-400 mt-1">Max amount per individual purchase.</p>
+        </div>
       </div>
 
       <div className="flex gap-3">

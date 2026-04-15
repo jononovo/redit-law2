@@ -84,7 +84,7 @@ export function buildEncryptedCardFile(
     lines.push(
       "## Card Details",
       "",
-      `- **First 4 Digits:** ${meta.bin}`,
+      `- **BIN:** ${meta.bin}`,
       `- **Expiry:** ${meta.expMonth.padStart(2, "0")}/${meta.expYear}`,
       `- **Cardholder Name:** ${meta.cardholderName}`,
       `- **Brand:** ${meta.brand}`,

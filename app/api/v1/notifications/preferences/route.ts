@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getCurrentUser } from "@/features/platform-management/auth/session";
+import { getSessionUser } from "@/features/platform-management/auth/session";
 import { storage } from "@/server/storage";
 import { updateNotificationPreferencesSchema } from "@/shared/schema";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const user = await getCurrentUser();
+    const user = await getSessionUser(request);
     if (!user) {
       return NextResponse.json({ error: "Authentication required" }, { status: 401 });
     }
@@ -41,7 +41,7 @@ export async function GET() {
 
 export async function PUT(request: NextRequest) {
   try {
-    const user = await getCurrentUser();
+    const user = await getSessionUser(request);
     if (!user) {
       return NextResponse.json({ error: "Authentication required" }, { status: 401 });
     }

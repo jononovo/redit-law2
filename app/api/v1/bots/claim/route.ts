@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getCurrentUser } from "@/features/platform-management/auth/session";
+import { getSessionUser } from "@/features/platform-management/auth/session";
 import { claimBotRequestSchema } from "@/shared/schema";
 import { storage } from "@/server/storage";
 import { fireWebhook } from "@/features/agent-interaction/webhooks";
@@ -7,7 +7,7 @@ import { notifyWalletActivated } from "@/features/platform-management/notificati
 
 export async function POST(request: NextRequest) {
   try {
-    const user = await getCurrentUser();
+    const user = await getSessionUser(request);
     if (!user) {
       return NextResponse.json(
         { error: "Authentication required. Please sign in first." },

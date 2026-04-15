@@ -9,6 +9,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { authFetch } from "@/features/platform-management/auth-fetch";
 import { cn } from "@/lib/utils";
 
 interface Notification {
@@ -54,7 +55,7 @@ export function NotificationPopover() {
   const { data: countData } = useQuery({
     queryKey: ["unread-count"],
     queryFn: async () => {
-      const res = await fetch("/api/v1/notifications/unread-count");
+      const res = await authFetch("/api/v1/notifications/unread-count");
       if (!res.ok) return { count: 0 };
       return res.json();
     },
@@ -64,7 +65,7 @@ export function NotificationPopover() {
   const { data: notifsData, isLoading } = useQuery({
     queryKey: ["notifications"],
     queryFn: async () => {
-      const res = await fetch("/api/v1/notifications?limit=20");
+      const res = await authFetch("/api/v1/notifications?limit=20");
       if (!res.ok) return { notifications: [] };
       return res.json();
     },
@@ -74,7 +75,7 @@ export function NotificationPopover() {
 
   const markRead = useMutation({
     mutationFn: async (ids: number[]) => {
-      await fetch("/api/v1/notifications/read", {
+      await authFetch("/api/v1/notifications/read", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ids }),
@@ -88,7 +89,7 @@ export function NotificationPopover() {
 
   const markAllRead = useMutation({
     mutationFn: async () => {
-      await fetch("/api/v1/notifications/read-all", {
+      await authFetch("/api/v1/notifications/read-all", {
         method: "POST",
       });
     },

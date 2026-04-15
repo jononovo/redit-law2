@@ -2,6 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { CheckCircle, AlertTriangle } from "lucide-react";
+import { authFetch } from "@/features/platform-management/auth-fetch";
 
 interface WebhookHealthResponse {
   failed_24h: number;
@@ -13,7 +14,7 @@ export function OpsHealth() {
   const { data: webhookHealth } = useQuery<WebhookHealthResponse>({
     queryKey: ["webhook-health"],
     queryFn: async () => {
-      const res = await fetch("/api/v1/webhooks/health");
+      const res = await authFetch("/api/v1/webhooks/health");
       if (!res.ok) throw new Error("Failed");
       return res.json();
     },

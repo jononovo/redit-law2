@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Webhook, Loader2, CheckCircle2, XCircle, Clock, RefreshCw, ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { authFetch } from "@/features/platform-management/auth-fetch";
 
 interface Delivery {
   id: number;
@@ -128,7 +129,7 @@ export function WebhookLog() {
 
   async function fetchDeliveries() {
     try {
-      const res = await fetch("/api/v1/webhooks");
+      const res = await authFetch("/api/v1/webhooks");
       if (res.ok) {
         const data = await res.json();
         setDeliveries(data.deliveries || []);
@@ -145,7 +146,7 @@ export function WebhookLog() {
   async function handleRetry() {
     setRetrying(true);
     try {
-      await fetch("/api/v1/webhooks/retry-pending", { method: "POST" });
+      await authFetch("/api/v1/webhooks/retry-pending", { method: "POST" });
       await fetchDeliveries();
     } catch {} finally {
       setRetrying(false);

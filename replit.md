@@ -395,6 +395,10 @@ Auth, bot lifecycle, admin tooling.
 
 → Docs: `project_knowledge/internal_docs/07-platform-management/`
 
+## Auth Pattern for API Routes
+
+All authenticated API routes under `app/api/v1/` must use `getSessionUser(request)` from `@/features/platform-management/auth/session` — this supports both httpOnly session cookies AND Bearer token fallback. Never use bare `getCurrentUser()` for API routes (cookie-only, breaks when session expires). Client-side callers must use `authFetch` from `@/features/platform-management/auth-fetch` instead of plain `fetch` — it attaches the Firebase ID token as a Bearer header automatically. Some older routes (`bots/mine`, `bots/rails`, `bots/default-rail`, `bots/[botId]/settings`) have an inline `getAuthUser()` wrapper that does the same thing — those work but should eventually be consolidated.
+
 ## Feature Flags & Access Control
 
 CreditClaw uses a lightweight, database-backed feature flag system for controlling UI visibility and route access.

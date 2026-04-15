@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
 
   const {
     card_id, key_hex, iv_hex, tag_hex, card_last4, card_brand,
-    card_first4, exp_month, exp_year, cardholder_name,
+    card_first6, exp_month, exp_year, cardholder_name,
     billing_address, billing_city, billing_state, billing_zip, billing_country,
     spending_limit_cents, daily_limit_cents, monthly_limit_cents,
   } = parsed.data;
@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
 
   if (card_last4) updates.cardLast4 = card_last4;
   if (card_brand) updates.cardBrand = card_brand;
-  if (card_first4) updates.cardFirst4 = card_first4;
+  if (card_first6) updates.cardFirst6 = card_first6;
   if (exp_month) updates.expMonth = exp_month;
   if (exp_year) updates.expYear = exp_year;
   if (cardholder_name) updates.cardholderName = cardholder_name;
