@@ -52,12 +52,10 @@ const creditclawConfig: TenantConfig = {
           ],
         },
         {
-          title: "Dashboard",
+          title: "Tools",
           links: [
-            { label: "Overview", href: "/overview" },
-            { label: "Cards", href: "/cards" },
-            { label: "Transactions", href: "/transactions" },
-            { label: "Settings", href: "/settings" },
+            { label: "Agent Shopping Test", href: "/agent-shopping-test" },
+            { label: "Shopping Leaderboard", href: "/agent-shopping-efficiency-leaderboard" },
           ],
         },
         {
