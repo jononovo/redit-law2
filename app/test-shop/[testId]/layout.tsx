@@ -54,7 +54,7 @@ function ShopSearchBar() {
         value={isObserver ? displayQuery : query}
         onChange={(e) => setQuery(e.target.value)}
         placeholder="Search products..."
-        className="flex-1 px-3 py-1.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+        className="flex-1 px-3 py-1.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-teal-600 focus:border-transparent"
         readOnly={isObserver}
       />
       <button
@@ -63,7 +63,7 @@ function ShopSearchBar() {
         disabled={isObserver}
         className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 ${
           (isObserver ? displayQuery : query).trim()
-            ? "bg-indigo-600 text-white hover:bg-indigo-700"
+            ? "bg-teal-700 text-white hover:bg-teal-800"
             : "bg-gray-200 text-gray-700 hover:bg-gray-300"
         }`}
       >
@@ -131,7 +131,7 @@ function TimeoutScreen() {
         <a
           href="/agent-shopping-test"
           data-testid="link-return-home"
-          className="inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors"
+          className="inline-flex items-center gap-2 px-6 py-3 bg-teal-700 text-white rounded-lg font-medium hover:bg-teal-800 transition-colors"
         >
           Return to Testing Home
         </a>

@@ -110,7 +110,7 @@ export default function ProductDetailPage() {
           <h1 data-testid="text-product-name" className="text-2xl font-bold text-gray-900 mb-2">
             {product.name}
           </h1>
-          <p data-testid="text-product-price" className="text-2xl font-bold text-indigo-600 mb-4">
+          <p data-testid="text-product-price" className="text-2xl font-bold text-teal-700 mb-4">
             {formatPrice(product.price)}
           </p>
           <p data-testid="text-product-description" className="text-gray-600 mb-6">

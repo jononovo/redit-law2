@@ -72,7 +72,7 @@ export default function CartPage() {
           <a
             href={`/test-shop/${testId}/checkout${qs}`}
             data-testid="button-checkout"
-            className="mt-6 block w-full py-3 bg-indigo-600 text-white text-center rounded-lg font-semibold hover:bg-indigo-700 transition-colors"
+            className="mt-6 block w-full py-3 bg-teal-700 text-white text-center rounded-lg font-semibold hover:bg-teal-800 transition-colors"
           >
             Proceed to Checkout
           </a>

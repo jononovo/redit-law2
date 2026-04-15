@@ -66,7 +66,7 @@ export default function CheckoutPage() {
                 value={addr.fullName}
                 onChange={(e) => handleAddressChange("fullName", e.target.value)}
                 readOnly={isObserver}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-teal-600"
                 required
               />
             </div>
@@ -78,7 +78,7 @@ export default function CheckoutPage() {
                 value={addr.street}
                 onChange={(e) => handleAddressChange("street", e.target.value)}
                 readOnly={isObserver}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-teal-600"
                 required
               />
             </div>
@@ -91,7 +91,7 @@ export default function CheckoutPage() {
                   value={addr.city}
                   onChange={(e) => handleAddressChange("city", e.target.value)}
                   readOnly={isObserver}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-teal-600"
                   required
                 />
               </div>
@@ -102,7 +102,7 @@ export default function CheckoutPage() {
                   value={addr.state}
                   onChange={(e) => handleAddressChange("state", e.target.value)}
                   disabled={isObserver}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-teal-600"
                   required
                 >
                   <option value="">—</option>
@@ -119,7 +119,7 @@ export default function CheckoutPage() {
                   value={addr.zip}
                   onChange={(e) => handleAddressChange("zip", e.target.value)}
                   readOnly={isObserver}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-teal-600"
                   required
                 />
               </div>
@@ -133,7 +133,7 @@ export default function CheckoutPage() {
             <label
               data-testid="radio-shipping-standard"
               className={`flex items-center p-3 rounded-lg border cursor-pointer transition-all ${
-                shopState.shippingMethod === "standard" ? "border-indigo-400 bg-indigo-50" : "border-gray-200 hover:border-gray-300"
+                shopState.shippingMethod === "standard" ? "border-teal-500 bg-teal-50" : "border-gray-200 hover:border-gray-300"
               }`}
             >
               <input
@@ -153,7 +153,7 @@ export default function CheckoutPage() {
             <label
               data-testid="radio-shipping-priority"
               className={`flex items-center p-3 rounded-lg border cursor-pointer transition-all ${
-                shopState.shippingMethod === "priority" ? "border-indigo-400 bg-indigo-50" : "border-gray-200 hover:border-gray-300"
+                shopState.shippingMethod === "priority" ? "border-teal-500 bg-teal-50" : "border-gray-200 hover:border-gray-300"
               }`}
             >
               <input
@@ -179,7 +179,7 @@ export default function CheckoutPage() {
             <label
               data-testid="radio-payment-credit_card"
               className={`flex items-center p-3 rounded-lg border cursor-pointer transition-all ${
-                shopState.paymentMethod === "credit_card" ? "border-indigo-400 bg-indigo-50" : "border-gray-200 hover:border-gray-300"
+                shopState.paymentMethod === "credit_card" ? "border-teal-500 bg-teal-50" : "border-gray-200 hover:border-gray-300"
               }`}
             >
               <input
@@ -196,7 +196,7 @@ export default function CheckoutPage() {
             <label
               data-testid="radio-payment-ach"
               className={`flex items-center p-3 rounded-lg border cursor-pointer transition-all ${
-                shopState.paymentMethod === "ach" ? "border-indigo-400 bg-indigo-50" : "border-gray-200 hover:border-gray-300"
+                shopState.paymentMethod === "ach" ? "border-teal-500 bg-teal-50" : "border-gray-200 hover:border-gray-300"
               } opacity-50`}
             >
               <input
@@ -218,7 +218,7 @@ export default function CheckoutPage() {
           type="submit"
           data-testid="button-continue-to-payment"
           disabled={isObserver}
-          className="w-full py-3 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition-colors disabled:opacity-50"
+          className="w-full py-3 bg-teal-700 text-white rounded-lg font-semibold hover:bg-teal-800 transition-colors disabled:opacity-50"
         >
           Continue to Payment
         </button>

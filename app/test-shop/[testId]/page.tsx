@@ -60,7 +60,7 @@ export default function TestShopHomePage() {
                 />
               </div>
               <div className="p-4 text-center">
-                <h3 className="text-lg font-semibold text-gray-900 group-hover:text-indigo-600 transition-colors">
+                <h3 className="text-lg font-semibold text-gray-900 group-hover:text-teal-700 transition-colors">
                   {cat.label}
                 </h3>
               </div>

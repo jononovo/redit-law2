@@ -89,7 +89,7 @@ export default function SearchPage() {
               <div className="p-4">
                 <h3
                   data-testid={`text-product-name-${product.slug}`}
-                  className="font-semibold text-gray-900 group-hover:text-indigo-600 transition-colors"
+                  className="font-semibold text-gray-900 group-hover:text-teal-700 transition-colors"
                 >
                   {product.name}
                 </h3>
