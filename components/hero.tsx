@@ -63,7 +63,7 @@ export function Hero() {
               className="text-5xl md:text-7xl font-extrabold tracking-tight text-neutral-900 leading-[1.1] animate-fade-in-up"
             >
               Give your <span className="text-primary">Claw Agent</span>{" "}
-              <span className="inline-block overflow-hidden" style={{ height: "1em" }}>
+              <span className="inline-block overflow-hidden" style={{ height: "1.2em" }}>
                 <span
                   className="inline-block transition-all duration-300 ease-in-out"
                   style={{
@@ -79,7 +79,7 @@ export function Hero() {
 
             <p 
               style={{ animationDelay: '0.2s' }}
-              className="text-xl text-neutral-600 max-w-lg mx-auto lg:mx-0 leading-relaxed font-medium animate-fade-in-up"
+              className="text-xl text-neutral-600 max-w-lg mx-auto lg:mx-0 leading-relaxed font-medium animate-fade-in-up -mt-2"
             >
               Streamline procurement, automate payment processes or just have your agent shop.
             </p>
