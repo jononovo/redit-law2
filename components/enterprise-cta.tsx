@@ -2,7 +2,7 @@
 
 import { ArrowRight, Building2, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import Image from "next/image";
+import { AgentConvergenceDiagram } from "@/components/agent-convergence-diagram";
 
 const services = [
   "Master agent building",
@@ -38,32 +38,25 @@ export function EnterpriseCta() {
           </p>
         </div>
 
-        <div className="grid lg:grid-cols-2 gap-12 items-center mb-16">
-          <div className="relative rounded-3xl overflow-hidden bg-neutral-50 border border-neutral-100 p-2">
-            <Image
-              src="/assets/images/agents-converge-diagram.png"
-              alt="AI agents from Claude, Perplexity, ChatGPT and independent builders converging on your brand"
-              width={800}
-              height={450}
-              className="w-full h-auto rounded-2xl"
-              data-testid="img-agent-convergence"
-            />
-          </div>
+        <div className="rounded-3xl bg-white border border-neutral-100 shadow-sm p-6 md:p-10 mb-16">
+          <AgentConvergenceDiagram />
+        </div>
 
-          <div>
-            <h3 className="text-2xl font-extrabold text-neutral-900 mb-6" data-testid="text-services-heading">
-              Our Managed Services
-            </h3>
-            <div className="space-y-4 mb-8">
-              {services.map((service, i) => (
-                <div key={i} className="flex items-start gap-3" data-testid={`text-service-${i}`}>
-                  <div className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0 mt-0.5">
-                    <Sparkles size={12} />
-                  </div>
-                  <p className="text-neutral-700 font-medium">{service}</p>
+        <div className="max-w-3xl mx-auto">
+          <h3 className="text-2xl font-extrabold text-neutral-900 text-center mb-8" data-testid="text-services-heading">
+            Our Managed Services
+          </h3>
+          <div className="grid sm:grid-cols-2 gap-4 mb-10">
+            {services.map((service, i) => (
+              <div key={i} className="flex items-start gap-3 p-4 rounded-2xl bg-neutral-50 border border-neutral-100" data-testid={`text-service-${i}`}>
+                <div className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0 mt-0.5">
+                  <Sparkles size={12} />
                 </div>
-              ))}
-            </div>
+                <p className="text-neutral-700 font-medium text-sm">{service}</p>
+              </div>
+            ))}
+          </div>
+          <div className="text-center">
             <Button
               className="h-14 px-8 rounded-full text-lg font-bold gap-2"
               data-testid="link-book-call"

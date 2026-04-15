@@ -4,7 +4,7 @@ import { Nav } from "@/components/nav";
 import { Footer } from "@/components/footer";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Bot, Globe, ShoppingBag, Sparkles, Target, Layers, Zap, BookOpen } from "lucide-react";
-import Image from "next/image";
+import { AgentConvergenceDiagram } from "@/components/agent-convergence-diagram";
 
 const services = [
   {
@@ -78,16 +78,9 @@ export default function ManagedAgentsPage() {
               </p>
             </div>
 
-            <div className="max-w-3xl mx-auto mb-20">
-              <div className="relative rounded-3xl overflow-hidden bg-neutral-50 border border-neutral-100 p-2 animate-fade-in-up" style={{ animationDelay: '0.4s' }}>
-                <Image
-                  src="/assets/images/agents-converge-diagram.png"
-                  alt="AI agents from Claude, Perplexity, ChatGPT and independent builders converging on your brand"
-                  width={800}
-                  height={450}
-                  className="w-full h-auto rounded-2xl"
-                  data-testid="img-managed-convergence"
-                />
+            <div className="max-w-4xl mx-auto mb-20">
+              <div className="rounded-3xl bg-white border border-neutral-100 shadow-sm p-6 md:p-10 animate-fade-in-up" style={{ animationDelay: '0.4s' }}>
+                <AgentConvergenceDiagram />
               </div>
             </div>
 
