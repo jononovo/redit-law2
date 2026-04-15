@@ -64,5 +64,30 @@ export async function GET(
     });
   }
 
+  const approvals = await storage.getUnifiedApprovalsByOwnerUid(user.uid);
+  const cardApproval = approvals.find(
+    (a) =>
+      a.rail === "rail5" &&
+      a.merchantName === "CreditClaw Test Checkout" &&
+      (a.metadata as Record<string, any>)?.cardId === cardId &&
+      (a.metadata as Record<string, any>)?.category === "test"
+  );
+
+  if (cardApproval) {
+    if (cardApproval.status === "approved") {
+      return NextResponse.json({
+        status: "approved",
+        approved_at: cardApproval.decidedAt?.toISOString() || null,
+      });
+    }
+    if (cardApproval.status === "pending") {
+      return NextResponse.json({
+        status: "approval_requested",
+        requested_at: cardApproval.createdAt.toISOString(),
+        expires_at: cardApproval.expiresAt.toISOString(),
+      });
+    }
+  }
+
   return NextResponse.json({ status: "pending" });
 }

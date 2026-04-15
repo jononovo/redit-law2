@@ -43,7 +43,7 @@ export interface TestVerificationField {
 }
 
 export interface TestPurchaseApiResponse {
-  status: "pending" | "in_progress" | "completed";
+  status: "pending" | "approval_requested" | "approved" | "in_progress" | "completed";
   sale_id?: string;
   completed_at?: string;
   started_at?: string;
@@ -60,7 +60,7 @@ export interface TestPurchaseApiResponse {
 }
 
 export interface TestPurchaseResult {
-  status: "pending" | "in_progress" | "completed";
+  status: "pending" | "approval_requested" | "approved" | "in_progress" | "completed";
   sale_id?: string;
   verified?: boolean;
   fields?: Record<string, TestVerificationField>;
