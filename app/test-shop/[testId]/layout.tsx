@@ -17,7 +17,7 @@ function ObserverBanner() {
       data-testid="observer-banner"
       className="text-white text-center text-sm py-2 px-4 font-semibold tracking-wide"
       style={{
-        background: "linear-gradient(135deg, hsl(10, 85%, 55%), hsl(260, 90%, 65%))",
+        backgroundColor: "hsl(220, 15%, 15%)",
         fontFamily: "'Plus Jakarta Sans', sans-serif",
       }}
     >

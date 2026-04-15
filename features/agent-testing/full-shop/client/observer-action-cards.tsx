@@ -27,14 +27,14 @@ export function AwaitingAgentCard({ instructionText, testUrl }: AwaitingAgentCar
         backgroundColor: "rgba(255, 255, 255, 0.92)",
         backdropFilter: "blur(20px)",
         WebkitBackdropFilter: "blur(20px)",
-        boxShadow: "0 8px 40px hsla(260, 90%, 65%, 0.15), 0 2px 12px hsla(10, 85%, 55%, 0.08)",
+        boxShadow: "0 8px 40px hsla(220, 15%, 15%, 0.2), 0 2px 12px hsla(220, 10%, 30%, 0.1)",
         border: "1px solid hsla(222, 10%, 85%, 0.5)",
       }}
     >
       <div
         className="px-6 py-4"
         style={{
-          background: "linear-gradient(135deg, hsl(10, 85%, 55%), hsl(260, 90%, 65%))",
+          backgroundColor: "hsl(220, 15%, 15%)",
         }}
       >
         <div className="flex items-center gap-3">
@@ -90,7 +90,7 @@ export function AwaitingAgentCard({ instructionText, testUrl }: AwaitingAgentCar
           onClick={handleCopy}
           className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all"
           style={{
-            backgroundColor: copied ? "hsl(142, 71%, 45%)" : "hsl(260, 90%, 65%)",
+            backgroundColor: copied ? "hsl(142, 71%, 45%)" : "hsl(220, 10%, 30%)",
             color: "white",
             fontFamily: "'Plus Jakarta Sans', sans-serif",
           }}
@@ -150,14 +150,14 @@ export function ApprovalRequiredCard({ dashboardUrl = "/overview" }: ApprovalReq
         backgroundColor: "rgba(255, 255, 255, 0.92)",
         backdropFilter: "blur(20px)",
         WebkitBackdropFilter: "blur(20px)",
-        boxShadow: "0 8px 40px hsla(260, 90%, 65%, 0.15), 0 2px 12px hsla(10, 85%, 55%, 0.08)",
+        boxShadow: "0 8px 40px hsla(220, 15%, 15%, 0.2), 0 2px 12px hsla(220, 10%, 30%, 0.1)",
         border: "1px solid hsla(222, 10%, 85%, 0.5)",
       }}
     >
       <div
         className="px-6 py-4"
         style={{
-          background: "linear-gradient(135deg, hsl(35, 95%, 55%), hsl(10, 85%, 55%))",
+          backgroundColor: "hsl(220, 15%, 15%)",
         }}
       >
         <div className="flex items-center gap-3">
@@ -190,7 +190,7 @@ export function ApprovalRequiredCard({ dashboardUrl = "/overview" }: ApprovalReq
           data-testid="link-open-dashboard"
           className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all hover:opacity-90"
           style={{
-            backgroundColor: "hsl(10, 85%, 55%)",
+            backgroundColor: "hsl(220, 10%, 30%)",
             color: "white",
             fontFamily: "'Plus Jakarta Sans', sans-serif",
           }}

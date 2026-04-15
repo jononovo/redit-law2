@@ -219,7 +219,7 @@ function StageRow({
           className="ml-6 mt-1 mb-2 pl-4 rounded-lg py-2 px-3"
           style={{
             backgroundColor: "hsl(210, 40%, 96%)",
-            borderLeft: "3px solid hsl(260, 90%, 65%)",
+            borderLeft: "3px solid hsl(220, 10%, 30%)",
           }}
         >
           {STAGE_DESCRIPTIONS[stage] ? (
@@ -324,12 +324,12 @@ export function ObserverStageOverlay() {
           backdropFilter: "blur(12px)",
           WebkitBackdropFilter: "blur(12px)",
           borderRadius: "0 16px 16px 0",
-          boxShadow: "4px 4px 20px hsla(260, 90%, 65%, 0.15), 0 2px 8px hsla(10, 85%, 55%, 0.1)",
+          boxShadow: "4px 4px 20px hsla(220, 15%, 15%, 0.15), 0 2px 8px hsla(220, 10%, 30%, 0.1)",
           border: "1px solid hsla(222, 10%, 85%, 0.6)",
           borderLeftWidth: 0,
         }}
       >
-        <svg className="w-4 h-4" style={{ color: "hsl(260, 90%, 65%)" }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="w-4 h-4" style={{ color: "hsl(220, 10%, 30%)" }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
         </svg>
       </button>
@@ -346,7 +346,7 @@ export function ObserverStageOverlay() {
         backdropFilter: "blur(16px)",
         WebkitBackdropFilter: "blur(16px)",
         borderRadius: "0 16px 16px 0",
-        boxShadow: "6px 6px 30px hsla(260, 90%, 65%, 0.12), 0 4px 12px hsla(10, 85%, 55%, 0.08)",
+        boxShadow: "6px 6px 30px hsla(220, 15%, 15%, 0.12), 0 4px 12px hsla(220, 10%, 30%, 0.08)",
         border: "1px solid hsla(222, 10%, 85%, 0.5)",
         borderLeftWidth: 0,
       }}
@@ -354,7 +354,7 @@ export function ObserverStageOverlay() {
       <div
         className="flex items-center justify-between px-4 py-3"
         style={{
-          background: "linear-gradient(135deg, hsl(10, 85%, 55%), hsl(260, 90%, 65%))",
+          backgroundColor: "hsl(220, 15%, 15%)",
           borderRadius: "0 16px 0 0",
         }}
       >
