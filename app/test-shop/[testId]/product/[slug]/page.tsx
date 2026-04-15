@@ -125,10 +125,10 @@ export default function ProductDetailPage() {
                   data-testid={`button-color-${color.toLowerCase()}`}
                   onClick={() => handleColorSelect(color)}
                   disabled={isObserver}
-                  className={`px-4 py-2 rounded-lg border-2 text-sm font-medium transition-all ${
+                  className={`px-5 py-2.5 rounded-lg border-2 text-base font-semibold transition-all ${
                     selectedColor === color
                       ? "border-indigo-600 bg-indigo-600 text-white shadow-md"
-                      : "border-gray-300 text-gray-700 hover:border-gray-400"
+                      : "border-gray-300 text-gray-900 hover:border-gray-400"
                   }`}
                 >
                   {color}
@@ -147,10 +147,10 @@ export default function ProductDetailPage() {
                   data-testid={`button-size-${size.toLowerCase()}`}
                   onClick={() => handleSizeSelect(size)}
                   disabled={isObserver}
-                  className={`px-4 py-2 rounded-lg border-2 text-sm font-medium transition-all ${
+                  className={`w-12 h-12 rounded-lg border-2 text-base font-semibold transition-all flex items-center justify-center ${
                     selectedSize === size
                       ? "border-indigo-600 bg-indigo-600 text-white shadow-md"
-                      : "border-gray-300 text-gray-700 hover:border-gray-400"
+                      : "border-gray-300 text-gray-900 hover:border-gray-400"
                   }`}
                 >
                   {size}
@@ -167,11 +167,11 @@ export default function ProductDetailPage() {
                 data-testid="button-quantity-decrement"
                 onClick={() => handleQuantityChange(quantity - 1)}
                 disabled={isObserver || quantity <= 1}
-                className="w-10 h-10 rounded-lg border border-gray-300 flex items-center justify-center text-gray-700 hover:bg-gray-50 disabled:opacity-40"
+                className="w-12 h-12 rounded-lg border-2 border-gray-300 flex items-center justify-center text-xl font-bold text-gray-900 hover:bg-gray-50 disabled:opacity-40"
               >
                 −
               </button>
-              <span data-testid="text-quantity" className="text-lg font-semibold w-8 text-center text-gray-900">
+              <span data-testid="text-quantity" className="text-xl font-bold w-10 text-center text-gray-900">
                 {quantity}
               </span>
               <button
@@ -179,7 +179,7 @@ export default function ProductDetailPage() {
                 data-testid="button-quantity-increment"
                 onClick={() => handleQuantityChange(quantity + 1)}
                 disabled={isObserver || quantity >= 10}
-                className="w-10 h-10 rounded-lg border border-gray-300 flex items-center justify-center text-gray-700 hover:bg-gray-50 disabled:opacity-40"
+                className="w-12 h-12 rounded-lg border-2 border-gray-300 flex items-center justify-center text-xl font-bold text-gray-900 hover:bg-gray-50 disabled:opacity-40"
               >
                 +
               </button>
