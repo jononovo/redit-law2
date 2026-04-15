@@ -104,47 +104,76 @@ export function AgentConvergenceModern() {
           preserveAspectRatio="none"
           fill="none"
         >
-          {agents.map((_, i) => {
-            const startY = 30 + i * 55;
-            return (
-              <path
-                key={`left-${i}`}
-                d={`M 180 ${startY} Q 320 ${startY} 400 120`}
-                stroke="#a3a3a3"
-                strokeWidth="1"
-                strokeOpacity={visible ? 0.25 : 0}
-                fill="none"
-                strokeDasharray="4 4"
-                className="transition-all duration-1000"
-                style={{ transitionDelay: `${i * 120 + 400}ms` }}
-              />
-            );
-          })}
-
-          {outputs.map((_, i) => {
-            const endY = 40 + i * 75;
-            return (
-              <path
-                key={`right-${i}`}
-                d={`M 400 120 Q 480 ${endY} 620 ${endY}`}
-                stroke="hsl(10, 85%, 55%)"
-                strokeWidth="1"
-                strokeOpacity={visible ? 0.25 : 0}
-                fill="none"
-                strokeDasharray="4 4"
-                className="transition-all duration-1000"
-                style={{ transitionDelay: `${i * 120 + 900}ms` }}
-              />
-            );
-          })}
-
-          <circle cx="400" cy="120" r="36" fill="url(#centerGlow)" opacity={visible ? 1 : 0} className="transition-opacity duration-1000" style={{ transitionDelay: "600ms" }} />
           <defs>
             <radialGradient id="centerGlow">
               <stop offset="0%" stopColor="hsl(10, 85%, 55%)" stopOpacity="0.12" />
               <stop offset="100%" stopColor="hsl(10, 85%, 55%)" stopOpacity="0" />
             </radialGradient>
           </defs>
+
+          {agents.map((agent, i) => {
+            const startY = 30 + i * 55;
+            const pathId = `pathLeft-${i}`;
+            return (
+              <g key={`left-${i}`}>
+                <path
+                  id={pathId}
+                  d={`M 180 ${startY} Q 320 ${startY} 400 120`}
+                  stroke="#a3a3a3"
+                  strokeWidth="1"
+                  strokeOpacity={visible ? 0.25 : 0}
+                  fill="none"
+                  strokeDasharray="4 4"
+                  className="transition-all duration-1000"
+                  style={{ transitionDelay: `${i * 120 + 400}ms` }}
+                />
+                {visible && (
+                  <circle r="4" fill={agent.bg} opacity="0.7">
+                    <animateMotion
+                      dur={`${2.5 + i * 0.3}s`}
+                      repeatCount="indefinite"
+                      begin={`${i * 0.4}s`}
+                    >
+                      <mpath href={`#${pathId}`} />
+                    </animateMotion>
+                  </circle>
+                )}
+              </g>
+            );
+          })}
+
+          {outputs.map((_, i) => {
+            const endY = 40 + i * 75;
+            const pathId = `pathRight-${i}`;
+            return (
+              <g key={`right-${i}`}>
+                <path
+                  id={pathId}
+                  d={`M 400 120 Q 480 ${endY} 620 ${endY}`}
+                  stroke="hsl(10, 85%, 55%)"
+                  strokeWidth="1"
+                  strokeOpacity={visible ? 0.25 : 0}
+                  fill="none"
+                  strokeDasharray="4 4"
+                  className="transition-all duration-1000"
+                  style={{ transitionDelay: `${i * 120 + 900}ms` }}
+                />
+                {visible && (
+                  <circle r="4" fill="hsl(10, 85%, 55%)" opacity="0.5">
+                    <animateMotion
+                      dur={`${2.8 + i * 0.3}s`}
+                      repeatCount="indefinite"
+                      begin={`${1.2 + i * 0.5}s`}
+                    >
+                      <mpath href={`#${pathId}`} />
+                    </animateMotion>
+                  </circle>
+                )}
+              </g>
+            );
+          })}
+
+          <circle cx="400" cy="120" r="36" fill="url(#centerGlow)" opacity={visible ? 1 : 0} className="transition-opacity duration-1000" style={{ transitionDelay: "600ms" }} />
         </svg>
 
         <div
