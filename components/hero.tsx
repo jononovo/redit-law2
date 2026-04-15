@@ -63,7 +63,7 @@ export function Hero() {
               className="text-5xl md:text-7xl font-extrabold tracking-tight text-neutral-900 leading-[1.1] animate-fade-in-up"
             >
               Give your <span className="text-primary">Claw Agent</span>{" "}
-              <span className="inline-block overflow-hidden" style={{ height: "1.2em" }}>
+              <span className="inline-block overflow-hidden align-bottom" style={{ height: "1.15em" }}>
                 <span
                   className="inline-block transition-all duration-300 ease-in-out"
                   style={{
