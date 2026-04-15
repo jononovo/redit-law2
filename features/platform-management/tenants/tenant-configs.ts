@@ -46,14 +46,13 @@ const creditclawConfig: TenantConfig = {
             { label: "Allowance", href: "/allowance" },
             { label: "Safety", href: "/safety" },
             { label: "Vendor Skills", href: "/skills" },
-            { label: "Score Scanner", href: "/agentic-shopping-score" },
-            { label: "Agent Shopping Test", href: "/agent-shopping-test" },
             { label: "Get Started", href: "/onboarding" },
           ],
         },
         {
           title: "Tools",
           links: [
+            { label: "Score Scanner", href: "/agentic-shopping-score" },
             { label: "Agent Shopping Test", href: "/agent-shopping-test" },
             { label: "Shopping Leaderboard", href: "/agent-shopping-efficiency-leaderboard" },
           ],
