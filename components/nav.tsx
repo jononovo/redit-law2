@@ -72,11 +72,13 @@ export function Nav() {
                   Log in
                 </Button>
               </AuthDrawer>
-              <AuthDrawer redirectTo={tenant.routes.authLanding}>
-                <Button className={`h-9 px-5 font-bold cursor-pointer text-sm ${isDark ? "rounded-none bg-white text-neutral-900 hover:bg-neutral-200" : "rounded-full bg-primary text-white hover:bg-primary/90 shadow-lg shadow-primary/20"}`} data-testid="button-signup">
-                  Sign Up
-                </Button>
-              </AuthDrawer>
+              {tenant.id !== "creditclaw" && (
+                <AuthDrawer redirectTo={tenant.routes.authLanding}>
+                  <Button className={`h-9 px-5 font-bold cursor-pointer text-sm ${isDark ? "rounded-none bg-white text-neutral-900 hover:bg-neutral-200" : "rounded-full bg-primary text-white hover:bg-primary/90 shadow-lg shadow-primary/20"}`} data-testid="button-signup">
+                    Sign Up
+                  </Button>
+                </AuthDrawer>
+              )}
             </>
           )}
         </div>
