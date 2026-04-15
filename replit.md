@@ -21,7 +21,7 @@ Tenants share the same database, codebase, and deployment. Routing is hostname-b
 | 6 | Platform Management | Auth, bot lifecycle, pairing, feature flags, admin |
 | 7 | Multi-tenant Structure | Tenant routing, onboarding, per-tenant theming |
 | 8 | Agent Shops | Checkout, storefronts, seller profiles, inbound payments |
-| 9 | Agent Testing | Two test types: (1) Basic checkout — single-page card form test. (2) Full-shop — 7-page e-commerce flow (homepage→search→product→cart→checkout→payment→confirmation) with real-time observer mode, 5-dimension scoring, and DB persistence |
+| 9 | Agent Testing | Two test types: (1) Basic checkout — single-page card form test. (2) Full-shop — 7-page e-commerce flow (homepage→search→product→cart→checkout→payment→confirmation) with real-time observer mode, 5-dimension scoring, DB persistence, and public leaderboard |
 
 Full detail: `project_knowledge/architecture.md`
 
