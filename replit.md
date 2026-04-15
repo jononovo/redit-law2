@@ -481,7 +481,8 @@ The platform's inbound commerce engine. Buyers (humans and AI agents) pay into t
 ---
 
 ## Key Routes
-- `/`: Consumer landing page
+- `/`: Consumer landing page (includes Enterprise CTA section with Calendly booking)
+- `/managed-agents`: Managed Agent Services page (enterprise offerings, Calendly CTA)
 - `/claim`: Bot claim page
 - `/skills`: Vendor procurement skills catalog (public)
 - `/solutions/card-wallet`: Card Wallet landing page (public)

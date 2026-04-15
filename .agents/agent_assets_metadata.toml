@@ -18,6 +18,12 @@ uri = "file://public/assets/images/shop/category-backpacks.png"
 type = "image"
 title = "backpacks category image"
 
+[[generated]]
+id = "y7utalrvmMOik0T6-fpIW"
+uri = "file://public/assets/images/agents-converge-diagram.png"
+type = "image"
+title = "agents converging diagram"
+
 [[outputs]]
 id = "cnAOWU3Q_duY2HbMEVzf9"
 uri = "file://docs/axs-technical-plan.md"

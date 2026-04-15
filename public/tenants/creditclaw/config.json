@@ -40,7 +40,8 @@
       "showLogo": true,
       "links": [
         { "label": "How It Works", "href": "/how-it-works" },
-        { "label": "Shopping Skills", "href": "/skills" }
+        { "label": "Shopping Skills", "href": "/skills" },
+        { "label": "Managed Agents", "href": "/managed-agents" }
       ]
     },
     "footer": {
@@ -60,7 +61,8 @@
           "links": [
             { "label": "Score Scanner", "href": "/agentic-shopping-score" },
             { "label": "Agent Shopping Test", "href": "/agent-shopping-test" },
-            { "label": "Shopping Leaderboard", "href": "/agent-shopping-efficiency-leaderboard" }
+            { "label": "Shopping Leaderboard", "href": "/agent-shopping-efficiency-leaderboard" },
+            { "label": "Managed Agents", "href": "/managed-agents" }
           ]
         },
         {
