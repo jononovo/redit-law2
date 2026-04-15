@@ -92,13 +92,16 @@ export function Hero() {
               style={{ animationDelay: '0.3s' }}
               className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start animate-fade-in-up"
             >
-              <div className="flex flex-col sm:flex-row items-center gap-3 w-full max-w-sm">
+              <div className="flex flex-col items-center lg:items-start gap-3 w-full max-w-sm">
                   <Link href="/onboarding" className="w-full sm:w-auto">
                     <Button className="h-14 px-8 rounded-full text-lg font-bold w-full gap-2" data-testid="button-get-started">
                       Get Started
                       <ArrowRight className="w-5 h-5" />
                     </Button>
                   </Link>
+                  <a href="/agent-shopping-test" target="_blank" rel="noopener noreferrer" className="text-sm text-neutral-400 hover:text-primary transition-colors font-medium" data-testid="link-agent-shopping-test">
+                    Can your agent shop? Run the test →
+                  </a>
                 </div>
             </div>
 
