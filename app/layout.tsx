@@ -6,7 +6,16 @@ import { Providers } from "@/app/providers";
 import { TenantProvider } from "@/features/platform-management/tenants/tenant-context";
 import { cookies } from "next/headers";
 import { getTenantConfig } from "@/features/platform-management/tenants/config";
-import { TENANT_THEMES } from "@/features/platform-management/tenants/tenant-configs";
+
+const TENANT_THEMES: Record<string, { primary: string; primaryForeground: string; accent: string; secondary: string }> = (() => {
+  const ids = ["creditclaw", "brands", "shopy"] as const;
+  const result: Record<string, { primary: string; primaryForeground: string; accent: string; secondary: string }> = {};
+  for (const id of ids) {
+    const t = getTenantConfig(id).theme;
+    result[id] = { primary: t.primaryColor, primaryForeground: t.primaryForeground, accent: t.accentColor, secondary: t.secondaryColor };
+  }
+  return result;
+})();
 
 const jakarta = Plus_Jakarta_Sans({
   subsets: ["latin"],

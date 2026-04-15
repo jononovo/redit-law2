@@ -444,7 +444,7 @@ In-app feedback dialog accessible from the profile dropdown in the dashboard hea
 
 ## Tenant Theming
 
-Each tenant has its own config at `public/tenants/{tenantId}/config.json` (source of truth) and `features/platform-management/tenants/tenant-configs.ts` (client bundle). Configs define branding, meta tags, theme tokens, routes, features, and tracking.
+Each tenant has a single config at `public/tenants/{tenantId}/config.json`. `getTenantConfig()` in `features/platform-management/tenants/config.ts` reads and caches these. `TENANT_THEMES` in `app/layout.tsx` is derived from the same JSON configs at module level. Configs define branding, meta tags, theme tokens, routes, navigation, and tracking.
 
 - **CreditClaw** — "Fun Consumer" theme: 3D clay/claymation aesthetic, coral lobster mascot, bright pastels (orange/blue/purple), Plus Jakarta Sans, 1rem rounded corners
 - **shopy.sh** — Monospace section labels, no rounded corners on cards, no shadows, `gap-px bg-neutral-200` grid dividers, dark sections, green accent in terminal contexts

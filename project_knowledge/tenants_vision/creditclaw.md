@@ -132,6 +132,5 @@ OpenClaw = open-source AI agent framework. Bots run locally, connect to LLMs, ac
 |------|---------|
 | `components/tenants/creditclaw/landing.tsx` | Landing page |
 | `components/tenants/creditclaw/how-it-works.tsx` | How it works |
-| `lib/tenants/tenant-configs.ts` | Tenant config |
-| `public/tenants/creditclaw/config.json` | Dynamic config |
+| `public/tenants/creditclaw/config.json` | Tenant config (single source of truth) |
 | `docs/content/sections.ts` | Doc sections filtered by tenant |
