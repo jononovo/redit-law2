@@ -227,7 +227,8 @@ export default function AgentTestPage() {
               >
                 But can your agent{" "}
                 <span className="font-bold text-neutral-900">shop?</span>{" "}
-                Find out and get a score on speed, accuracy, and efficiency.
+                Take a free test and see how your score matches with others on the{" "}
+                <span className="font-bold text-neutral-900">leaderboard</span>.
               </p>
 
               {preparing ? (
