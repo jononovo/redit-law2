@@ -1,14 +1,11 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { ArrowRight, Sparkles, Check, Clock, Rocket, X } from "lucide-react";
+import { ArrowRight, Sparkles } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { TransactionLedger } from "@/components/transaction-ledger";
 import { useState, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
-import { useToast } from "@/hooks/use-toast";
 
 const ROTATING_PHRASES = [
   "a Credit Card.",
@@ -21,9 +18,6 @@ const ROTATING_PHRASES = [
 ];
 
 export function Hero() {
-  const router = useRouter();
-  const { toast } = useToast();
-
   const [phraseIndex, setPhraseIndex] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -41,45 +35,6 @@ export function Hero() {
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
   }, []);
-
-  const [email, setEmail] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showDecision, setShowDecision] = useState(false);
-  const [showConfirmation, setShowConfirmation] = useState(false);
-
-  const handleJoin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email || isSubmitting) return;
-
-    setIsSubmitting(true);
-    try {
-      const res = await fetch("/api/v1/waitlist", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, source: "hero" }),
-      });
-
-      if (res.ok) {
-        setShowDecision(true);
-      } else {
-        toast({ title: "Something went wrong", description: "Please try again in a moment.", variant: "destructive" });
-      }
-    } catch {
-      toast({ title: "Something went wrong", description: "Please try again in a moment.", variant: "destructive" });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleKeepWaiting = () => {
-    setShowDecision(false);
-    setShowConfirmation(true);
-  };
-
-  const handleTryNow = () => {
-    setShowDecision(false);
-    router.push("/onboarding");
-  };
 
   const avatars = [
     { type: 'image' as const, src: '/assets/images/avatar_1.jpg' },
@@ -137,41 +92,14 @@ export function Hero() {
               style={{ animationDelay: '0.3s' }}
               className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start animate-fade-in-up"
             >
-              {showConfirmation ? (
-                 <div className="h-14 px-8 rounded-full bg-green-50 text-green-700 border border-green-200 font-bold text-lg flex items-center gap-2 shadow-sm animate-in fade-in zoom-in duration-300">
-                   <Check className="w-5 h-5" />
-                   <span>You&apos;re on the list!</span>
-                 </div>
-              ) : (
-                <div className="flex flex-col sm:flex-row items-center gap-3 w-full max-w-sm">
+              <div className="flex flex-col sm:flex-row items-center gap-3 w-full max-w-sm">
                   <Link href="/onboarding" className="w-full sm:w-auto">
                     <Button className="h-14 px-8 rounded-full text-lg font-bold w-full gap-2" data-testid="button-get-started">
                       Get Started
                       <ArrowRight className="w-5 h-5" />
                     </Button>
                   </Link>
-                  <form onSubmit={handleJoin} className="relative w-full group">
-                    <Input 
-                      type="email"
-                      placeholder="or join waitlist" 
-                      className="h-14 pl-6 pr-14 rounded-full bg-white border-2 border-neutral-100 shadow-lg shadow-neutral-900/5 text-base text-neutral-900 placeholder:text-neutral-400 focus-visible:ring-primary focus-visible:border-primary transition-all duration-300"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      required
-                      data-testid="input-waitlist-email"
-                    />
-                    <Button 
-                      type="submit" 
-                      size="icon" 
-                      disabled={isSubmitting}
-                      className="absolute right-1.5 top-1.5 h-11 w-11 rounded-full bg-transparent text-neutral-400 hover:bg-neutral-900 hover:text-white hover:scale-105 transition-all duration-200"
-                      data-testid="button-waitlist-submit"
-                    >
-                      <ArrowRight className="h-5 w-5" />
-                    </Button>
-                  </form>
                 </div>
-              )}
             </div>
 
             <div 
@@ -226,69 +154,6 @@ export function Hero() {
         </div>
       </section>
 
-      {showDecision && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-200" data-testid="modal-decision">
-          <div className="relative bg-white rounded-3xl shadow-2xl max-w-lg w-full mx-4 p-8 md:p-10 animate-in zoom-in-95 fade-in duration-300">
-            <button
-              onClick={() => setShowDecision(false)}
-              className="absolute top-4 right-4 text-neutral-400 hover:text-neutral-600 transition-colors"
-              data-testid="button-close-decision"
-            >
-              <X className="w-5 h-5" />
-            </button>
-
-            <div className="text-center mb-8">
-              <div className="w-16 h-16 rounded-full bg-green-50 flex items-center justify-center mx-auto mb-4">
-                <Check className="w-8 h-8 text-green-500" />
-              </div>
-              <h2 className="text-2xl font-extrabold text-neutral-900 mb-2">
-                You&apos;re on the list!
-              </h2>
-              <p className="text-neutral-500 font-medium">
-                We saved your spot. Now, what would you like to do?
-              </p>
-            </div>
-
-            <div className="space-y-4">
-              <button
-                onClick={handleTryNow}
-                className="w-full p-5 rounded-2xl border-2 border-primary bg-primary/5 hover:bg-primary/10 transition-all text-left group cursor-pointer"
-                data-testid="button-try-now"
-              >
-                <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
-                    <Rocket className="w-6 h-6 text-primary" />
-                  </div>
-                  <div>
-                    <p className="font-bold text-neutral-900 text-lg">Let me try it now</p>
-                    <p className="text-sm text-neutral-500 mt-1">
-                      Add your own credit card and set strict spending rules for your bot. You stay in full control.
-                    </p>
-                  </div>
-                </div>
-              </button>
-
-              <button
-                onClick={handleKeepWaiting}
-                className="w-full p-5 rounded-2xl border-2 border-neutral-200 hover:border-neutral-300 bg-white hover:bg-neutral-50 transition-all text-left group cursor-pointer"
-                data-testid="button-keep-waiting"
-              >
-                <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-neutral-100 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
-                    <Clock className="w-6 h-6 text-neutral-500" />
-                  </div>
-                  <div>
-                    <p className="font-bold text-neutral-900 text-lg">Keep me on the waitlist</p>
-                    <p className="text-sm text-neutral-500 mt-1">
-                      We&apos;ll notify you when bot wallets are ready. No action needed right now.
-                    </p>
-                  </div>
-                </div>
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </>
   );
 }
