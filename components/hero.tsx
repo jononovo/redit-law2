@@ -81,7 +81,7 @@ export function Hero() {
               style={{ animationDelay: '0.2s' }}
               className="text-xl text-neutral-600 max-w-lg mx-auto lg:mx-0 leading-relaxed font-medium animate-fade-in-up"
             >
-              Your bot works hard. Give it an allowance with guardrails. Self-hosted cards are live &mdash; wallets and x402 coming next.
+              Save money on procurement, automate payment processes or just have your agent shop.
             </p>
 
             <div 
