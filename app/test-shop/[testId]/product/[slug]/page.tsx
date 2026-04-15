@@ -23,23 +23,24 @@ export default function ProductDetailPage() {
   const { testId, shopState, setShopState, setCart, trackEvent, flushEvents, advanceStage, setCurrentPage, isObserver } = useShopTest();
 
   const product = getProductBySlug(slug);
-  const [selectedColor, setSelectedColor] = useState(isObserver ? shopState.selectedColor ?? "" : "");
+  const defaultColor = product?.colors[0] ?? "";
+  const [selectedColor, setSelectedColor] = useState(isObserver ? shopState.selectedColor ?? defaultColor : defaultColor);
   const [selectedSize, setSelectedSize] = useState(isObserver ? shopState.selectedSize ?? "" : "");
   const [quantity, setQuantity] = useState(isObserver ? shopState.quantity : 1);
   const [added, setAdded] = useState(false);
 
   useEffect(() => {
     setCurrentPage("product");
-    setShopState((s) => ({ ...s, selectedProductSlug: slug }));
-  }, [slug, setCurrentPage, setShopState]);
+    setShopState((s) => ({ ...s, selectedProductSlug: slug, selectedColor: s.selectedColor || defaultColor }));
+  }, [slug, defaultColor, setCurrentPage, setShopState]);
 
   useEffect(() => {
     if (isObserver) {
-      setSelectedColor(shopState.selectedColor ?? "");
+      setSelectedColor(shopState.selectedColor ?? defaultColor);
       setSelectedSize(shopState.selectedSize ?? "");
       setQuantity(shopState.quantity);
     }
-  }, [isObserver, shopState.selectedColor, shopState.selectedSize, shopState.quantity]);
+  }, [isObserver, defaultColor, shopState.selectedColor, shopState.selectedSize, shopState.quantity]);
 
   if (!product) {
     return (
