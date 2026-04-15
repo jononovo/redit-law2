@@ -40,7 +40,6 @@
       "showLogo": true,
       "links": [
         { "label": "How It Works", "href": "/how-it-works" },
-        { "label": "Score Scanner", "href": "/agentic-shopping-score" },
         { "label": "Shopping Skills", "href": "/skills" }
       ]
     },
