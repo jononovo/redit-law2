@@ -7,16 +7,6 @@ import { TenantProvider } from "@/features/platform-management/tenants/tenant-co
 import { cookies } from "next/headers";
 import { getTenantConfig } from "@/features/platform-management/tenants/config";
 
-const TENANT_THEMES: Record<string, { primary: string; primaryForeground: string; accent: string; secondary: string }> = (() => {
-  const ids = ["creditclaw", "brands", "shopy"] as const;
-  const result: Record<string, { primary: string; primaryForeground: string; accent: string; secondary: string }> = {};
-  for (const id of ids) {
-    const t = getTenantConfig(id).theme;
-    result[id] = { primary: t.primaryColor, primaryForeground: t.primaryForeground, accent: t.accentColor, secondary: t.secondaryColor };
-  }
-  return result;
-})();
-
 const jakarta = Plus_Jakarta_Sans({
   subsets: ["latin"],
   variable: "--font-jakarta",
@@ -29,7 +19,15 @@ const mono = JetBrains_Mono({
   display: "swap",
 });
 
-const THEME_INIT_SCRIPT = `(function(){var m=document.cookie.match(/tenant-id=([^;]+)/);var t=m?m[1]:"creditclaw";var T=${JSON.stringify(TENANT_THEMES)};var th=T[t]||T.creditclaw;var s=document.documentElement.style;s.setProperty("--primary",th.primary);s.setProperty("--primary-foreground",th.primaryForeground);s.setProperty("--accent",th.accent);s.setProperty("--secondary",th.secondary)})()`;
+function getThemeInitScript() {
+  const ids = ["creditclaw", "brands", "shopy"] as const;
+  const themes: Record<string, { primary: string; primaryForeground: string; accent: string; secondary: string }> = {};
+  for (const id of ids) {
+    const t = getTenantConfig(id).theme;
+    themes[id] = { primary: t.primaryColor, primaryForeground: t.primaryForeground, accent: t.accentColor, secondary: t.secondaryColor };
+  }
+  return `(function(){var m=document.cookie.match(/tenant-id=([^;]+)/);var t=m?m[1]:"creditclaw";var T=${JSON.stringify(themes)};var th=T[t]||T.creditclaw;var s=document.documentElement.style;s.setProperty("--primary",th.primary);s.setProperty("--primary-foreground",th.primaryForeground);s.setProperty("--accent",th.accent);s.setProperty("--secondary",th.secondary)})()`;
+}
 
 export async function generateMetadata(): Promise<Metadata> {
   const cookieStore = await cookies();
@@ -87,7 +85,7 @@ export default async function RootLayout({
       suppressHydrationWarning
     >
       <head>
-        <script suppressHydrationWarning dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+        <script suppressHydrationWarning dangerouslySetInnerHTML={{ __html: getThemeInitScript() }} />
       </head>
       <body>
         <TenantProvider tenant={tenant}>
