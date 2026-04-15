@@ -133,7 +133,7 @@ export default function CheckoutPage() {
             <label
               data-testid="radio-shipping-standard"
               className={`flex items-center p-3 rounded-lg border cursor-pointer transition-all ${
-                shopState.shippingMethod === "standard" ? "border-indigo-600 bg-indigo-50" : "border-gray-200 hover:border-gray-300"
+                shopState.shippingMethod === "standard" ? "border-indigo-400 bg-indigo-50" : "border-gray-200 hover:border-gray-300"
               }`}
             >
               <input
@@ -153,7 +153,7 @@ export default function CheckoutPage() {
             <label
               data-testid="radio-shipping-priority"
               className={`flex items-center p-3 rounded-lg border cursor-pointer transition-all ${
-                shopState.shippingMethod === "priority" ? "border-indigo-600 bg-indigo-50" : "border-gray-200 hover:border-gray-300"
+                shopState.shippingMethod === "priority" ? "border-indigo-400 bg-indigo-50" : "border-gray-200 hover:border-gray-300"
               }`}
             >
               <input
@@ -179,7 +179,7 @@ export default function CheckoutPage() {
             <label
               data-testid="radio-payment-credit_card"
               className={`flex items-center p-3 rounded-lg border cursor-pointer transition-all ${
-                shopState.paymentMethod === "credit_card" ? "border-indigo-600 bg-indigo-50" : "border-gray-200 hover:border-gray-300"
+                shopState.paymentMethod === "credit_card" ? "border-indigo-400 bg-indigo-50" : "border-gray-200 hover:border-gray-300"
               }`}
             >
               <input
@@ -196,7 +196,7 @@ export default function CheckoutPage() {
             <label
               data-testid="radio-payment-ach"
               className={`flex items-center p-3 rounded-lg border cursor-pointer transition-all ${
-                shopState.paymentMethod === "ach" ? "border-indigo-600 bg-indigo-50" : "border-gray-200 hover:border-gray-300"
+                shopState.paymentMethod === "ach" ? "border-indigo-400 bg-indigo-50" : "border-gray-200 hover:border-gray-300"
               } opacity-50`}
             >
               <input

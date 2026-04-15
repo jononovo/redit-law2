@@ -61,7 +61,11 @@ function ShopSearchBar() {
         type="submit"
         data-testid="button-header-search"
         disabled={isObserver}
-        className="px-4 py-1.5 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors disabled:opacity-50"
+        className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 ${
+          (isObserver ? displayQuery : query).trim()
+            ? "bg-indigo-600 text-white hover:bg-indigo-700"
+            : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+        }`}
       >
         Search
       </button>
