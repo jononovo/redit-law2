@@ -19,15 +19,18 @@ const mono = JetBrains_Mono({
   display: "swap",
 });
 
-function getThemeInitScript() {
+const TENANT_THEMES: Record<string, { primary: string; primaryForeground: string; accent: string; secondary: string }> = (() => {
   const ids = ["creditclaw", "brands", "shopy"] as const;
-  const themes: Record<string, { primary: string; primaryForeground: string; accent: string; secondary: string }> = {};
+  const result: Record<string, { primary: string; primaryForeground: string; accent: string; secondary: string }> = {};
   for (const id of ids) {
     const t = getTenantConfig(id).theme;
-    themes[id] = { primary: t.primaryColor, primaryForeground: t.primaryForeground, accent: t.accentColor, secondary: t.secondaryColor };
+    result[id] = { primary: t.primaryColor, primaryForeground: t.primaryForeground, accent: t.accentColor, secondary: t.secondaryColor };
   }
-  return `(function(){var m=document.cookie.match(/tenant-id=([^;]+)/);var t=m?m[1]:"creditclaw";var T=${JSON.stringify(themes)};var th=T[t]||T.creditclaw;var s=document.documentElement.style;s.setProperty("--primary",th.primary);s.setProperty("--primary-foreground",th.primaryForeground);s.setProperty("--accent",th.accent);s.setProperty("--secondary",th.secondary)})()`;
-}
+  return result;
+})();
+
+const THEME_INIT_SCRIPT = `(function(){var m=document.cookie.match(/tenant-id=([^;]+)/);var t=m?m[1]:"creditclaw";var T=${JSON.stringify(TENANT_THEMES)};var th=T[t]||T.creditclaw;var s=document.documentElement.style;s.setProperty("--primary",th.primary);s.setProperty("--primary-foreground",th.primaryForeground);s.setProperty("--accent",th.accent);s.setProperty("--secondary",th.secondary)})()`;
+
 
 export async function generateMetadata(): Promise<Metadata> {
   const cookieStore = await cookies();
@@ -85,7 +88,7 @@ export default async function RootLayout({
       suppressHydrationWarning
     >
       <head>
-        <script suppressHydrationWarning dangerouslySetInnerHTML={{ __html: getThemeInitScript() }} />
+        <script suppressHydrationWarning dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
       </head>
       <body>
         <TenantProvider tenant={tenant}>
