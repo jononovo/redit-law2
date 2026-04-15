@@ -55,7 +55,7 @@ export function Hero() {
               className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-orange-100 text-orange-700 font-bold text-sm animate-fade-in-up"
             >
               <Sparkles size={14} className="text-orange-500" />
-              <span>Pocket money for your bots!</span>
+              <span>Your Agentic Shopping Coach</span>
             </div>
 
             <h1 
