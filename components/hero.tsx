@@ -8,13 +8,9 @@ import { TransactionLedger } from "@/components/transaction-ledger";
 import { useState, useEffect, useRef } from "react";
 
 const ROTATING_PHRASES = [
+  "Shopping Skills.",
   "a Credit Card.",
   "a Wallet.",
-  "Products.",
-  "a Store Front.",
-  "Invoicing.",
-  "Accounting.",
-  "a Business.",
 ];
 
 export function Hero() {
@@ -29,7 +25,7 @@ export function Hero() {
         setPhraseIndex((prev) => (prev + 1) % ROTATING_PHRASES.length);
         setIsAnimating(false);
       }, 300);
-    }, 2500);
+    }, 3000);
     return () => {
       clearInterval(timer);
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
