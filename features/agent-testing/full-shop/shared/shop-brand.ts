@@ -3,28 +3,28 @@ export const SHOP_BRAND = {
 
   colors: {
     primary: {
-      base: "rgb(79, 70, 229)",
-      hover: "rgb(67, 56, 202)",
+      base: "rgb(15, 118, 110)",
+      hover: "rgb(13, 98, 92)",
       text: "#ffffff",
       tailwind: {
-        bg: "bg-indigo-600",
-        bgHover: "hover:bg-indigo-700",
-        border: "border-indigo-600",
+        bg: "bg-teal-700",
+        bgHover: "hover:bg-teal-800",
+        border: "border-teal-700",
         text: "text-white",
-        focusRing: "focus:ring-indigo-500",
+        focusRing: "focus:ring-teal-600",
       },
     },
 
     secondary: {
-      base: "rgb(99, 102, 241)",
-      hover: "rgb(79, 70, 229)",
+      base: "rgb(20, 184, 166)",
+      hover: "rgb(15, 118, 110)",
       text: "#ffffff",
       tailwind: {
-        bg: "bg-indigo-400",
-        bgHover: "hover:bg-indigo-500",
-        border: "border-indigo-400",
+        bg: "bg-teal-500",
+        bgHover: "hover:bg-teal-600",
+        border: "border-teal-500",
         text: "text-white",
-        focusRing: "focus:ring-indigo-400",
+        focusRing: "focus:ring-teal-400",
       },
     },
 
@@ -45,7 +45,7 @@ export const SHOP_BRAND = {
       heading: "text-gray-900",
       body: "text-gray-700",
       muted: "text-gray-500",
-      price: "text-indigo-600",
+      price: "text-teal-700",
     },
 
     state: {
