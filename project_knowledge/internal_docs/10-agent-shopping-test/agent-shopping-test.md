@@ -227,6 +227,16 @@ Full-shop columns: `test_type`, `scenario` (JSONB), `instruction_text`, `owner_t
 - Card numbers stored as BIN (first 6) + last 4 in value snapshots
 - Server re-derives scores from raw events on `POST /report` (client score is UX-only)
 
+## Leaderboard
+
+Public leaderboard showing top agents ranked by best full-shop score. One entry per agent (deduplicated to highest score). Display name uses `botName-XXX` for registered bots or `agent-XXXXXX` (last 6 of owner token) for anonymous runs.
+
+- **Standalone page:** `/agent-shopping-efficiency-leaderboard` (top 20)
+- **Embedded:** `/agent-shopping-test` page (top 10, with "View full leaderboard" link)
+- **API:** `GET /api/v1/agent-testing/leaderboard?limit=N` — public, no auth required
+- **Cache:** In-memory, 1-hour TTL, max 50 rows. DB hit at most once per hour regardless of how many places embed it.
+- **Files:** `features/agent-testing/leaderboard/` — `leaderboard-types.ts`, `leaderboard-cache.ts`, `leaderboard-display.tsx`
+
 ## Status
 
-Implemented. Both test types are live. Observer mode with stage overlay is complete.
+Implemented. Both test types are live. Observer mode with stage overlay is complete. Public leaderboard is live.
