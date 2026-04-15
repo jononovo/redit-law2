@@ -113,63 +113,41 @@ export function AgentConvergenceModern() {
 
           {agents.map((agent, i) => {
             const startY = 30 + i * 55;
-            const pathId = `pathLeft-${i}`;
             return (
-              <g key={`left-${i}`}>
-                <path
-                  id={pathId}
-                  d={`M 180 ${startY} Q 320 ${startY} 400 120`}
-                  stroke="#a3a3a3"
-                  strokeWidth="1"
-                  strokeOpacity={visible ? 0.25 : 0}
-                  fill="none"
-                  strokeDasharray="4 4"
-                  className="transition-all duration-1000"
-                  style={{ transitionDelay: `${i * 120 + 400}ms` }}
-                />
-                {visible && (
-                  <circle r="4" fill={agent.bg} opacity="0.7">
-                    <animateMotion
-                      dur={`${2.5 + i * 0.3}s`}
-                      repeatCount="indefinite"
-                      begin={`${i * 0.4}s`}
-                    >
-                      <mpath href={`#${pathId}`} />
-                    </animateMotion>
-                  </circle>
-                )}
-              </g>
+              <path
+                key={`left-${i}`}
+                d={`M 180 ${startY} Q 320 ${startY} 400 120`}
+                stroke={agent.bg}
+                strokeWidth="1.5"
+                strokeOpacity="0.3"
+                fill="none"
+                className="transition-all duration-1000"
+                style={{
+                  strokeDasharray: 400,
+                  strokeDashoffset: visible ? 0 : 400,
+                  transitionDelay: `${i * 150 + 300}ms`,
+                }}
+              />
             );
           })}
 
           {outputs.map((_, i) => {
             const endY = 40 + i * 75;
-            const pathId = `pathRight-${i}`;
             return (
-              <g key={`right-${i}`}>
-                <path
-                  id={pathId}
-                  d={`M 400 120 Q 480 ${endY} 620 ${endY}`}
-                  stroke="hsl(10, 85%, 55%)"
-                  strokeWidth="1"
-                  strokeOpacity={visible ? 0.25 : 0}
-                  fill="none"
-                  strokeDasharray="4 4"
-                  className="transition-all duration-1000"
-                  style={{ transitionDelay: `${i * 120 + 900}ms` }}
-                />
-                {visible && (
-                  <circle r="4" fill="hsl(10, 85%, 55%)" opacity="0.5">
-                    <animateMotion
-                      dur={`${2.8 + i * 0.3}s`}
-                      repeatCount="indefinite"
-                      begin={`${1.2 + i * 0.5}s`}
-                    >
-                      <mpath href={`#${pathId}`} />
-                    </animateMotion>
-                  </circle>
-                )}
-              </g>
+              <path
+                key={`right-${i}`}
+                d={`M 400 120 Q 480 ${endY} 620 ${endY}`}
+                stroke="hsl(10, 85%, 55%)"
+                strokeWidth="1.5"
+                strokeOpacity="0.3"
+                fill="none"
+                className="transition-all duration-1000"
+                style={{
+                  strokeDasharray: 400,
+                  strokeDashoffset: visible ? 0 : 400,
+                  transitionDelay: `${i * 150 + 800}ms`,
+                }}
+              />
             );
           })}
 
