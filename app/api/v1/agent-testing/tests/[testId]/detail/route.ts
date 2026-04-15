@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { storage } from "@/server/storage";
+import { isSessionTimedOut } from "@/features/agent-testing/storage/agent-testing-storage";
 
 export async function GET(
   request: NextRequest,
@@ -10,6 +11,11 @@ export async function GET(
   const session = await storage.getAgentTestByTestId(testId);
   if (!session) {
     return NextResponse.json({ error: "Test not found" }, { status: 404 });
+  }
+
+  if (isSessionTimedOut(session)) {
+    await storage.deleteAgentTest(testId);
+    return NextResponse.json({ status: "timed_out" }, { status: 410 });
   }
 
   const base: Record<string, any> = {

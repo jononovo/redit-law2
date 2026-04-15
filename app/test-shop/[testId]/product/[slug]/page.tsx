@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import { useShopTest } from "@/features/agent-testing/full-shop/client/shop-test-context";
 import { EVENT_TYPES } from "@/features/agent-testing/full-shop/shared/constants";
+import { SELECTED_VARIANT_CLASSES, UNSELECTED_VARIANT_CLASSES, CTA_CLASSES } from "@/features/agent-testing/full-shop/shared/shop-brand";
 import Image from "next/image";
 import { getProductBySlug, formatPrice } from "@/features/agent-testing/full-shop/shared/scenario-definitions";
 
@@ -20,26 +21,27 @@ export default function ProductDetailPage() {
   const observeParam = searchParams.get("observe");
   const qs = observeParam ? `?observe=${observeParam}` : "";
 
-  const { testId, shopState, setShopState, setCart, trackEvent, advanceStage, setCurrentPage, isObserver } = useShopTest();
+  const { testId, shopState, setShopState, setCart, trackEvent, flushEvents, advanceStage, setCurrentPage, isObserver } = useShopTest();
 
   const product = getProductBySlug(slug);
-  const [selectedColor, setSelectedColor] = useState(isObserver ? shopState.selectedColor ?? "" : "");
+  const defaultColor = product?.colors[0] ?? "";
+  const [selectedColor, setSelectedColor] = useState(isObserver ? shopState.selectedColor ?? defaultColor : defaultColor);
   const [selectedSize, setSelectedSize] = useState(isObserver ? shopState.selectedSize ?? "" : "");
   const [quantity, setQuantity] = useState(isObserver ? shopState.quantity : 1);
   const [added, setAdded] = useState(false);
 
   useEffect(() => {
     setCurrentPage("product");
-    setShopState((s) => ({ ...s, selectedProductSlug: slug }));
-  }, [slug, setCurrentPage, setShopState]);
+    setShopState((s) => ({ ...s, selectedProductSlug: slug, selectedColor: s.selectedColor || defaultColor }));
+  }, [slug, defaultColor, setCurrentPage, setShopState]);
 
   useEffect(() => {
     if (isObserver) {
-      setSelectedColor(shopState.selectedColor ?? "");
+      setSelectedColor(shopState.selectedColor ?? defaultColor);
       setSelectedSize(shopState.selectedSize ?? "");
       setQuantity(shopState.quantity);
     }
-  }, [isObserver, shopState.selectedColor, shopState.selectedSize, shopState.quantity]);
+  }, [isObserver, defaultColor, shopState.selectedColor, shopState.selectedSize, shopState.quantity]);
 
   if (!product) {
     return (
@@ -71,8 +73,9 @@ export default function ProductDetailPage() {
     trackEvent(eventType, "variant_config", "quantity", String(newQty), String(newQty).length);
   }
 
-  function handleAddToCart() {
+  async function handleAddToCart() {
     if (!selectedColor || !selectedSize) return;
+    trackEvent(EVENT_TYPES.QUANTITY_INCREMENT, "variant_config", "quantity", String(quantity), String(quantity).length);
     trackEvent(EVENT_TYPES.ADD_TO_CART_CLICK, "add_to_cart", "product", product!.slug, product!.slug.length);
     advanceStage("add_to_cart");
 
@@ -86,9 +89,8 @@ export default function ProductDetailPage() {
     }]);
 
     setAdded(true);
-    setTimeout(() => {
-      window.location.href = `/test-shop/${testId}/cart${qs}`;
-    }, 800);
+    await flushEvents();
+    window.location.href = `/test-shop/${testId}/cart${qs}`;
   }
 
   return (
@@ -108,7 +110,7 @@ export default function ProductDetailPage() {
           <h1 data-testid="text-product-name" className="text-2xl font-bold text-gray-900 mb-2">
             {product.name}
           </h1>
-          <p data-testid="text-product-price" className="text-2xl font-bold text-indigo-600 mb-4">
+          <p data-testid="text-product-price" className="text-2xl font-bold text-teal-700 mb-4">
             {formatPrice(product.price)}
           </p>
           <p data-testid="text-product-description" className="text-gray-600 mb-6">
@@ -125,10 +127,10 @@ export default function ProductDetailPage() {
                   data-testid={`button-color-${color.toLowerCase()}`}
                   onClick={() => handleColorSelect(color)}
                   disabled={isObserver}
-                  className={`px-4 py-2 rounded-lg border text-sm font-medium transition-all ${
+                  className={`px-5 py-2.5 rounded-lg border-2 text-base font-semibold transition-all ${
                     selectedColor === color
-                      ? "border-indigo-600 bg-indigo-50 text-indigo-700"
-                      : "border-gray-300 text-gray-700 hover:border-gray-400"
+                      ? SELECTED_VARIANT_CLASSES
+                      : UNSELECTED_VARIANT_CLASSES
                   }`}
                 >
                   {color}
@@ -147,10 +149,10 @@ export default function ProductDetailPage() {
                   data-testid={`button-size-${size.toLowerCase()}`}
                   onClick={() => handleSizeSelect(size)}
                   disabled={isObserver}
-                  className={`px-4 py-2 rounded-lg border text-sm font-medium transition-all ${
+                  className={`w-12 h-12 rounded-lg border-2 text-base font-semibold transition-all flex items-center justify-center ${
                     selectedSize === size
-                      ? "border-indigo-600 bg-indigo-50 text-indigo-700"
-                      : "border-gray-300 text-gray-700 hover:border-gray-400"
+                      ? SELECTED_VARIANT_CLASSES
+                      : UNSELECTED_VARIANT_CLASSES
                   }`}
                 >
                   {size}
@@ -167,11 +169,11 @@ export default function ProductDetailPage() {
                 data-testid="button-quantity-decrement"
                 onClick={() => handleQuantityChange(quantity - 1)}
                 disabled={isObserver || quantity <= 1}
-                className="w-10 h-10 rounded-lg border border-gray-300 flex items-center justify-center text-gray-700 hover:bg-gray-50 disabled:opacity-40"
+                className="w-12 h-12 rounded-lg border-2 border-gray-300 flex items-center justify-center text-xl font-bold text-gray-900 hover:bg-gray-50 disabled:opacity-40"
               >
                 −
               </button>
-              <span data-testid="text-quantity" className="text-lg font-semibold w-8 text-center text-gray-900">
+              <span data-testid="text-quantity" className="text-xl font-bold w-10 text-center text-gray-900">
                 {quantity}
               </span>
               <button
@@ -179,7 +181,7 @@ export default function ProductDetailPage() {
                 data-testid="button-quantity-increment"
                 onClick={() => handleQuantityChange(quantity + 1)}
                 disabled={isObserver || quantity >= 10}
-                className="w-10 h-10 rounded-lg border border-gray-300 flex items-center justify-center text-gray-700 hover:bg-gray-50 disabled:opacity-40"
+                className="w-12 h-12 rounded-lg border-2 border-gray-300 flex items-center justify-center text-xl font-bold text-gray-900 hover:bg-gray-50 disabled:opacity-40"
               >
                 +
               </button>
@@ -196,7 +198,7 @@ export default function ProductDetailPage() {
                 ? "bg-green-500"
                 : !selectedColor || !selectedSize
                   ? "bg-gray-300 cursor-not-allowed"
-                  : "bg-indigo-600 hover:bg-indigo-700"
+                  : CTA_CLASSES
             }`}
           >
             {added ? "✓ Added to Cart" : "Add to Cart"}

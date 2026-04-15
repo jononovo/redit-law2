@@ -3,7 +3,8 @@
 import { useState, useEffect, useRef } from "react";
 import { Nav } from "@/components/nav";
 import { Footer } from "@/components/footer";
-import { Copy, Check, ExternalLink, ShoppingCart, Target, Zap, Route, Clock, Brain, RefreshCw } from "lucide-react";
+import { Copy, Check, ExternalLink, ShoppingCart, Target, Zap, Route, Clock, Brain, RefreshCw, ArrowRight } from "lucide-react";
+import { LeaderboardDisplay } from "@/features/agent-testing/leaderboard/leaderboard-display";
 
 interface TestResult {
   test_id: string;
@@ -302,6 +303,24 @@ export default function AgentTestPage() {
                     <div className="flex-shrink-0 text-sm font-bold text-primary">{dim.weight}</div>
                   </div>
                 ))}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="py-20 md:py-28 border-t border-neutral-100">
+          <div className="container mx-auto px-6">
+            <div className="max-w-3xl mx-auto">
+              <LeaderboardDisplay limit={10} />
+              <div className="mt-6 text-center">
+                <a
+                  href="/agent-shopping-efficiency-leaderboard"
+                  data-testid="link-full-leaderboard"
+                  className="inline-flex items-center gap-2 text-sm font-semibold text-primary hover:text-primary/80 transition-colors"
+                >
+                  View full leaderboard
+                  <ArrowRight className="w-4 h-4" />
+                </a>
               </div>
             </div>
           </div>

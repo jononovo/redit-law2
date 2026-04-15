@@ -89,6 +89,7 @@ export interface FieldMatchResult {
   expected: string;
   actual: string;
   match: boolean;
+  timestamp: string | null;
 }
 
 export interface CorrectionDetail {

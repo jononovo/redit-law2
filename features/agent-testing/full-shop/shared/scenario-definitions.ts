@@ -172,6 +172,7 @@ export function buildInstructionText(
     "",
     `URL: ${testUrl}`,
     "",
+    `Search for "${scenario.expectedSearchTerm}" to find the product.`,
     `Buy "${scenario.expectedProductName}" ${categoryLabel}, color ${scenario.expectedColor}, size ${scenario.expectedSize}, quantity ${scenario.expectedQuantity}.`,
     `Use ${shippingLabel} shipping.`,
     "Checkout with credit card.",

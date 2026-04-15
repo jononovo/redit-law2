@@ -9,6 +9,25 @@ import {
   type InsertAgentTestFieldEvent,
 } from "@/shared/schema";
 
+const INACTIVITY_TIMEOUT_MS = 4 * 60 * 1000;
+const ABSOLUTE_TIMEOUT_MS = 12 * 60 * 1000;
+
+const TERMINAL_STATUSES = new Set(["submitted", "scored"]);
+
+export function isSessionTimedOut(session: AgentTestSession): boolean {
+  if (session.testType !== "full_shop") return false;
+  if (TERMINAL_STATUSES.has(session.status)) return false;
+
+  const now = Date.now();
+  const createdAt = session.createdAt.getTime();
+  if (now - createdAt > ABSOLUTE_TIMEOUT_MS) return true;
+
+  const lastActivity = session.lastActivityAt?.getTime() ?? createdAt;
+  if (now - lastActivity > INACTIVITY_TIMEOUT_MS) return true;
+
+  return false;
+}
+
 export const agentTestingMethods = {
   async createAgentTest(data: InsertAgentTestSession): Promise<AgentTestSession> {
     const [row] = await db.insert(agentTestSessions).values(data).returning();
@@ -81,5 +100,12 @@ export const agentTestingMethods = {
     return db.select().from(agentTestFieldEvents)
       .where(eq(agentTestFieldEvents.testId, testId))
       .orderBy(agentTestFieldEvents.sequenceNum);
+  },
+
+  async deleteAgentTest(testId: string): Promise<void> {
+    await db.transaction(async (tx) => {
+      await tx.delete(agentTestFieldEvents).where(eq(agentTestFieldEvents.testId, testId));
+      await tx.delete(agentTestSessions).where(eq(agentTestSessions.testId, testId));
+    });
   },
 };

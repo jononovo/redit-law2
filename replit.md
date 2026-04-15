@@ -21,7 +21,7 @@ Tenants share the same database, codebase, and deployment. Routing is hostname-b
 | 6 | Platform Management | Auth, bot lifecycle, pairing, feature flags, admin |
 | 7 | Multi-tenant Structure | Tenant routing, onboarding, per-tenant theming |
 | 8 | Agent Shops | Checkout, storefronts, seller profiles, inbound payments |
-| 9 | Agent Testing | Two test types: (1) Basic checkout — single-page card form test. (2) Full-shop — 7-page e-commerce flow (homepage→search→product→cart→checkout→payment→confirmation) with real-time observer mode, 5-dimension scoring, and DB persistence |
+| 9 | Agent Testing | Two test types: (1) Basic checkout — single-page card form test. (2) Full-shop — 7-page e-commerce flow (homepage→search→product→cart→checkout→payment→confirmation) with real-time observer mode, 5-dimension scoring, DB persistence, and public leaderboard |
 
 Full detail: `project_knowledge/architecture.md`
 
@@ -513,6 +513,10 @@ The platform's inbound commerce engine. Buyers (humans and AI agents) pay into t
 
 ## Agent Testing Suite (`features/agent-testing/`)
 Two test types: (1) **Basic checkout** — single-page card form test with 4-dimension scoring. (2) **Full-shop** — 7-page e-commerce flow (homepage→search→product→cart→checkout→payment→confirmation) with real-time observer mode and 5-dimension scoring. Both share the same DB tables (`agent_test_sessions`, `agent_test_field_events`) and API routes (`app/api/v1/agent-testing/tests/`).
+
+Observer poller (`use-event-poller.ts`) uses `visibilitychange` listener to immediately refresh when tab regains focus, with `pollInFlightRef` guard against concurrent fetches. All shop page navigations flush event buffer before redirecting to prevent event loss.
+
+Observer ActionOverlay system (`components/ui/action-overlay.tsx`) shows full-screen action states at `z-[45]` (above shop content z-40, below stage sidebar z-50). Overlay card selection is handled by `use-observer-overlay.ts` hook — returns `"awaiting_agent"` (zero events), `"approval_required"` (status is `awaiting_approval`), or `null`. Dismisses when new events arrive after overlay appeared; never reappears once dismissed by event flow. Late-join observers skip overlay if status API shows `event_count > 0`, non-empty `stage_snapshot`, or `stages_completed > 0`.
 
 Full documentation: `project_knowledge/internal_docs/07-platform-management/agent-shopping-test.md`
 

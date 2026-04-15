@@ -2,7 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { storage } from "@/server/storage";
 import { MAX_EVENTS_PER_TEST } from "@/features/agent-testing/constants";
 import { MAX_FULL_SHOP_EVENTS } from "@/features/agent-testing/full-shop/shared/constants";
+import { isSessionTimedOut } from "@/features/agent-testing/storage/agent-testing-storage";
 import type { FieldEventInput } from "@/features/agent-testing/types";
+
+const TIMED_OUT_RESPONSE = NextResponse.json({ status: "timed_out" }, { status: 410 });
 
 interface FullShopFieldEventInput {
   event_type: string;
@@ -25,6 +28,11 @@ export async function GET(
     return NextResponse.json({ error: "Test not found" }, { status: 404 });
   }
 
+  if (isSessionTimedOut(session)) {
+    await storage.deleteAgentTest(testId);
+    return NextResponse.json({ status: "timed_out" }, { status: 410 });
+  }
+
   if (session.testType === "full_shop") {
     const observe = request.nextUrl.searchParams.get("observe");
     if (!observe || observe !== session.ownerToken) {
@@ -45,6 +53,7 @@ export async function GET(
 
   return NextResponse.json({
     test_id: testId,
+    status: session.status,
     events: events.map(e => ({
       event_type: e.eventType,
       field_name: e.fieldName,
@@ -67,6 +76,11 @@ export async function POST(
   const session = await storage.getAgentTestByTestId(testId);
   if (!session) {
     return NextResponse.json({ error: "Test not found" }, { status: 404 });
+  }
+
+  if (isSessionTimedOut(session)) {
+    await storage.deleteAgentTest(testId);
+    return NextResponse.json({ status: "timed_out" }, { status: 410 });
   }
 
   if (session.status === "scored") {
@@ -113,7 +127,7 @@ export async function POST(
 
   const inserted = await storage.insertFieldEvents(rows);
 
-  const updates: Record<string, any> = {};
+  const updates: Record<string, any> = { lastActivityAt: new Date() };
   const hasPageLoad = events.some((e) => e.event_type === "page_load" || e.event_type === "shop_landing");
   const hasInteraction = events.some((e) =>
     e.event_type === "focus" || e.event_type === "input" || e.event_type === "select" ||

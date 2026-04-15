@@ -1397,6 +1397,7 @@ export const agentTestSessions = pgTable("agent_test_sessions", {
   score: integer("score"),
   grade: text("grade"),
   report: jsonb("report"),
+  lastActivityAt: timestamp("last_activity_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   expiresAt: timestamp("expires_at"),
 }, (table) => [

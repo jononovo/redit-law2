@@ -107,7 +107,7 @@ function detectFlags(
   const allTimestamps = events.map((e) => new Date(e.event_timestamp).getTime());
   if (allTimestamps.length >= 2) {
     const totalMs = Math.max(...allTimestamps) - Math.min(...allTimestamps);
-    if (totalMs > 600_000) {
+    if (totalMs > 720_000) {
       flags.push(`Very long test duration: ${Math.round(totalMs / 1000)}s`);
     }
   }

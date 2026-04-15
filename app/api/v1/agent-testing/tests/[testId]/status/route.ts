@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { storage } from "@/server/storage";
+import { isSessionTimedOut } from "@/features/agent-testing/storage/agent-testing-storage";
 import type { StageSnapshot } from "@/features/agent-testing/full-shop/shared/types";
 
 export async function GET(
@@ -11,6 +12,11 @@ export async function GET(
   const session = await storage.getAgentTestByTestId(testId);
   if (!session) {
     return NextResponse.json({ error: "Test not found" }, { status: 404 });
+  }
+
+  if (isSessionTimedOut(session)) {
+    await storage.deleteAgentTest(testId);
+    return NextResponse.json({ status: "timed_out" }, { status: 410 });
   }
 
   if (session.testType === "full_shop") {

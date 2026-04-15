@@ -90,62 +90,63 @@ function valuesMatch(expected: string, actual: string, field?: string): boolean 
   return normalizeForComparison(expected) === normalizeForComparison(actual);
 }
 
+interface ExtractedField {
+  value: string | null;
+  timestamp: string | null;
+}
+
+function lastOf(events: FullShopFieldEvent[]): ExtractedField {
+  if (events.length === 0) return { value: null, timestamp: null };
+  const last = events[events.length - 1];
+  return { value: last.value_snapshot, timestamp: last.event_timestamp };
+}
+
+function lastOfTerms(events: FullShopFieldEvent[]): ExtractedField {
+  if (events.length === 0) return { value: null, timestamp: null };
+  const last = events[events.length - 1];
+  return {
+    value: last.event_type === EVENT_TYPES.TERMS_CHECK ? "true" : "false",
+    timestamp: last.event_timestamp,
+  };
+}
+
 function extractFinalValueForField(
   events: FullShopFieldEvent[],
   field: string,
   stage: string
-): string | null {
+): ExtractedField {
   const stageEvents = events.filter((e) => e.stage === stage);
 
   switch (field) {
-    case "searchQuery": {
-      const submits = stageEvents.filter((e) => e.event_type === EVENT_TYPES.SEARCH_SUBMIT);
-      return submits.length > 0 ? submits[submits.length - 1].value_snapshot : null;
-    }
-    case "product": {
-      const clicks = stageEvents.filter((e) => e.event_type === EVENT_TYPES.PRODUCT_CLICK);
-      return clicks.length > 0 ? clicks[clicks.length - 1].value_snapshot : null;
-    }
-    case "color": {
-      const selects = stageEvents.filter((e) => e.event_type === EVENT_TYPES.COLOR_SELECT);
-      return selects.length > 0 ? selects[selects.length - 1].value_snapshot : null;
-    }
-    case "size": {
-      const selects = stageEvents.filter((e) => e.event_type === EVENT_TYPES.SIZE_SELECT);
-      return selects.length > 0 ? selects[selects.length - 1].value_snapshot : null;
-    }
-    case "quantity": {
-      const qtyEvents = stageEvents.filter(
+    case "searchQuery":
+      return lastOf(stageEvents.filter((e) => e.event_type === EVENT_TYPES.SEARCH_SUBMIT));
+    case "product":
+      return lastOf(stageEvents.filter((e) => e.event_type === EVENT_TYPES.PRODUCT_CLICK));
+    case "color":
+      return lastOf(stageEvents.filter((e) => e.event_type === EVENT_TYPES.COLOR_SELECT));
+    case "size":
+      return lastOf(stageEvents.filter((e) => e.event_type === EVENT_TYPES.SIZE_SELECT));
+    case "quantity":
+      return lastOf(stageEvents.filter(
         (e) =>
           e.event_type === EVENT_TYPES.QUANTITY_INCREMENT ||
           e.event_type === EVENT_TYPES.QUANTITY_DECREMENT ||
           e.event_type === EVENT_TYPES.QUANTITY_INPUT
-      );
-      return qtyEvents.length > 0 ? qtyEvents[qtyEvents.length - 1].value_snapshot : null;
-    }
-    case "shippingMethod": {
-      const selects = stageEvents.filter(
+      ));
+    case "shippingMethod":
+      return lastOf(stageEvents.filter(
         (e) => e.event_type === EVENT_TYPES.SHIPPING_METHOD_SELECT
-      );
-      return selects.length > 0 ? selects[selects.length - 1].value_snapshot : null;
-    }
-    case "paymentMethod": {
-      const selects = stageEvents.filter(
+      ));
+    case "paymentMethod":
+      return lastOf(stageEvents.filter(
         (e) => e.event_type === EVENT_TYPES.PAYMENT_METHOD_SELECT
-      );
-      return selects.length > 0 ? selects[selects.length - 1].value_snapshot : null;
-    }
-    case "termsChecked": {
-      const checks = stageEvents.filter(
+      ));
+    case "termsChecked":
+      return lastOfTerms(stageEvents.filter(
         (e) =>
           e.event_type === EVENT_TYPES.TERMS_CHECK ||
           e.event_type === EVENT_TYPES.TERMS_UNCHECK
-      );
-      if (checks.length === 0) return null;
-      return checks[checks.length - 1].event_type === EVENT_TYPES.TERMS_CHECK
-        ? "true"
-        : "false";
-    }
+      ));
     default: {
       const blurEvents = stageEvents.filter(
         (e) =>
@@ -154,18 +155,14 @@ function extractFinalValueForField(
             e.event_type === EVENT_TYPES.CARD_FIELD_SELECT) &&
           e.field_name === field
       );
-      if (blurEvents.length > 0) {
-        return blurEvents[blurEvents.length - 1].value_snapshot;
-      }
+      if (blurEvents.length > 0) return lastOf(blurEvents);
       const inputEvents = stageEvents.filter(
         (e) =>
           (e.event_type === EVENT_TYPES.ADDRESS_FIELD_INPUT ||
             e.event_type === EVENT_TYPES.CARD_FIELD_INPUT) &&
           e.field_name === field
       );
-      return inputEvents.length > 0
-        ? inputEvents[inputEvents.length - 1].value_snapshot
-        : null;
+      return lastOf(inputEvents);
     }
   }
 }
@@ -229,12 +226,13 @@ export function deriveStageGatesFromEventLog(
     const correctionDetails: CorrectionDetail[] = [];
 
     for (const field of Object.keys(expectedValues)) {
-      const actual = extractFinalValueForField(events, field, stage);
-      finalValues[field] = actual ?? "";
+      const extracted = extractFinalValueForField(events, field, stage);
+      finalValues[field] = extracted.value ?? "";
       fieldMatches[field] = {
         expected: expectedValues[field],
-        actual: actual ?? "",
-        match: actual !== null && valuesMatch(expectedValues[field], actual, field),
+        actual: extracted.value ?? "",
+        match: extracted.value !== null && valuesMatch(expectedValues[field], extracted.value, field),
+        timestamp: extracted.timestamp,
       };
 
       const correction = countCorrections(events, field, stage);

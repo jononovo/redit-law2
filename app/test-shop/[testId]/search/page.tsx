@@ -18,7 +18,7 @@ const CATEGORY_IMAGES: Record<string, string> = {
 };
 
 export default function SearchPage() {
-  const { testId, shopState, setShopState, trackEvent, advanceStage, setCurrentPage, isObserver } = useShopTest();
+  const { testId, shopState, setShopState, trackEvent, flushEvents, advanceStage, setCurrentPage, isObserver } = useShopTest();
   const searchParams = useSearchParams();
   const initialQuery = searchParams.get("q") ?? "";
   const observeParam = searchParams.get("observe");
@@ -57,46 +57,16 @@ export default function SearchPage() {
     }
   }, []);
 
-  function handleSearchChange(value: string) {
-    setQuery(value);
-    setShopState((s) => ({ ...s, searchQuery: value }));
-    trackEvent(EVENT_TYPES.SEARCH_INPUT, "search", "searchQuery", value, value.length);
-  }
-
-  function handleSearchSubmit(e: React.FormEvent) {
+  async function handleProductClick(e: React.MouseEvent, product: ShopProduct) {
     e.preventDefault();
-    trackEvent(EVENT_TYPES.SEARCH_SUBMIT, "search", "searchQuery", query, query.length);
-  }
-
-  function handleProductClick(product: ShopProduct) {
     trackEvent(EVENT_TYPES.PRODUCT_CLICK, "product_select", "product", product.slug, product.slug.length);
     advanceStage("product_select");
+    await flushEvents();
+    window.location.href = `/test-shop/${testId}/product/${product.slug}${qs}`;
   }
 
   return (
     <div data-testid="page-search">
-      <form onSubmit={handleSearchSubmit} className="mb-8">
-        <div className="flex gap-3">
-          <input
-            type="text"
-            data-testid="input-search"
-            value={query}
-            onChange={(e) => handleSearchChange(e.target.value)}
-            placeholder="Search products..."
-            className="flex-1 px-4 py-3 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-            readOnly={isObserver}
-          />
-          <button
-            type="submit"
-            data-testid="button-search-submit"
-            className="px-6 py-3 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors"
-            disabled={isObserver}
-          >
-            Search
-          </button>
-        </div>
-      </form>
-
       {results.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {results.map((product) => (
@@ -104,7 +74,7 @@ export default function SearchPage() {
               key={product.slug}
               href={`/test-shop/${testId}/product/${product.slug}${qs}`}
               data-testid={`card-product-${product.slug}`}
-              onClick={() => handleProductClick(product)}
+              onClick={(e) => handleProductClick(e, product)}
               className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-md hover:border-gray-300 transition-all group"
             >
               <div className="relative bg-gray-50 h-48">
@@ -119,7 +89,7 @@ export default function SearchPage() {
               <div className="p-4">
                 <h3
                   data-testid={`text-product-name-${product.slug}`}
-                  className="font-semibold text-gray-900 group-hover:text-indigo-600 transition-colors"
+                  className="font-semibold text-gray-900 group-hover:text-teal-700 transition-colors"
                 >
                   {product.name}
                 </h3>

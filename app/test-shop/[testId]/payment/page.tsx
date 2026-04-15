@@ -101,7 +101,7 @@ export default function PaymentPage() {
                 value={card.cardholderName}
                 onChange={(e) => handleCardChange("cardholderName", e.target.value)}
                 readOnly={isObserver}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-teal-600"
                 required
               />
             </div>
@@ -114,7 +114,7 @@ export default function PaymentPage() {
                 onChange={(e) => handleCardChange("cardNumber", e.target.value)}
                 readOnly={isObserver}
                 maxLength={19}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-teal-600 font-mono"
                 required
               />
             </div>
@@ -126,7 +126,7 @@ export default function PaymentPage() {
                   value={card.expiryMonth}
                   onChange={(e) => handleCardSelect("expiryMonth", e.target.value)}
                   disabled={isObserver}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-teal-600"
                   required
                 >
                   <option value="">MM</option>
@@ -142,7 +142,7 @@ export default function PaymentPage() {
                   value={card.expiryYear}
                   onChange={(e) => handleCardSelect("expiryYear", e.target.value)}
                   disabled={isObserver}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-teal-600"
                   required
                 >
                   <option value="">YY</option>
@@ -160,7 +160,7 @@ export default function PaymentPage() {
                   onChange={(e) => handleCardChange("cvv", e.target.value)}
                   readOnly={isObserver}
                   maxLength={4}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-teal-600 font-mono"
                   required
                 />
               </div>
@@ -173,7 +173,7 @@ export default function PaymentPage() {
                   onChange={(e) => handleCardChange("billingZip", e.target.value)}
                   readOnly={isObserver}
                   maxLength={10}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-teal-600"
                   required
                 />
               </div>
@@ -224,7 +224,7 @@ export default function PaymentPage() {
           type="submit"
           data-testid="button-pay-now"
           disabled={isObserver || submitting}
-          className="w-full py-3 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition-colors disabled:opacity-50"
+          className="w-full py-3 bg-teal-700 text-white rounded-lg font-semibold hover:bg-teal-800 transition-colors disabled:opacity-50"
         >
           {submitting ? "Processing..." : `Pay ${formatPrice(total)}`}
         </button>
