@@ -39,10 +39,10 @@ function AgentIcon({ size = 20 }: { size?: number }) {
 }
 
 const agents = [
-  { name: "Claude", logo: AnthropicLogo, bg: "#1a1a1a" },
-  { name: "ChatGPT", logo: OpenAILogo, bg: "#1a1a1a" },
-  { name: "Perplexity", logo: PerplexityLogo, bg: "#1a1a1a" },
-  { name: "Independent Agents", logo: AgentIcon, bg: "#64748B" },
+  { name: "Claude", logo: AnthropicLogo, bg: "#D97706", line: "#D9770680" },
+  { name: "ChatGPT", logo: OpenAILogo, bg: "#10B981", line: "#10B98180" },
+  { name: "Perplexity", logo: PerplexityLogo, bg: "#6366F1", line: "#6366F180" },
+  { name: "Independent Agents", logo: AgentIcon, bg: "#64748B", line: "#64748B80" },
 ];
 
 const outputs = [
@@ -131,9 +131,9 @@ export function AgentConvergenceModern() {
               <path
                 key={`left-${i}`}
                 d={`M 180 ${startY} Q 320 ${startY} 400 160`}
-                stroke={agent.bg}
+                stroke={agent.line}
                 strokeWidth="1.5"
-                strokeOpacity="0.3"
+                strokeOpacity="1"
                 fill="none"
                 className="transition-all duration-1000"
                 style={{
