@@ -116,7 +116,7 @@ export function AgentConvergenceModern() {
         <svg
           className="absolute inset-0 w-full h-full pointer-events-none z-0"
           viewBox="0 0 800 320"
-          preserveAspectRatio="none"
+          preserveAspectRatio="xMidYMid meet"
           fill="none"
         >
           <defs>
