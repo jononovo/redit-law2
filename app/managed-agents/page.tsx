@@ -68,7 +68,7 @@ export default function ManagedAgentsPage() {
                 <span>Managed Agent Services</span>
               </div>
               <h1 className="text-5xl md:text-6xl font-extrabold tracking-tight text-neutral-900 leading-[1.1] mb-6 animate-fade-in-up" style={{ animationDelay: '0.1s' }} data-testid="text-managed-heading">
-                Agents Love <span className="text-primary">you</span>.
+                Let Agents Find (& love) <span className="text-primary">you</span>.
               </h1>
               <p className="text-xl text-neutral-500 font-medium leading-relaxed animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
                 They want to interact with your brand, products and services.
