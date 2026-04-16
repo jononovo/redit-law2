@@ -319,8 +319,8 @@ export function AgentConvergenceModern() {
       </div>
 
       <div className="flex justify-between mt-28">
-        <p className="text-[10px] font-bold text-neutral-300 uppercase tracking-[0.2em]">Agents discover you</p>
-        <p className="text-[10px] font-bold text-neutral-300 uppercase tracking-[0.2em]">You provide</p>
+        <p className="text-[10px] font-bold text-neutral-600 uppercase tracking-[0.2em]">Agents discover you</p>
+        <p className="text-[10px] font-bold text-neutral-600 uppercase tracking-[0.2em]">You provide</p>
       </div>
     </div>
   );
