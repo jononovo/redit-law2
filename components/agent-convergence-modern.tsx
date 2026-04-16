@@ -77,7 +77,7 @@ export function AgentConvergenceModern() {
     <div ref={ref} className="w-full max-w-4xl mx-auto py-6">
       <div className="relative flex items-center justify-between overflow-visible">
 
-        <div className="flex flex-col gap-5 z-10 shrink-0 w-[140px] sm:w-[210px]">
+        <div className="flex flex-col gap-5 z-10 shrink-0 w-10 sm:w-[210px]">
           {agents.map((agent, i) => {
             const Logo = agent.logo;
             return (
@@ -274,7 +274,7 @@ export function AgentConvergenceModern() {
           </div>
         </div>
 
-        <div className="flex flex-col justify-center gap-8 z-10 shrink-0 w-[140px] sm:w-[210px] items-start">
+        <div className="flex flex-col justify-center gap-8 z-10 shrink-0 w-10 sm:w-[210px] items-end sm:items-start">
           {outputs.map((output, i) => (
             <div
               key={output.name}
