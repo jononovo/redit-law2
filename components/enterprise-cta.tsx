@@ -30,8 +30,7 @@ export function EnterpriseCta() {
             Ace your brand's <span className="text-primary">agent-facing</span> touch-points.
           </h2>
           <p className="text-lg text-neutral-500 font-medium leading-relaxed max-w-2xl mx-auto">
-            They want to interact with your brand, products and services.
-            We specialize in agentic procurement & shopping — and consulting brands on how to enable more, faster and better integrations by agent builders and AI companies.
+            Tired of the AI-Hype, but need to show results that increase brand awareness & sales?
           </p>
           <p className="text-base text-neutral-400 font-medium mt-4">
             This drives more traffic, more partners and more sales without complex interfaces.
