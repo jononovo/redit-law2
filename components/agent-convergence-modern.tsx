@@ -198,8 +198,9 @@ export function AgentConvergenceModern() {
           </div>
           <span className="text-[10px] font-bold text-neutral-400 mt-2 uppercase tracking-[0.15em]">Your Brand</span>
           <div
-            className="absolute top-full mt-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 transition-all duration-700"
+            className="absolute top-full mt-10 flex flex-col items-center gap-2 whitespace-nowrap transition-all duration-700"
             style={{
+              left: "50%",
               opacity: visible ? 1 : 0,
               transform: visible ? "translateX(-50%) translateY(0)" : "translateX(-50%) translateY(-20px)",
               transitionDelay: "1300ms",
