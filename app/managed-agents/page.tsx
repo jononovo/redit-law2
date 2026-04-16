@@ -73,9 +73,6 @@ export default function ManagedAgentsPage() {
               <p className="text-xl text-neutral-500 font-medium leading-relaxed animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
                 Tired of the AI-Hype, but need to show results that increase brand awareness & sales?
               </p>
-              <p className="text-lg text-neutral-400 font-medium mt-4 animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
-                This drives more traffic, more partners and more sales without complex interfaces.
-              </p>
             </div>
 
             <div className="max-w-5xl mx-auto mb-12">
@@ -94,6 +91,9 @@ export default function ManagedAgentsPage() {
               <div className="rounded-3xl bg-white border border-neutral-100 shadow-sm p-6 md:p-10">
                 <AgentConvergenceModern />
               </div>
+              <p className="text-lg text-neutral-400 font-medium mt-6 text-center max-w-3xl mx-auto">
+                This drives more traffic, more partners and more sales without complex interfaces.
+              </p>
             </div>
 
             <div className="max-w-5xl mx-auto">
