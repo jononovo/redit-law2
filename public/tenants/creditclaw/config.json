@@ -39,7 +39,6 @@
       "variant": "light",
       "showLogo": true,
       "links": [
-        { "label": "How It Works", "href": "/how-it-works" },
         { "label": "Shopping Skills", "href": "/skills" },
         { "label": "Managed Agents", "href": "/managed-agents" }
       ]
