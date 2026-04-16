@@ -62,7 +62,7 @@ export default function ManagedAgentsPage() {
 
           <div className="container mx-auto px-6 relative z-10">
             <div className="max-w-3xl mx-auto text-center mb-16">
-              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-orange-100 text-orange-700 font-bold text-sm mb-6 animate-fade-in-up">
+              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-neutral-900 text-white font-bold text-sm mb-6 animate-fade-in-up">
                 <Zap size={14} />
                 <span>Managed Agentic Brand Experiences</span>
               </div>
