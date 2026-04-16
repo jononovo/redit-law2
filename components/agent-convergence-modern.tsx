@@ -85,7 +85,7 @@ export function AgentConvergenceModern() {
     <div ref={ref} className="w-full max-w-4xl mx-auto py-6">
       <div className="relative flex items-center justify-between">
 
-        <div className="flex flex-col gap-3 z-10 shrink-0 w-[140px] sm:w-[210px]">
+        <div className="flex flex-col gap-5 z-10 shrink-0 w-[140px] sm:w-[210px]">
           {agents.map((agent, i) => {
             const Logo = agent.logo;
             return (
@@ -115,7 +115,7 @@ export function AgentConvergenceModern() {
 
         <svg
           className="absolute inset-0 w-full h-full pointer-events-none z-0"
-          viewBox="0 0 800 280"
+          viewBox="0 0 800 320"
           preserveAspectRatio="none"
           fill="none"
         >
@@ -127,11 +127,11 @@ export function AgentConvergenceModern() {
           </defs>
 
           {agents.map((agent, i) => {
-            const startY = 35 + i * 55;
+            const startY = 40 + i * 75;
             return (
               <path
                 key={`left-${i}`}
-                d={`M 180 ${startY} Q 320 ${startY} 400 140`}
+                d={`M 180 ${startY} Q 320 ${startY} 400 160`}
                 stroke={agent.bg}
                 strokeWidth="1.5"
                 strokeOpacity="0.3"
@@ -147,11 +147,11 @@ export function AgentConvergenceModern() {
           })}
 
           {outputs.map((_, i) => {
-            const endY = 35 + i * 60;
+            const endY = 40 + i * 80;
             return (
               <path
                 key={`right-${i}`}
-                d={`M 400 140 Q 480 ${endY} 620 ${endY}`}
+                d={`M 400 160 Q 480 ${endY} 620 ${endY}`}
                 stroke="hsl(10, 85%, 55%)"
                 strokeWidth="1.5"
                 strokeOpacity="0.3"
@@ -166,7 +166,7 @@ export function AgentConvergenceModern() {
             );
           })}
 
-          <circle cx="400" cy="140" r="36" fill="url(#centerGlow)" opacity={visible ? 1 : 0} className="transition-opacity duration-1000" style={{ transitionDelay: "600ms" }} />
+          <circle cx="400" cy="160" r="36" fill="url(#centerGlow)" opacity={visible ? 1 : 0} className="transition-opacity duration-1000" style={{ transitionDelay: "600ms" }} />
         </svg>
 
         <div
@@ -187,7 +187,7 @@ export function AgentConvergenceModern() {
           <span className="text-[10px] font-bold text-neutral-400 mt-2 uppercase tracking-[0.15em]">Your Brand</span>
         </div>
 
-        <div className="flex flex-col gap-4 z-10 shrink-0 w-[140px] sm:w-[210px] items-end">
+        <div className="flex flex-col gap-5 z-10 shrink-0 w-[140px] sm:w-[210px] items-start">
           {outputs.map((output, i) => (
             <div
               key={output.name}
