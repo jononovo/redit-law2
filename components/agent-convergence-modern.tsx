@@ -49,6 +49,7 @@ const outputs = [
   { name: "Product Feed", desc: "Structured catalog" },
   { name: "Skills", desc: "Agent capabilities" },
   { name: "Documentation", desc: "Readable specs" },
+  { name: "Agent Checkout", desc: "Transact natively" },
 ];
 
 export function AgentConvergenceModern() {
@@ -114,7 +115,7 @@ export function AgentConvergenceModern() {
 
         <svg
           className="absolute inset-0 w-full h-full pointer-events-none z-0"
-          viewBox="0 0 800 240"
+          viewBox="0 0 800 280"
           preserveAspectRatio="none"
           fill="none"
         >
@@ -126,11 +127,11 @@ export function AgentConvergenceModern() {
           </defs>
 
           {agents.map((agent, i) => {
-            const startY = 30 + i * 55;
+            const startY = 35 + i * 55;
             return (
               <path
                 key={`left-${i}`}
-                d={`M 180 ${startY} Q 320 ${startY} 400 120`}
+                d={`M 180 ${startY} Q 320 ${startY} 400 140`}
                 stroke={agent.bg}
                 strokeWidth="1.5"
                 strokeOpacity="0.3"
@@ -146,11 +147,11 @@ export function AgentConvergenceModern() {
           })}
 
           {outputs.map((_, i) => {
-            const endY = 40 + i * 75;
+            const endY = 35 + i * 60;
             return (
               <path
                 key={`right-${i}`}
-                d={`M 400 120 Q 480 ${endY} 620 ${endY}`}
+                d={`M 400 140 Q 480 ${endY} 620 ${endY}`}
                 stroke="hsl(10, 85%, 55%)"
                 strokeWidth="1.5"
                 strokeOpacity="0.3"
@@ -165,7 +166,7 @@ export function AgentConvergenceModern() {
             );
           })}
 
-          <circle cx="400" cy="120" r="36" fill="url(#centerGlow)" opacity={visible ? 1 : 0} className="transition-opacity duration-1000" style={{ transitionDelay: "600ms" }} />
+          <circle cx="400" cy="140" r="36" fill="url(#centerGlow)" opacity={visible ? 1 : 0} className="transition-opacity duration-1000" style={{ transitionDelay: "600ms" }} />
         </svg>
 
         <div
@@ -218,6 +219,13 @@ export function AgentConvergenceModern() {
                     <path d="M16 13H8" />
                     <path d="M16 17H8" />
                     <path d="M10 9H8" />
+                  </svg>
+                )}
+                {i === 3 && (
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#525252" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="8" cy="21" r="1" />
+                    <circle cx="19" cy="21" r="1" />
+                    <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12" />
                   </svg>
                 )}
               </div>

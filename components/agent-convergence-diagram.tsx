@@ -13,6 +13,7 @@ const outputs = [
   { name: "Product Feed", icon: "📦" },
   { name: "Skills", icon: "⚡" },
   { name: "Documentation", icon: "📄" },
+  { name: "Agent Checkout", icon: "🛒" },
 ];
 
 export function AgentConvergenceDiagram() {
