@@ -123,7 +123,7 @@ export function AgentConvergenceModern() {
             return (
               <path
                 key={`left-${i}`}
-                d={`M 80 ${startY} Q 280 ${startY} 400 160`}
+                d={`M 160 ${startY} Q 320 ${startY} 400 160`}
                 stroke={agent.line}
                 strokeWidth="1.5"
                 strokeOpacity="1"
@@ -143,7 +143,7 @@ export function AgentConvergenceModern() {
             return (
               <path
                 key={`right-${i}`}
-                d={`M 400 160 Q 520 ${endY} 720 ${endY}`}
+                d={`M 400 160 Q 480 ${endY} 560 ${endY}`}
                 stroke="hsl(10, 85%, 55%)"
                 strokeWidth="1.5"
                 strokeOpacity="0.3"
@@ -178,7 +178,7 @@ export function AgentConvergenceModern() {
             return (
               <path
                 key={`pulse-left-${i}`}
-                d={`M 80 ${startY} Q 280 ${startY} 400 160`}
+                d={`M 160 ${startY} Q 320 ${startY} 400 160`}
                 stroke={agent.bg}
                 strokeWidth="2"
                 strokeOpacity="0.9"
@@ -198,7 +198,7 @@ export function AgentConvergenceModern() {
             return (
               <path
                 key={`pulse-right-${i}`}
-                d={`M 400 160 Q 520 ${endY} 720 ${endY}`}
+                d={`M 400 160 Q 480 ${endY} 560 ${endY}`}
                 stroke="hsl(10, 85%, 55%)"
                 strokeWidth="2"
                 strokeOpacity="0.9"
