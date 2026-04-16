@@ -122,7 +122,7 @@ export default function ManagedAgentsPage() {
                     target="_blank"
                     rel="noopener noreferrer"
                   >
-                    Book a Call
+                    Do agents love my brand?
                     <ArrowRight className="w-5 h-5" />
                   </a>
                 </Button>
