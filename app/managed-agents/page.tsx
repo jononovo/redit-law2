@@ -82,7 +82,7 @@ export default function ManagedAgentsPage() {
                 <AgentConvergenceModern />
               </div>
               <p className="text-lg text-neutral-400 font-medium mt-6 text-center max-w-3xl mx-auto">
-                This drives more traffic, more partners and more sales without complex interfaces.
+                Drive more traffic, partners and sales without complex interfaces.
               </p>
             </div>
 

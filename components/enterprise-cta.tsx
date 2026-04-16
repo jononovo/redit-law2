@@ -33,7 +33,7 @@ export function EnterpriseCta() {
             Tired of the AI-Hype, but need to show results that increase brand awareness & sales?
           </p>
           <p className="text-base text-neutral-400 font-medium mt-4">
-            This drives more traffic, more partners and more sales without complex interfaces.
+            Drive more traffic, partners and sales without complex interfaces.
           </p>
         </div>
 
