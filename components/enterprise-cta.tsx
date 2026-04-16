@@ -27,7 +27,7 @@ export function EnterpriseCta() {
             <span>For Enterprise & Brands</span>
           </div>
           <h2 className="text-4xl md:text-5xl font-extrabold tracking-tight text-neutral-900 mb-6" data-testid="text-enterprise-heading">
-            Agents are looking for <span className="text-primary">you</span>.
+            Agents Love <span className="text-primary">you</span>.
           </h2>
           <p className="text-lg text-neutral-500 font-medium leading-relaxed max-w-2xl mx-auto">
             They want to interact with your brand, products and services.
