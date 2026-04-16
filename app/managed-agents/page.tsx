@@ -133,7 +133,7 @@ export default function ManagedAgentsPage() {
                   className="block mt-5 text-sm text-neutral-500 hover:text-primary transition-colors"
                   data-testid="link-brand-scan"
                 >
-                  Take a test &amp; check how <em>agent-friendly</em> your brand is →
+                  Is your brand <em>agent-friendly</em>? Take the test →
                 </a>
               </div>
             </div>
