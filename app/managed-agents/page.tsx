@@ -126,6 +126,15 @@ export default function ManagedAgentsPage() {
                     <ArrowRight className="w-5 h-5" />
                   </a>
                 </Button>
+                <a
+                  href="https://shopy.sh/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block mt-5 text-sm text-neutral-500 hover:text-primary transition-colors"
+                  data-testid="link-brand-scan"
+                >
+                  Take a test &amp; check how <em>agent-friendly</em> your brand is →
+                </a>
               </div>
             </div>
           </div>
