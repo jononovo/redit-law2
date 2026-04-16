@@ -115,7 +115,7 @@ export function AgentConvergenceModern() {
         <svg
           className="absolute inset-0 w-full h-full pointer-events-none z-0"
           viewBox="0 0 800 340"
-          preserveAspectRatio="xMidYMid meet"
+          preserveAspectRatio="none"
           fill="none"
         >
           <defs>
@@ -146,7 +146,7 @@ export function AgentConvergenceModern() {
           })}
 
           {outputs.map((_, i) => {
-            const endY = 50 + i * 90;
+            const endY = 45 + i * 115;
             return (
               <path
                 key={`right-${i}`}
@@ -219,7 +219,7 @@ export function AgentConvergenceModern() {
           </div>
         </div>
 
-        <div className="flex flex-col gap-5 z-10 shrink-0 w-[140px] sm:w-[210px] items-start">
+        <div className="flex flex-col justify-center gap-8 z-10 shrink-0 w-[140px] sm:w-[210px] items-start">
           {outputs.map((output, i) => (
             <div
               key={output.name}
