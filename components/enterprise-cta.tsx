@@ -2,7 +2,7 @@
 
 import { ArrowRight, Building2, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { AgentConvergenceDiagram } from "@/components/agent-convergence-diagram";
+import { AgentConvergenceModern } from "@/components/agent-convergence-modern";
 
 const services = [
   "Master agent building",
@@ -38,7 +38,7 @@ export function EnterpriseCta() {
         </div>
 
         <div className="rounded-3xl bg-white border border-neutral-100 shadow-sm p-6 md:p-10 mb-16">
-          <AgentConvergenceDiagram />
+          <AgentConvergenceModern />
         </div>
 
         <div className="max-w-3xl mx-auto">
