@@ -53,18 +53,32 @@ const outputs = [
 
 export function AgentConvergenceModern() {
   const [visible, setVisible] = useState(false);
+  const [drawn, setDrawn] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const inView = useRef(false);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting) setVisible(true);
+        inView.current = entry.isIntersecting;
+        if (entry.isIntersecting && !visible) setVisible(true);
       },
       { threshold: 0.15 }
     );
     if (ref.current) observer.observe(ref.current);
     return () => observer.disconnect();
-  }, []);
+  }, [visible]);
+
+  useEffect(() => {
+    if (!visible) return;
+    setDrawn(true);
+    const interval = setInterval(() => {
+      if (!inView.current) return;
+      setDrawn(false);
+      setTimeout(() => setDrawn(true), 50);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [visible]);
 
   return (
     <div ref={ref} className="w-full max-w-4xl mx-auto py-6">
@@ -124,7 +138,7 @@ export function AgentConvergenceModern() {
                 className="transition-all duration-1000"
                 style={{
                   strokeDasharray: 400,
-                  strokeDashoffset: visible ? 0 : 400,
+                  strokeDashoffset: drawn ? 0 : 400,
                   transitionDelay: `${i * 150 + 300}ms`,
                 }}
               />
@@ -144,7 +158,7 @@ export function AgentConvergenceModern() {
                 className="transition-all duration-1000"
                 style={{
                   strokeDasharray: 400,
-                  strokeDashoffset: visible ? 0 : 400,
+                  strokeDashoffset: drawn ? 0 : 400,
                   transitionDelay: `${i * 150 + 800}ms`,
                 }}
               />
