@@ -70,14 +70,7 @@ export function AgentConvergenceModern() {
   }, [visible]);
 
   useEffect(() => {
-    if (!visible) return;
-    setDrawn(true);
-    const interval = setInterval(() => {
-      if (!inView.current) return;
-      setDrawn(false);
-      setTimeout(() => setDrawn(true), 1200);
-    }, 5000);
-    return () => clearInterval(interval);
+    if (visible) setDrawn(true);
   }, [visible]);
 
   return (
@@ -179,7 +172,69 @@ export function AgentConvergenceModern() {
           />
 
           <circle cx="400" cy="160" r="36" fill="url(#centerGlow)" opacity={visible ? 1 : 0} className="transition-opacity duration-1000" style={{ transitionDelay: "600ms" }} />
+
+          {visible && agents.map((agent, i) => {
+            const startY = 40 + i * 75;
+            return (
+              <path
+                key={`pulse-left-${i}`}
+                d={`M 180 ${startY} Q 320 ${startY} 400 160`}
+                stroke={agent.bg}
+                strokeWidth="2"
+                strokeOpacity="0.9"
+                fill="none"
+                pathLength={1}
+                style={{
+                  strokeDasharray: "0.12 0.88",
+                  animation: `pulseFlow 3s linear infinite`,
+                  animationDelay: `${i * 400}ms`,
+                }}
+              />
+            );
+          })}
+
+          {visible && outputs.map((_, i) => {
+            const endY = 45 + i * 115;
+            return (
+              <path
+                key={`pulse-right-${i}`}
+                d={`M 400 160 Q 480 ${endY} 620 ${endY}`}
+                stroke="hsl(10, 85%, 55%)"
+                strokeWidth="2"
+                strokeOpacity="0.9"
+                fill="none"
+                pathLength={1}
+                style={{
+                  strokeDasharray: "0.12 0.88",
+                  animation: `pulseFlow 3s linear infinite`,
+                  animationDelay: `${i * 400 + 1200}ms`,
+                }}
+              />
+            );
+          })}
+
+          {visible && (
+            <line
+              x1="400" y1="200" x2="400" y2="310"
+              stroke="hsl(10, 85%, 55%)"
+              strokeWidth="2"
+              strokeOpacity="0.9"
+              pathLength={1}
+              style={{
+                strokeDasharray: "0.15 0.85",
+                animation: `pulseFlow 3s linear infinite`,
+                animationDelay: "2000ms",
+              }}
+            />
+          )}
         </svg>
+
+        <style jsx>{`
+          @keyframes pulseFlow {
+            0% { stroke-dashoffset: 1; }
+            100% { stroke-dashoffset: 0; }
+          }
+        `}</style>
 
         <div
           className="z-10 flex flex-col items-center shrink-0 relative transition-all duration-700"
