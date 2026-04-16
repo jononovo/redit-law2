@@ -75,7 +75,7 @@ export function AgentConvergenceModern() {
     const interval = setInterval(() => {
       if (!inView.current) return;
       setDrawn(false);
-      setTimeout(() => setDrawn(true), 50);
+      setTimeout(() => setDrawn(true), 1200);
     }, 5000);
     return () => clearInterval(interval);
   }, [visible]);
