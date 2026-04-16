@@ -105,14 +105,19 @@ export function AgentConvergenceModern() {
           })}
         </div>
 
+        {([
+          { cls: "sm:hidden", leftX: 160, leftCtrl: 320, rightCtrl: 480, rightX: 640 },
+          { cls: "hidden sm:block", leftX: 160, leftCtrl: 320, rightCtrl: 480, rightX: 560 },
+        ] as const).map((cfg, idx) => (
         <svg
-          className="absolute inset-0 w-full h-full pointer-events-none z-0"
+          key={idx}
+          className={`absolute inset-0 w-full h-full pointer-events-none z-0 ${cfg.cls}`}
           viewBox="0 0 800 340"
           preserveAspectRatio="none"
           fill="none"
         >
           <defs>
-            <radialGradient id="centerGlow">
+            <radialGradient id={`centerGlow-${idx}`}>
               <stop offset="0%" stopColor="hsl(10, 85%, 55%)" stopOpacity="0.12" />
               <stop offset="100%" stopColor="hsl(10, 85%, 55%)" stopOpacity="0" />
             </radialGradient>
@@ -123,7 +128,7 @@ export function AgentConvergenceModern() {
             return (
               <path
                 key={`left-${i}`}
-                d={`M 160 ${startY} Q 320 ${startY} 400 160`}
+                d={`M ${cfg.leftX} ${startY} Q ${cfg.leftCtrl} ${startY} 400 160`}
                 stroke={agent.line}
                 strokeWidth="1.5"
                 strokeOpacity="1"
@@ -143,7 +148,7 @@ export function AgentConvergenceModern() {
             return (
               <path
                 key={`right-${i}`}
-                d={`M 400 160 Q 480 ${endY} 560 ${endY}`}
+                d={`M 400 160 Q ${cfg.rightCtrl} ${endY} ${cfg.rightX} ${endY}`}
                 stroke="hsl(10, 85%, 55%)"
                 strokeWidth="1.5"
                 strokeOpacity="0.3"
@@ -171,14 +176,14 @@ export function AgentConvergenceModern() {
             }}
           />
 
-          <circle cx="400" cy="160" r="36" fill="url(#centerGlow)" opacity={visible ? 1 : 0} className="transition-opacity duration-1000" style={{ transitionDelay: "600ms" }} />
+          <circle cx="400" cy="160" r="36" fill={`url(#centerGlow-${idx})`} opacity={visible ? 1 : 0} className="transition-opacity duration-1000" style={{ transitionDelay: "600ms" }} />
 
           {visible && agents.map((agent, i) => {
             const startY = 40 + i * 75;
             return (
               <path
                 key={`pulse-left-${i}`}
-                d={`M 160 ${startY} Q 320 ${startY} 400 160`}
+                d={`M ${cfg.leftX} ${startY} Q ${cfg.leftCtrl} ${startY} 400 160`}
                 stroke={agent.bg}
                 strokeWidth="2"
                 strokeOpacity="0.9"
@@ -198,7 +203,7 @@ export function AgentConvergenceModern() {
             return (
               <path
                 key={`pulse-right-${i}`}
-                d={`M 400 160 Q 480 ${endY} 560 ${endY}`}
+                d={`M 400 160 Q ${cfg.rightCtrl} ${endY} ${cfg.rightX} ${endY}`}
                 stroke="hsl(10, 85%, 55%)"
                 strokeWidth="2"
                 strokeOpacity="0.9"
@@ -228,6 +233,7 @@ export function AgentConvergenceModern() {
             />
           )}
         </svg>
+        ))}
 
         <style jsx>{`
           @keyframes pulseFlow {
