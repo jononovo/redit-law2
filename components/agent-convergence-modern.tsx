@@ -54,6 +54,7 @@ const outputs = [
 export function AgentConvergenceModern() {
   const [visible, setVisible] = useState(false);
   const [drawn, setDrawn] = useState(false);
+  const [pulsesActive, setPulsesActive] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const inView = useRef(false);
 
@@ -70,7 +71,11 @@ export function AgentConvergenceModern() {
   }, [visible]);
 
   useEffect(() => {
-    if (visible) setDrawn(true);
+    if (visible) {
+      setDrawn(true);
+      const t = setTimeout(() => setPulsesActive(true), 2400);
+      return () => clearTimeout(t);
+    }
   }, [visible]);
 
   return (
@@ -178,7 +183,7 @@ export function AgentConvergenceModern() {
 
           <circle cx="400" cy="160" r="36" fill={`url(#centerGlow-${idx})`} opacity={visible ? 1 : 0} className="transition-opacity duration-1000" style={{ transitionDelay: "600ms" }} />
 
-          {visible && agents.map((agent, i) => {
+          {pulsesActive && agents.map((agent, i) => {
             const startY = 40 + i * 75;
             return (
               <path
@@ -198,7 +203,7 @@ export function AgentConvergenceModern() {
             );
           })}
 
-          {visible && outputs.map((_, i) => {
+          {pulsesActive && outputs.map((_, i) => {
             const endY = 45 + i * 115;
             return (
               <path
@@ -218,7 +223,7 @@ export function AgentConvergenceModern() {
             );
           })}
 
-          {visible && (
+          {pulsesActive && (
             <line
               x1="400" y1="200" x2="400" y2="310"
               stroke="hsl(10, 85%, 55%)"
