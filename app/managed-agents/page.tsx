@@ -110,7 +110,7 @@ export default function ManagedAgentsPage() {
                   Ready to make your brand <span className="text-primary">agent-ready</span>?
                 </h3>
                 <p className="text-neutral-500 font-medium mb-8 max-w-md mx-auto">
-                  Book a quick call and we&apos;ll walk you through how agents can discover, interact with, and purchase from your brand.
+                  Book a quick call and we&apos;ll walk you through how most agents discover, interact with, and purchase from your brand.
                 </p>
                 <Button
                   className="h-14 px-8 rounded-full text-lg font-bold gap-2"
