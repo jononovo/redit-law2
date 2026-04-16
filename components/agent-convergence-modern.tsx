@@ -49,7 +49,6 @@ const outputs = [
   { name: "Product Feed", desc: "UCP-aligned Catalog" },
   { name: "Skill.md", desc: "Search, order & deals" },
   { name: "Documentation", desc: "llm.txt & specs" },
-  { name: "Agent Checkout", desc: "ACP via MCP/API/CLI" },
 ];
 
 export function AgentConvergenceModern() {
@@ -115,7 +114,7 @@ export function AgentConvergenceModern() {
 
         <svg
           className="absolute inset-0 w-full h-full pointer-events-none z-0"
-          viewBox="0 0 800 320"
+          viewBox="0 0 800 340"
           preserveAspectRatio="xMidYMid meet"
           fill="none"
         >
@@ -147,7 +146,7 @@ export function AgentConvergenceModern() {
           })}
 
           {outputs.map((_, i) => {
-            const endY = 40 + i * 80;
+            const endY = 50 + i * 90;
             return (
               <path
                 key={`right-${i}`}
@@ -165,6 +164,19 @@ export function AgentConvergenceModern() {
               />
             );
           })}
+
+          <line
+            x1="400" y1="200" x2="400" y2="310"
+            stroke="hsl(10, 85%, 55%)"
+            strokeWidth="1.5"
+            strokeOpacity="0.3"
+            className="transition-all duration-1000"
+            style={{
+              strokeDasharray: 200,
+              strokeDashoffset: drawn ? 0 : 200,
+              transitionDelay: "1200ms",
+            }}
+          />
 
           <circle cx="400" cy="160" r="36" fill="url(#centerGlow)" opacity={visible ? 1 : 0} className="transition-opacity duration-1000" style={{ transitionDelay: "600ms" }} />
         </svg>
@@ -185,6 +197,25 @@ export function AgentConvergenceModern() {
             </svg>
           </div>
           <span className="text-[10px] font-bold text-neutral-400 mt-2 uppercase tracking-[0.15em]">Your Brand</span>
+          <div
+            className="mt-16 flex flex-col items-center gap-2 transition-all duration-700"
+            style={{
+              opacity: visible ? 1 : 0,
+              transform: visible ? "translateY(0)" : "translateY(-20px)",
+              transitionDelay: "1300ms",
+            }}
+            data-testid="agent-checkout-node"
+          >
+            <div className="w-10 h-10 rounded-lg bg-neutral-100 border border-neutral-200 flex items-center justify-center">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#525252" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="8" cy="21" r="1" />
+                <circle cx="19" cy="21" r="1" />
+                <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12" />
+              </svg>
+            </div>
+            <span className="text-[13px] font-semibold text-neutral-700">Agent Checkout</span>
+            <span className="text-[11px] text-neutral-400 font-medium">ACP via MCP/API/CLI</span>
+          </div>
         </div>
 
         <div className="flex flex-col gap-5 z-10 shrink-0 w-[140px] sm:w-[210px] items-start">
@@ -219,13 +250,6 @@ export function AgentConvergenceModern() {
                     <path d="M16 13H8" />
                     <path d="M16 17H8" />
                     <path d="M10 9H8" />
-                  </svg>
-                )}
-                {i === 3 && (
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#525252" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                    <circle cx="8" cy="21" r="1" />
-                    <circle cx="19" cy="21" r="1" />
-                    <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12" />
                   </svg>
                 )}
               </div>
