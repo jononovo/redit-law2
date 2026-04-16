@@ -270,7 +270,7 @@ export function AgentConvergenceModern() {
               <path d="M12 3v6" />
             </svg>
           </div>
-          <span className="text-[10px] font-bold text-neutral-400 mt-2 uppercase tracking-[0.15em]">Your Brand</span>
+          <span className="text-[10px] font-bold text-neutral-600 mt-2 uppercase tracking-[0.15em]">Your Brand</span>
           <div
             className="absolute top-full mt-10 flex flex-col items-center gap-2 whitespace-nowrap transition-all duration-700"
             style={{
