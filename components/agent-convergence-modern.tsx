@@ -39,10 +39,10 @@ function AgentIcon({ size = 20 }: { size?: number }) {
 }
 
 const agents = [
-  { name: "Claude", logo: AnthropicLogo, bg: "#D97706", line: "#D9770680" },
-  { name: "ChatGPT", logo: OpenAILogo, bg: "#10B981", line: "#10B98180" },
-  { name: "Perplexity", logo: PerplexityLogo, bg: "#6366F1", line: "#6366F180" },
-  { name: "Independent Agents", logo: AgentIcon, bg: "#64748B", line: "#64748B80" },
+  { name: "Claude", logo: AnthropicLogo, bg: "#D97706", line: "#D9770640" },
+  { name: "ChatGPT", logo: OpenAILogo, bg: "#10B981", line: "#10B98140" },
+  { name: "Perplexity", logo: PerplexityLogo, bg: "#6366F1", line: "#6366F140" },
+  { name: "Independent Agents", logo: AgentIcon, bg: "#64748B", line: "#64748B40" },
 ];
 
 const outputs = [
