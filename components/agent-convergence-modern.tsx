@@ -82,7 +82,7 @@ export function AgentConvergenceModern() {
 
   return (
     <div ref={ref} className="w-full max-w-4xl mx-auto py-6">
-      <div className="relative flex items-center justify-between">
+      <div className="relative flex items-center justify-between overflow-visible">
 
         <div className="flex flex-col gap-5 z-10 shrink-0 w-[140px] sm:w-[210px]">
           {agents.map((agent, i) => {
@@ -182,7 +182,7 @@ export function AgentConvergenceModern() {
         </svg>
 
         <div
-          className="z-10 flex flex-col items-center shrink-0 transition-all duration-700"
+          className="z-10 flex flex-col items-center shrink-0 relative transition-all duration-700"
           style={{
             opacity: visible ? 1 : 0,
             transform: visible ? "scale(1)" : "scale(0.85)",
@@ -198,10 +198,10 @@ export function AgentConvergenceModern() {
           </div>
           <span className="text-[10px] font-bold text-neutral-400 mt-2 uppercase tracking-[0.15em]">Your Brand</span>
           <div
-            className="mt-16 flex flex-col items-center gap-2 transition-all duration-700"
+            className="absolute top-full mt-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 transition-all duration-700"
             style={{
               opacity: visible ? 1 : 0,
-              transform: visible ? "translateY(0)" : "translateY(-20px)",
+              transform: visible ? "translateX(-50%) translateY(0)" : "translateX(-50%) translateY(-20px)",
               transitionDelay: "1300ms",
             }}
             data-testid="agent-checkout-node"
@@ -262,7 +262,7 @@ export function AgentConvergenceModern() {
         </div>
       </div>
 
-      <div className="flex justify-between mt-6">
+      <div className="flex justify-between mt-28">
         <p className="text-[10px] font-bold text-neutral-300 uppercase tracking-[0.2em]">Agents discover you</p>
         <p className="text-[10px] font-bold text-neutral-300 uppercase tracking-[0.2em]">You provide</p>
       </div>
