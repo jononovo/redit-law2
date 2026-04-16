@@ -47,7 +47,7 @@ const agents = [
 
 const outputs = [
   { name: "Product Feed", desc: "UCP-aligned Catalog" },
-  { name: "Skills", desc: "Agent capabilities" },
+  { name: "Skill.md", desc: "Search, ordering & deals" },
   { name: "Documentation", desc: "Readable specs" },
   { name: "Agent Checkout", desc: "Transact natively" },
 ];
