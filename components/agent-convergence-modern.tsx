@@ -79,8 +79,8 @@ export function AgentConvergenceModern() {
       timeouts.push(setTimeout(() => {
         setPulsesActive(false);
         setDrawn(false);
-      }, 5400));
-      timeouts.push(setTimeout(runCycle, 6500));
+      }, 7400));
+      timeouts.push(setTimeout(runCycle, 8500));
     };
     runCycle();
     return () => timeouts.forEach(clearTimeout);
