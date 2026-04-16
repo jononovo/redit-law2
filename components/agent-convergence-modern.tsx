@@ -20,8 +20,8 @@ function OpenAILogo({ size = 20 }: { size?: number }) {
 
 function PerplexityLogo({ size = 20 }: { size?: number }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
-      <path d="M12 1L4 5v6.5L1 13v5l3 2.5V24l8-4 8 4v-3.5l3-2.5v-5l-3-1.5V5L12 1zm0 2.2l6 3v5.3l-6 3-6-3V6.2l6-3zM3 14.2l2 1v3.3l-2-1.5v-2.8zm18 0v2.8l-2 1.5v-3.3l2-1zm-9 8l-5.5-2.7v-2.8L12 19.5l5.5-2.8v2.8L12 22.2z" />
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4 4l8 8M20 4l-8 8M12 12v10M4 20l8-8 8 8M12 2v10M4 12h16" />
     </svg>
   );
 }
