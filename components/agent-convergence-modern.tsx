@@ -49,7 +49,7 @@ const outputs = [
   { name: "Product Feed", desc: "UCP-aligned Catalog" },
   { name: "Skill.md", desc: "Search, ordering & deals" },
   { name: "Documentation", desc: "llm.txt & specs" },
-  { name: "Agent Checkout", desc: "Transact natively" },
+  { name: "Agent Checkout", desc: "ACP via MCP/API/CLI" },
 ];
 
 export function AgentConvergenceModern() {
