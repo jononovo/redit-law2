@@ -75,9 +75,6 @@ export default function ManagedAgentsPage() {
             </div>
 
             <div className="max-w-5xl mx-auto mb-20">
-              <div className="text-center mb-4">
-                <span className="inline-block px-4 py-1.5 rounded-full bg-neutral-900 text-white text-xs font-bold uppercase tracking-wider">Version B — Modern with logos</span>
-              </div>
               <div className="rounded-3xl bg-white border border-neutral-100 shadow-sm p-6 md:p-10">
                 <AgentConvergenceModern />
               </div>
