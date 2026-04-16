@@ -61,7 +61,7 @@ export function Hero() {
               style={{ animationDelay: '0.1s' }}
               className="text-5xl md:text-7xl font-extrabold tracking-tight text-neutral-900 leading-[1.1] animate-fade-in-up"
             >
-              Give your <span className="text-primary">Claw Agent</span>{" "}
+              Give your <span className="text-primary">Agent</span>{" "}
               <span className="inline overflow-visible">
                 <span
                   className="transition-opacity duration-300 ease-in-out"
