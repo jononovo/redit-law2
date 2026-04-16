@@ -71,11 +71,19 @@ export function AgentConvergenceModern() {
   }, [visible]);
 
   useEffect(() => {
-    if (visible) {
+    if (!visible) return;
+    const timeouts: ReturnType<typeof setTimeout>[] = [];
+    const runCycle = () => {
       setDrawn(true);
-      const t = setTimeout(() => setPulsesActive(true), 2400);
-      return () => clearTimeout(t);
-    }
+      timeouts.push(setTimeout(() => setPulsesActive(true), 2400));
+      timeouts.push(setTimeout(() => {
+        setPulsesActive(false);
+        setDrawn(false);
+      }, 5400));
+      timeouts.push(setTimeout(runCycle, 6500));
+    };
+    runCycle();
+    return () => timeouts.forEach(clearTimeout);
   }, [visible]);
 
   return (
