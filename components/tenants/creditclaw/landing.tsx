@@ -3,7 +3,7 @@ import { Hero } from "@/components/hero";
 import { BotSignup } from "@/components/bot-signup";
 import { LiveMetrics } from "@/components/live-metrics";
 import { Features } from "@/components/features";
-import { WaitlistForm } from "@/components/waitlist-form";
+import { EnterpriseCta } from "@/components/enterprise-cta";
 import { AnnouncementBar } from "@/components/announcement-bar";
 import { Footer } from "@/components/footer";
 
@@ -17,7 +17,7 @@ export default function CreditclawLanding() {
         <BotSignup />
         <LiveMetrics />
         <Features />
-        <WaitlistForm />
+        <EnterpriseCta />
       </main>
       <Footer />
     </div>

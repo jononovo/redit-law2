@@ -6,7 +6,6 @@ import { Providers } from "@/app/providers";
 import { TenantProvider } from "@/features/platform-management/tenants/tenant-context";
 import { cookies } from "next/headers";
 import { getTenantConfig } from "@/features/platform-management/tenants/config";
-import { TENANT_THEMES } from "@/features/platform-management/tenants/tenant-configs";
 
 const jakarta = Plus_Jakarta_Sans({
   subsets: ["latin"],
@@ -20,7 +19,18 @@ const mono = JetBrains_Mono({
   display: "swap",
 });
 
+const TENANT_THEMES: Record<string, { primary: string; primaryForeground: string; accent: string; secondary: string }> = (() => {
+  const ids = ["creditclaw", "brands", "shopy"] as const;
+  const result: Record<string, { primary: string; primaryForeground: string; accent: string; secondary: string }> = {};
+  for (const id of ids) {
+    const t = getTenantConfig(id).theme;
+    result[id] = { primary: t.primaryColor, primaryForeground: t.primaryForeground, accent: t.accentColor, secondary: t.secondaryColor };
+  }
+  return result;
+})();
+
 const THEME_INIT_SCRIPT = `(function(){var m=document.cookie.match(/tenant-id=([^;]+)/);var t=m?m[1]:"creditclaw";var T=${JSON.stringify(TENANT_THEMES)};var th=T[t]||T.creditclaw;var s=document.documentElement.style;s.setProperty("--primary",th.primary);s.setProperty("--primary-foreground",th.primaryForeground);s.setProperty("--accent",th.accent);s.setProperty("--secondary",th.secondary)})()`;
+
 
 export async function generateMetadata(): Promise<Metadata> {
   const cookieStore = await cookies();

@@ -39,9 +39,8 @@
       "variant": "light",
       "showLogo": true,
       "links": [
-        { "label": "How It Works", "href": "/how-it-works" },
-        { "label": "Score Scanner", "href": "/agentic-shopping-score" },
-        { "label": "Shopping Skills", "href": "/skills" }
+        { "label": "Shopping Skills", "href": "/skills" },
+        { "label": "Managed Brands", "href": "/managed-agents" }
       ]
     },
     "footer": {
@@ -53,18 +52,16 @@
             { "label": "Allowance", "href": "/allowance" },
             { "label": "Safety", "href": "/safety" },
             { "label": "Vendor Skills", "href": "/skills" },
-            { "label": "Score Scanner", "href": "/agentic-shopping-score" },
-            { "label": "Agent Shopping Test", "href": "/agent-shopping-test" },
             { "label": "Get Started", "href": "/onboarding" }
           ]
         },
         {
-          "title": "Dashboard",
+          "title": "Tools",
           "links": [
-            { "label": "Overview", "href": "/overview" },
-            { "label": "Cards", "href": "/cards" },
-            { "label": "Transactions", "href": "/transactions" },
-            { "label": "Settings", "href": "/settings" }
+            { "label": "Agent-friendliness Brand Scanner", "href": "/agentic-shopping-score" },
+            { "label": "Agent Shopping Test", "href": "/agent-shopping-test" },
+            { "label": "Shopping Leaderboard", "href": "/agent-shopping-efficiency-leaderboard" },
+            { "label": "Managed Brands", "href": "/managed-agents" }
           ]
         },
         {

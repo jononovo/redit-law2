@@ -34,14 +34,15 @@ Tenant resolution lives solely in `middleware.ts` via its hardcoded `TENANT_DOMA
 
 ## Config System
 
-Two sources of truth (must stay in sync):
+Single source of truth per tenant:
 
 | Source | File | Used by |
 |--------|------|---------|
-| Static TS | `lib/tenants/tenant-configs.ts` | `TENANT_THEMES` for layout theme script, `getStaticTenantConfig()` |
-| Dynamic JSON | `public/tenants/{tenantId}/config.json` | `getTenantConfig()` in `lib/tenants/config.ts` (server-side, cached in memory) |
+| JSON | `public/tenants/{tenantId}/config.json` | `getTenantConfig()` in `features/platform-management/tenants/config.ts` (server-side, cached in memory) |
 
-**Config shape** (`lib/tenants/types.ts` — `TenantConfig`):
+`getTenantConfig()` is used everywhere: `TenantProvider` in layout, `TENANT_THEMES` for theme injection, docs redirect, metadata generation.
+
+**Config shape** (`features/platform-management/tenants/types.ts` — `TenantConfig`):
 - `id`, `domains[]`
 - `branding` — name, tagline, logo, logoEmoji, favicon, supportEmail, mascot
 - `meta` — title, description, ogImage, twitterImage, url
@@ -59,7 +60,7 @@ Two sources of truth (must stay in sync):
 
 A blocking `<script>` runs before first paint to prevent FOUC:
 - Reads `tenant-id` from cookie
-- Looks up the tenant's theme from `TENANT_THEMES` (inlined as JSON)
+- Looks up the tenant's theme from `TENANT_THEMES` (built at module level from JSON configs via `getTenantConfig()`, inlined as JSON)
 - Sets CSS custom properties on `document.documentElement`: `--primary`, `--primary-foreground`, `--accent`, `--secondary`
 
 All shadcn/ui components reference these variables, so the entire UI rebrands instantly.
@@ -107,14 +108,14 @@ Driven by `tenant.navigation.footer`:
 | Property | CreditClaw | shopy.sh | brands.sh |
 |----------|-----------|----------|-----------|
 | `showLogo` | `true` (default) | `true` (default) | `false` |
-| Columns | Product (6 links), Dashboard (4 links), Resources (3 links) | Product (2 links), Resources (3 links), Developers (3 links) | Catalog (3 links), Developers (3 links) |
+| Columns | Product (5 links), Tools (3 links), Resources (3 links) | Product (2 links), Resources (3 links), Developers (3 links) | Catalog (3 links), Developers (3 links) |
 | Socials | Twitter, Instagram, TikTok | Twitter, GitHub | Twitter, GitHub |
 
 All footers share: `bg-neutral-900` background, Privacy Policy + Terms links, copyright with tenant name.
 
 **CreditClaw footer columns:**
-- Product: How It Works, Allowance, Safety, Vendor Skills, Score Scanner, Get Started
-- Dashboard: Overview, Cards, Transactions, Settings
+- Product: How It Works, Allowance, Safety, Vendor Skills, Get Started
+- Tools: Score Scanner, Agent Shopping Test, Shopping Leaderboard
 - Resources: Documentation, Developer, Newsroom
 
 **shopy.sh footer columns:**
@@ -176,11 +177,10 @@ Each tenant has its own OG images at `tenant.meta.ogImage` and `tenant.meta.twit
 | File | Role |
 |------|------|
 | `middleware.ts` | Tenant resolution from domain/cookie/param |
-| `lib/tenants/types.ts` | `TenantConfig` interface |
-| `lib/tenants/tenant-configs.ts` | Static configs + `TENANT_THEMES` |
-| `lib/tenants/config.ts` | `getTenantConfig()` — reads + caches `public/tenants/{id}/config.json` |
-| `lib/tenants/tenant-context.tsx` | `TenantProvider` + `useTenant()` hook |
-| `public/tenants/{id}/config.json` | Dynamic config per tenant |
+| `features/platform-management/tenants/types.ts` | `TenantConfig` interface |
+| `features/platform-management/tenants/config.ts` | `getTenantConfig()` — reads + caches `public/tenants/{id}/config.json` |
+| `features/platform-management/tenants/tenant-context.tsx` | `TenantProvider` + `useTenant()` hook |
+| `public/tenants/{id}/config.json` | Single source of truth per tenant |
 | `app/layout.tsx` | Theme injection script, metadata, `TenantProvider` |
 | `app/page.tsx` | Root landing page routing |
 | `components/nav.tsx` | Header nav (tenant-driven links, variant, logo) |
