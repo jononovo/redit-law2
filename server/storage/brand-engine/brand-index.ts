@@ -28,7 +28,7 @@ export interface BrandSearchFilters {
   minRatingCheckout?: number;
   limit?: number;
   offset?: number;
-  sortBy?: "score" | "name" | "created_at" | "rating";
+  sortBy?: "score" | "name" | "created_at" | "rating" | "last_scanned";
   sortDir?: "asc" | "desc";
   lite?: boolean;
 }
@@ -158,11 +158,15 @@ export const brandIndexMethods: BrandIndexMethods = {
     const conditions = buildConditions(filters);
 
     const isRatingSort = filters.sortBy === "rating";
+    const isLastScannedSort = filters.sortBy === "last_scanned";
+    const isScoreSort = !filters.sortBy || filters.sortBy === "score";
     const sortCol = filters.sortBy === "name" ? brandIndex.name
       : filters.sortBy === "created_at" ? brandIndex.createdAt
+      : isLastScannedSort ? brandIndex.lastScannedAt
       : isRatingSort ? brandIndex.axsRating
       : brandIndex.overallScore;
     const sortFn = filters.sortDir === "asc" ? asc : desc;
+    const useNullsLast = isRatingSort || isLastScannedSort || isScoreSort;
 
     const query = filters.lite
       ? db.select(LITE_COLUMNS).from(brandIndex)
@@ -171,7 +175,7 @@ export const brandIndexMethods: BrandIndexMethods = {
       ? query.where(and(...conditions))
       : query;
 
-    const orderClause = isRatingSort
+    const orderClause = useNullsLast
       ? sql`${sortCol} ${filters.sortDir === "asc" ? sql`ASC NULLS LAST` : sql`DESC NULLS LAST`}`
       : sortFn(sortCol);
 
