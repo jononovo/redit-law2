@@ -1,0 +1,30 @@
+Timeline of what happened to the scan engine
+Phase 1 — Original (pre-April 2): Basic detector-based scan (HTTP fetches, regex checks for sitemap/robots/etc.).
+
+Phase 2 — April 2 (commits faca3d2 → a50507a): Switched to the Claude Agent SDK. The scan literally spawned an agent that crawled the merchant's site like a real shopper, gathered evidence by browsing pages, and built a multi-page audit. lib/agentic-score/agent-scan.ts was 385 lines. This was the deep, owner-meaningful audit you remember — actual evidence from actual browsing.
+
+Phase 3 — April 3 (commit ca1fdf1 "Update site audit to use Perplexity and refine scoring metrics"): ⚠️ The pivot. The Claude Agent SDK was ripped out and replaced with a single Perplexity API call. The 445-line agent-scan was deleted. Now audit-site.ts just sends Perplexity a prompt with a giant JSON schema saying "fill in these 50 yes/no fields about this domain." Perplexity guesses based on web knowledge — it does not actually browse the site. Result: shallow, generic, often inaccurate, and identical structure for every domain. (Net change: −1,248 lines, +335 lines.)
+
+Phase 4 — April 3 onward: The pipeline grew brand-catalog responsibilities:
+
+classifyBrand() — Perplexity call to assign sector/tier/brand-type
+resolveProductCategories() — Perplexity call to map to Google Product Taxonomy
+buildVendorSkillDraft() + generateVendorSkill() — produces SKILL.md
+upsertBrandIndex() — publishes the merchant to the public brand catalog
+Automatically promote scanned brands to community status (commit 102e3b6)
+So today, every shopy.sh scan: (a) doesn't actually look at the merchant's site, (b) generates a SKILL.md the owner didn't ask for, (c) classifies them into a public taxonomy, (d) automatically lists them in the public brands catalog at community-tier maturity. None of that is an "owner audit."
+
+Why the report looks full but isn't
+The /brands/[slug] page renders Pillar Breakdown + Recommendations correctly — the UI is fine. But the inputs are now Perplexity guesses about a domain it may have never seen, scored against a generic rubric, with recommendations templated from "if signal X = false, recommend X." So an owner reading the report sees boilerplate that may not match their actual site. That's the "wrong analysis."
+
+Authorship
+Both the introduction (faca3d2, a50507a) and the regression (ca1fdf1) were authored by Replit Agent in the same session (Replit-Commit-Session-Id: bbe22f06-...). It looks like an agent built the deep version, then a day later optimized it for cost/speed by collapsing it to a Perplexity call — without realizing the deep crawl was the product for shopy.
+
+Revert difficulty
+There are three layers to undo, in order of difficulty:
+
+Layer	What	Difficulty
+1. Routing (shopy → score report)	Fix the ?domain= ignore + maybe inline the scan on the landing page	~30 min (already discussed)
+2. Restore deep-crawl audit engine	Recover agent-scan.ts from commit ca1fdf1^, re-wire to use the current Anthropic SDK (Claude Agent SDK is gone — would need to use the regular Claude API with web/browser tools, or rebuild on a lighter agent loop). Re-integrate evidence merging into audit-site.ts.	~4–8 hours, plus per-scan cost goes up significantly (real agent browsing vs one Perplexity call).
+3. Separate the shopy audit pipeline from the brands catalog pipeline	New endpoint like /api/v1/audit that runs auditSite + computeScoreFromRubric + recommendations, but skips classifyBrand, generateVendorSkill, upsertBrandIndex, resolveProductCategories. Owner gets a private report; nothing gets published to the catalog unless they explicitly opt in. Update shopy redirect to point at /audit/[slug] or render results inline.	~3–5 hours of focused work. The pipeline is well-modularized so this is mostly composition, not surgery.
+My
