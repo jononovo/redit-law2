@@ -27,14 +27,13 @@ Next.js 16 (App Router only) · Firebase Auth (httpOnly session cookies + Bearer
 
 ## Conventions
 
-- **Descriptive names:** `evaluateCardGuardrails()` not `evaluate()`. `dashboard-overview.md` not `overview.md`. Long beats short.
-- **Separation of concerns:** one file = one responsibility. Cross-cutting (guardrails, approvals, webhooks) lives in its own `features/{thing}/` folder, never accumulating rail-specific business logic.
-- **Feature-first folder layout:** new code under `features/{feature}/`, grouped by responsibility (`client.ts`, `wallet/`, `orders/`, `fulfillment.ts`), not by layer.
-- **Storage modularization:** `server/storage/` has one file per domain area (`rail1.ts`, `rail5.ts`, `brand-index.ts`, `approvals.ts`, `orders.ts`, …). `types.ts` is the single source of truth for `IStorage`. `index.ts` composes them. Consumers always import from `@/server/storage`.
-- **API paths never change** during refactors — only internal `lib/` imports get rewired.
-- **Finish what you start.** A 90%-done feature is 0% shippable. Wire API + storage + UI + error handling + edge cases in the same session.
-- **Tests:** automated tests for pure business logic (scoring, payment math, validation rules) live in `tests/`. See `tests/_README.md`.
-- **Test IDs:** every interactive element and meaningful display element gets a `data-testid` attribute (`button-submit`, `input-email`, `card-product-${id}`).
+- **Descriptive names:** `evaluateCardGuardrails()` not `evaluate()`. Long beats short.
+- **Features in `features/{feature}/`**, grouped by responsibility (`client.ts`, `wallet/`, `fulfillment.ts`), not by layer. One file = one responsibility.
+- **Storage in `server/storage/`** — one file per domain. Consumers always import from `@/server/storage`.
+- **API paths never change** during refactors — only internal imports get rewired.
+- **Finish what you start.** A 90%-done feature is 0% shippable.
+- **Tests:** business logic (scoring, payment math, validation) goes in `tests/`. See `tests/_README.md`.
+- **Test IDs:** every interactive/meaningful element gets a `data-testid` (`button-submit`, `card-product-${id}`).
 
 ## Modules — one line each (full detail in `project_knowledge/technical_overview.md`)
 
