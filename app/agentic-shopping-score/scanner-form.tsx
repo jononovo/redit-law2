@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useRef } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Search, Loader2, ArrowRight, ExternalLink } from "lucide-react";
 import Link from "next/link";
@@ -10,7 +10,18 @@ import { useDomainScan } from "@/hooks/use-domain-scan";
 
 export function ScannerForm() {
   const router = useRouter();
-  const scan = useDomainScan();
+  const searchParams = useSearchParams();
+  const initialDomain = searchParams.get("domain")?.trim() ?? "";
+  const scan = useDomainScan({ initialDomain });
+  const autoTriggeredRef = useRef(false);
+
+  useEffect(() => {
+    if (autoTriggeredRef.current) return;
+    if (initialDomain && initialDomain.length >= 3 && initialDomain.includes(".")) {
+      autoTriggeredRef.current = true;
+      scan.triggerScan(initialDomain);
+    }
+  }, [initialDomain, scan]);
 
   useEffect(() => {
     if (scan.status === "done" && scan.result) {
