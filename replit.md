@@ -16,17 +16,14 @@ All three tenants share the same database, the same scan pipeline, and the same 
 
 Next.js 16 (App Router only) · Firebase Auth (httpOnly session cookies + Bearer fallback) · PostgreSQL + Drizzle ORM · Tailwind CSS v4 · shadcn/ui · React Query · TypeScript.
 
-## Hard rules — do not violate
+## Working with me
 
-- **App Router only.** No Vite, no standalone React, no `pages/` directory.
-- **No `framer-motion`.** Lightweight build.
-- **Every interactive component starts with `"use client"`.**
-- **Auth in API routes:** always `getSessionUser(request)` from `@/features/platform-management/auth/session`. Never bare `getCurrentUser()`. Client callers use `authFetch`, not `fetch`.
-- **Storage:** all DB access goes through the `storage` object from `@/server/storage`. Never write raw Drizzle queries in API routes or components.
-- **Schema:** all tables and types live in `shared/schema.ts`. Use `createInsertSchema` from `drizzle-zod` and validate request bodies with Zod.
-- **Secrets:** never read or write env vars manually. Use the `environment-secrets` skill.
-- **`.github/` folder:** not Replit-managed. Workflow YAML lives at `skill-variants/publish-skills.yml` and must be copied to GitHub manually.
-- **Tenant-specific logic** lives in `components/tenants/{tenant}/` and tenant-specific API routes — never inside shared `features/` engines.
+- **No unrequested scope.** Avoid adding checks, guardrails, abstractions, or features I didn't ask for. If protection seems genuinely needed, raise it as one short sentence rather than building it.
+- **Direct orders are final.** When I tell you what I want, proceed. Avoid asking for confirmation, proposing alternatives, or listing edge cases unless I asked. Save questions for things you genuinely cannot move forward without.
+- **Be terse.** Short bullets, technical, skip the recap of what I just said and the disclaimers. If I want detail I'll ask.
+- **No edge-case over-engineering.**  Enterprise concerns are not in scope. If a code review surfaces such a finding, note it once in one line and move on — do not ask whether to implement it.
+
+
 
 ## Conventions
 
