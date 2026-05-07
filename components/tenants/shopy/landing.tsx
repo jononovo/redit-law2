@@ -56,9 +56,6 @@ export default function ShopyLanding() {
       .catch(() => setLoading(false));
   }, [sortMode]);
 
-  const visibleBrands = sortMode === "score"
-    ? brands.filter((b) => b.overallScore !== null)
-    : brands;
 
   const handleScan = (e: React.FormEvent) => {
     e.preventDefault();
@@ -141,7 +138,7 @@ export default function ShopyLanding() {
                     <div className="inline-block w-5 h-5 border-2 border-neutral-200 border-t-neutral-900 rounded-full animate-spin" />
                     <p className="text-sm text-neutral-400 mt-3 font-medium">Loading scores...</p>
                   </div>
-                ) : visibleBrands.length === 0 ? (
+                ) : brands.length === 0 ? (
                   <div className="px-5 py-16 text-center">
                     <p className="text-sm text-neutral-400 font-medium">
                       {sortMode === "score"
@@ -151,7 +148,7 @@ export default function ShopyLanding() {
                   </div>
                 ) : (
                   <div className="divide-y divide-neutral-100">
-                    {visibleBrands.map((brand) => (
+                    {brands.map((brand) => (
                       <Link
                         key={brand.slug}
                         href={`/brands/${brand.slug}`}
