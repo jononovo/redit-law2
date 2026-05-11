@@ -12,28 +12,29 @@ One Next.js 16 codebase, three tenants, hostname-routed via middleware:
 
 All three tenants share the same database, the same scan pipeline, and the same `brand_index` table. Tenant differences are presentation only — never branch shared engines per tenant.
 
+## Tenant theming cheat sheet
+
+When building UI, identify which tenant(s) it belongs to and follow the design language:
+- **CreditClaw** — Plus Jakarta Sans, 3D clay/claymation aesthetic, rounded corners (1rem), pastel oranges/blues/purples.
+- **shopy.sh** — Monospace section labels, no rounded corners on cards, no shadows, dark sections with green terminal accent, `gap-px bg-neutral-200` grid dividers.
+- **brands.sh** — Skill-registry framing, shared label maps from `features/brand-engine/procurement-skills/taxonomy/`.
+  
+
 ## Stack
 
 Next.js 16 (App Router only) · Firebase Auth (httpOnly session cookies + Bearer fallback) · PostgreSQL + Drizzle ORM · Tailwind CSS v4 · shadcn/ui · React Query · TypeScript.
 
-## Working with me
-
-- **No unrequested scope.** Avoid adding checks, guardrails, abstractions, or features I didn't ask for. If protection seems genuinely needed, raise it as one short sentence rather than building it.
-- **Direct orders are final.** When I tell you what I want, proceed. Avoid asking for confirmation, proposing alternatives, or listing edge cases unless I asked. Save questions for things you genuinely cannot move forward without.
-- **Be terse.** Short bullets, technical, skip the recap of what I just said and the disclaimers. If I want detail I'll ask.
-- **No edge-case over-engineering.**  Enterprise concerns are not in scope. If a code review surfaces such a finding, note it once in one line and move on — do not ask whether to implement it.
-
-
 
 ## Conventions
 
-- **Descriptive names:** `evaluateCardGuardrails()` not `evaluate()`. Long beats short.
-- **Features in `features/{feature}/`**, grouped by responsibility (`client.ts`, `wallet/`, `fulfillment.ts`), not by layer. One file = one responsibility.
-- **Storage in `server/storage/`** — one file per domain. Consumers always import from `@/server/storage`.
-- **API paths never change** during refactors — only internal imports get rewired.
-- **Finish what you start.** A 90%-done feature is 0% shippable.
-- **Tests:** business logic (scoring, payment math, validation) goes in `tests/`. See `tests/_README.md`.
-- **Test IDs:** every interactive/meaningful element gets a `data-testid` (`button-submit`, `card-product-${id}`).
+- **Descriptive names:** `evaluateCardGuardrails()` not `evaluate()`. `dashboard-overview.md` not `overview.md`. Long beats short.
+- **Separation of concerns:** one file = one responsibility. Cross-cutting (guardrails, approvals, webhooks) lives in its own `features/{thing}/` folder, never accumulating rail-specific business logic.
+- **Feature-first folder layout:** new code under `features/{feature}/`, grouped by responsibility (`client.ts`, `wallet/`, `orders/`, `fulfillment.ts`), not by layer.
+- **Storage modularization:** `server/storage/` has one file per domain area (`rail1.ts`, `rail5.ts`, `brand-index.ts`, `approvals.ts`, `orders.ts`, …). `types.ts` is the single source of truth for `IStorage`. `index.ts` composes them. Consumers always import from `@/server/storage`.
+- **API paths never change** during refactors — only internal `lib/` imports get rewired.
+- **Finish what you start.** A 90%-done feature is 0% shippable. Wire API + storage + UI + error handling + edge cases in the same session.
+- **Tests:** automated tests for pure business logic (scoring, payment math, validation rules) live in `tests/`. See `tests/_README.md`.
+- **Test IDs:** every interactive element and meaningful display element gets a `data-testid` attribute (`button-submit`, `input-email`, `card-product-${id}`).
 
 ## Modules — one line each (full detail in `project_knowledge/technical_overview.md`)
 
@@ -69,12 +70,7 @@ Shopy emphasizes the score (leaderboard at `/`, scanner at `/agentic-shopping-sc
 - `app/api/v1/` — public + bot + owner APIs.
 - `app/admin123/` — admin tooling (gated by `admin` flag).
 
-## Tenant theming cheat sheet
 
-When building UI, identify which tenant(s) it belongs to and follow the design language:
-- **CreditClaw** — Plus Jakarta Sans, 3D clay/claymation aesthetic, rounded corners (1rem), pastel oranges/blues/purples.
-- **shopy.sh** — Monospace section labels, no rounded corners on cards, no shadows, dark sections with green terminal accent, `gap-px bg-neutral-200` grid dividers.
-- **brands.sh** — Skill-registry framing, shared label maps from `features/brand-engine/procurement-skills/taxonomy/`.
 
 ## Workflow
 
@@ -99,3 +95,11 @@ When you add a feature complex enough that future agents will need to understand
 - When asked to remove something, **remove it cleanly** — don't leave dead helper variables behind. Over-engineering gets called out.
 - Architect code review (`code_review` skill) is expected after non-trivial changes.
 - When the system flags `replit.md` as too large, **propose a trim pass** rather than letting it grow.
+
+
+## Working with me
+
+- **No unrequested scope.** Avoid adding checks, guardrails, abstractions, or features I didn't ask for. If protection seems genuinely needed, raise it as one short sentence rather than building it.
+- **Direct orders are final.** When I tell you what I want, proceed. Avoid asking for confirmation, proposing alternatives, or listing edge cases unless I asked. Save questions for things you genuinely cannot move forward without.
+- **Be terse.** Short bullets, technical, skip the recap of what I just said and the disclaimers. If I want detail I'll ask.
+- **No edge-case over-engineering.**  Enterprise concerns are not in scope. If a code review surfaces such a finding, note it once in one line and move on — do not ask whether to implement it.
