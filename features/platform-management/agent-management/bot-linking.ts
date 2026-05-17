@@ -73,6 +73,20 @@ const RAIL_CONFIGS: Record<string, () => BotLinkingConfig> = {
     webhookActionUnlink: "card_removed",
     entityIdKey: "card_id",
   }),
+  rail3: () => ({
+    rail: "rail3",
+    entityType: "card",
+    getEntity: async (id) => {
+      const c = await storage.getRail3CardByCardId(String(id));
+      return c ? { ownerUid: c.ownerUid, botId: c.botId || null, status: c.status } : null;
+    },
+    linkBot: (id, botId) => storage.updateRail3Card(String(id), { botId }),
+    unlinkBot: (id) => storage.updateRail3Card(String(id), { botId: null } as any),
+    countEntitiesByBotId: (botId) => storage.countRail3CardsByBotId(botId),
+    webhookActionLink: "card_linked",
+    webhookActionUnlink: "card_removed",
+    entityIdKey: "card_id",
+  }),
 };
 
 export function getRailConfig(rail: string): BotLinkingConfig {

@@ -8,8 +8,10 @@ import { rail2Methods } from "./payment-rails/rail2";
 import { ownerMethods } from "./platform-management/owners";
 import { masterGuardrailMethods } from "./agent-interaction/master-guardrails";
 import { rail5GuardrailMethods } from "./payment-rails/rail5-guardrails";
+import { rail3GuardrailMethods } from "./payment-rails/rail3-guardrails";
 import { procurementControlMethods } from "./agent-interaction/procurement-controls";
 import { rail5Methods } from "./payment-rails/rail5";
+import { rail3Methods } from "./payment-rails/rail3";
 import { approvalMethods } from "./agent-interaction/approvals";
 import { orderMethods } from "./agent-interaction/orders";
 import { salesMethods } from "./agent-shops/sales";
@@ -39,8 +41,10 @@ export const storage: IStorage = {
   ...ownerMethods,
   ...masterGuardrailMethods,
   ...rail5GuardrailMethods,
+  ...rail3GuardrailMethods,
   ...procurementControlMethods,
   ...rail5Methods,
+  ...rail3Methods,
   ...approvalMethods,
   ...orderMethods,
   ...salesMethods,

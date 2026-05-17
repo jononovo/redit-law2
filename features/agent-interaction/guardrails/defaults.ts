@@ -31,6 +31,14 @@ export const GUARDRAIL_DEFAULTS = {
     recurringAllowed: false,
     autoPauseOnZero: false,
   },
+
+  rail3: {
+    maxPerTxCents: 5000,
+    dailyBudgetCents: 10000,
+    monthlyBudgetCents: 50000,
+    recurringAllowed: false,
+    autoPauseOnZero: false,
+  },
 } as const;
 
 export const PROCUREMENT_DEFAULTS = {

@@ -1,4 +1,4 @@
-export type RailType = "rail1" | "rail2" | "rail5";
+export type RailType = "rail1" | "rail2" | "rail3" | "rail5";
 
 export type WalletStatus = "active" | "paused" | "frozen" | "pending" | "pending_setup" | "awaiting_bot";
 
@@ -62,7 +62,50 @@ export interface Rail5CardInfo {
   created_at: string;
 }
 
-export type CreditCardInfo = Rail5CardInfo;
+export interface Rail3CardInfo {
+  card_id: string;
+  card_name: string;
+  card_brand: string | null;
+  card_last4: string | null;
+  status: string;
+  verification_status: string;
+  bot_id: string | null;
+  bot_name: string | null;
+  card_color: string | null;
+  default_intent_mode: "limited" | "open" | null;
+  default_permission_phase: string | null;
+  limit_amount_cents: number | null;
+  limit_period: "weekly" | "monthly" | "yearly" | null;
+  created_at: string;
+}
+
+export type CreditCardInfo = Rail5CardInfo | Rail3CardInfo;
+
+export function normalizeRail3Card(card: Rail3CardInfo, basePath: string): NormalizedCard {
+  const isLimited = card.default_intent_mode === "limited" && card.limit_amount_cents !== null && card.limit_period !== null;
+  const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+  const brand = card.card_brand || "card";
+  const last4 = card.card_last4 || "••••";
+  return {
+    card_id: card.card_id,
+    card_name: card.card_name,
+    status: card.status,
+    bot_id: card.bot_id,
+    bot_name: card.bot_name,
+    card_color: resolveCardColor(card.card_color, card.card_id),
+    balance: isLimited ? formatCentsToUsd(card.limit_amount_cents!) : "—",
+    balanceLabel: isLimited ? `${capitalize(card.limit_period!)} Limit` : "No Limit",
+    balanceTooltip: isLimited
+      ? `Crossmint enforces this limit per ${card.limit_period}.`
+      : "Agent can use this card at any merchant. Each charge still uses a one-time merchant-scoped number.",
+    last4,
+    brand,
+    issuer: null,
+    line1: `${capitalize(brand)} •••• ${last4}`,
+    line2: isLimited ? "Active permission" : "Use anywhere",
+    detailPath: `${basePath}/${card.card_id}`,
+  };
+}
 
 export interface NormalizedCard {
   card_id: string;

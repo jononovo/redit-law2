@@ -16,10 +16,13 @@ import {
   type CrossmintTransaction, type InsertCrossmintTransaction,
   type MasterGuardrail, type InsertMasterGuardrail,
   type Rail5Guardrail, type InsertRail5Guardrail,
+  type Rail3Guardrail, type InsertRail3Guardrail,
   type ProcurementControl, type InsertProcurementControl,
   type UnifiedApproval, type InsertUnifiedApproval,
   type Rail5Card, type InsertRail5Card,
   type Rail5Transaction, type InsertRail5Transaction,
+  type Rail3Card, type InsertRail3Card,
+  type Rail3Transaction, type InsertRail3Transaction,
   type Order, type InsertOrder,
   type CheckoutPage, type InsertCheckoutPage,
   type Sale, type InsertSale,
@@ -164,6 +167,25 @@ export interface IStorage {
   getRail5TransactionById(checkoutId: string): Promise<Rail5Transaction | null>;
   updateRail5Transaction(checkoutId: string, data: Partial<InsertRail5Transaction>): Promise<Rail5Transaction | null>;
   getRail5TransactionsByCardId(cardId: string, limit?: number): Promise<Rail5Transaction[]>;
+
+  getRail3Guardrails(cardId: string): Promise<Rail3Guardrail | null>;
+  upsertRail3Guardrails(cardId: string, data: Partial<InsertRail3Guardrail>): Promise<Rail3Guardrail>;
+  getRail3DailySpendCents(cardId: string): Promise<number>;
+  getRail3MonthlySpendCents(cardId: string): Promise<number>;
+
+  createRail3Card(data: InsertRail3Card): Promise<Rail3Card>;
+  getRail3CardByCardId(cardId: string): Promise<Rail3Card | null>;
+  getRail3CardsByOwnerUid(ownerUid: string): Promise<Rail3Card[]>;
+  getRail3CardByBotId(botId: string): Promise<Rail3Card | null>;
+  countRail3CardsByBotId(botId: string): Promise<number>;
+  updateRail3Card(cardId: string, data: Partial<InsertRail3Card>): Promise<Rail3Card | null>;
+  deleteRail3Card(cardId: string): Promise<void>;
+  getRail3CardByPaymentMethodId(paymentMethodId: string): Promise<Rail3Card | null>;
+
+  createRail3Transaction(data: InsertRail3Transaction): Promise<Rail3Transaction>;
+  getRail3TransactionById(transactionId: string): Promise<Rail3Transaction | null>;
+  updateRail3Transaction(transactionId: string, data: Partial<InsertRail3Transaction>): Promise<Rail3Transaction | null>;
+  getRail3TransactionsByCardId(cardId: string, limit?: number): Promise<Rail3Transaction[]>;
 
   createUnifiedApproval(data: InsertUnifiedApproval): Promise<UnifiedApproval>;
   getUnifiedApprovalById(approvalId: string): Promise<UnifiedApproval | null>;

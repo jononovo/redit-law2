@@ -36,5 +36,31 @@ export async function DELETE(
     return NextResponse.json({ deleted: true });
   }
 
-  return NextResponse.json({ error: "invalid_rail", message: "Query parameter 'rail' must be 'rail5'." }, { status: 400 });
+  if (rail === "rail3") {
+    const card = await storage.getRail3CardByCardId(cardId);
+    if (!card) {
+      return NextResponse.json({ error: "card_not_found" }, { status: 404 });
+    }
+    if (card.ownerUid !== user.uid) {
+      return NextResponse.json({ error: "forbidden" }, { status: 403 });
+    }
+
+    const { revokeOrderIntent, deletePaymentMethod } = await import("@/features/payment-rails/rail3");
+    if (card.defaultOrderIntentId) {
+      await revokeOrderIntent(card.defaultOrderIntentId).catch(() => {});
+    }
+    await deletePaymentMethod(card.paymentMethodId).catch(() => {});
+
+    if (card.botId) {
+      const bot = await storage.getBotByBotId(card.botId);
+      if (bot) {
+        fireRailsUpdated(bot, "card_removed" as const, "rail3", { card_id: cardId }).catch(() => {});
+      }
+    }
+
+    await storage.deleteRail3Card(cardId);
+    return NextResponse.json({ deleted: true });
+  }
+
+  return NextResponse.json({ error: "invalid_rail", message: "Query parameter 'rail' must be 'rail5' or 'rail3'." }, { status: 400 });
 }

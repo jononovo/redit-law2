@@ -156,13 +156,14 @@ export function CreditCardListPage({ config }: { config: CreditCardListPageConfi
     setCards((prev) => prev.map((c) => c.card_id === freezeTarget.card_id ? { ...c, status: newStatus } : c));
 
     try {
-      const body = config.railPrefix === "rail5"
+      const isCardRail = config.railPrefix === "rail5" || config.railPrefix === "rail3";
+      const body = isCardRail
         ? { status: newStatus }
         : { card_id: freezeTarget.card_id, frozen: !isFrozen };
-      const url = config.railPrefix === "rail5"
-        ? `/api/v1/rail5/cards/${freezeTarget.card_id}`
+      const url = isCardRail
+        ? `/api/v1/${config.railPrefix}/cards/${freezeTarget.card_id}`
         : `/api/v1/${config.railPrefix}/freeze`;
-      const method = config.railPrefix === "rail5" ? "PATCH" : "POST";
+      const method = isCardRail ? "PATCH" : "POST";
 
       const res = await authFetch(url, {
         method,
