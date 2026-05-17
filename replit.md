@@ -42,7 +42,7 @@ Next.js 16 (App Router only) · Firebase Auth (httpOnly session cookies + Bearer
 |---|---|---|
 | 1 | Brands & Skills | Single scan pipeline → score + SKILL.md + brand_index row, taxonomy, recommend API, catalog UI. |
 | 2 | Product Index | pgvector embeddings for product search (`features/product-index/`, `product_listings`). |
-| 3 | Payment Tools | Outbound rails: Rail 1 (Privy crypto wallet, live), Rail 2 (CrossMint card wallet, not live), Rail 5 (self-hosted encrypted cards, live). |
+| 3 | Payment Tools | Outbound rails: Rail 1 (Privy crypto wallet, live), Rail 2 (CrossMint card wallet, not live), Rail 3 (Crossmint Card Permissions — vaulted real card + N virtual cards as orderIntents, live; see `project_knowledge/internal_docs/04-payment-tools/rail3-crossmint-card-permissions.md`), Rail 5 (self-hosted encrypted cards, live). |
 | 4 | Agent Interaction | Webhooks, Cloudflare tunnels, bot messaging, central orders, unified approvals. |
 | 5 | Agent Plugins | Per-platform plugins (`Plugins/OpenClaw/`). |
 | 6 | Platform Management | Auth, bot lifecycle, pairing, feature flags, admin (`/admin123`). |
