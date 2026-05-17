@@ -9,7 +9,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CreditCard, Loader2, ShieldCheck, CheckCircle2 } from "lucide-react";
+import { CreditCard, Loader2, CheckCircle2, ChevronDown } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
 import type { Rail3PaymentMethodInfo } from "@/components/wallet/types";
 
 interface Props {
@@ -33,6 +34,8 @@ export function AddCardDialog({ open, onOpenChange, paymentMethods, onComplete }
   const [period, setPeriod] = useState<"weekly" | "monthly" | "yearly">("monthly");
   const [category, setCategory] = useState<string>("General");
   const [cardName, setCardName] = useState<string>("");
+  const [intent, setIntent] = useState<string>("");
+  const [intentOpen, setIntentOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -49,6 +52,8 @@ export function AddCardDialog({ open, onOpenChange, paymentMethods, onComplete }
       setPeriod("monthly");
       setCategory("General");
       setCardName("");
+      setIntent("");
+      setIntentOpen(false);
       setError(null);
       setCreatedCard(null);
       if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
@@ -93,6 +98,7 @@ export function AddCardDialog({ open, onOpenChange, paymentMethods, onComplete }
         body.max_amount_usd = Number(maxAmount);
         body.period = period;
       }
+      if (intent.trim()) body.description = intent.trim();
       const res = await authFetch("/api/v1/rail3/cards", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -203,6 +209,33 @@ export function AddCardDialog({ open, onOpenChange, paymentMethods, onComplete }
                   <Label htmlFor="card-name">Nickname (optional)</Label>
                   <Input id="card-name" value={cardName} onChange={(e) => setCardName(e.target.value)} placeholder="Auto" data-testid="input-card-name" />
                 </div>
+              </div>
+
+              <div>
+                <button
+                  type="button"
+                  onClick={() => setIntentOpen((v) => !v)}
+                  className="flex items-center gap-1 text-sm text-neutral-600 hover:text-neutral-900"
+                  data-testid="button-toggle-intent"
+                >
+                  <ChevronDown className={`w-4 h-4 transition-transform ${intentOpen ? "" : "-rotate-90"}`} />
+                  Intent (optional)
+                </button>
+                {intentOpen && (
+                  <div className="mt-2">
+                    <Textarea
+                      value={intent}
+                      onChange={(e) => setIntent(e.target.value)}
+                      placeholder="e.g. Weekly grocery runs from Whole Foods and Trader Joe's only."
+                      rows={2}
+                      maxLength={500}
+                      data-testid="input-intent"
+                    />
+                    <p className="text-xs text-neutral-500 mt-1">
+                      A short note about what this card is for. Recorded with the Crossmint mandate for audit; doesn't enforce anything beyond the limit above.
+                    </p>
+                  </div>
+                )}
               </div>
 
               {error && (
