@@ -25,12 +25,13 @@ export const POST = withBotApi("/api/v1/bot/rail3/checkout", async (request, { b
   if (card.status !== "active") {
     return NextResponse.json({ error: "card_not_active", message: `Card is ${card.status}.` }, { status: 403 });
   }
-  if (card.verificationStatus !== "active") {
+  const pm = await storage.getRail3PaymentMethodById(card.paymentMethodId);
+  if (!pm || pm.verificationStatus !== "active") {
     return NextResponse.json({ error: "card_not_verified" }, { status: 403 });
   }
-  if (!card.defaultOrderIntentId || card.defaultPermissionPhase !== "active") {
+  if (card.permissionPhase !== "active") {
     return NextResponse.json(
-      { error: "no_active_permission", message: "Card has no active permission. Owner must set one." },
+      { error: "card_not_authorized", message: "Owner must complete the authorization passkey before this card can be used." },
       { status: 403 }
     );
   }
@@ -50,7 +51,7 @@ export const POST = withBotApi("/api/v1/bot/rail3/checkout", async (request, { b
 
   try {
     const credentials = await fetchOneTimeCredentials({
-      orderIntentId: card.defaultOrderIntentId,
+      orderIntentId: card.orderIntentId,
       merchant: { name: merchant.name, url: merchant.url, countryCode: merchant.country_code },
     });
 
@@ -59,7 +60,7 @@ export const POST = withBotApi("/api/v1/bot/rail3/checkout", async (request, { b
       cardId: card.cardId,
       ownerUid: card.ownerUid,
       botId: bot.botId,
-      orderIntentId: card.defaultOrderIntentId,
+      orderIntentId: card.orderIntentId,
       merchantName: merchant.name,
       merchantUrl: merchant.url,
       merchantCountry: merchant.country_code,
@@ -73,7 +74,7 @@ export const POST = withBotApi("/api/v1/bot/rail3/checkout", async (request, { b
     // Rail-5-shaped response so the existing OpenClaw fill-card flow plugs in unchanged.
     const checkoutSteps = [
       `Use the card_number, exp_month, exp_year, and cvc returned in this response to fill the checkout form at ${merchant.name} (${merchant.url}).`,
-      `Cardholder name: ${card.cardholderName || "use the cardholder name field below"}.`,
+      `Cardholder name: ${pm.cardholderName || "use the cardholder name field below"}.`,
       `If the checkout requires a shipping address, read .creditclaw/shipping.md or call GET /api/v1/bot/shipping-addresses.`,
       `These credentials are merchant-locked to ${merchant.name} and expire at ${credentials.expiresAt} — they only work for this one purchase.`,
       `Call POST /api/v1/bot/rail3/confirm with { "transaction_id": "${transactionId}", "amount_cents": <charged_amount> } after the charge clears.`,
@@ -102,7 +103,7 @@ export const POST = withBotApi("/api/v1/bot/rail3/checkout", async (request, { b
       exp_month: credentials.expMonth,
       exp_year: credentials.expYear,
       cvc: credentials.cvc,
-      cardholder_name: card.cardholderName,
+      cardholder_name: pm.cardholderName,
       expires_at: credentials.expiresAt,
       checkout_steps: checkoutSteps,
       spawn_payload: spawnPayload,

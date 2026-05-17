@@ -65,27 +65,43 @@ export interface Rail5CardInfo {
 export interface Rail3CardInfo {
   card_id: string;
   card_name: string;
-  card_brand: string | null;
-  card_last4: string | null;
+  card_color: string | null;
+  category: string | null;
   status: string;
-  verification_status: string;
   bot_id: string | null;
   bot_name: string | null;
-  card_color: string | null;
-  default_intent_mode: "limited" | "open" | null;
-  default_permission_phase: string | null;
+  payment_method_id: string;
+  card_brand: string | null;
+  card_last4: string | null;
+  intent_mode: "limited" | "open";
+  permission_phase: string;
   limit_amount_cents: number | null;
   limit_period: "weekly" | "monthly" | "yearly" | null;
+  order_intent_id: string;
   created_at: string;
+}
+
+export interface Rail3PaymentMethodInfo {
+  payment_method_id: string;
+  card_brand: string | null;
+  card_last4: string | null;
+  cardholder_name: string | null;
+  exp_month: number | null;
+  exp_year: number | null;
+  verification_status: string;
+  virtual_card_count: number;
+  created_at: string;
+  last_used_at: string | null;
 }
 
 export type CreditCardInfo = Rail5CardInfo | Rail3CardInfo;
 
 export function normalizeRail3Card(card: Rail3CardInfo, basePath: string): NormalizedCard {
-  const isLimited = card.default_intent_mode === "limited" && card.limit_amount_cents !== null && card.limit_period !== null;
+  const isLimited = card.intent_mode === "limited" && card.limit_amount_cents !== null && card.limit_period !== null;
   const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
   const brand = card.card_brand || "card";
   const last4 = card.card_last4 || "••••";
+  const pendingAuth = card.permission_phase !== "active";
   return {
     card_id: card.card_id,
     card_name: card.card_name,
@@ -100,9 +116,9 @@ export function normalizeRail3Card(card: Rail3CardInfo, basePath: string): Norma
       : "Agent can use this card at any merchant. Each charge still uses a one-time merchant-scoped number.",
     last4,
     brand,
-    issuer: null,
+    issuer: card.category || null,
     line1: `${capitalize(brand)} •••• ${last4}`,
-    line2: isLimited ? "Active permission" : "Use anywhere",
+    line2: pendingAuth ? "Awaiting authorization" : (isLimited ? "Active permission" : "Use anywhere"),
     detailPath: `${basePath}/${card.card_id}`,
   };
 }

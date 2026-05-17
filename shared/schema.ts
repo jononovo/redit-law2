@@ -1461,42 +1461,57 @@ export const upsertRail3GuardrailsSchema = z.object({
 });
 
 // ─── Rail 3: Crossmint Card Permissions API ──────────────────────────────────
-// One row per saved + verified Crossmint card. The default permission lives on this row.
+// Vaulted real card (Crossmint payment method). One row per real card the owner saved.
+
+export const rail3PaymentMethods = pgTable("rail3_payment_methods", {
+  id: serial("id").primaryKey(),
+  paymentMethodId: text("payment_method_id").notNull().unique(),  // Crossmint pm_...
+  ownerUid: text("owner_uid").notNull(),
+  agentId: text("agent_id").notNull(),                            // Crossmint agentId bound to this PM
+
+  cardholderName: text("cardholder_name"),
+  cardLast4: text("card_last4"),
+  cardBrand: text("card_brand"),                                  // visa | mastercard
+  expMonth: integer("exp_month"),
+  expYear: integer("exp_year"),
+
+  verificationStatus: text("verification_status").notNull().default("pending"), // pending | active | failed
+  status: text("status").notNull().default("active"),             // active | removed
+
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  lastUsedAt: timestamp("last_used_at"),
+}, (table) => [
+  index("rail3_pm_payment_method_id_idx").on(table.paymentMethodId),
+  index("rail3_pm_owner_uid_idx").on(table.ownerUid),
+  index("rail3_pm_status_idx").on(table.status),
+]);
+
+// One row per virtual card = one Crossmint orderIntent on top of a payment method.
+// A "card" here is the permission. Real card details live on rail3PaymentMethods.
 
 export const rail3Cards = pgTable("rail3_cards", {
   id: serial("id").primaryKey(),
   cardId: text("card_id").notNull().unique(),
   ownerUid: text("owner_uid").notNull(),
+  paymentMethodId: text("payment_method_id").notNull(),           // -> rail3PaymentMethods.paymentMethodId
 
-  // Crossmint references
-  paymentMethodId: text("payment_method_id").notNull(),    // Crossmint pm_...
-  agentId: text("agent_id").notNull(),                     // Crossmint agentId bound to this card
-
-  // Display
+  // Display / nickname
   cardName: text("card_name").notNull().default("Untitled Card"),
-  cardholderName: text("cardholder_name"),
-  cardLast4: text("card_last4"),
-  cardBrand: text("card_brand"),                           // visa | mastercard
-  expMonth: integer("exp_month"),
-  expYear: integer("exp_year"),
   cardColor: text("card_color"),
+  category: text("category"),                                     // optional: "food" | "office" | freeform
 
-  // State
-  verificationStatus: text("verification_status").notNull().default("pending"), // pending | active | failed
-  status: text("status").notNull().default("active"),                            // active | frozen | revoked
+  // The orderIntent that *is* this virtual card
+  orderIntentId: text("order_intent_id").notNull(),
+  intentMode: text("intent_mode").notNull(),                      // "limited" | "open"
+  mandates: jsonb("mandates").notNull(),                          // raw Crossmint mandate array
+  permissionPhase: text("permission_phase").notNull().default("requires-verification"), // requires-verification | active | expired
 
-  // Default permission (one per card in v1)
-  defaultOrderIntentId: text("default_order_intent_id"),
-  defaultIntentMode: text("default_intent_mode"),                                // "limited" | "open"
-  defaultMandates: jsonb("default_mandates"),                                    // raw Crossmint mandate array (audit + raw source of truth)
-  defaultPermissionPhase: text("default_permission_phase"),                      // requires-verification | active | expired
-
-  // Denormalized for display + queries (Rail 5 pattern). Source of truth = defaultMandates.
-  // Populated when permission is created/updated; for "open" mode both are null.
+  // Denormalized for display + queries. Source of truth = mandates. Null for "open" mode.
   limitAmountCents: integer("limit_amount_cents"),
-  limitPeriod: text("limit_period"),                                             // "weekly" | "monthly" | "yearly"
+  limitPeriod: text("limit_period"),                              // "weekly" | "monthly" | "yearly"
 
-  // Bot link
+  status: text("status").notNull().default("active"),             // active | frozen | revoked
   botId: text("bot_id"),
 
   createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -1508,6 +1523,7 @@ export const rail3Cards = pgTable("rail3_cards", {
   index("rail3_cards_bot_id_idx").on(table.botId),
   index("rail3_cards_status_idx").on(table.status),
   index("rail3_cards_payment_method_id_idx").on(table.paymentMethodId),
+  index("rail3_cards_order_intent_id_idx").on(table.orderIntentId),
 ]);
 
 export const rail3Transactions = pgTable("rail3_transactions", {
@@ -1535,12 +1551,14 @@ export const rail3Transactions = pgTable("rail3_transactions", {
   index("rail3_transactions_status_idx").on(table.status),
 ]);
 
+export type Rail3PaymentMethod = typeof rail3PaymentMethods.$inferSelect;
+export type InsertRail3PaymentMethod = typeof rail3PaymentMethods.$inferInsert;
 export type Rail3Card = typeof rail3Cards.$inferSelect;
 export type InsertRail3Card = typeof rail3Cards.$inferInsert;
 export type Rail3Transaction = typeof rail3Transactions.$inferSelect;
 export type InsertRail3Transaction = typeof rail3Transactions.$inferInsert;
 
-export const rail3SaveCallbackSchema = z.object({
+export const rail3SavePaymentMethodSchema = z.object({
   payment_method_id: z.string().min(1),
   agent_id: z.string().min(1),
   card_last4: z.string().length(4).regex(/^\d{4}$/).optional(),
@@ -1548,14 +1566,19 @@ export const rail3SaveCallbackSchema = z.object({
   cardholder_name: z.string().min(1).max(200).optional(),
   exp_month: z.number().int().min(1).max(12).optional(),
   exp_year: z.number().int().min(2024).max(2099).optional(),
-  card_name: z.string().min(1).max(200).optional(),
 });
 
-export const rail3SetPermissionSchema = z.object({
+// Body for POST /api/v1/rail3/cards — create a new virtual card (= one orderIntent on a PM).
+export const rail3CreateCardSchema = z.object({
+  payment_method_id: z.string().min(1),
   mode: z.enum(["limited", "open"]),
   max_amount_usd: z.number().positive().max(100000).optional(),
   period: z.enum(["weekly", "monthly", "yearly"]).optional(),
   description: z.string().max(500).optional(),
+  card_name: z.string().min(1).max(200).optional(),
+  card_color: z.enum(["purple", "dark", "blue", "primary"]).optional(),
+  category: z.string().max(100).nullable().optional(),
+  bot_id: z.string().min(1).max(200).optional(),
 }).refine(
   (data) => data.mode === "open" || (data.max_amount_usd !== undefined && data.period !== undefined),
   { message: "limited mode requires max_amount_usd and period" }

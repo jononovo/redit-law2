@@ -2,38 +2,38 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSessionUser } from "@/features/platform-management/auth/session";
 import { storage } from "@/server/storage";
 import { fireRailsUpdated } from "@/features/agent-interaction/webhooks";
-import { deletePaymentMethod, revokeOrderIntent } from "@/features/payment-rails/rail3";
+import { revokeOrderIntent } from "@/features/payment-rails/rail3";
 import { z } from "zod";
 
 const patchSchema = z.object({
   card_name: z.string().min(1).max(200).optional(),
   bot_id: z.string().min(1).max(200).nullable().optional(),
   card_color: z.enum(["purple", "dark", "blue", "primary"]).optional(),
+  category: z.string().max(100).nullable().optional(),
   status: z.enum(["active", "frozen"]).optional(),
 });
 
-function serializeCard(c: Awaited<ReturnType<typeof storage.getRail3CardByCardId>>) {
-  if (!c) return null;
+async function serializeCard(c: NonNullable<Awaited<ReturnType<typeof storage.getRail3CardByCardId>>>) {
+  const pm = await storage.getRail3PaymentMethodById(c.paymentMethodId);
   return {
     card_id: c.cardId,
     card_name: c.cardName,
-    card_brand: c.cardBrand,
-    card_last4: c.cardLast4,
-    status: c.status,
-    verification_status: c.verificationStatus,
-    bot_id: c.botId || null,
     card_color: c.cardColor || null,
-    cardholder_name: c.cardholderName,
-    exp_month: c.expMonth,
-    exp_year: c.expYear,
-    default_intent_mode: c.defaultIntentMode,
-    default_permission_phase: c.defaultPermissionPhase,
-    default_order_intent_id: c.defaultOrderIntentId,
-    default_mandates: c.defaultMandates,
+    category: c.category || null,
+    status: c.status,
+    bot_id: c.botId || null,
+    payment_method_id: c.paymentMethodId,
+    card_brand: pm?.cardBrand || null,
+    card_last4: pm?.cardLast4 || null,
+    cardholder_name: pm?.cardholderName || null,
+    exp_month: pm?.expMonth || null,
+    exp_year: pm?.expYear || null,
+    intent_mode: c.intentMode,
+    permission_phase: c.permissionPhase,
+    order_intent_id: c.orderIntentId,
+    mandates: c.mandates,
     limit_amount_cents: c.limitAmountCents,
     limit_period: c.limitPeriod,
-    payment_method_id: c.paymentMethodId,
-    agent_id: c.agentId,
     created_at: c.createdAt.toISOString(),
   };
 }
@@ -53,7 +53,7 @@ export async function GET(
   const transactions = await storage.getRail3TransactionsByCardId(cardId, 50);
 
   return NextResponse.json({
-    ...serializeCard(card),
+    ...(await serializeCard(card)),
     transactions: transactions.map((t) => ({
       transaction_id: t.transactionId,
       merchant_name: t.merchantName,
@@ -91,6 +91,7 @@ export async function PATCH(
   if (parsed.data.card_name !== undefined) updates.cardName = parsed.data.card_name;
   if (parsed.data.bot_id !== undefined) updates.botId = parsed.data.bot_id;
   if (parsed.data.card_color !== undefined) updates.cardColor = parsed.data.card_color;
+  if (parsed.data.category !== undefined) updates.category = parsed.data.category;
   if (parsed.data.status !== undefined) updates.status = parsed.data.status;
 
   if (Object.keys(updates).length === 0) {
@@ -118,9 +119,11 @@ export async function PATCH(
     }
   }
 
-  return NextResponse.json(serializeCard(updated));
+  return NextResponse.json(updated ? await serializeCard(updated) : null);
 }
 
+// Delete one virtual card: revoke its orderIntent. Does NOT delete the underlying
+// payment method (other virtual cards may share it).
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ cardId: string }> }
@@ -133,11 +136,7 @@ export async function DELETE(
   if (!card) return NextResponse.json({ error: "card_not_found" }, { status: 404 });
   if (card.ownerUid !== user.uid) return NextResponse.json({ error: "forbidden" }, { status: 403 });
 
-  if (card.defaultOrderIntentId) {
-    await revokeOrderIntent(card.defaultOrderIntentId).catch(() => {});
-  }
-  await deletePaymentMethod(card.paymentMethodId).catch(() => {});
-
+  await revokeOrderIntent(card.orderIntentId).catch(() => {});
   await storage.deleteRail3Card(cardId);
 
   if (card.botId) {

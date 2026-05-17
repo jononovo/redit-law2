@@ -3,21 +3,33 @@ import { withBotApi } from "@/features/platform-management/agent-management/agen
 import { storage } from "@/server/storage";
 
 export const GET = withBotApi("/api/v1/bot/rail3/cards", async (_request, { bot }) => {
-  const card = await storage.getRail3CardByBotId(bot.botId);
-  if (!card) return NextResponse.json({ cards: [] });
+  const cards = await storage.getRail3CardsByBotId(bot.botId);
+  if (cards.length === 0) return NextResponse.json({ cards: [] });
+
+  const pmIds = [...new Set(cards.map((c) => c.paymentMethodId))];
+  const pmLookup = new Map<string, Awaited<ReturnType<typeof storage.getRail3PaymentMethodById>>>();
+  await Promise.all(
+    pmIds.map(async (id) => {
+      const pm = await storage.getRail3PaymentMethodById(id);
+      pmLookup.set(id, pm);
+    })
+  );
 
   return NextResponse.json({
-    cards: [{
-      card_id: card.cardId,
-      card_name: card.cardName,
-      card_brand: card.cardBrand,
-      card_last4: card.cardLast4,
-      status: card.status,
-      verification_status: card.verificationStatus,
-      default_intent_mode: card.defaultIntentMode,
-      default_permission_phase: card.defaultPermissionPhase,
-      limit_amount_cents: card.limitAmountCents,
-      limit_period: card.limitPeriod,
-    }],
+    cards: cards.map((c) => {
+      const pm = pmLookup.get(c.paymentMethodId);
+      return {
+        card_id: c.cardId,
+        card_name: c.cardName,
+        category: c.category,
+        card_brand: pm?.cardBrand || null,
+        card_last4: pm?.cardLast4 || null,
+        status: c.status,
+        intent_mode: c.intentMode,
+        permission_phase: c.permissionPhase,
+        limit_amount_cents: c.limitAmountCents,
+        limit_period: c.limitPeriod,
+      };
+    }),
   });
 });

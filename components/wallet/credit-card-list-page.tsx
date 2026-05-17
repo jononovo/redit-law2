@@ -33,6 +33,7 @@ export interface CreditCardListPageConfig {
   explainer: ReactNode;
   setupWizard?: (props: { open: boolean; onOpenChange: (v: boolean) => void; onComplete: () => void }) => ReactNode;
   setupWizardHref?: string;
+  headerSection?: ReactNode;
   supportsBotLinking?: boolean;
   transactionsEndpoint?: string;
   railId?: string;
@@ -217,7 +218,7 @@ export function CreditCardListPage({ config }: { config: CreditCardListPageConfi
       <p className="text-sm text-neutral-400 mt-2">{config.emptySubtitle}</p>
     </div>
   ) : (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-8" data-testid="grid-cards">
       {cards.map((card) => (
         <CreditCardItem
           key={card.card_id}
@@ -242,8 +243,15 @@ export function CreditCardListPage({ config }: { config: CreditCardListPageConfi
     </div>
   );
 
+  const cardsTabContent = config.headerSection ? (
+    <div className="flex flex-col gap-6">
+      {config.headerSection}
+      {cardListContent}
+    </div>
+  ) : cardListContent;
+
   const tabs: RailTab[] = [
-    { id: "cards", label: "Cards", content: cardListContent },
+    { id: "cards", label: "Cards", content: cardsTabContent },
     {
       id: "transactions",
       label: "Transactions",

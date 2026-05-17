@@ -4,13 +4,13 @@ import {
   type Rail3Card, type InsertRail3Card,
   type Rail3Transaction, type InsertRail3Transaction,
 } from "@/shared/schema";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, and, ne } from "drizzle-orm";
 import type { IStorage } from "../types";
 
 type Rail3Methods = Pick<IStorage,
   | "createRail3Card" | "getRail3CardByCardId" | "getRail3CardsByOwnerUid"
-  | "getRail3CardByBotId" | "countRail3CardsByBotId" | "updateRail3Card" | "deleteRail3Card"
-  | "getRail3CardByPaymentMethodId"
+  | "getRail3CardsByBotId" | "getRail3CardsByPaymentMethodId" | "countRail3CardsByBotId"
+  | "updateRail3Card" | "deleteRail3Card"
   | "createRail3Transaction" | "getRail3TransactionById" | "updateRail3Transaction" | "getRail3TransactionsByCardId"
 >;
 
@@ -26,16 +26,34 @@ export const rail3Methods: Rail3Methods = {
   },
 
   async getRail3CardsByOwnerUid(ownerUid: string): Promise<Rail3Card[]> {
-    return db.select().from(rail3Cards).where(eq(rail3Cards.ownerUid, ownerUid)).orderBy(desc(rail3Cards.createdAt));
+    return db
+      .select()
+      .from(rail3Cards)
+      .where(and(eq(rail3Cards.ownerUid, ownerUid), ne(rail3Cards.status, "revoked")))
+      .orderBy(desc(rail3Cards.createdAt));
   },
 
-  async getRail3CardByBotId(botId: string): Promise<Rail3Card | null> {
-    const [card] = await db.select().from(rail3Cards).where(eq(rail3Cards.botId, botId)).orderBy(desc(rail3Cards.createdAt)).limit(1);
-    return card || null;
+  async getRail3CardsByBotId(botId: string): Promise<Rail3Card[]> {
+    return db
+      .select()
+      .from(rail3Cards)
+      .where(and(eq(rail3Cards.botId, botId), ne(rail3Cards.status, "revoked")))
+      .orderBy(desc(rail3Cards.createdAt));
+  },
+
+  async getRail3CardsByPaymentMethodId(paymentMethodId: string): Promise<Rail3Card[]> {
+    return db
+      .select()
+      .from(rail3Cards)
+      .where(and(eq(rail3Cards.paymentMethodId, paymentMethodId), ne(rail3Cards.status, "revoked")))
+      .orderBy(desc(rail3Cards.createdAt));
   },
 
   async countRail3CardsByBotId(botId: string): Promise<number> {
-    const cards = await db.select().from(rail3Cards).where(eq(rail3Cards.botId, botId));
+    const cards = await db
+      .select()
+      .from(rail3Cards)
+      .where(and(eq(rail3Cards.botId, botId), ne(rail3Cards.status, "revoked")));
     return cards.length;
   },
 
@@ -50,11 +68,6 @@ export const rail3Methods: Rail3Methods = {
 
   async deleteRail3Card(cardId: string): Promise<void> {
     await db.delete(rail3Cards).where(eq(rail3Cards.cardId, cardId));
-  },
-
-  async getRail3CardByPaymentMethodId(paymentMethodId: string): Promise<Rail3Card | null> {
-    const [card] = await db.select().from(rail3Cards).where(eq(rail3Cards.paymentMethodId, paymentMethodId)).limit(1);
-    return card || null;
   },
 
   async createRail3Transaction(data: InsertRail3Transaction): Promise<Rail3Transaction> {

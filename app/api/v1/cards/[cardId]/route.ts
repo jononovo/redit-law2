@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSessionUser } from "@/features/platform-management/auth/session";
 import { storage } from "@/server/storage";
 import { fireRailsUpdated } from "@/features/agent-interaction/webhooks";
+import { revokeOrderIntent } from "@/features/payment-rails/rail3";
 
 export async function DELETE(
   request: NextRequest,
@@ -45,11 +46,9 @@ export async function DELETE(
       return NextResponse.json({ error: "forbidden" }, { status: 403 });
     }
 
-    const { revokeOrderIntent, deletePaymentMethod } = await import("@/features/payment-rails/rail3");
-    if (card.defaultOrderIntentId) {
-      await revokeOrderIntent(card.defaultOrderIntentId).catch(() => {});
-    }
-    await deletePaymentMethod(card.paymentMethodId).catch(() => {});
+    // Revoke just this virtual card's orderIntent. The underlying payment method
+    // stays — it may back other virtual cards.
+    await revokeOrderIntent(card.orderIntentId).catch(() => {});
 
     if (card.botId) {
       const bot = await storage.getBotByBotId(card.botId);

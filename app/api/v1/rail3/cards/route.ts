@@ -1,17 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionUser } from "@/features/platform-management/auth/session";
 import { storage } from "@/server/storage";
-import { generateRail3CardId } from "@/features/payment-rails/rail3";
-import { rail3SaveCallbackSchema } from "@/shared/schema";
+import {
+  generateRail3CardId, buildMandates, createOrderIntent, type PermissionInput,
+} from "@/features/payment-rails/rail3";
+import { rail3CreateCardSchema } from "@/shared/schema";
 
 export async function GET(request: NextRequest) {
   const user = await getSessionUser(request);
-  if (!user) {
-    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-  }
+  if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
-  const cards = await storage.getRail3CardsByOwnerUid(user.uid);
+  const [cards, paymentMethods] = await Promise.all([
+    storage.getRail3CardsByOwnerUid(user.uid),
+    storage.getRail3PaymentMethodsByOwnerUid(user.uid),
+  ]);
 
+  const pmLookup = new Map(paymentMethods.map((p) => [p.paymentMethodId, p]));
   const botIds = [...new Set(cards.map((c) => c.botId).filter(Boolean))] as string[];
   const botLookup: Record<string, string> = {};
   await Promise.all(
@@ -21,42 +25,42 @@ export async function GET(request: NextRequest) {
     })
   );
 
-  const result = cards.map((c) => ({
-    card_id: c.cardId,
-    card_name: c.cardName,
-    card_brand: c.cardBrand,
-    card_last4: c.cardLast4,
-    status: c.status,
-    verification_status: c.verificationStatus,
-    bot_id: c.botId || null,
-    bot_name: c.botId ? (botLookup[c.botId] || null) : null,
-    card_color: c.cardColor || null,
-    default_intent_mode: c.defaultIntentMode,
-    default_permission_phase: c.defaultPermissionPhase,
-    limit_amount_cents: c.limitAmountCents,
-    limit_period: c.limitPeriod,
-    created_at: c.createdAt.toISOString(),
-  }));
+  const result = cards.map((c) => {
+    const pm = pmLookup.get(c.paymentMethodId);
+    return {
+      card_id: c.cardId,
+      card_name: c.cardName,
+      card_color: c.cardColor || null,
+      category: c.category || null,
+      status: c.status,
+      bot_id: c.botId || null,
+      bot_name: c.botId ? (botLookup[c.botId] || null) : null,
+      payment_method_id: c.paymentMethodId,
+      card_brand: pm?.cardBrand || null,
+      card_last4: pm?.cardLast4 || null,
+      intent_mode: c.intentMode,
+      permission_phase: c.permissionPhase,
+      limit_amount_cents: c.limitAmountCents,
+      limit_period: c.limitPeriod,
+      order_intent_id: c.orderIntentId,
+      created_at: c.createdAt.toISOString(),
+    };
+  });
 
   return NextResponse.json({ cards: result });
 }
 
-// Called from the setup wizard after Crossmint's CrossmintPaymentMethodManagement iframe
-// emits onPaymentMethodSelected. Persists the payment method + agentId; verification follows.
+// Create a new virtual card on top of an existing verified payment method.
+// A "virtual card" here = one Crossmint orderIntent with mandates.
 export async function POST(request: NextRequest) {
   const user = await getSessionUser(request);
-  if (!user) {
-    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-  }
+  if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
   let body;
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ error: "invalid_json" }, { status: 400 });
-  }
+  try { body = await request.json(); }
+  catch { return NextResponse.json({ error: "invalid_json" }, { status: 400 }); }
 
-  const parsed = rail3SaveCallbackSchema.safeParse(body);
+  const parsed = rail3CreateCardSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
       { error: "validation_error", details: parsed.error.flatten().fieldErrors },
@@ -64,32 +68,73 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const existing = await storage.getRail3CardByPaymentMethodId(parsed.data.payment_method_id);
-  if (existing) {
-    return NextResponse.json({
-      card_id: existing.cardId,
-      already_saved: true,
-    });
+  const pm = await storage.getRail3PaymentMethodById(parsed.data.payment_method_id);
+  if (!pm) return NextResponse.json({ error: "payment_method_not_found" }, { status: 404 });
+  if (pm.ownerUid !== user.uid) return NextResponse.json({ error: "forbidden" }, { status: 403 });
+  if (pm.verificationStatus !== "active") {
+    return NextResponse.json(
+      { error: "payment_method_not_verified", message: "Verify the underlying card before creating a virtual card." },
+      { status: 400 }
+    );
   }
+
+  const input: PermissionInput = parsed.data.mode === "open"
+    ? { mode: "open" }
+    : {
+        mode: "limited",
+        maxAmountUsd: parsed.data.max_amount_usd!,
+        period: parsed.data.period!,
+        description: parsed.data.description,
+      };
+
+  const mandates = buildMandates(input);
+  const intent = await createOrderIntent({
+    agentId: pm.agentId,
+    paymentMethodId: pm.paymentMethodId,
+    mandates,
+  });
+
+  const limitAmountCents = parsed.data.mode === "limited" && parsed.data.max_amount_usd !== undefined
+    ? Math.round(parsed.data.max_amount_usd * 100)
+    : null;
+  const limitPeriod = parsed.data.mode === "limited" ? (parsed.data.period ?? null) : null;
+
+  // Auto-name if not provided
+  const last4 = pm.cardLast4 ? ` •••• ${pm.cardLast4}` : "";
+  const limitLabel = parsed.data.mode === "limited"
+    ? `$${parsed.data.max_amount_usd}/${parsed.data.period}`
+    : "no limit";
+  const defaultName = parsed.data.category
+    ? `${parsed.data.category}${last4}`
+    : `${(pm.cardBrand || "Card").toUpperCase()}${last4} — ${limitLabel}`;
 
   const cardId = generateRail3CardId();
   const card = await storage.createRail3Card({
     cardId,
     ownerUid: user.uid,
-    paymentMethodId: parsed.data.payment_method_id,
-    agentId: parsed.data.agent_id,
-    cardName: parsed.data.card_name || `${(parsed.data.card_brand || "card").toUpperCase()} ${parsed.data.card_last4 ? "•••• " + parsed.data.card_last4 : ""}`.trim(),
-    cardholderName: parsed.data.cardholder_name,
-    cardLast4: parsed.data.card_last4,
-    cardBrand: parsed.data.card_brand,
-    expMonth: parsed.data.exp_month,
-    expYear: parsed.data.exp_year,
-    verificationStatus: "pending",
+    paymentMethodId: pm.paymentMethodId,
+    cardName: parsed.data.card_name || defaultName,
+    cardColor: parsed.data.card_color || null,
+    category: parsed.data.category || null,
+    orderIntentId: intent.orderIntentId,
+    intentMode: parsed.data.mode,
+    mandates,
+    permissionPhase: intent.phase,
+    limitAmountCents,
+    limitPeriod,
     status: "active",
+    botId: parsed.data.bot_id || null,
   });
+
+  // Bump PM lastUsedAt so "default to last used" picks it next time.
+  await storage.updateRail3PaymentMethod(pm.paymentMethodId, { lastUsedAt: new Date() });
 
   return NextResponse.json({
     card_id: card.cardId,
-    verification_status: card.verificationStatus,
+    order_intent_id: intent.orderIntentId,
+    permission_phase: intent.phase,
+    intent_mode: card.intentMode,
+    limit_amount_cents: card.limitAmountCents,
+    limit_period: card.limitPeriod,
   });
 }

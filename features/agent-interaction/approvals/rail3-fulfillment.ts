@@ -12,14 +12,14 @@ async function fulfillRail3Approval(approval: UnifiedApproval): Promise<void> {
   }
 
   const card = await storage.getRail3CardByCardId(tx.cardId);
-  if (!card?.defaultOrderIntentId) {
-    await storage.updateRail3Transaction(transactionId, { status: "failed", metadata: { ...(tx.metadata as object || {}), failureReason: "no_active_permission" } });
+  if (!card || card.permissionPhase !== "active") {
+    await storage.updateRail3Transaction(transactionId, { status: "failed", metadata: { ...(tx.metadata as object || {}), failureReason: "card_not_authorized" } });
     return;
   }
 
   try {
     const credentials = await fetchOneTimeCredentials({
-      orderIntentId: card.defaultOrderIntentId,
+      orderIntentId: card.orderIntentId,
       merchant: {
         name: tx.merchantName,
         url: tx.merchantUrl || undefined,

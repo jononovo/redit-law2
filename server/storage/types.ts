@@ -21,6 +21,7 @@ import {
   type UnifiedApproval, type InsertUnifiedApproval,
   type Rail5Card, type InsertRail5Card,
   type Rail5Transaction, type InsertRail5Transaction,
+  type Rail3PaymentMethod, type InsertRail3PaymentMethod,
   type Rail3Card, type InsertRail3Card,
   type Rail3Transaction, type InsertRail3Transaction,
   type Order, type InsertOrder,
@@ -173,14 +174,20 @@ export interface IStorage {
   getRail3DailySpendCents(cardId: string): Promise<number>;
   getRail3MonthlySpendCents(cardId: string): Promise<number>;
 
+  createRail3PaymentMethod(data: InsertRail3PaymentMethod): Promise<Rail3PaymentMethod>;
+  getRail3PaymentMethodById(paymentMethodId: string): Promise<Rail3PaymentMethod | null>;
+  getRail3PaymentMethodsByOwnerUid(ownerUid: string): Promise<Rail3PaymentMethod[]>;
+  updateRail3PaymentMethod(paymentMethodId: string, data: Partial<InsertRail3PaymentMethod>): Promise<Rail3PaymentMethod | null>;
+  deleteRail3PaymentMethod(paymentMethodId: string): Promise<void>;
+
   createRail3Card(data: InsertRail3Card): Promise<Rail3Card>;
   getRail3CardByCardId(cardId: string): Promise<Rail3Card | null>;
   getRail3CardsByOwnerUid(ownerUid: string): Promise<Rail3Card[]>;
-  getRail3CardByBotId(botId: string): Promise<Rail3Card | null>;
+  getRail3CardsByBotId(botId: string): Promise<Rail3Card[]>;
+  getRail3CardsByPaymentMethodId(paymentMethodId: string): Promise<Rail3Card[]>;
   countRail3CardsByBotId(botId: string): Promise<number>;
   updateRail3Card(cardId: string, data: Partial<InsertRail3Card>): Promise<Rail3Card | null>;
   deleteRail3Card(cardId: string): Promise<void>;
-  getRail3CardByPaymentMethodId(paymentMethodId: string): Promise<Rail3Card | null>;
 
   createRail3Transaction(data: InsertRail3Transaction): Promise<Rail3Transaction>;
   getRail3TransactionById(transactionId: string): Promise<Rail3Transaction | null>;
