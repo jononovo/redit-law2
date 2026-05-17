@@ -48,9 +48,10 @@ The intent-optional logic lives in **one helper** (`permissions/buildDefaultMand
 | Item | Source | Notes |
 |---|---|---|
 | Crossmint **client** API key | Crossmint console | Separate from our existing server key for Rail 2. Staging key has all scopes by default. |
-| Auth provider Crossmint trusts | Firebase Auth (ours) | Crossmint quickstart uses Stytch; accepts "bring your own auth" via configurable JWT verifier. **Needs verification** — register Firebase as a 3P auth provider with the right verifierId claim. Fallback: thin Stytch bridge for Crossmint only. |
-| `@crossmint/client-sdk-react-ui` | npm | Frontend SDK for `CrossmintPaymentMethodManagement` (save card iframe) and `OrderIntentVerification` (passkey component). |
+| Auth provider | Firebase Auth (ours, unchanged) | Crossmint has built-in support for Firebase as a 3P auth provider. Config in Crossmint Console → API Keys → JWT authentication → 3P Auth providers → Firebase. We pass the Firebase ID token to `setJwt()` on the Crossmint provider via a small `JwtSync` component. **No Stytch, no bridge.** |
+| `@crossmint/client-sdk-react-ui` | npm | Frontend SDK. Components used: `CrossmintProvider`, `CrossmintPaymentMethodManagement` (save card iframe), `PaymentMethodAgenticEnrollmentVerification` (one-time card verification), `OrderIntentVerification` (per-permission authorization). |
 | Card eligibility | — | US-issued Visa or Mastercard credit/debit only. Not supported on Visa: non-US, business, prepaid, Chase, Fidelity. AMEX/Ramp need Crossmint approval. Surface in setup wizard. |
+| Passkey-capable device for users | — | Crossmint's verification + authorization ceremonies use WebAuthn passkeys. Passkey does **not** mean biometric — works with device PIN (Windows Hello PIN, macOS password), hardware security key (YubiKey), or cross-device QR-to-phone fallback. Effectively all modern users have at least one of these. |
 
 ## Schema additions (`shared/schema.ts`)
 
@@ -82,8 +83,13 @@ export const rail3Cards = pgTable("rail3_cards", {
   // Default permission (one per card in v1)
   defaultOrderIntentId: text("default_order_intent_id"),
   defaultIntentMode: text("default_intent_mode"),           // "limited" | "open"
-  defaultMandates: jsonb("default_mandates"),               // raw Crossmint mandate array (audit + display)
+  defaultMandates: jsonb("default_mandates"),               // raw Crossmint mandate array (audit + raw source of truth)
   defaultPermissionPhase: text("default_permission_phase"), // requires-verification | active | expired
+
+  // Denormalized for display + queries (Rail 5 pattern). Source of truth = defaultMandates.
+  // Populated when permission is created/updated; for "open" mode both are null.
+  limitAmountCents: integer("limit_amount_cents"),
+  limitPeriod: text("limit_period"),                        // "weekly" | "monthly" | "yearly"
 
   // Bot link
   botId: text("bot_id"),
@@ -189,11 +195,11 @@ export function normalizeRail3Card(card: Rail3CardInfo, basePath: string): Norma
 }
 ```
 
-**New page** — `app/(dashboard)/agent-virtual-cards/page.tsx`, ~45 lines, mirrors `sub-agent-cards/page.tsx`. A config object passed to `CreditCardListPage`:
+**New page** — `app/(dashboard)/virtual-cards/page.tsx`, ~45 lines, mirrors `sub-agent-cards/page.tsx`. A config object passed to `CreditCardListPage`:
 
 ```ts
 const config: CreditCardListPageConfig = {
-  title: "Agent Virtual Cards",
+  title: "Virtual Cards",
   subtitle: "Cards your agent can use at any online merchant. Powered by Crossmint.",
   addButtonLabel: "Add Virtual Card",
   emptyTitle: "No virtual cards yet",
@@ -201,9 +207,9 @@ const config: CreditCardListPageConfig = {
   apiEndpoint: "/api/v1/rail3/cards",
   railPrefix: "rail3",
   railId: "rail3",
-  basePath: "/agent-virtual-cards",
+  basePath: "/virtual-cards",
   normalizeCards: (data) => data.cards.map((c: Rail3CardInfo) =>
-    normalizeRail3Card(c, "/agent-virtual-cards")),
+    normalizeRail3Card(c, "/virtual-cards")),
   explainer: <Rail3Explainer />,
   setupWizardHref: "/setup/rail3",
   supportsBotLinking: true,
@@ -277,9 +283,9 @@ The bot `/checkout` response shape matches Rail 5 exactly so OpenClaw's existing
 
 ## Phasing
 
-**v0 — sandbox spike (~2 days)**: Crossmint staging key + Firebase JWT bridge verified. Save → verify → create open permission → fetch credentials at a fake merchant via curl. No UI.
+**v0 — sandbox spike (~2 days)**: Crossmint staging key + Firebase JWT wired through `setJwt()`. Save → verify → create open permission → fetch credentials at a fake merchant via curl. No UI.
 
-**v1 — owner UI + wizard (~3 days)**: Schema + storage + owner API. `agent-virtual-cards` page (config object) + 4-step wizard. Both intent modes working end-to-end.
+**v1 — owner UI + wizard (~3 days)**: Schema + storage + owner API. `virtual-cards` page (config object) + 4-step wizard. Both intent modes working end-to-end.
 
 **v2 — bot integration (~3 days)**: Bot checkout + confirm APIs. `rail3-fulfillment.ts`. Order recording. OpenClaw credential adapter.
 
@@ -289,11 +295,9 @@ The bot `/checkout` response shape matches Rail 5 exactly so OpenClaw's existing
 
 ## Open questions to confirm before starting
 
-1. **Firebase JWT compatibility with Crossmint.** Quickstart uses Stytch; "bring your own auth" is documented. Confirm Firebase ID tokens are accepted via Crossmint's 3P auth provider config. If not, decide between (a) thin Stytch bridge for Crossmint only or (b) request Crossmint to add Firebase support.
-2. **Crossmint enterprise scope.** Does our existing Crossmint contract (Rail 2) cover Card Permissions API in production? Staging is open; prod may need a separate scope. Quick email.
-3. **Charge settlement webhooks.** Does Crossmint emit a webhook when a one-time credential is actually charged? If yes, wire it. If not, rely on bot's `/confirm` + periodic reconciliation.
-4. **Card eligibility coverage.** What % of users have a US Visa/MC meeting the restrictions? Sets priority of AMEX/non-US later.
-5. **Permission revocation semantics.** Does deleting an order intent invalidate already-issued one-time credentials, or do they live out their TTL?
+1. **Crossmint enterprise scope.** Does our existing Crossmint contract (Rail 2) cover Card Permissions API in production? Staging is open; prod may need a separate scope. Quick email.
+2. **Charge settlement webhooks.** Does Crossmint emit a webhook when a one-time credential is actually charged? If yes, wire it. If not, rely on bot's `/confirm` + periodic reconciliation.
+3. **Permission revocation semantics.** Does deleting an order intent invalidate already-issued one-time credentials, or do they live out their TTL?
 
 ## Files this plan will touch on implementation
 
@@ -301,7 +305,7 @@ The bot `/checkout` response shape matches Rail 5 exactly so OpenClaw's existing
 - Storage: `server/storage/rail3.ts` (new), `server/storage/types.ts` (interface additions), `server/storage/index.ts` (compose)
 - New module: `features/payment-rails/rail3/` (5 files)
 - Reused module touches: `features/agent-interaction/approvals/{callbacks.ts, rail3-fulfillment.ts (new)}`, `features/platform-management/agent-management/bot-linking.ts`
-- UI: `components/wallet/types.ts` (RailType + Rail3CardInfo + normalizeRail3Card), `components/wallet/credit-card-list-page.tsx` (small freeze-handler switch update), `app/(dashboard)/agent-virtual-cards/page.tsx` (new, ~45 lines), `app/setup/rail3/page.tsx` (new, 4-step wizard)
+- UI: `components/wallet/types.ts` (RailType + Rail3CardInfo + normalizeRail3Card), `components/wallet/credit-card-list-page.tsx` (small freeze-handler switch update), `app/(dashboard)/virtual-cards/page.tsx` (new, ~45 lines), `app/setup/rail3/page.tsx` (new, 4-step wizard)
 - API: `app/api/v1/rail3/**`, `app/api/v1/bot/rail3/**`
 - Plugin: `Plugins/OpenClaw/src/rail3-credentials.ts` (small adapter)
 - Env: `CROSSMINT_CLIENT_API_KEY`
