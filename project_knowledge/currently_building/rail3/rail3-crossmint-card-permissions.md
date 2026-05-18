@@ -164,6 +164,8 @@ features/agent-interaction/approvals/
 
 ## Status
 
-**Implemented** (May 2026). Replaces the v1 single-table model from `project_knowledge/internal_docs/04-payment-tools/_complete/rail3-virtual-cards-technical-plan.md` (now historical).
+**Implemented backend + UI scaffold** (May 2026). Replaces the v1 single-table model from `project_knowledge/currently_building/rail3/rail3-virtual-cards-technical-plan.md` (now historical).
+
+**Owner-facing ceremonies not yet verified end-to-end against live Crossmint.** Three open points (Firebase→Crossmint JWT bridge, verification step copy/popup, unused webhook secret) tracked in `project_knowledge/currently_building/rail3/rail3-open-points.md`.
 
 Not yet built: regression tests for delete semantics + bot-checkout guards. Flagged once by code review, deliberately deferred per "no enterprise scope creep" policy.
