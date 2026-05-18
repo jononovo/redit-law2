@@ -112,8 +112,8 @@ There is **no** `GET /payment-methods/:id`. The list endpoint is the read path; 
 - `rail3_payment_methods.agent_id` — column is semantically wrong; agentId binds to the order intent, not the PM. Either drop it or rename to a "default agent" hint.
 - `rail3_payment_methods.verification_status` — also wrong place; should be a derived lookup against `/agentic-enrollment`, or denormalize into a separate `rail3_agentic_enrollments` table keyed by `payment_method_id`.
 - `rail3_payment_methods.{exp_month, exp_year}` — keep as ints internally, parse from API strings.
-- We need a new place for `agent_id` per owner (one agent reused across PMs; mirrors quickstart). Cheapest: a `rail3_owner_agent` table `(owner_id PK, agent_id, created_at)` so we don't pollute existing owner tables.
-- `rail3_virtual_cards.permission_phase` — values need to match real enum (`requires-verification | active | expired`), not `pending_authorization | active | revoked`.
+- We need a new place for `agent_id` per owner (one agent reused across PMs; docs explicitly say "one agent per user"). New `rail3_agents` table `(owner_uid PK, agent_id, name, created_at)`, matching the `rail{N}_{thing}` naming used by rail5.
+- `rail3_cards.permission_phase` — column already stores the real enum values (`requires-verification | active | expired`). No change needed.
 
 ### Frontend mismatches
 
@@ -131,42 +131,36 @@ Server-key + `userLocator=userId:<firebase_uid>` on the backend; Firebase JWT br
 
 ---
 
-## TBD — open decisions blocking implementation
+## Resolved decisions
 
-These need an answer before Phase 1+ can start. Listed in order of how much they reshape the plan.
+All previously open decisions answered from the public Crossmint docs (https://docs.crossmint.com, `llms-full.txt`). No open questions remain blocking implementation.
 
-### TBD-1 — Where does `agentId` live?
-Options:
-- **(a)** One agent per owner. New `rail3_owner_agent` table. Mirrors quickstart. Simplest.
-- **(b)** One agent per PM. Keep today's `agent_id` column. Doesn't reflect how Crossmint models things.
-- **(c)** One agent per virtual card. Most granular; useful only if we ever want per-card agent identities visible in Crossmint dashboard.
+### D-1 — Agent scope: **one agent per owner**
+Docs explicitly: *"You typically create one agent per user."* New table `rail3_agents (owner_uid PK, agent_id, name, created_at)`. Default metadata uses Crossmint's own example strings: `name = "Card Payment Agent"`, `description = "Default agent for card payments"`. Agent is auto-created on first card save in the setup wizard; reused for every order intent that owner creates.
 
-Agent metadata (`name` / `description` for `POST /agents`) also undecided. Quickstart uses `"Card Payment Agent"` / `"Default agent for card payments"`. Could mirror or use CreditClaw-branded values.
+### D-2 — Polling endpoints: **drop**
+SDK's `onVerificationComplete` is fired by the server's flip to `active` — it's authoritative. Existing `/verification-status` and `/authorization-status` BFF routes are deleted. Tab-close-mid-ceremony recovery is the planned webhook's job (tracked in `rail3-open-points.md`).
 
-### TBD-2 — Polling endpoints: keep or drop?
-SDK fires `onVerificationComplete` synchronously, so polling is redundant on the happy path. Question is whether to keep `/verification-status` and `/authorization-status` as a fallback for users who close the tab mid-ceremony, or drop them now and rely on the planned webhook (tracked in `rail3-open-points.md`).
+### D-3 — Schema migration: **clean slate**
+All four rail3 tables contain 0 rows. No data preservation. Drizzle `db:push --force` to drop+recreate the affected columns and add `rail3_agents`.
 
-### TBD-4 — Schema migration posture
-Plan currently calls for dropping `rail3_payment_methods.agent_id`, dropping `verification_status`, renaming `permission_phase` enum values. Are there existing rows in those tables to preserve, or is this a clean-slate refactor (drop + recreate)?
+### D-4 — Merchant `countryCode`: **require upstream, fail loudly**
+Crossmint requires `merchant.countryCode` (ISO-2) on every credential fetch. Matches the "explicit failure over silent fallback" preference. Bot checkout payload must carry merchant country; if missing, the bot endpoint 400s with `merchant_country_required`. No `"US"` default.
 
-### TBD-5 — Merchant `countryCode` default
-Crossmint requires `merchant.countryCode` on `POST /order-intents/:id/credentials`. Our bot checkout payload may not always carry it. Default to `"US"` for unknown merchants, or fail loudly and require it upstream?
+### D-5 — `CrossmintWalletProvider`: **omit**
+Docs only include it in the wallet quickstart, with `createOnLogin` that auto-creates a wallet on mount — an unwanted side effect for card-only use. Card-permissions docs use only `CrossmintProvider` + the verification components. We wrap with `CrossmintProvider` + our `JwtSync` component; no wallet provider.
 
-### TBD-6 — `CrossmintWalletProvider` necessity
-Quickstart wraps in `CrossmintWalletProvider` because it's also a wallets demo. For Card Permissions only, may not be needed. If it auto-creates a wallet on mount, we'd have an unwanted side effect. Phase 0 reads SDK source to verify; if not needed, omit.
-
-### TBD-7 — `PaymentMethodAgenticEnrollmentVerification` prop shape
-Customize-UI doc confirms the component exists and accepts `appearance`. The `enrollment` prop shape (id vs full object with `verificationConfig`) is inferred from the quickstart, not stated in public docs. Phase 0 reads the .d.ts to confirm.
+### D-6 — `PaymentMethodAgenticEnrollmentVerification` props: **full enrollment object**
+Docs confirm exact signature: `enrollment={pendingEnrollment}` (full object, not just an id), `onVerificationComplete`, `onVerificationError`, optional `appearance`.
 
 ---
 
 ## Implementation plan (in order)
 
-### Phase 0 — Console setup + SDK verification (30 min)
-1. Register Firebase as 3P auth provider in Crossmint **Staging** console (Settings → API Keys → JWT auth → 3P providers → Firebase → enter Firebase project ID, leave Verifier Id = `sub`). Owner action.
-2. Repeat for production console when ready. Owner action.
+### Phase 0 — Console setup (owner action, 15 min)
+1. Register Firebase as 3P auth provider in Crossmint **Staging** console (Settings → API Keys → JWT auth → 3P providers → Firebase → enter Firebase project ID, leave Verifier Id = `sub`).
+2. Repeat for production console when ready.
 3. Confirm `CROSSMINT_SERVER_API_KEY` and `NEXT_PUBLIC_CROSSMINT_CLIENT_API_KEY` set for staging.
-4. Read SDK .d.ts files to resolve **TBD-6** (`CrossmintWalletProvider` necessity) and **TBD-7** (`PaymentMethodAgenticEnrollmentVerification` prop shape).
 
 ### Phase 1 — Backend rewrite (`features/payment-rails/rail3/`) (1.5 h)
 
@@ -210,13 +204,14 @@ Rewrite all four files against the real API surface.
 
 `index.ts`: re-export the new surface.
 
-### Phase 2 — Schema + storage changes (45 min)
+### Phase 2 — Schema + storage changes (30 min)
 
-- New table `rail3_owner_agent (owner_id PK, agent_id, name, description?, created_at)`.
-- `rail3_payment_methods`: drop `agent_id` column (or keep as nullable historical). Drop `verification_status` (or move to a denormalized `rail3_agentic_enrollments` table, see below).
-- New optional table `rail3_agentic_enrollments (payment_method_id PK, enrollment_id?, status, updated_at)` for denormalized status. Or — simpler — don't store it, always re-read on demand.
-- `rail3_virtual_cards.permission_phase` enum: `requires_verification | active | expired` (rename from `pending_authorization | active | revoked`). Drizzle migration.
-- Storage fragment `server/storage/rail3-owner-agent.ts` for the new agent record.
+- New table `rail3_agents (owner_uid PK, agent_id, name, created_at)`. Naming matches `rail{N}_{thing}` pattern used by rail5.
+- `rail3_payment_methods`: drop `agent_id` column (moves to `rail3_agents`). Drop `verification_status` column (read live from Crossmint's `agentic-enrollment` sub-resource on demand).
+- `shared/schema.ts`: drop `agent_id` from `rail3SavePaymentMethodSchema` zod body.
+- `rail3_cards`: no changes. `permission_phase` column already stores correct enum values.
+- New storage fragment `server/storage/payment-rails/rail3-agents.ts` (`getRail3AgentByOwnerUid`, `createRail3Agent`); wire into `IStorage` + composer.
+- Migration: Drizzle `db:push --force`. 0 rows in all rail3 tables, no data preservation.
 
 ### Phase 3 — BFF routes (`app/api/v1/rail3/`) (1 h)
 
@@ -240,21 +235,20 @@ Delete old polling routes: `verification-status`, `authorization-status`.
 New `components/rail3/crossmint-providers.tsx`:
 ```tsx
 "use client";
-import { CrossmintProvider, CrossmintWalletProvider } from "@crossmint/client-sdk-react-ui";
+import { CrossmintProvider } from "@crossmint/client-sdk-react-ui";
 import { JwtSync } from "./jwt-sync";
 export function CrossmintProviders({ children }: { children: React.ReactNode }) {
   const apiKey = process.env.NEXT_PUBLIC_CROSSMINT_CLIENT_API_KEY;
   if (!apiKey) throw new Error("NEXT_PUBLIC_CROSSMINT_CLIENT_API_KEY required");
   return (
     <CrossmintProvider apiKey={apiKey}>
-      <CrossmintWalletProvider>
-        <JwtSync />
-        {children}
-      </CrossmintWalletProvider>
+      <JwtSync />
+      {children}
     </CrossmintProvider>
   );
 }
 ```
+No `CrossmintWalletProvider` — that's a wallets-quickstart construct that would auto-create a wallet on mount (per D-5).
 
 New `components/rail3/jwt-sync.tsx`:
 ```tsx
@@ -276,8 +270,6 @@ export function JwtSync() {
 ```
 
 Wrap dashboard + setup layouts in `<CrossmintProviders>`.
-
-**Risk:** `CrossmintWalletProvider` may try to auto-create a wallet on mount. Quickstart includes it because it's also a wallets demo. If it triggers unwanted side effects for card-only use, remove it. Verify in Phase 0.
 
 ### Phase 5 — Setup wizard rewrite (`app/setup/rail3/page.tsx`) (1 h)
 
