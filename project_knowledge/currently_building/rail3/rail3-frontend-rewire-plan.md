@@ -84,9 +84,8 @@ There is **no** `GET /payment-methods/:id`. The list endpoint is the read path; 
 + | { enrollmentId, status: "pending", verificationConfig: { environment, publicApiKey } }
 
 // Mandate
-- "maxAmount" | "description" | "merchantAllowlist" | "merchantBlocklist"
+- "maxAmount" | "description"
 + "maxAmount" | "description" | "prompt"
-// merchantAllowlist/Blocklist were invented — zero presence in Crossmint docs or quickstart types.
 // "prompt" appears in the quickstart's TS types but not in the public docs examples.
 // The API reference schema lists 4 mandate options but only exposes 2 (maxAmount, description) in markdown.
 
