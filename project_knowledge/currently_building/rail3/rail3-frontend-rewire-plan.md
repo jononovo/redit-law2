@@ -35,22 +35,15 @@ status: plan
 - **Ours (`features/payment-rails/rail3/client.ts`):** `https://staging.crossmint.com/api/2025-06-09` and `https://www.crossmint.com/api/2025-06-09`.
 - **Action:** rewrite `client.ts` base URL.
 
-### Auth model
-- **Real:** Card Permissions endpoints are **user-scoped**. Two valid auth modes (from `list-payment-methods` reference):
-  1. **JWT mode** — `X-API-KEY: <CLIENT_KEY>` + `Authorization: Bearer <jwt>`. JWT subject identifies the user. Used by the quickstart from the browser (via server actions for CORS only).
-  2. **Server-key mode** — `X-API-KEY: <SERVER_KEY>` + `?userLocator=<type>:<value>` query param (e.g. `email:alice@example.com`, `userId:abc123`). Without `userLocator`, the server can't pick a user → 403.
-- **Ours:** server key alone, no `userLocator`, no JWT. Will fail.
-- **Decision needed:** see "Decision 1" below. Recommend **server-key + userLocator** so the BFF stays the single point of credential use; client never holds a JWT for Crossmint.
+### Auth model — **LOCKED**
 
-### Crossmint Console prerequisite
-- **Required if we go JWT mode:** Console → JWT authentication → 3P Auth providers → add Firebase → enter Firebase project ID, set `Verifier Id = sub`. Once per env.
-- **Required if we go server-key mode:** still useful to register Firebase so the SDK's verification components (which always sign-in via JWT) can authenticate the user inside the iframe.
+Mirrors Rail 1's app-credential pattern as closely as Crossmint's PCI-iframe constraints allow. Single identity (Firebase UID) flows end-to-end through our DB → BFF → Crossmint API → Crossmint dashboard rows.
 
-### `userLocator` value
-- Crossmint identifies users by stable identifier. Our owners are Firebase users. Options:
-  - `userId:<firebase_uid>` — most stable, opaque.
-  - `email:<firebase_user_email>` — readable but mutable.
-- **Recommend `userId:<firebase_uid>`** (immutable). Pair with Crossmint Console 3P Firebase registration so JWT-mode and key-mode resolve to the same user record.
+- **Backend (BFF → Crossmint):** `X-API-KEY: <CROSSMINT_SERVER_API_KEY>` + `?userLocator=userId:<firebase_uid>` on every user-scoped call. Firebase UID resolved from the existing session cookie. One server credential; no per-user secrets.
+- **Browser (SDK iframes → Crossmint):** `setJwt(firebaseIdToken)` via the `JwtSync` component. Required because PCI-scoped iframes (`CrossmintPaymentMethodManagement`, `OrderIntentVerification`, `PaymentMethodAgenticEnrollmentVerification`) run outside our DOM and need their own auth context.
+- **Crossmint Console (one-time per env):** register Firebase as a 3P JWT provider → enter Firebase project ID → leave `Verifier Id = sub`. This makes Crossmint trust Firebase-issued JWTs from the browser AND map `sub` → the same userId the server passes via `userLocator`.
+- **Why this and not alternatives:** server-key matches Rail 1 (`PRIVY_APP_SECRET`) — one credential in env, never per-user. Firebase UID directly = no opaque ID translation table to maintain, Crossmint dashboard rows correspond 1:1 to our owners (we are the only consumer of their data; no privacy reason to obscure IDs). Custom-JWT-with-JWKS path rejected because it adds a JWKS endpoint + signing keys we don't need.
+- **Coupling cost:** if we ever migrate off Firebase Auth, we'd reconfigure Crossmint Console with the new 3P provider. Acceptable; no concrete plan to move.
 
 ### Endpoint inventory we need
 From quickstart `lib/crossmint-api.ts` and the API reference, the full surface for Card Permissions is:
@@ -130,46 +123,52 @@ There is **no** `GET /payment-methods/:id`. The list endpoint is the read path; 
 
 ---
 
-## Decision points (need owner sign-off before implementing)
+## Decisions
 
-**Decision 1 — Where do REST calls originate?**
+### Decision 1 — Auth model **LOCKED**
+Server-key + `userLocator=userId:<firebase_uid>` on the backend; Firebase JWT bridged to SDK via `setJwt()` on the browser; Firebase registered as 3P in Crossmint Console per environment. See the "Auth model" entry in the mismatch audit above for full rationale.
 
-- **Option A: Server-key + userLocator (recommended).** All Crossmint REST calls go through our existing BFF (`app/api/v1/rail3/*`). Server uses `CROSSMINT_SERVER_API_KEY` + `?userLocator=userId:<firebase_uid>`. Browser never holds a Crossmint JWT. Crossmint SDK components still need a JWT, but only for the verification iframes — bridged via `setJwt(firebaseIdToken)` once 3P Firebase is registered in Crossmint Console.
-- **Option B: Client-key + Bearer JWT proxy.** Mirror the quickstart: server actions that take the Firebase ID token from the browser and forward to Crossmint with client key + Bearer. Slightly thinner backend, but token round-trips on every call and we lose centralized rate-limiting/logging.
+---
 
-Recommend **A**.
+## TBD — open decisions blocking implementation
 
-**Decision 2 — Where does `agentId` live?**
+These need an answer before Phase 1+ can start. Listed in order of how much they reshape the plan.
 
-- **Option A: One agent per owner (recommended).** New `rail3_owner_agent` row. All order intents for that owner reuse it. Mirrors quickstart.
-- **Option B: One agent per PM.** Today's `agent_id` column. Doesn't reflect how Crossmint models things and isn't necessary.
-- **Option C: One agent per virtual card.** Most granular; useful only if we ever want per-card agent identities. Not needed.
+### TBD-1 — Where does `agentId` live?
+Options:
+- **(a)** One agent per owner. New `rail3_owner_agent` table. Mirrors quickstart. Simplest.
+- **(b)** One agent per PM. Keep today's `agent_id` column. Doesn't reflect how Crossmint models things.
+- **(c)** One agent per virtual card. Most granular; useful only if we ever want per-card agent identities visible in Crossmint dashboard.
 
-Recommend **A**. Drop column from PM, add new owner-scoped table.
+Agent metadata (`name` / `description` for `POST /agents`) also undecided. Quickstart uses `"Card Payment Agent"` / `"Default agent for card payments"`. Could mirror or use CreditClaw-branded values.
 
-**Decision 3 — Drop polling endpoints?**
+### TBD-2 — Polling endpoints: keep or drop?
+SDK fires `onVerificationComplete` synchronously, so polling is redundant on the happy path. Question is whether to keep `/verification-status` and `/authorization-status` as a fallback for users who close the tab mid-ceremony, or drop them now and rely on the planned webhook (tracked in `rail3-open-points.md`).
 
-SDK verification components fire `onVerificationComplete` synchronously. We can drop the existing `/verification-status` and `/authorization-status` poll routes. Keep them only if we want a fallback for users who close the tab mid-ceremony (webhook would be cleaner — already in `rail3-open-points.md`).
+### TBD-3 — `merchantAllowlist` / `merchantBlocklist` mandates
+We invented these mandate types in `permissions.ts`. They're not in the public quickstart types. Either drop entirely (and use `description` / `prompt` free-text instead) or confirm with Crossmint whether they exist on an unlisted surface before deleting.
 
-Recommend **drop** for now, revisit with the webhook work.
+### TBD-4 — Schema migration posture
+Plan currently calls for dropping `rail3_payment_methods.agent_id`, dropping `verification_status`, renaming `permission_phase` enum values. Are there existing rows in those tables to preserve, or is this a clean-slate refactor (drop + recreate)?
 
-**Decision 4 — Keep merchant allow/blocklist mandate support?**
+### TBD-5 — Merchant `countryCode` default
+Crossmint requires `merchant.countryCode` on `POST /order-intents/:id/credentials`. Our bot checkout payload may not always carry it. Default to `"US"` for unknown merchants, or fail loudly and require it upstream?
 
-We invented these mandate types. Not in the public quickstart types. Either:
-- (a) drop them entirely (recommend), OR
-- (b) ask Crossmint if they exist on a private API surface.
+### TBD-6 — `CrossmintWalletProvider` necessity
+Quickstart wraps in `CrossmintWalletProvider` because it's also a wallets demo. For Card Permissions only, may not be needed. If it auto-creates a wallet on mount, we'd have an unwanted side effect. Phase 0 reads SDK source to verify; if not needed, omit.
 
-Recommend **drop**. Use `description` or `prompt` mandate text to express the same intent in a free-form field if needed.
+### TBD-7 — `PaymentMethodAgenticEnrollmentVerification` prop shape
+Customize-UI doc confirms the component exists and accepts `appearance`. The `enrollment` prop shape (id vs full object with `verificationConfig`) is inferred from the quickstart, not stated in public docs. Phase 0 reads the .d.ts to confirm.
 
 ---
 
 ## Implementation plan (in order)
 
-### Phase 0 — Audit + Console setup (30 min, owner work)
-1. Register Firebase as 3P auth provider in Crossmint **Staging** console (Settings → API Keys → JWT auth → 3P providers → Firebase → enter Firebase project ID, leave Verifier Id = `sub`).
-2. Repeat for production console when ready.
-3. Confirm `CROSSMINT_SERVER_API_KEY` is set in `.env` for staging.
-4. Confirm `NEXT_PUBLIC_CROSSMINT_CLIENT_API_KEY` is set (needed by SDK on the browser).
+### Phase 0 — Console setup + SDK verification (30 min)
+1. Register Firebase as 3P auth provider in Crossmint **Staging** console (Settings → API Keys → JWT auth → 3P providers → Firebase → enter Firebase project ID, leave Verifier Id = `sub`). Owner action.
+2. Repeat for production console when ready. Owner action.
+3. Confirm `CROSSMINT_SERVER_API_KEY` and `NEXT_PUBLIC_CROSSMINT_CLIENT_API_KEY` set for staging.
+4. Read SDK .d.ts files to resolve **TBD-6** (`CrossmintWalletProvider` necessity) and **TBD-7** (`PaymentMethodAgenticEnrollmentVerification` prop shape).
 
 ### Phase 1 — Backend rewrite (`features/payment-rails/rail3/`) (1.5 h)
 
@@ -349,13 +348,11 @@ Flip sidebar "Virtual Cards" entry from `inactive: true` to active, fix path `/c
 
 ---
 
-## Risks / unknowns
+## Risks
 
-- **`unstable` API surface.** Crossmint warns about breaking changes. We should pin a wrapper version and add a single integration test that hits staging weekly to catch drift.
-- **`CrossmintWalletProvider` side effects.** Verify in Phase 0 — may need to omit for card-only use.
-- **`PaymentMethodAgenticEnrollmentVerification` prop signature.** Customize-UI doc confirms it exists and accepts `appearance`. The `enrollment` prop shape (id vs full object) is inferred from the quickstart but not in the public docs. Phase 0 reads the .d.ts.
-- **Merchant `countryCode` requirement.** Quickstart marks it required on the credentials call. Our schema doesn't store merchant country today; we'd need it from the bot's checkout payload or default to `"US"`.
-- **Per-owner Firebase email** — needed for `POST /agentic-enrollment` body. We have it from Firebase user record; ensure available in BFF route.
+- **`unstable` API surface.** Crossmint explicitly versions this surface as `unstable` and warns about breaking changes. Mitigation: pin a thin wrapper layer (already what `features/payment-rails/rail3/` is) and add a single staging-hitting integration test we run on a schedule to catch drift.
+- **Per-owner Firebase email needed** for `POST /agentic-enrollment` body. Already available from the Firebase user record; just need to surface it in the BFF route.
+- Items previously listed here (`CrossmintWalletProvider` side effects, enrollment prop shape, merchant `countryCode`) moved to the **TBD** section above.
 
 ---
 
