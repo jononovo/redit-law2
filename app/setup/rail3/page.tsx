@@ -122,9 +122,9 @@ function SetupInner() {
   return (
     <div className="min-h-screen bg-neutral-50 py-12 px-4">
       <div className="max-w-2xl mx-auto">
-        <h1 className="text-3xl font-bold text-neutral-900 mb-2" data-testid="text-wizard-title">Save your real card</h1>
+        <h1 className="text-3xl font-bold text-neutral-900 mb-2" data-testid="text-wizard-title">Save your card</h1>
         <p className="text-neutral-600 mb-8">
-          Crossmint vaults it once. After that you can create as many virtual cards on top as you want — one per bot, each with its own spending limit.
+          We vault it once. After that you can create as many virtual cards on top as you want.
         </p>
 
         <StepIndicator step={step} />
