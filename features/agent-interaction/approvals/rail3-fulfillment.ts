@@ -1,7 +1,7 @@
 import { registerRailCallbacks } from "@/features/agent-interaction/approvals/service";
 import { storage } from "@/server/storage";
 import type { UnifiedApproval } from "@/shared/schema";
-import { fetchOneTimeCredentials } from "@/features/payment-rails/rail3";
+import { fetchOneTimeCredentials, ownerUidToUserLocator } from "@/features/payment-rails/rail3";
 
 async function fulfillRail3Approval(approval: UnifiedApproval): Promise<void> {
   const transactionId = approval.railRef;
@@ -13,17 +13,32 @@ async function fulfillRail3Approval(approval: UnifiedApproval): Promise<void> {
 
   const card = await storage.getRail3CardByCardId(tx.cardId);
   if (!card || card.permissionPhase !== "active") {
-    await storage.updateRail3Transaction(transactionId, { status: "failed", metadata: { ...(tx.metadata as object || {}), failureReason: "card_not_authorized" } });
+    await storage.updateRail3Transaction(transactionId, {
+      status: "failed",
+      metadata: { ...(tx.metadata as object || {}), failureReason: "card_not_authorized" },
+    });
+    return;
+  }
+
+  // Crossmint requires both url and countryCode at credential-fetch time.
+  // Bot checkout schema enforces them on creation; explicit failure if somehow missing.
+  if (!tx.merchantUrl || !tx.merchantCountry) {
+    await storage.updateRail3Transaction(transactionId, {
+      status: "failed",
+      metadata: { ...(tx.metadata as object || {}), failureReason: "missing_merchant_fields" },
+    });
+    console.error(`[Rail3] Transaction ${transactionId} missing merchant url/country, cannot fetch credentials`);
     return;
   }
 
   try {
-    const credentials = await fetchOneTimeCredentials({
+    const { expiresAt } = await fetchOneTimeCredentials({
+      userLocator: ownerUidToUserLocator(tx.ownerUid),
       orderIntentId: card.orderIntentId,
       merchant: {
         name: tx.merchantName,
-        url: tx.merchantUrl || undefined,
-        countryCode: tx.merchantCountry || undefined,
+        url: tx.merchantUrl,
+        countryCode: tx.merchantCountry,
       },
     });
 
@@ -32,7 +47,7 @@ async function fulfillRail3Approval(approval: UnifiedApproval): Promise<void> {
       credentialIssuedAt: new Date(),
       metadata: {
         ...(tx.metadata as object || {}),
-        credentialsExpiresAt: credentials.expiresAt,
+        credentialsExpiresAt: expiresAt,
       },
     });
 
@@ -50,7 +65,10 @@ async function fulfillRail3Approval(approval: UnifiedApproval): Promise<void> {
     }
   } catch (err) {
     console.error(`[Rail3] Failed to fetch credentials after approval:`, err);
-    await storage.updateRail3Transaction(transactionId, { status: "failed", metadata: { ...(tx.metadata as object || {}), failureReason: String(err) } });
+    await storage.updateRail3Transaction(transactionId, {
+      status: "failed",
+      metadata: { ...(tx.metadata as object || {}), failureReason: String(err) },
+    });
   }
 
   console.log(`[Approvals] Rail 3 approved: transaction ${transactionId}`);
@@ -58,7 +76,10 @@ async function fulfillRail3Approval(approval: UnifiedApproval): Promise<void> {
 
 async function fulfillRail3Denial(approval: UnifiedApproval): Promise<void> {
   const transactionId = approval.railRef;
-  await storage.updateRail3Transaction(transactionId, { status: "failed", metadata: { failureReason: "owner_denied" } });
+  await storage.updateRail3Transaction(transactionId, {
+    status: "failed",
+    metadata: { failureReason: "owner_denied" },
+  });
 
   const tx = await storage.getRail3TransactionById(transactionId);
   if (tx?.botId) {

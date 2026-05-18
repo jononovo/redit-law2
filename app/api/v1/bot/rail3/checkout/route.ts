@@ -2,7 +2,9 @@ import { NextResponse } from "next/server";
 import { withBotApi } from "@/features/platform-management/agent-management/agent-api/middleware";
 import { storage } from "@/server/storage";
 import { rail3BotCheckoutSchema } from "@/shared/schema";
-import { generateRail3TransactionId, fetchOneTimeCredentials, CrossmintApiError } from "@/features/payment-rails/rail3";
+import {
+  generateRail3TransactionId, fetchOneTimeCredentials, ownerUidToUserLocator, CrossmintApiError,
+} from "@/features/payment-rails/rail3";
 import { evaluateMasterGuardrails } from "@/features/agent-interaction/guardrails/master";
 
 export const POST = withBotApi("/api/v1/bot/rail3/checkout", async (request, { bot }) => {
@@ -25,16 +27,18 @@ export const POST = withBotApi("/api/v1/bot/rail3/checkout", async (request, { b
   if (card.status !== "active") {
     return NextResponse.json({ error: "card_not_active", message: `Card is ${card.status}.` }, { status: 403 });
   }
-  const pm = await storage.getRail3PaymentMethodById(card.paymentMethodId);
-  if (!pm || pm.verificationStatus !== "active") {
-    return NextResponse.json({ error: "card_not_verified" }, { status: 403 });
-  }
+  // PM enrollment status is enforced upstream: the order intent will not be in `active`
+  // phase unless the PM has completed agentic-enrollment AND the owner has run the
+  // OrderIntentVerification passkey ceremony for this intent. So the phase check is the gate.
   if (card.permissionPhase !== "active") {
     return NextResponse.json(
       { error: "card_not_authorized", message: "Owner must complete the authorization passkey before this card can be used." },
       { status: 403 }
     );
   }
+
+  const pm = await storage.getRail3PaymentMethodById(card.paymentMethodId);
+  if (!pm) return NextResponse.json({ error: "payment_method_not_found" }, { status: 404 });
 
   // Amount is unknown at credential-issuance time (Crossmint enforces per-tx limits at the
   // network level via mandates). We still check the master block flag so an owner-paused account
@@ -50,7 +54,8 @@ export const POST = withBotApi("/api/v1/bot/rail3/checkout", async (request, { b
   const transactionId = generateRail3TransactionId();
 
   try {
-    const credentials = await fetchOneTimeCredentials({
+    const { card: credCard, expiresAt } = await fetchOneTimeCredentials({
+      userLocator: ownerUidToUserLocator(card.ownerUid),
       orderIntentId: card.orderIntentId,
       merchant: { name: merchant.name, url: merchant.url, countryCode: merchant.country_code },
     });
@@ -66,7 +71,7 @@ export const POST = withBotApi("/api/v1/bot/rail3/checkout", async (request, { b
       merchantCountry: merchant.country_code,
       status: "credentials_issued",
       credentialIssuedAt: new Date(),
-      metadata: { credentialsExpiresAt: credentials.expiresAt },
+      metadata: { credentialsExpiresAt: expiresAt },
     });
 
     await storage.updateRail3Card(card.cardId, { lastUsedAt: new Date() });
@@ -76,7 +81,7 @@ export const POST = withBotApi("/api/v1/bot/rail3/checkout", async (request, { b
       `Use the card_number, exp_month, exp_year, and cvc returned in this response to fill the checkout form at ${merchant.name} (${merchant.url}).`,
       `Cardholder name: ${pm.cardholderName || "use the cardholder name field below"}.`,
       `If the checkout requires a shipping address, read .creditclaw/shipping.md or call GET /api/v1/bot/shipping-addresses.`,
-      `These credentials are merchant-locked to ${merchant.name} and expire at ${credentials.expiresAt} — they only work for this one purchase.`,
+      `These credentials are merchant-locked to ${merchant.name} and expire at ${expiresAt} — they only work for this one purchase.`,
       `Call POST /api/v1/bot/rail3/confirm with { "transaction_id": "${transactionId}", "amount_cents": <charged_amount> } after the charge clears.`,
       `Discard the card_number and cvc immediately after submitting checkout.`,
     ];
@@ -99,12 +104,12 @@ export const POST = withBotApi("/api/v1/bot/rail3/checkout", async (request, { b
       approved: true,
       transaction_id: transactionId,
       checkout_id: transactionId,
-      card_number: credentials.cardNumber,
-      exp_month: credentials.expMonth,
-      exp_year: credentials.expYear,
-      cvc: credentials.cvc,
+      card_number: credCard.number,
+      exp_month: credCard.expirationMonth,
+      exp_year: credCard.expirationYear,
+      cvc: credCard.cvc,
       cardholder_name: pm.cardholderName,
-      expires_at: credentials.expiresAt,
+      expires_at: expiresAt,
       checkout_steps: checkoutSteps,
       spawn_payload: spawnPayload,
     });

@@ -24,6 +24,7 @@ import {
   type Rail3PaymentMethod, type InsertRail3PaymentMethod,
   type Rail3Card, type InsertRail3Card,
   type Rail3Transaction, type InsertRail3Transaction,
+  type Rail3Agent, type InsertRail3Agent,
   type Order, type InsertOrder,
   type CheckoutPage, type InsertCheckoutPage,
   type Sale, type InsertSale,
@@ -173,6 +174,9 @@ export interface IStorage {
   upsertRail3Guardrails(cardId: string, data: Partial<InsertRail3Guardrail>): Promise<Rail3Guardrail>;
   getRail3DailySpendCents(cardId: string): Promise<number>;
   getRail3MonthlySpendCents(cardId: string): Promise<number>;
+
+  getRail3AgentByOwnerUid(ownerUid: string): Promise<Rail3Agent | null>;
+  createRail3Agent(data: InsertRail3Agent): Promise<Rail3Agent>;
 
   createRail3PaymentMethod(data: InsertRail3PaymentMethod): Promise<Rail3PaymentMethod>;
   getRail3PaymentMethodById(paymentMethodId: string): Promise<Rail3PaymentMethod | null>;

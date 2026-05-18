@@ -1,6 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+// Create a virtual card (= one Crossmint orderIntent on top of a saved PM) and
+// then have the owner authorize it via the OrderIntentVerification SDK. No
+// polling: the SDK fires onVerificationComplete, after which we refetch and close.
+
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { authFetch } from "@/features/platform-management/auth-fetch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
@@ -11,6 +15,8 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CreditCard, Loader2, CheckCircle2, ChevronDown } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
+import { OrderIntentVerification } from "@crossmint/client-sdk-react-ui";
+import { Rail3CrossmintProvider } from "@/components/rail3/crossmint-provider";
 import type { Rail3PaymentMethodInfo } from "@/components/wallet/types";
 
 interface Props {
@@ -22,12 +28,33 @@ interface Props {
 
 const CATEGORY_SUGGESTIONS = ["Food", "Office", "Travel", "Marketing", "Subscriptions", "General"];
 
-export function AddCardDialog({ open, onOpenChange, paymentMethods, onComplete }: Props) {
-  const router = useRouter();
-  const verifiedPMs = useMemo(() => paymentMethods.filter((p) => p.verification_status === "active"), [paymentMethods]);
-  const noVerifiedPMs = verifiedPMs.length === 0;
+interface CreatedCard {
+  cardId: string;
+  orderIntentId: string;
+  phase: string;
+  // verificationConfig may be null if the intent is already active (no passkey required).
+  verificationConfig: any | null;
+}
 
-  // Default to most recently used (server orders by lastUsedAt desc).
+export function AddCardDialog(props: Props) {
+  // Only mount the Crossmint provider when the dialog is open (avoids loading
+  // the SDK provider on every dashboard render).
+  if (!props.open) return null;
+  return (
+    <Rail3CrossmintProvider>
+      <AddCardDialogInner {...props} />
+    </Rail3CrossmintProvider>
+  );
+}
+
+function AddCardDialogInner({ open, onOpenChange, paymentMethods, onComplete }: Props) {
+  const router = useRouter();
+  // We no longer know per-PM enrollment status synchronously (it's lazy-fetched
+  // per PM by the strip), so any saved PM is selectable here. If the owner picks
+  // an un-enrolled PM the server will surface the error via order-intent creation.
+  const selectablePMs = useMemo(() => paymentMethods, [paymentMethods]);
+  const noPMs = selectablePMs.length === 0;
+
   const [pmId, setPmId] = useState<string>("");
   const [mode, setMode] = useState<"limited" | "open">("limited");
   const [maxAmount, setMaxAmount] = useState("500");
@@ -38,15 +65,12 @@ export function AddCardDialog({ open, onOpenChange, paymentMethods, onComplete }
   const [intentOpen, setIntentOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  // Post-create authorization step.
-  const [createdCard, setCreatedCard] = useState<{ cardId: string; orderIntentId: string; phase: string } | null>(null);
-  const pollRef = useRef<NodeJS.Timeout | null>(null);
+  const [createdCard, setCreatedCard] = useState<CreatedCard | null>(null);
 
   // Reset on close
   useEffect(() => {
     if (!open) {
-      setPmId(verifiedPMs[0]?.payment_method_id || "");
+      setPmId(selectablePMs[0]?.payment_method_id || "");
       setMode("limited");
       setMaxAmount("500");
       setPeriod("monthly");
@@ -56,33 +80,10 @@ export function AddCardDialog({ open, onOpenChange, paymentMethods, onComplete }
       setIntentOpen(false);
       setError(null);
       setCreatedCard(null);
-      if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
-    } else if (!pmId && verifiedPMs[0]) {
-      setPmId(verifiedPMs[0].payment_method_id);
+    } else if (!pmId && selectablePMs[0]) {
+      setPmId(selectablePMs[0].payment_method_id);
     }
-  }, [open, verifiedPMs]);
-
-  // Poll authorization status once card is created.
-  useEffect(() => {
-    if (!createdCard || createdCard.phase === "active") return;
-    const poll = async () => {
-      try {
-        const res = await authFetch(`/api/v1/rail3/cards/${createdCard.cardId}/authorization-status`);
-        const json = await res.json();
-        if (json.phase) {
-          setCreatedCard((cur) => cur ? { ...cur, phase: json.phase } : cur);
-          if (json.phase === "active" && pollRef.current) {
-            clearInterval(pollRef.current);
-            pollRef.current = null;
-            onComplete();
-          }
-        }
-      } catch {}
-    };
-    pollRef.current = setInterval(poll, 3000);
-    poll();
-    return () => { if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; } };
-  }, [createdCard, onComplete]);
+  }, [open, selectablePMs]);
 
   async function handleCreate() {
     setError(null);
@@ -98,7 +99,7 @@ export function AddCardDialog({ open, onOpenChange, paymentMethods, onComplete }
         body.max_amount_usd = Number(maxAmount);
         body.period = period;
       }
-      if (intent.trim()) body.description = intent.trim();
+      if (intent.trim()) body.prompt = intent.trim();
       const res = await authFetch("/api/v1/rail3/cards", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -106,7 +107,12 @@ export function AddCardDialog({ open, onOpenChange, paymentMethods, onComplete }
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.message || json.error || "create_failed");
-      setCreatedCard({ cardId: json.card_id, orderIntentId: json.order_intent_id, phase: json.permission_phase });
+      setCreatedCard({
+        cardId: json.card_id,
+        orderIntentId: json.order_intent_id,
+        phase: json.permission_phase,
+        verificationConfig: json.verification_config || null,
+      });
       onComplete();
     } catch (e: any) {
       setError(e.message);
@@ -115,20 +121,15 @@ export function AddCardDialog({ open, onOpenChange, paymentMethods, onComplete }
     }
   }
 
-  const clientKey = process.env.NEXT_PUBLIC_CROSSMINT_CLIENT_API_KEY;
-  const iframeOrigin = process.env.NEXT_PUBLIC_CROSSMINT_ENV === "staging"
-    ? "https://staging.crossmint.com"
-    : "https://www.crossmint.com";
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg" data-testid="dialog-add-card">
-        {noVerifiedPMs ? (
+        {noPMs ? (
           <>
             <DialogHeader>
-              <DialogTitle>No verified real card yet</DialogTitle>
+              <DialogTitle>No real card yet</DialogTitle>
               <DialogDescription>
-                You need to save and verify a real card with Crossmint before you can create a virtual card.
+                You need to save a real card with Crossmint before you can create a virtual card.
               </DialogDescription>
             </DialogHeader>
             <DialogFooter>
@@ -154,7 +155,7 @@ export function AddCardDialog({ open, onOpenChange, paymentMethods, onComplete }
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {verifiedPMs.map((pm) => (
+                    {selectablePMs.map((pm) => (
                       <SelectItem key={pm.payment_method_id} value={pm.payment_method_id} data-testid={`option-pm-${pm.payment_method_id}`}>
                         {(pm.card_brand || "Card").toUpperCase()} •••• {pm.card_last4 || "????"}
                       </SelectItem>
@@ -228,11 +229,11 @@ export function AddCardDialog({ open, onOpenChange, paymentMethods, onComplete }
                       onChange={(e) => setIntent(e.target.value)}
                       placeholder="e.g. Weekly grocery runs from Whole Foods and Trader Joe's only."
                       rows={2}
-                      maxLength={500}
+                      maxLength={1000}
                       data-testid="input-intent"
                     />
                     <p className="text-xs text-neutral-500 mt-1">
-                      A short note about what this card is for. Recorded with the Crossmint mandate for audit; doesn't enforce anything beyond the limit above.
+                      Recorded on the Crossmint mandate as the agent's prompt for audit. Doesn't enforce anything beyond the limit above.
                     </p>
                   </div>
                 )}
@@ -258,30 +259,23 @@ export function AddCardDialog({ open, onOpenChange, paymentMethods, onComplete }
               <DialogDescription>Crossmint requires a passkey tap before this card can issue one-time numbers.</DialogDescription>
             </DialogHeader>
             <div className="space-y-3">
-              {createdCard.phase === "active" ? (
+              {createdCard.phase === "active" || !createdCard.verificationConfig ? (
                 <div className="flex items-center gap-2 p-3 bg-green-50 rounded-lg text-sm text-green-800" data-testid="status-authorized">
                   <CheckCircle2 className="w-5 h-5 text-green-600" />
                   <span>Authorized. You can close this dialog.</span>
                 </div>
               ) : (
-                <>
-                  {clientKey ? (
-                    <iframe
-                      src={`${iframeOrigin}/embed/order-intent-verification?clientApiKey=${encodeURIComponent(clientKey)}&orderIntentId=${encodeURIComponent(createdCard.orderIntentId)}`}
-                      className="w-full h-[420px] rounded-lg border border-neutral-200"
-                      title="Authorize permission"
-                      data-testid="iframe-authorize"
-                    />
-                  ) : (
-                    <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-900">
-                      Crossmint client API key missing. Authorize at <code className="font-mono">orderIntentId={createdCard.orderIntentId}</code>.
-                    </div>
-                  )}
-                  <div className="flex items-center gap-2 p-3 bg-blue-50 rounded text-sm text-blue-900" data-testid="status-authorization-phase">
-                    <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
-                    <span>Waiting for authorization (phase: {createdCard.phase})</span>
-                  </div>
-                </>
+                <div className="rounded-lg border border-neutral-200 overflow-hidden" data-testid="container-order-intent-verification">
+                  <OrderIntentVerification
+                    config={createdCard.verificationConfig}
+                    orderIntent={{ orderIntentId: createdCard.orderIntentId } as any}
+                    onVerificationComplete={() => {
+                      setCreatedCard((cur) => cur ? { ...cur, phase: "active" } : cur);
+                      onComplete();
+                    }}
+                    onVerificationError={(err) => setError(err.message)}
+                  />
+                </div>
               )}
             </div>
             <DialogFooter>

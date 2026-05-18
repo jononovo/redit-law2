@@ -13,6 +13,7 @@ import { procurementControlMethods } from "./agent-interaction/procurement-contr
 import { rail5Methods } from "./payment-rails/rail5";
 import { rail3Methods } from "./payment-rails/rail3";
 import { rail3PaymentMethodMethods } from "./payment-rails/rail3-payment-methods";
+import { rail3AgentMethods } from "./payment-rails/rail3-agents";
 import { approvalMethods } from "./agent-interaction/approvals";
 import { orderMethods } from "./agent-interaction/orders";
 import { salesMethods } from "./agent-shops/sales";
@@ -47,6 +48,7 @@ export const storage: IStorage = {
   ...rail5Methods,
   ...rail3Methods,
   ...rail3PaymentMethodMethods,
+  ...rail3AgentMethods,
   ...approvalMethods,
   ...orderMethods,
   ...salesMethods,

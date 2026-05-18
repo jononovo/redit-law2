@@ -1,11 +1,9 @@
 import "server-only";
 
-const API_VERSION = "2025-06-09";
-
 export function getRail3BaseUrl(): string {
   return process.env.CROSSMINT_ENV === "staging"
-    ? `https://staging.crossmint.com/api/${API_VERSION}`
-    : `https://www.crossmint.com/api/${API_VERSION}`;
+    ? "https://staging.crossmint.com/api/unstable"
+    : "https://www.crossmint.com/api/unstable";
 }
 
 export function getRail3ServerApiKey(): string {
@@ -14,18 +12,41 @@ export function getRail3ServerApiKey(): string {
   return key;
 }
 
+/**
+ * Build the `userLocator` query value for a Firebase owner UID.
+ * Maps to the `sub` claim Crossmint receives when our BFF acts on behalf of the owner.
+ */
+export function ownerUidToUserLocator(ownerUid: string): string {
+  return `userId:${ownerUid}`;
+}
+
+export interface CrossmintCardsFetchOptions {
+  method?: "GET" | "POST" | "DELETE" | "PUT" | "PATCH";
+  body?: unknown;
+  userLocator?: string;
+  headers?: Record<string, string>;
+}
+
 export async function crossmintCardsFetch(
   path: string,
-  options: RequestInit = {},
+  options: CrossmintCardsFetchOptions = {},
 ): Promise<Response> {
-  const url = `${getRail3BaseUrl()}${path}`;
+  const { method = "GET", body, userLocator, headers = {} } = options;
+
+  let url = `${getRail3BaseUrl()}${path}`;
+  if (userLocator) {
+    const sep = path.includes("?") ? "&" : "?";
+    url += `${sep}userLocator=${encodeURIComponent(userLocator)}`;
+  }
+
   return fetch(url, {
-    ...options,
+    method,
     headers: {
       "X-API-KEY": getRail3ServerApiKey(),
       "Content-Type": "application/json",
-      ...options.headers,
+      ...headers,
     },
+    body: body === undefined ? undefined : JSON.stringify(body),
   });
 }
 

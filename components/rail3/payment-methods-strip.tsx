@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { authFetch } from "@/features/platform-management/auth-fetch";
 import { Button } from "@/components/ui/button";
@@ -18,11 +18,47 @@ interface Props {
   onChange: () => void;
 }
 
+type EnrollmentMap = Record<string, { status: string | "loading" | "error"; message?: string }>;
+
 export function PaymentMethodsStrip({ paymentMethods, loading, onChange }: Props) {
   const router = useRouter();
   const { toast } = useToast();
   const [removeTarget, setRemoveTarget] = useState<Rail3PaymentMethodInfo | null>(null);
   const [removing, setRemoving] = useState(false);
+  // Enrollment status is fetched live from Crossmint per PM (it's not persisted
+  // locally any more).
+  const [enrollments, setEnrollments] = useState<EnrollmentMap>({});
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const next: EnrollmentMap = {};
+      paymentMethods.forEach((pm) => { next[pm.payment_method_id] = { status: "loading" }; });
+      if (!cancelled) setEnrollments(next);
+
+      await Promise.all(paymentMethods.map(async (pm) => {
+        try {
+          const res = await authFetch(`/api/v1/rail3/payment-methods/${pm.payment_method_id}/enrollment`);
+          const json = await res.json();
+          if (cancelled) return;
+          if (!res.ok) {
+            // 404 = no enrollment created yet → treat as pending so the user can act.
+            const status = res.status === 404 ? "missing" : "error";
+            setEnrollments((cur) => ({ ...cur, [pm.payment_method_id]: { status, message: json.message || json.error } }));
+            return;
+          }
+          setEnrollments((cur) => ({
+            ...cur,
+            [pm.payment_method_id]: { status: json.enrollment?.status || "unknown" },
+          }));
+        } catch (e: any) {
+          if (cancelled) return;
+          setEnrollments((cur) => ({ ...cur, [pm.payment_method_id]: { status: "error", message: e.message } }));
+        }
+      }));
+    })();
+    return () => { cancelled = true; };
+  }, [paymentMethods]);
 
   async function handleRemove() {
     if (!removeTarget) return;
@@ -71,7 +107,7 @@ export function PaymentMethodsStrip({ paymentMethods, loading, onChange }: Props
       ) : (
         <div className="flex flex-wrap gap-2">
           {paymentMethods.map((pm) => {
-            const verified = pm.verification_status === "active";
+            const e = enrollments[pm.payment_method_id];
             return (
               <div
                 key={pm.payment_method_id}
@@ -84,13 +120,7 @@ export function PaymentMethodsStrip({ paymentMethods, loading, onChange }: Props
                     {(pm.card_brand || "Card").toUpperCase()} •••• {pm.card_last4 || "????"}
                   </div>
                   <div className="text-xs text-neutral-500 flex items-center gap-2">
-                    {verified ? (
-                      <span className="inline-flex items-center gap-1 text-green-600"><ShieldCheck className="w-3 h-3" /> Verified</span>
-                    ) : pm.verification_status === "pending" ? (
-                      <span className="inline-flex items-center gap-1 text-amber-600"><Loader2 className="w-3 h-3 animate-spin" /> Pending</span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 text-red-600"><AlertCircle className="w-3 h-3" /> Failed</span>
-                    )}
+                    <EnrollmentBadge status={e?.status} />
                     <span className="text-neutral-400">·</span>
                     <span>{pm.virtual_card_count} virtual card{pm.virtual_card_count === 1 ? "" : "s"}</span>
                   </div>
@@ -123,7 +153,7 @@ export function PaymentMethodsStrip({ paymentMethods, loading, onChange }: Props
           <AlertDialogFooter>
             <AlertDialogCancel disabled={removing}>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              onClick={(e) => { e.preventDefault(); handleRemove(); }}
+              onClick={(ev) => { ev.preventDefault(); handleRemove(); }}
               disabled={removing || (removeTarget?.virtual_card_count || 0) > 0}
               data-testid="button-confirm-remove-pm"
             >
@@ -135,4 +165,20 @@ export function PaymentMethodsStrip({ paymentMethods, loading, onChange }: Props
       </AlertDialog>
     </div>
   );
+}
+
+function EnrollmentBadge({ status }: { status?: string }) {
+  if (!status || status === "loading") {
+    return <span className="inline-flex items-center gap-1 text-neutral-400"><Loader2 className="w-3 h-3 animate-spin" /> Checking</span>;
+  }
+  if (status === "active") {
+    return <span className="inline-flex items-center gap-1 text-green-600"><ShieldCheck className="w-3 h-3" /> Enrolled</span>;
+  }
+  if (status === "pending" || status === "missing") {
+    return <span className="inline-flex items-center gap-1 text-amber-600"><AlertCircle className="w-3 h-3" /> Awaiting passkey</span>;
+  }
+  if (status === "failed") {
+    return <span className="inline-flex items-center gap-1 text-red-600"><AlertCircle className="w-3 h-3" /> Failed</span>;
+  }
+  return <span className="inline-flex items-center gap-1 text-neutral-500">{status}</span>;
 }

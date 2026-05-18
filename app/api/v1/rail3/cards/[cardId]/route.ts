@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSessionUser } from "@/features/platform-management/auth/session";
 import { storage } from "@/server/storage";
 import { fireRailsUpdated } from "@/features/agent-interaction/webhooks";
-import { revokeOrderIntent } from "@/features/payment-rails/rail3";
+import { revokeOrderIntent, ownerUidToUserLocator } from "@/features/payment-rails/rail3";
 import { z } from "zod";
 
 const patchSchema = z.object({
@@ -136,7 +136,10 @@ export async function DELETE(
   if (!card) return NextResponse.json({ error: "card_not_found" }, { status: 404 });
   if (card.ownerUid !== user.uid) return NextResponse.json({ error: "forbidden" }, { status: 403 });
 
-  await revokeOrderIntent(card.orderIntentId).catch(() => {});
+  await revokeOrderIntent({
+    userLocator: ownerUidToUserLocator(user.uid),
+    orderIntentId: card.orderIntentId,
+  }).catch(() => {});
   await storage.deleteRail3Card(cardId);
 
   if (card.botId) {

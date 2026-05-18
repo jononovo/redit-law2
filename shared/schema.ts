@@ -1467,7 +1467,6 @@ export const rail3PaymentMethods = pgTable("rail3_payment_methods", {
   id: serial("id").primaryKey(),
   paymentMethodId: text("payment_method_id").notNull().unique(),  // Crossmint pm_...
   ownerUid: text("owner_uid").notNull(),
-  agentId: text("agent_id").notNull(),                            // Crossmint agentId bound to this PM
 
   cardholderName: text("cardholder_name"),
   cardLast4: text("card_last4"),
@@ -1475,7 +1474,10 @@ export const rail3PaymentMethods = pgTable("rail3_payment_methods", {
   expMonth: integer("exp_month"),
   expYear: integer("exp_year"),
 
-  verificationStatus: text("verification_status").notNull().default("pending"), // pending | active | failed
+  // No agent_id: agent binds at order-intent creation, lives in rail3Agents (owner-scoped).
+  // No verification_status: status lives on Crossmint's agentic-enrollment sub-resource;
+  // we read it live via GET /payment-methods/:id/agentic-enrollment on demand.
+
   status: text("status").notNull().default("active"),             // active | removed
 
   createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -1486,6 +1488,14 @@ export const rail3PaymentMethods = pgTable("rail3_payment_methods", {
   index("rail3_pm_owner_uid_idx").on(table.ownerUid),
   index("rail3_pm_status_idx").on(table.status),
 ]);
+
+// One Crossmint agent per owner (Crossmint docs: "typically one agent per user").
+// Auto-created on first card save; reused for every order intent that owner creates.
+export const rail3Agents = pgTable("rail3_agents", {
+  ownerUid: text("owner_uid").primaryKey(),
+  agentId: text("agent_id").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
 
 // One row per virtual card = one Crossmint orderIntent on top of a payment method.
 // A "card" here is the permission. Real card details live on rail3PaymentMethods.
@@ -1557,10 +1567,11 @@ export type Rail3Card = typeof rail3Cards.$inferSelect;
 export type InsertRail3Card = typeof rail3Cards.$inferInsert;
 export type Rail3Transaction = typeof rail3Transactions.$inferSelect;
 export type InsertRail3Transaction = typeof rail3Transactions.$inferInsert;
+export type Rail3Agent = typeof rail3Agents.$inferSelect;
+export type InsertRail3Agent = typeof rail3Agents.$inferInsert;
 
 export const rail3SavePaymentMethodSchema = z.object({
   payment_method_id: z.string().min(1),
-  agent_id: z.string().min(1),
   card_last4: z.string().length(4).regex(/^\d{4}$/).optional(),
   card_brand: z.enum(["visa", "mastercard"]).optional(),
   cardholder_name: z.string().min(1).max(200).optional(),
@@ -1575,6 +1586,7 @@ export const rail3CreateCardSchema = z.object({
   max_amount_usd: z.number().positive().max(100000).optional(),
   period: z.enum(["weekly", "monthly", "yearly"]).optional(),
   description: z.string().max(500).optional(),
+  prompt: z.string().max(1000).optional(),
   card_name: z.string().min(1).max(200).optional(),
   card_color: z.enum(["purple", "dark", "blue", "primary"]).optional(),
   category: z.string().max(100).nullable().optional(),
@@ -1584,11 +1596,12 @@ export const rail3CreateCardSchema = z.object({
   { message: "limited mode requires max_amount_usd and period" }
 );
 
+// Bot must send merchant country (D-4: explicit failure over silent fallback).
 export const rail3BotCheckoutSchema = z.object({
   card_id: z.string().min(1),
   merchant: z.object({
     name: z.string().min(1).max(200),
     url: z.string().url().max(2000),
-    country_code: z.string().length(2).optional(),
+    country_code: z.string().length(2),
   }),
 });

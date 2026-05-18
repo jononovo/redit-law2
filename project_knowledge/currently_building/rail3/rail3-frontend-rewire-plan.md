@@ -112,7 +112,7 @@ There is **no** `GET /payment-methods/:id`. The list endpoint is the read path; 
 - `rail3_payment_methods.agent_id` — column is semantically wrong; agentId binds to the order intent, not the PM. Either drop it or rename to a "default agent" hint.
 - `rail3_payment_methods.verification_status` — also wrong place; should be a derived lookup against `/agentic-enrollment`, or denormalize into a separate `rail3_agentic_enrollments` table keyed by `payment_method_id`.
 - `rail3_payment_methods.{exp_month, exp_year}` — keep as ints internally, parse from API strings.
-- We need a new place for `agent_id` per owner (one agent reused across PMs; docs explicitly say "one agent per user"). New `rail3_agents` table `(owner_uid PK, agent_id, name, created_at)`, matching the `rail{N}_{thing}` naming used by rail5.
+- We need a new place for `agent_id` per owner (one agent reused across PMs and bots; docs explicitly say "one agent per user", and in our model "user" = owner since bots belong to owners). New `rail3_agents` table `(owner_uid PK, agent_id, created_at)`, matching the `rail{N}_{thing}` naming used by rail5. No `name` column — source of truth lives in Crossmint.
 - `rail3_cards.permission_phase` — column already stores the real enum values (`requires-verification | active | expired`). No change needed.
 
 ### Frontend mismatches
@@ -136,7 +136,7 @@ Server-key + `userLocator=userId:<firebase_uid>` on the backend; Firebase JWT br
 All previously open decisions answered from the public Crossmint docs (https://docs.crossmint.com, `llms-full.txt`). No open questions remain blocking implementation.
 
 ### D-1 — Agent scope: **one agent per owner**
-Docs explicitly: *"You typically create one agent per user."* New table `rail3_agents (owner_uid PK, agent_id, name, created_at)`. Default metadata uses Crossmint's own example strings: `name = "Card Payment Agent"`, `description = "Default agent for card payments"`. Agent is auto-created on first card save in the setup wizard; reused for every order intent that owner creates.
+Docs explicitly: *"You typically create one agent per user."* New table `rail3_agents (owner_uid PK, agent_id, created_at)`. In our model bots belong to owners, so "user" = owner. All of an owner's bots share the same Crossmint agent. Default metadata sent to `POST /agents`: `name = "Card Payment Agent"`, `description = "Default agent for card payments"` (Crossmint's own example values). Agent auto-created on first card save in the setup wizard; reused for every order intent that owner creates. Multi-agent-per-owner can be revisited later if dashboard attribution-per-bot becomes necessary.
 
 ### D-2 — Polling endpoints: **drop**
 SDK's `onVerificationComplete` is fired by the server's flip to `active` — it's authoritative. Existing `/verification-status` and `/authorization-status` BFF routes are deleted. Tab-close-mid-ceremony recovery is the planned webhook's job (tracked in `rail3-open-points.md`).
@@ -174,12 +174,11 @@ Rewrite all four files against the real API surface.
 - Keep `CrossmintApiError` + `unwrapCrossmint` helpers.
 
 `agents.ts` (new):
-- `createAgent({ userLocator, name, description? })` → POST `/agents` with `{ metadata: { name, description } }`.
-- `listAgents({ userLocator })` → GET `/agents`.
-- `deleteAgent({ userLocator, agentId })` → DELETE `/agents/:agentId`.
+- `createAgent({ userLocator, name, description? })` → POST `/agents` with `{ metadata: { name, description } }`. Returns `{ agentId, metadata }`.
+- That's it. No `listAgents` / `deleteAgent` — one-per-owner forever; lifecycle handled by our DB row.
 
 `paymentMethods.ts` (rename from `cards.ts`):
-- `listPaymentMethods({ userLocator, limit?, cursor? })` → GET `/payment-methods`. Return `{ data, nextCursor }`.
+- `listPaymentMethods({ userLocator })` → GET `/payment-methods`. Return `data[]`. Owners have <10 cards in practice — no pagination at the client layer.
 - `deletePaymentMethod({ userLocator, paymentMethodId })`.
 - Drop `getPaymentMethod` (no such endpoint).
 - Drop `getVerificationStatus` (status lives in enrollment resource).
@@ -192,10 +191,9 @@ Rewrite all four files against the real API surface.
 `permissions.ts` (rewrite):
 - Mandate types: `maxAmount | description | prompt` only.
 - `buildMandates(input)`: same shape as quickstart. Open mode = yearly maxAmount ceiling + description.
-- `createOrderIntent({ userLocator, agentId, paymentMethodId, mandates })` → POST `/order-intents` with `{ agentId, payment: { paymentMethodId }, mandates }`.
-- `getOrderIntent({ userLocator, orderIntentId })` → there's no single-get in quickstart — use `listOrderIntents` and filter, or omit.
-- `listOrderIntents({ userLocator })` → GET `/order-intents`.
+- `createOrderIntent({ userLocator, agentId, paymentMethodId, mandates })` → POST `/order-intents` with `{ agentId, payment: { paymentMethodId }, mandates }`. Returns the full intent including `verificationConfig` when `phase === "requires-verification"`.
 - `revokeOrderIntent({ userLocator, orderIntentId })` → DELETE.
+- Drop `getOrderIntent` / `listOrderIntents` — our `rail3_cards` table is the index of intents we created.
 - `OrderIntent` type updated to match real shape (`payment.paymentMethodId`, real phase enum, `verificationConfig` when applicable).
 
 `credentials.ts`:
@@ -206,29 +204,34 @@ Rewrite all four files against the real API surface.
 
 ### Phase 2 — Schema + storage changes (30 min)
 
-- New table `rail3_agents (owner_uid PK, agent_id, name, created_at)`. Naming matches `rail{N}_{thing}` pattern used by rail5.
-- `rail3_payment_methods`: drop `agent_id` column (moves to `rail3_agents`). Drop `verification_status` column (read live from Crossmint's `agentic-enrollment` sub-resource on demand).
+- New table `rail3_agents (owner_uid PK, agent_id, created_at)`. Naming matches `rail{N}_{thing}` pattern used by rail5. No `name` column (Crossmint owns that).
+- `rail3_payment_methods`: drop `agent_id` column (agent now lives in `rail3_agents`, owner-scoped). Drop `verification_status` column (read live from Crossmint's `agentic-enrollment` sub-resource on demand).
 - `shared/schema.ts`: drop `agent_id` from `rail3SavePaymentMethodSchema` zod body.
 - `rail3_cards`: no changes. `permission_phase` column already stores correct enum values.
 - New storage fragment `server/storage/payment-rails/rail3-agents.ts` (`getRail3AgentByOwnerUid`, `createRail3Agent`); wire into `IStorage` + composer.
 - Migration: Drizzle `db:push --force`. 0 rows in all rail3 tables, no data preservation.
 
-### Phase 3 — BFF routes (`app/api/v1/rail3/`) (1 h)
+### Phase 3 — BFF + bot routes (1.5 h)
 
-Each BFF route resolves the owner from the Firebase session, derives `userLocator = "userId:" + firebase_uid`, and calls the rewritten client. Routes needed:
+Each BFF route resolves the owner from the Firebase session, derives `userLocator = "userId:" + firebase_uid`, and calls the rewritten client.
 
-- `GET /api/v1/rail3/agent` → returns owner's `agent` row or null.
-- `POST /api/v1/rail3/agent` → creates Crossmint agent + stores row.
-- `DELETE /api/v1/rail3/agent` → deletes Crossmint agent + drops row (optional).
-- `GET /api/v1/rail3/payment-methods` → list (proxy + pagination).
+**Owner-facing BFF (`app/api/v1/rail3/`):**
+- `GET /api/v1/rail3/agent` → returns owner's `rail3_agents` row or `null`.
+- `POST /api/v1/rail3/agent` → creates Crossmint agent + stores row. Idempotent (returns existing row if present).
+- `GET /api/v1/rail3/payment-methods` → list owner's PMs.
 - `DELETE /api/v1/rail3/payment-methods/:id` → delete.
-- `GET /api/v1/rail3/payment-methods/:id/enrollment` → returns enrollment status.
-- `POST /api/v1/rail3/payment-methods/:id/enrollment` → starts enrollment (server-side; the SDK component then verifies the returned `enrollmentId` + `verificationConfig` via passkey on the browser).
-- `POST /api/v1/rail3/order-intents` → create (used by AddCardDialog). Returns the **full** intent including `verificationConfig`.
+- `GET /api/v1/rail3/payment-methods/:id/enrollment` → returns enrollment status (server-side `getEnrollment`).
+- `POST /api/v1/rail3/payment-methods/:id/enrollment` → starts enrollment (server-side; SDK component then verifies via passkey).
+- `POST /api/v1/rail3/order-intents` → create (used by AddCardDialog). Returns full intent including `verificationConfig`.
 - `DELETE /api/v1/rail3/order-intents/:id` → revoke (used when a virtual card row is deleted).
-- `POST /api/v1/rail3/order-intents/:id/credentials` → fetch one-time PAN (bot-facing, gated by approvals).
+- `POST /api/v1/rail3/order-intents/:id/credentials` → fetch one-time PAN (gated by approvals; called by bot routes).
 
-Delete old polling routes: `verification-status`, `authorization-status`.
+**Bot-facing routes (`app/api/v1/bot/rail3/*`) — internals must be rewired:**
+External API shape stays the same, but every internal call to the rail3 client now passes `userLocator = "userId:" + owner_uid` (resolved from the bot → owner mapping). Files: `cards/route.ts`, `checkout/route.ts`, `confirm/route.ts`. Specifically:
+- `cards/route.ts` — reads `agent_id` from `rail3_agents` (no longer from `rail3_payment_methods.agent_id`).
+- `checkout/route.ts` + `confirm/route.ts` — credentials fetch uses the new `{ card: { number, ... } }` response shape; require `merchant.countryCode` in the bot payload (D-4).
+
+**Delete old polling routes:** `payment-methods/:id/verification-status`, `cards/:id/authorization-status`.
 
 ### Phase 4 — Frontend providers + JWT bridge (20 min)
 
@@ -293,22 +296,9 @@ Wizard:
 
 Delete polling.
 
-### Phase 7 — Tenant theming (15 min)
+### Phase 7 — Tenant theming (deferred)
 
-`components/rail3/verification-appearance.ts`:
-```ts
-export const verificationAppearance = {
-  variables: {
-    fontFamily: "var(--font-jakarta), system-ui, sans-serif",
-    fontSizeUnit: "14px",
-    spacingUnit: "16px",
-    borderRadius: "1rem",
-    colors: { accent: "#f97316", backgroundPrimary: "#ffffff" },
-  },
-} as const;
-```
-
-Pass to both verification components.
+Custom `verificationAppearance` skipped for v1; SDK defaults are fine. Revisit only if the verification modals visually clash with the CreditClaw shell.
 
 ### Phase 8 — End-to-end test on staging (1 h)
 
@@ -329,12 +319,12 @@ Flip sidebar "Virtual Cards" entry from `inactive: true` to active, fix path `/c
 
 ---
 
-## What stays the same
+## What stays the same (external shape) vs what changes internally
 
-- Bot endpoints `/api/v1/bot/rail3/*` keep their shape (internally call the new BFF or directly the new client with `userLocator` resolved from approver/owner).
-- `rail3-fulfillment.ts` and approvals integration — unchanged.
-- `payment-methods-strip.tsx` — minor: read PM list from new `GET /payment-methods` route, render the same way.
-- Approval gating semantics unchanged.
+- Bot endpoints `/api/v1/bot/rail3/*` — **external shape unchanged**, internals fully rewired (see Phase 3).
+- `features/agent-interaction/rail3-fulfillment.ts` (if present) — external behavior unchanged, internal calls to the rail3 client get the new signatures. Verify in Phase 1 and update.
+- Approval gating semantics — unchanged.
+- `payment-methods-strip.tsx` — needs an enrollment-status fetch per PM (since `verification_status` column is dropped). Use parallel `GET /api/v1/rail3/payment-methods/:id/enrollment` per row; <10 PMs in practice so N+1 is acceptable.
 
 ---
 
@@ -350,14 +340,14 @@ Flip sidebar "Virtual Cards" entry from `inactive: true` to active, fix path `/c
 
 | Phase | Hours |
 |---|---|
-| 0 — Console + audit | 0.5 |
+| 0 — Console setup | 0.25 |
 | 1 — Backend client rewrite | 1.5 |
-| 2 — Schema + storage | 0.75 |
-| 3 — BFF routes | 1 |
+| 2 — Schema + storage | 0.5 |
+| 3 — BFF + bot routes | 1.5 |
 | 4 — Providers + JWT bridge | 0.3 |
 | 5 — Setup wizard | 1 |
-| 6 — AddCardDialog | 0.7 |
-| 7 — Tenant theming | 0.25 |
+| 6 — AddCardDialog + PM strip | 1 |
+| 7 — Tenant theming | deferred |
 | 8 — End-to-end test | 1 |
 | **Total** | **~7 hours** |
 

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionUser } from "@/features/platform-management/auth/session";
 import { storage } from "@/server/storage";
-import { deletePaymentMethod } from "@/features/payment-rails/rail3";
+import { deletePaymentMethod, ownerUidToUserLocator } from "@/features/payment-rails/rail3";
 
 // Remove a saved real card. Blocked if any virtual cards still reference it.
 export async function DELETE(
@@ -28,7 +28,10 @@ export async function DELETE(
     );
   }
 
-  await deletePaymentMethod(paymentMethodId).catch(() => {});
+  await deletePaymentMethod({
+    userLocator: ownerUidToUserLocator(user.uid),
+    paymentMethodId,
+  }).catch(() => {});
   await storage.deleteRail3PaymentMethod(paymentMethodId);
 
   return NextResponse.json({ ok: true });

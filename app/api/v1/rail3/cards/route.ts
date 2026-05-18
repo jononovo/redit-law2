@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSessionUser } from "@/features/platform-management/auth/session";
 import { storage } from "@/server/storage";
 import {
-  generateRail3CardId, buildMandates, createOrderIntent, type PermissionInput,
+  generateRail3CardId, buildMandates, createOrderIntent, ownerUidToUserLocator,
+  CrossmintApiError, type PermissionInput,
 } from "@/features/payment-rails/rail3";
 import { rail3CreateCardSchema } from "@/shared/schema";
 
@@ -50,8 +51,10 @@ export async function GET(request: NextRequest) {
   return NextResponse.json({ cards: result });
 }
 
-// Create a new virtual card on top of an existing verified payment method.
+// Create a new virtual card on top of an existing payment method.
 // A "virtual card" here = one Crossmint orderIntent with mandates.
+// Returns the FULL intent (including `verification_config`) so the AddCardDialog
+// can immediately run the OrderIntentVerification passkey ceremony when needed.
 export async function POST(request: NextRequest) {
   const user = await getSessionUser(request);
   if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
@@ -71,9 +74,11 @@ export async function POST(request: NextRequest) {
   const pm = await storage.getRail3PaymentMethodById(parsed.data.payment_method_id);
   if (!pm) return NextResponse.json({ error: "payment_method_not_found" }, { status: 404 });
   if (pm.ownerUid !== user.uid) return NextResponse.json({ error: "forbidden" }, { status: 403 });
-  if (pm.verificationStatus !== "active") {
+
+  const agent = await storage.getRail3AgentByOwnerUid(user.uid);
+  if (!agent) {
     return NextResponse.json(
-      { error: "payment_method_not_verified", message: "Verify the underlying card before creating a virtual card." },
+      { error: "agent_not_created", message: "Create your Crossmint agent first via /setup/rail3." },
       { status: 400 }
     );
   }
@@ -85,21 +90,31 @@ export async function POST(request: NextRequest) {
         maxAmountUsd: parsed.data.max_amount_usd!,
         period: parsed.data.period!,
         description: parsed.data.description,
+        prompt: parsed.data.prompt,
       };
 
   const mandates = buildMandates(input);
-  const intent = await createOrderIntent({
-    agentId: pm.agentId,
-    paymentMethodId: pm.paymentMethodId,
-    mandates,
-  });
+
+  let intent;
+  try {
+    intent = await createOrderIntent({
+      userLocator: ownerUidToUserLocator(user.uid),
+      agentId: agent.agentId,
+      paymentMethodId: pm.paymentMethodId,
+      mandates,
+    });
+  } catch (err) {
+    const status = err instanceof CrossmintApiError ? err.status : 500;
+    const message = err instanceof Error ? err.message : "create_order_intent_failed";
+    console.error("[Rail3] createOrderIntent failed:", message);
+    return NextResponse.json({ error: "create_order_intent_failed", message }, { status });
+  }
 
   const limitAmountCents = parsed.data.mode === "limited" && parsed.data.max_amount_usd !== undefined
     ? Math.round(parsed.data.max_amount_usd * 100)
     : null;
   const limitPeriod = parsed.data.mode === "limited" ? (parsed.data.period ?? null) : null;
 
-  // Auto-name if not provided
   const last4 = pm.cardLast4 ? ` •••• ${pm.cardLast4}` : "";
   const limitLabel = parsed.data.mode === "limited"
     ? `$${parsed.data.max_amount_usd}/${parsed.data.period}`
@@ -126,7 +141,6 @@ export async function POST(request: NextRequest) {
     botId: parsed.data.bot_id || null,
   });
 
-  // Bump PM lastUsedAt so "default to last used" picks it next time.
   await storage.updateRail3PaymentMethod(pm.paymentMethodId, { lastUsedAt: new Date() });
 
   return NextResponse.json({
@@ -136,5 +150,6 @@ export async function POST(request: NextRequest) {
     intent_mode: card.intentMode,
     limit_amount_cents: card.limitAmountCents,
     limit_period: card.limitPeriod,
+    verification_config: intent.verificationConfig ?? null,
   });
 }

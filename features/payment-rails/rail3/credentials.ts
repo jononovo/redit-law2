@@ -1,31 +1,38 @@
 import "server-only";
 import { crossmintCardsFetch, unwrapCrossmint } from "./client";
 
+/**
+ * One-time card credentials as returned by `POST /order-intents/:id/credentials`.
+ * Note: `expirationMonth` / `expirationYear` are STRINGS (per Crossmint API).
+ * Merchant fields are inputs only, not echoed back.
+ */
 export interface OneTimeCardCredentials {
-  cardNumber: string;
-  expMonth: number;
-  expYear: number;
-  cvc: string;
-  merchantName: string;
-  merchantUrl?: string;
+  card: {
+    number: string;
+    expirationMonth: string;
+    expirationYear: string;
+    cvc: string;
+  };
   expiresAt: string;
 }
 
 export async function fetchOneTimeCredentials(params: {
+  userLocator: string;
   orderIntentId: string;
-  merchant: { name: string; url?: string; countryCode?: string };
+  merchant: { name: string; url: string; countryCode: string };
 }): Promise<OneTimeCardCredentials> {
   const res = await crossmintCardsFetch(
     `/order-intents/${params.orderIntentId}/credentials`,
     {
       method: "POST",
-      body: JSON.stringify({
+      userLocator: params.userLocator,
+      body: {
         merchant: {
           name: params.merchant.name,
           url: params.merchant.url,
           countryCode: params.merchant.countryCode,
         },
-      }),
+      },
     },
   );
   return unwrapCrossmint<OneTimeCardCredentials>(res, "fetchOneTimeCredentials");

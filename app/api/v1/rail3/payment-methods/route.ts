@@ -22,7 +22,6 @@ export async function GET(request: NextRequest) {
       cardholder_name: p.cardholderName,
       exp_month: p.expMonth,
       exp_year: p.expYear,
-      verification_status: p.verificationStatus,
       virtual_card_count: cardCounts.get(p.paymentMethodId) || 0,
       created_at: p.createdAt.toISOString(),
       last_used_at: p.lastUsedAt?.toISOString() || null,
@@ -30,8 +29,8 @@ export async function GET(request: NextRequest) {
   });
 }
 
-// Save a Crossmint-vaulted payment method. Called by the wizard after the
-// CrossmintPaymentMethodManagement iframe emits onPaymentMethodSelected.
+// Save a Crossmint-vaulted payment method. Called by the wizard after the SDK
+// emits a payment-method-selected event with the newly-created paymentMethodId.
 export async function POST(request: NextRequest) {
   const user = await getSessionUser(request);
   if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
@@ -55,7 +54,6 @@ export async function POST(request: NextRequest) {
     }
     return NextResponse.json({
       payment_method_id: existing.paymentMethodId,
-      verification_status: existing.verificationStatus,
       already_saved: true,
     });
   }
@@ -63,18 +61,13 @@ export async function POST(request: NextRequest) {
   const pm = await storage.createRail3PaymentMethod({
     paymentMethodId: parsed.data.payment_method_id,
     ownerUid: user.uid,
-    agentId: parsed.data.agent_id,
     cardholderName: parsed.data.cardholder_name,
     cardLast4: parsed.data.card_last4,
     cardBrand: parsed.data.card_brand,
     expMonth: parsed.data.exp_month,
     expYear: parsed.data.exp_year,
-    verificationStatus: "pending",
     status: "active",
   });
 
-  return NextResponse.json({
-    payment_method_id: pm.paymentMethodId,
-    verification_status: pm.verificationStatus,
-  });
+  return NextResponse.json({ payment_method_id: pm.paymentMethodId });
 }

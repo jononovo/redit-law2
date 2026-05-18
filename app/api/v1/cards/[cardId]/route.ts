@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSessionUser } from "@/features/platform-management/auth/session";
 import { storage } from "@/server/storage";
 import { fireRailsUpdated } from "@/features/agent-interaction/webhooks";
-import { revokeOrderIntent } from "@/features/payment-rails/rail3";
+import { revokeOrderIntent, ownerUidToUserLocator } from "@/features/payment-rails/rail3";
 
 export async function DELETE(
   request: NextRequest,
@@ -48,7 +48,10 @@ export async function DELETE(
 
     // Revoke just this virtual card's orderIntent. The underlying payment method
     // stays — it may back other virtual cards.
-    await revokeOrderIntent(card.orderIntentId).catch(() => {});
+    await revokeOrderIntent({
+      userLocator: ownerUidToUserLocator(user.uid),
+      orderIntentId: card.orderIntentId,
+    }).catch(() => {});
 
     if (card.botId) {
       const bot = await storage.getBotByBotId(card.botId);

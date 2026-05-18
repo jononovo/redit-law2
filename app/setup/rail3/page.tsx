@@ -1,18 +1,20 @@
 "use client";
 
-// First-time wizard: save a real card with Crossmint and wait for verification.
-// Used by both new users (entering Virtual Cards with no PMs) and existing users
-// clicking "Add real card" to register a second card. After verification the
-// user is sent back to /virtual-cards where they can create virtual cards on it.
+// First-time wizard: (1) ensure Crossmint agent exists for this owner, (2) save
+// a real card via the Crossmint browser SDK, (3) start the agentic-enrollment
+// passkey ceremony so the card can back agent purchases. On enrollment-active
+// the user is sent to /virtual-cards.
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/features/platform-management/auth/auth-context";
 import { authFetch } from "@/features/platform-management/auth-fetch";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, Loader2, CreditCard, ShieldCheck } from "lucide-react";
+import { CheckCircle2, Loader2, CreditCard, ShieldCheck, Bot } from "lucide-react";
+import { CrossmintPaymentMethodManagement } from "@crossmint/client-sdk-react-ui";
+import { Rail3CrossmintProvider, useCrossmintJwt } from "@/components/rail3/crossmint-provider";
 
-type Step = 1 | 2;
+type Step = 1 | 2 | 3;
 
 interface SavedPm {
   paymentMethodId: string;
@@ -21,12 +23,25 @@ interface SavedPm {
 }
 
 export default function Rail3SetupPage() {
+  return (
+    <Rail3CrossmintProvider>
+      <SetupInner />
+    </Rail3CrossmintProvider>
+  );
+}
+
+function SetupInner() {
   const router = useRouter();
   const { user, loading } = useAuth();
+  const jwt = useCrossmintJwt();
+
   const [step, setStep] = useState<Step>(1);
+  const [agentReady, setAgentReady] = useState(false);
+  const [agentError, setAgentError] = useState<string | null>(null);
+
   const [savedPm, setSavedPm] = useState<SavedPm | null>(null);
-  const [verifying, setVerifying] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [enrollmentStatus, setEnrollmentStatus] = useState<string | null>(null);
+  const [enrollmentError, setEnrollmentError] = useState<string | null>(null);
   const pollRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
@@ -35,68 +50,88 @@ export default function Rail3SetupPage() {
 
   useEffect(() => () => { if (pollRef.current) clearInterval(pollRef.current); }, []);
 
-  // Crossmint iframe postMessage listener
-  useEffect(() => {
-    if (step !== 1) return;
-    const trustedOrigins = new Set(["https://www.crossmint.com", "https://staging.crossmint.com"]);
-    function handler(ev: MessageEvent) {
-      if (!trustedOrigins.has(ev.origin)) return;
-      const data = ev.data;
-      if (typeof data !== "object" || !data) return;
-      if (data.type === "crossmint:paymentMethodSelected" && data.paymentMethodId && data.agentId) {
-        savePaymentMethod(data);
-      }
-    }
-    window.addEventListener("message", handler);
-    return () => window.removeEventListener("message", handler);
-  }, [step]);
-
-  async function savePaymentMethod(data: any) {
-    setError(null);
+  const ensureAgent = useCallback(async () => {
+    setAgentError(null);
     try {
-      const res = await authFetch("/api/v1/rail3/payment-methods", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          payment_method_id: data.paymentMethodId,
-          agent_id: data.agentId,
-          card_brand: data.brand,
-          card_last4: data.last4,
-          exp_month: data.expMonth,
-          exp_year: data.expYear,
-          cardholder_name: data.cardholderName,
-        }),
-      });
+      const res = await authFetch("/api/v1/rail3/agent", { method: "POST" });
       const json = await res.json();
-      if (!res.ok) throw new Error(json.error || "save_failed");
-      const pm = { paymentMethodId: json.payment_method_id, cardBrand: data.brand, cardLast4: data.last4 };
-      setSavedPm(pm);
-      setStep(2);
-      startVerificationPoll(pm.paymentMethodId);
+      if (!res.ok) throw new Error(json.message || json.error || "agent_failed");
+      setAgentReady(true);
+      setStep((s) => (s === 1 ? 2 : s));
     } catch (e: any) {
-      setError(e.message);
+      setAgentError(e.message);
     }
-  }
+  }, []);
 
-  function startVerificationPoll(paymentMethodId: string) {
-    setVerifying(true);
+  // Step 1: ensure the Crossmint agent exists. POST is idempotent.
+  useEffect(() => {
+    if (!user || agentReady) return;
+    ensureAgent();
+  }, [user, agentReady, ensureAgent]);
+
+  const startEnrollmentPoll = useCallback((paymentMethodId: string) => {
     const poll = async () => {
       try {
-        const res = await authFetch(`/api/v1/rail3/payment-methods/${paymentMethodId}/verification-status`);
+        const res = await authFetch(`/api/v1/rail3/payment-methods/${paymentMethodId}/enrollment`);
         const json = await res.json();
-        if (json.verification_status === "active") {
-          if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
-          setVerifying(false);
-        } else if (json.verification_status === "failed") {
-          if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
-          setVerifying(false);
-          setError("Verification failed. Try again or contact support.");
+        if (!res.ok) {
+          // 404 enrollment yet to be created is fine while we wait for POST.
+          if (res.status === 404) return;
+          throw new Error(json.message || json.error || "enrollment_failed");
         }
-      } catch {}
+        const status = json.enrollment?.status as string | undefined;
+        if (status) setEnrollmentStatus(status);
+        if (status === "active" || status === "failed") {
+          if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
+          if (status === "failed") setEnrollmentError("Enrollment failed. Check your email or retry.");
+        }
+      } catch (e: any) {
+        setEnrollmentError(e.message);
+      }
     };
     pollRef.current = setInterval(poll, 3000);
     poll();
-  }
+  }, []);
+
+  const savePaymentMethodAndEnroll = useCallback(async (pm: {
+    paymentMethodId: string;
+    card: { brand: string; last4: string; expiration: { month: string; year: string } };
+  }) => {
+    setEnrollmentError(null);
+    try {
+      const saveRes = await authFetch("/api/v1/rail3/payment-methods", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          payment_method_id: pm.paymentMethodId,
+          card_brand: pm.card.brand?.toLowerCase(),
+          card_last4: pm.card.last4,
+          exp_month: Number(pm.card.expiration.month),
+          exp_year: Number(pm.card.expiration.year),
+        }),
+      });
+      const saveJson = await saveRes.json();
+      if (!saveRes.ok) throw new Error(saveJson.message || saveJson.error || "save_failed");
+      const saved: SavedPm = {
+        paymentMethodId: saveJson.payment_method_id,
+        cardBrand: pm.card.brand,
+        cardLast4: pm.card.last4,
+      };
+      setSavedPm(saved);
+      setStep(3);
+
+      // Start agentic enrollment server-side (sends the email + creates the
+      // enrollment record). The user completes the passkey ceremony from the
+      // email Crossmint sends — we poll until active.
+      const enrollRes = await authFetch(`/api/v1/rail3/payment-methods/${saved.paymentMethodId}/enrollment`, { method: "POST" });
+      const enrollJson = await enrollRes.json();
+      if (!enrollRes.ok) throw new Error(enrollJson.message || enrollJson.error || "enrollment_init_failed");
+      setEnrollmentStatus(enrollJson.enrollment?.status || "pending");
+      startEnrollmentPoll(saved.paymentMethodId);
+    } catch (e: any) {
+      setEnrollmentError(e.message);
+    }
+  }, [startEnrollmentPoll]);
 
   if (loading || !user) {
     return (
@@ -106,15 +141,7 @@ export default function Rail3SetupPage() {
     );
   }
 
-  const clientKey = process.env.NEXT_PUBLIC_CROSSMINT_CLIENT_API_KEY;
-  const iframeOrigin = process.env.NEXT_PUBLIC_CROSSMINT_ENV === "staging"
-    ? "https://staging.crossmint.com"
-    : "https://www.crossmint.com";
-  const iframeUrl = clientKey
-    ? `${iframeOrigin}/embed/save-payment-method?clientApiKey=${encodeURIComponent(clientKey)}`
-    : null;
-
-  const verified = step === 2 && !verifying && !error;
+  const enrolled = enrollmentStatus === "active";
 
   return (
     <div className="min-h-screen bg-neutral-50 py-12 px-4">
@@ -126,66 +153,73 @@ export default function Rail3SetupPage() {
 
         <StepIndicator step={step} />
 
-        {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700" data-testid="text-error">{error}</div>
+        {agentError && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700 flex items-center justify-between gap-3" data-testid="text-agent-error">
+            <span>Couldn't set up your Crossmint agent: {agentError}</span>
+            <Button size="sm" variant="outline" onClick={ensureAgent} data-testid="button-retry-agent">Retry</Button>
+          </div>
         )}
 
         <div className="bg-white rounded-2xl border border-neutral-200 p-8">
           {step === 1 && (
-            <div className="space-y-4">
-              <StepHeader
-                icon={<CreditCard className="w-5 h-5" />}
-                title="Save your card"
-                subtitle="US-issued Visa or Mastercard credit/debit only. Not supported: non-US, business, prepaid, Chase, Fidelity. AMEX/Ramp need Crossmint approval."
-              />
-              {iframeUrl ? (
-                <iframe
-                  src={iframeUrl}
-                  className="w-full h-[500px] rounded-lg border border-neutral-200"
-                  title="Save payment method"
-                  data-testid="iframe-save-card"
-                />
-              ) : (
-                <div className="p-6 bg-orange-50 border border-orange-200 rounded-lg text-sm text-orange-800">
-                  Crossmint client API key not configured. Set <code className="font-mono">NEXT_PUBLIC_CROSSMINT_CLIENT_API_KEY</code>.
-                </div>
-              )}
-            </div>
+            <Section icon={<Bot className="w-5 h-5" />} title="Set up your agent" subtitle="Crossmint requires one agent per owner to hold spending permissions.">
+              <div className="flex items-center gap-3 p-4 bg-blue-50 rounded-lg" data-testid="status-agent">
+                <Loader2 className="w-5 h-5 animate-spin text-blue-600" />
+                <span className="text-sm text-blue-900">Creating your Crossmint agent…</span>
+              </div>
+            </Section>
           )}
 
           {step === 2 && (
-            <div className="space-y-4">
-              <StepHeader
-                icon={<ShieldCheck className="w-5 h-5" />}
-                title="Verify for agentic use"
-                subtitle="Crossmint is verifying your card. Check your email and complete the passkey ceremony in the popup that opened."
-              />
-              <div className="flex items-center gap-3 p-4 bg-blue-50 rounded-lg" data-testid="status-verification">
-                {verifying ? (
+            <Section icon={<CreditCard className="w-5 h-5" />} title="Save your card" subtitle="US-issued Visa or Mastercard credit/debit only. Not supported: non-US, business, prepaid, Chase, Fidelity. AMEX/Ramp need Crossmint approval.">
+              {jwt ? (
+                <div data-testid="container-pm-management" className="rounded-lg border border-neutral-200 overflow-hidden">
+                  <CrossmintPaymentMethodManagement
+                    jwt={jwt}
+                    onPaymentMethodSelected={(pm) => { savePaymentMethodAndEnroll(pm); }}
+                  />
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 p-3 text-sm text-neutral-500">
+                  <Loader2 className="w-4 h-4 animate-spin" /> Connecting to Crossmint…
+                </div>
+              )}
+            </Section>
+          )}
+
+          {step === 3 && (
+            <Section icon={<ShieldCheck className="w-5 h-5" />} title="Authorize for agentic use" subtitle="Crossmint just emailed you a link. Open it and tap your passkey to authorize this card for agent use.">
+              {enrollmentError && (
+                <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700" data-testid="text-enrollment-error">
+                  {enrollmentError}
+                </div>
+              )}
+              <div className="flex items-center gap-3 p-4 bg-blue-50 rounded-lg" data-testid="status-enrollment">
+                {enrolled ? (
                   <>
-                    <Loader2 className="w-5 h-5 animate-spin text-blue-600" />
-                    <span className="text-sm text-blue-900">
-                      Waiting for verification of {savedPm?.cardBrand?.toUpperCase()} •••• {savedPm?.cardLast4}…
-                    </span>
+                    <CheckCircle2 className="w-5 h-5 text-green-600" />
+                    <span className="text-sm text-green-900">Card authorized. Ready to back virtual cards.</span>
                   </>
                 ) : (
                   <>
-                    <CheckCircle2 className="w-5 h-5 text-green-600" />
-                    <span className="text-sm text-green-900">Verified. This card is ready to back virtual cards.</span>
+                    <Loader2 className="w-5 h-5 animate-spin text-blue-600" />
+                    <span className="text-sm text-blue-900">
+                      Waiting for passkey on {savedPm?.cardBrand?.toUpperCase()} •••• {savedPm?.cardLast4} (status: {enrollmentStatus || "pending"})
+                    </span>
                   </>
                 )}
               </div>
               <div className="flex gap-3 pt-2">
                 <Button
                   onClick={() => router.push("/virtual-cards")}
-                  disabled={!verified}
+                  disabled={!enrolled}
                   className="flex-1"
                   data-testid="button-continue-to-cards"
                 >
                   Continue to virtual cards
                 </Button>
               </div>
-            </div>
+            </Section>
           )}
         </div>
       </div>
@@ -194,7 +228,7 @@ export default function Rail3SetupPage() {
 }
 
 function StepIndicator({ step }: { step: Step }) {
-  const steps = ["Save", "Verify"];
+  const steps = ["Agent", "Save", "Authorize"];
   return (
     <div className="flex items-center gap-2 mb-8">
       {steps.map((label, i) => {
@@ -220,14 +254,17 @@ function StepIndicator({ step }: { step: Step }) {
   );
 }
 
-function StepHeader({ icon, title, subtitle }: { icon: React.ReactNode; title: string; subtitle: string }) {
+function Section({ icon, title, subtitle, children }: { icon: React.ReactNode; title: string; subtitle: string; children: React.ReactNode }) {
   return (
-    <div className="pb-4 border-b border-neutral-100">
-      <div className="flex items-center gap-2 mb-1">
-        <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center">{icon}</div>
-        <h2 className="text-lg font-semibold text-neutral-900">{title}</h2>
+    <div className="space-y-4">
+      <div className="pb-4 border-b border-neutral-100">
+        <div className="flex items-center gap-2 mb-1">
+          <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center">{icon}</div>
+          <h2 className="text-lg font-semibold text-neutral-900">{title}</h2>
+        </div>
+        <p className="text-sm text-neutral-600">{subtitle}</p>
       </div>
-      <p className="text-sm text-neutral-600">{subtitle}</p>
+      {children}
     </div>
   );
 }

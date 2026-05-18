@@ -88,7 +88,6 @@ export interface Rail3PaymentMethodInfo {
   cardholder_name: string | null;
   exp_month: number | null;
   exp_year: number | null;
-  verification_status: string;
   virtual_card_count: number;
   created_at: string;
   last_used_at: string | null;
