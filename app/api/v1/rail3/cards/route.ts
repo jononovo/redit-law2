@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSessionUser } from "@/features/platform-management/auth/session";
 import { storage } from "@/server/storage";
 import {
-  generateRail3CardId, buildMandates, createOrderIntent, ownerUidToUserLocator,
+  generateRail3CardId, buildMandates, createOrderIntent, createAgent, ownerUidToUserLocator,
   CrossmintApiError, type PermissionInput,
 } from "@/features/payment-rails/rail3";
 import { rail3CreateCardSchema } from "@/shared/schema";
@@ -75,12 +75,51 @@ export async function POST(request: NextRequest) {
   if (!pm) return NextResponse.json({ error: "payment_method_not_found" }, { status: 404 });
   if (pm.ownerUid !== user.uid) return NextResponse.json({ error: "forbidden" }, { status: 403 });
 
-  const agent = await storage.getRail3AgentByOwnerUid(user.uid);
+  // Verify the bot belongs to this owner.
+  const bot = await storage.getBotByBotId(parsed.data.bot_id);
+  if (!bot) return NextResponse.json({ error: "bot_not_found" }, { status: 404 });
+  if (bot.ownerUid !== user.uid) return NextResponse.json({ error: "forbidden" }, { status: 403 });
+
+  // Auto-create the Crossmint agent for this bot the first time it gets a card.
+  // One Crossmint agent per bot — name carries the bot's real identity through to
+  // Crossmint dashboards/audit logs. Concurrency-safe: on unique-violation we
+  // re-read the row the other request inserted (orphans one Crossmint agent at
+  // worst, which is acceptable — we'd rather waste a Crossmint agent than 500).
+  let agent = await storage.getRail3AgentByBotId(bot.botId);
   if (!agent) {
-    return NextResponse.json(
-      { error: "agent_not_created", message: "Create your Crossmint agent first via /setup/rail3." },
-      { status: 400 }
-    );
+    let created;
+    try {
+      created = await createAgent({
+        userLocator: ownerUidToUserLocator(user.uid),
+        name: bot.botName,
+        description: bot.description || `${bot.botType || "Bot"} for ${bot.ownerEmail}`,
+      });
+    } catch (err) {
+      const status = err instanceof CrossmintApiError ? err.status : 500;
+      const message = err instanceof Error ? err.message : "create_agent_failed";
+      console.error("[Rail3] createAgent for bot", bot.botId, "failed:", message);
+      return NextResponse.json({ error: "create_agent_failed", message }, { status });
+    }
+    try {
+      agent = await storage.createRail3Agent({
+        botId: bot.botId,
+        ownerUid: user.uid,
+        agentId: created.agentId,
+      });
+    } catch (err: any) {
+      // 23505 = unique_violation on rail3_agents_pkey (bot_id) — another concurrent
+      // request beat us to it. Re-read the winner's row and orphan our Crossmint agent.
+      if (err?.code === "23505") {
+        agent = await storage.getRail3AgentByBotId(bot.botId);
+        if (!agent) {
+          console.error("[Rail3] agent row vanished after PK conflict for bot", bot.botId);
+          return NextResponse.json({ error: "create_agent_failed", message: "agent_race_unresolved" }, { status: 500 });
+        }
+        console.warn("[Rail3] orphaned Crossmint agent", created.agentId, "lost race for bot", bot.botId);
+      } else {
+        throw err;
+      }
+    }
   }
 
   const input: PermissionInput = parsed.data.mode === "open"
@@ -138,7 +177,7 @@ export async function POST(request: NextRequest) {
     limitAmountCents,
     limitPeriod,
     status: "active",
-    botId: parsed.data.bot_id || null,
+    botId: bot.botId,
   });
 
   await storage.updateRail3PaymentMethod(pm.paymentMethodId, { lastUsedAt: new Date() });

@@ -355,6 +355,48 @@ Bigger than initially scoped because the backend was wrong, not just the fronten
 
 ---
 
+## Phase 2.5 — Rework: 1 Crossmint agent per bot (post-Phase 2/3, applied 2026-05-18)
+
+Reversal of D-1 ("one agent per owner") after surfacing the Crossmint constraint that `agentId` is set at OrderIntent creation and immutable thereafter — so a virtual card is locked to one agent for life. Combined with the user-stated rail5 precedent (1 card ↔ 1 bot), the natural model is **1 Crossmint agent per CreditClaw bot**, auto-created lazily on first card-per-bot. Bot name → agent metadata so Crossmint dashboards show real bot identity.
+
+### Schema changes (applied)
+- `rail3_agents`: PK rekeyed from `owner_uid` → `bot_id`. Added `owner_uid` column (NOT NULL) + index for owner-scoped lookups. 0 rows in table, drop+recreate via direct psql ALTER (drizzle-kit push blocked on unrelated rail5_transactions_checkout_id_unique TTY prompt).
+- `rail3_cards.bot_id`: NULL → NOT NULL. 0 rows, no backfill needed.
+- `rail3CreateCardSchema.bot_id`: `.optional()` removed; now required on every card-create request.
+
+### Storage changes
+- Renamed `getRail3AgentByOwnerUid` → `getRail3AgentByBotId`.
+- Added `deleteRail3AgentByBotId` (callable from a future bot-delete hook; no caller yet — explicitly out of scope per user "no unrequested scope").
+
+### Route changes
+- **Deleted** `app/api/v1/rail3/agent/route.ts` entirely. No more user-facing agent endpoint; agent creation is an implementation detail of card creation.
+- `app/api/v1/rail3/cards/route.ts` POST: now requires `bot_id`, verifies bot ownership, then `getRail3AgentByBotId` → if missing calls `createAgent` with `bot.botName` + `bot.description || ${botType} for ${ownerEmail}` as Crossmint agent metadata, stores `rail3_agents` row, then proceeds with `createOrderIntent` using the per-bot agentId.
+
+### UI changes
+- `app/setup/rail3/page.tsx`: collapsed from 3 steps (agent → PM → enroll) to 2 (PM → enroll). Removed `ensureAgent` effect, `agentReady`/`agentError` state, Bot icon import.
+- `components/rail3/add-card-dialog.tsx`: added required Bot picker (fetches `/api/v1/bots/mine` on open, defaults to first bot). New empty state when owner has 0 bots with CTA → `/bots`. `bot_id` now always sent on POST.
+
+### Post-review fixes (architect, same session)
+- **Race on lazy agent create**: `POST /api/v1/rail3/cards` wraps the `createRail3Agent` insert in a `code === "23505"` (unique_violation on `bot_id` PK) catch. Loser of the race re-reads the winner's row and orphans its just-created Crossmint agent (logged as warning). Better to waste one Crossmint agent than to 500 on concurrent card-create.
+- **PATCH bot relink removed**: `app/api/v1/rail3/cards/[cardId]` PATCH schema no longer accepts `bot_id`. Since `OrderIntent.agentId` is immutable on Crossmint's side and our agent is bound 1:1 to a bot, relinking would strand the card on the wrong agent. To move a card to another bot: delete + recreate. Closed the IDOR-style gap (no ownership check on target bot_id was happening before this change).
+
+### Out of scope (intentional)
+- Bot-delete → Crossmint agent cleanup: no `DELETE /api/v1/bots/:id` route exists yet; when one is built, it should call `deleteRail3AgentByBotId` + `DELETE /agents/:agentId` on Crossmint. Noted; not built.
+- Multi-card-per-bot UX hint ("create another virtual card on the same PM for a different bot"): not surfaced in copy. Add when first user asks.
+
+### Migration applied
+```sql
+ALTER TABLE rail3_agents DROP CONSTRAINT rail3_agents_pkey;
+ALTER TABLE rail3_agents DROP COLUMN owner_uid;
+ALTER TABLE rail3_agents ADD COLUMN bot_id text NOT NULL;
+ALTER TABLE rail3_agents ADD COLUMN owner_uid text NOT NULL;
+ALTER TABLE rail3_agents ADD PRIMARY KEY (bot_id);
+CREATE INDEX rail3_agents_owner_uid_idx ON rail3_agents(owner_uid);
+ALTER TABLE rail3_cards ALTER COLUMN bot_id SET NOT NULL;
+```
+
+---
+
 ## Cross-references
 
 - Operational doc: `rail3-crossmint-card-permissions.md`

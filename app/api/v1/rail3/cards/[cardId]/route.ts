@@ -5,9 +5,12 @@ import { fireRailsUpdated } from "@/features/agent-interaction/webhooks";
 import { revokeOrderIntent, ownerUidToUserLocator } from "@/features/payment-rails/rail3";
 import { z } from "zod";
 
+// bot_id intentionally NOT patchable: Crossmint OrderIntent.agentId is immutable
+// after creation and the Crossmint agent is bound 1:1 to a bot. Re-linking would
+// strand the card on the wrong agent. Move a card to another bot by deleting and
+// recreating it.
 const patchSchema = z.object({
   card_name: z.string().min(1).max(200).optional(),
-  bot_id: z.string().min(1).max(200).nullable().optional(),
   card_color: z.enum(["purple", "dark", "blue", "primary"]).optional(),
   category: z.string().max(100).nullable().optional(),
   status: z.enum(["active", "frozen"]).optional(),
@@ -89,7 +92,6 @@ export async function PATCH(
 
   const updates: Record<string, unknown> = {};
   if (parsed.data.card_name !== undefined) updates.cardName = parsed.data.card_name;
-  if (parsed.data.bot_id !== undefined) updates.botId = parsed.data.bot_id;
   if (parsed.data.card_color !== undefined) updates.cardColor = parsed.data.card_color;
   if (parsed.data.category !== undefined) updates.category = parsed.data.category;
   if (parsed.data.status !== undefined) updates.status = parsed.data.status;
@@ -99,17 +101,6 @@ export async function PATCH(
   }
 
   const updated = await storage.updateRail3Card(cardId, updates);
-
-  if (parsed.data.bot_id !== undefined) {
-    const targetBotId = parsed.data.bot_id || card.botId;
-    if (targetBotId) {
-      const bot = await storage.getBotByBotId(targetBotId);
-      if (bot) {
-        const action = parsed.data.bot_id ? "card_linked" as const : "card_removed" as const;
-        fireRailsUpdated(bot, action, "rail3", { card_id: cardId }).catch(() => {});
-      }
-    }
-  }
 
   if (parsed.data.status !== undefined && updated?.botId) {
     const bot = await storage.getBotByBotId(updated.botId);

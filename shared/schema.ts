@@ -1489,13 +1489,18 @@ export const rail3PaymentMethods = pgTable("rail3_payment_methods", {
   index("rail3_pm_status_idx").on(table.status),
 ]);
 
-// One Crossmint agent per owner (Crossmint docs: "typically one agent per user").
-// Auto-created on first card save; reused for every order intent that owner creates.
+// One Crossmint agent per CreditClaw bot. Auto-created lazily on first virtual
+// card creation for that bot. Bot name → Crossmint agent metadata, so spending
+// shows up under the bot's real identity in Crossmint dashboards.
+// Mirrors rail5's 1:1 bot↔card convention but enforced at the Crossmint agent layer.
 export const rail3Agents = pgTable("rail3_agents", {
-  ownerUid: text("owner_uid").primaryKey(),
+  botId: text("bot_id").primaryKey(),
+  ownerUid: text("owner_uid").notNull(),
   agentId: text("agent_id").notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
-});
+}, (table) => [
+  index("rail3_agents_owner_uid_idx").on(table.ownerUid),
+]);
 
 // One row per virtual card = one Crossmint orderIntent on top of a payment method.
 // A "card" here is the permission. Real card details live on rail3PaymentMethods.
@@ -1522,7 +1527,7 @@ export const rail3Cards = pgTable("rail3_cards", {
   limitPeriod: text("limit_period"),                              // "weekly" | "monthly" | "yearly"
 
   status: text("status").notNull().default("active"),             // active | frozen | revoked
-  botId: text("bot_id"),
+  botId: text("bot_id").notNull(),                                // 1 card ↔ 1 bot (rail5 precedent)
 
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
@@ -1590,7 +1595,7 @@ export const rail3CreateCardSchema = z.object({
   card_name: z.string().min(1).max(200).optional(),
   card_color: z.enum(["purple", "dark", "blue", "primary"]).optional(),
   category: z.string().max(100).nullable().optional(),
-  bot_id: z.string().min(1).max(200).optional(),
+  bot_id: z.string().min(1).max(200),
 }).refine(
   (data) => data.mode === "open" || (data.max_amount_usd !== undefined && data.period !== undefined),
   { message: "limited mode requires max_amount_usd and period" }

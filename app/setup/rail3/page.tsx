@@ -1,20 +1,22 @@
 "use client";
 
-// First-time wizard: (1) ensure Crossmint agent exists for this owner, (2) save
-// a real card via the Crossmint browser SDK, (3) start the agentic-enrollment
-// passkey ceremony so the card can back agent purchases. On enrollment-active
-// the user is sent to /virtual-cards.
+// First-time wizard: (1) save a real card via the Crossmint browser SDK,
+// (2) start agentic-enrollment so the card can back agent purchases. On
+// enrollment-active the user is sent to /virtual-cards.
+//
+// Crossmint agents are created lazily per-bot when the user creates their
+// first virtual card — no agent step in this wizard.
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/features/platform-management/auth/auth-context";
 import { authFetch } from "@/features/platform-management/auth-fetch";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, Loader2, CreditCard, ShieldCheck, Bot } from "lucide-react";
+import { CheckCircle2, Loader2, CreditCard, ShieldCheck } from "lucide-react";
 import { CrossmintPaymentMethodManagement } from "@crossmint/client-sdk-react-ui";
 import { Rail3CrossmintProvider, useCrossmintJwt } from "@/components/rail3/crossmint-provider";
 
-type Step = 1 | 2 | 3;
+type Step = 1 | 2;
 
 interface SavedPm {
   paymentMethodId: string;
@@ -36,9 +38,6 @@ function SetupInner() {
   const jwt = useCrossmintJwt();
 
   const [step, setStep] = useState<Step>(1);
-  const [agentReady, setAgentReady] = useState(false);
-  const [agentError, setAgentError] = useState<string | null>(null);
-
   const [savedPm, setSavedPm] = useState<SavedPm | null>(null);
   const [enrollmentStatus, setEnrollmentStatus] = useState<string | null>(null);
   const [enrollmentError, setEnrollmentError] = useState<string | null>(null);
@@ -50,32 +49,12 @@ function SetupInner() {
 
   useEffect(() => () => { if (pollRef.current) clearInterval(pollRef.current); }, []);
 
-  const ensureAgent = useCallback(async () => {
-    setAgentError(null);
-    try {
-      const res = await authFetch("/api/v1/rail3/agent", { method: "POST" });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.message || json.error || "agent_failed");
-      setAgentReady(true);
-      setStep((s) => (s === 1 ? 2 : s));
-    } catch (e: any) {
-      setAgentError(e.message);
-    }
-  }, []);
-
-  // Step 1: ensure the Crossmint agent exists. POST is idempotent.
-  useEffect(() => {
-    if (!user || agentReady) return;
-    ensureAgent();
-  }, [user, agentReady, ensureAgent]);
-
   const startEnrollmentPoll = useCallback((paymentMethodId: string) => {
     const poll = async () => {
       try {
         const res = await authFetch(`/api/v1/rail3/payment-methods/${paymentMethodId}/enrollment`);
         const json = await res.json();
         if (!res.ok) {
-          // 404 enrollment yet to be created is fine while we wait for POST.
           if (res.status === 404) return;
           throw new Error(json.message || json.error || "enrollment_failed");
         }
@@ -118,11 +97,8 @@ function SetupInner() {
         cardLast4: pm.card.last4,
       };
       setSavedPm(saved);
-      setStep(3);
+      setStep(2);
 
-      // Start agentic enrollment server-side (sends the email + creates the
-      // enrollment record). The user completes the passkey ceremony from the
-      // email Crossmint sends — we poll until active.
       const enrollRes = await authFetch(`/api/v1/rail3/payment-methods/${saved.paymentMethodId}/enrollment`, { method: "POST" });
       const enrollJson = await enrollRes.json();
       if (!enrollRes.ok) throw new Error(enrollJson.message || enrollJson.error || "enrollment_init_failed");
@@ -148,29 +124,13 @@ function SetupInner() {
       <div className="max-w-2xl mx-auto">
         <h1 className="text-3xl font-bold text-neutral-900 mb-2" data-testid="text-wizard-title">Save your real card</h1>
         <p className="text-neutral-600 mb-8">
-          Crossmint vaults it once. After that you can create as many virtual cards on top as you want, each with its own spending limit and agent.
+          Crossmint vaults it once. After that you can create as many virtual cards on top as you want — one per bot, each with its own spending limit.
         </p>
 
         <StepIndicator step={step} />
 
-        {agentError && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700 flex items-center justify-between gap-3" data-testid="text-agent-error">
-            <span>Couldn't set up your Crossmint agent: {agentError}</span>
-            <Button size="sm" variant="outline" onClick={ensureAgent} data-testid="button-retry-agent">Retry</Button>
-          </div>
-        )}
-
         <div className="bg-white rounded-2xl border border-neutral-200 p-8">
           {step === 1 && (
-            <Section icon={<Bot className="w-5 h-5" />} title="Set up your agent" subtitle="Crossmint requires one agent per owner to hold spending permissions.">
-              <div className="flex items-center gap-3 p-4 bg-blue-50 rounded-lg" data-testid="status-agent">
-                <Loader2 className="w-5 h-5 animate-spin text-blue-600" />
-                <span className="text-sm text-blue-900">Creating your Crossmint agent…</span>
-              </div>
-            </Section>
-          )}
-
-          {step === 2 && (
             <Section icon={<CreditCard className="w-5 h-5" />} title="Save your card" subtitle="US-issued Visa or Mastercard credit/debit only. Not supported: non-US, business, prepaid, Chase, Fidelity. AMEX/Ramp need Crossmint approval.">
               {jwt ? (
                 <div data-testid="container-pm-management" className="rounded-lg border border-neutral-200 overflow-hidden">
@@ -187,7 +147,7 @@ function SetupInner() {
             </Section>
           )}
 
-          {step === 3 && (
+          {step === 2 && (
             <Section icon={<ShieldCheck className="w-5 h-5" />} title="Authorize for agentic use" subtitle="Crossmint just emailed you a link. Open it and tap your passkey to authorize this card for agent use.">
               {enrollmentError && (
                 <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700" data-testid="text-enrollment-error">
@@ -228,7 +188,7 @@ function SetupInner() {
 }
 
 function StepIndicator({ step }: { step: Step }) {
-  const steps = ["Agent", "Save", "Authorize"];
+  const steps = ["Save", "Authorize"];
   return (
     <div className="flex items-center gap-2 mb-8">
       {steps.map((label, i) => {
