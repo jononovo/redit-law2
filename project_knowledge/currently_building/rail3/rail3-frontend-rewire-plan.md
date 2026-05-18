@@ -1,121 +1,250 @@
 ---
-name: Rail 3 — Frontend Rewire to Real Crossmint SDK
-description: Plan to replace the invented `/embed/*` iframes with the actual `@crossmint/client-sdk-react-ui` components and Firebase BYO-auth bridge per Crossmint's Card Permissions docs. Also fixes the missing "create agent" step and verifies the backend REST endpoint paths.
+name: Rail 3 — Crossmint Card Permissions, Full Frontend + Backend Rewire
+description: Evidence-based plan to replace both our invented frontend iframes AND our invented backend REST client with the real Crossmint Agentic Commerce API (`/api/unstable`) and the `@crossmint/client-sdk-react-ui` components, using Firebase as the BYO auth provider. Includes a full mismatch audit against the quickstart and API reference.
 created: 2026-05-18
 last_updated: 2026-05-18
 status: plan
 ---
 
-# Rail 3 — Frontend Rewire to Real Crossmint SDK
+# Rail 3 — Crossmint Card Permissions, Full Rewire
 
-> The current frontend loads `https://www.crossmint.com/embed/save-payment-method?...` which returns 404 — that endpoint doesn't exist. Crossmint ships React components for this exact flow. SDK (`@crossmint/client-sdk-react-ui@2.6.15`) is already installed. We also missed a required step: **create an `agentId`** before any payment method can be saved. This plan rewires the frontend, adds the agent-creation step, and verifies the backend REST calls against Crossmint's real API surface.
-
----
-
-## Source of truth
-
-- Bring Your Own Auth (Firebase): https://docs.crossmint.com/wallets/guides/bring-your-own-auth
-- Cards Quickstart: https://docs.crossmint.com/agents/cards-quickstart
-- Customize Verification UI: https://docs.crossmint.com/agents/payment-methods/cards/customize-verification-ui
-- Reference repo (Stytch-based, structure identical to what we need with Firebase): https://github.com/Crossmint/card-permissions-quickstart
-- Live demo: https://card-permissions-quickstart.vercel.app/
+> Previous plans assumed we just had a frontend gap. After reading the real API reference + the [card-permissions-quickstart](https://github.com/Crossmint/card-permissions-quickstart), **our entire backend client is wrong** — wrong base path, wrong auth model, wrong endpoint shapes, wrong mandate types, wrong phase enum, missing agent endpoints, missing agentic-enrollment endpoints. The frontend is wrong too (404 iframes). Both layers need to be rewritten against the real API.
 
 ---
 
-## Current state (what's broken)
+## Primary sources
 
-| Area | Today | What it should be |
+| What | URL |
+|---|---|
+| Cards quickstart | https://docs.crossmint.com/agents/cards-quickstart |
+| BYO Auth (Firebase) | https://docs.crossmint.com/wallets/guides/bring-your-own-auth |
+| Customize verification UI | https://docs.crossmint.com/agents/payment-methods/cards/customize-verification-ui |
+| API ref: List PMs | https://docs.crossmint.com/api-reference/agentic-commerce/payment-methods/list-payment-methods |
+| API ref: Delete PM | https://docs.crossmint.com/api-reference/agentic-commerce/payment-methods/delete-payment-method |
+| API ref: Create Agent | https://docs.crossmint.com/api-reference/agentic-commerce/agents/create-agent |
+| API ref: Create Agentic Enrollment | https://docs.crossmint.com/api-reference/agentic-commerce/agentic-enrollment/create-agentic-enrollment |
+| Reference repo (Stytch-based; flow is identical for Firebase) | https://github.com/Crossmint/card-permissions-quickstart |
+| Live demo | https://card-permissions-quickstart.vercel.app/ |
+
+---
+
+## Mismatch audit — what we have vs what Crossmint actually exposes
+
+### Base URL
+- **Real:** `https://staging.crossmint.com/api/unstable` (staging) · `https://www.crossmint.com/api/unstable` (prod). API surface is explicitly `unstable`, expect breaking changes.
+- **Ours (`features/payment-rails/rail3/client.ts`):** `https://staging.crossmint.com/api/2025-06-09` and `https://www.crossmint.com/api/2025-06-09`.
+- **Action:** rewrite `client.ts` base URL.
+
+### Auth model
+- **Real:** Card Permissions endpoints are **user-scoped**. Two valid auth modes (from `list-payment-methods` reference):
+  1. **JWT mode** — `X-API-KEY: <CLIENT_KEY>` + `Authorization: Bearer <jwt>`. JWT subject identifies the user. Used by the quickstart from the browser (via server actions for CORS only).
+  2. **Server-key mode** — `X-API-KEY: <SERVER_KEY>` + `?userLocator=<type>:<value>` query param (e.g. `email:alice@example.com`, `userId:abc123`). Without `userLocator`, the server can't pick a user → 403.
+- **Ours:** server key alone, no `userLocator`, no JWT. Will fail.
+- **Decision needed:** see "Decision 1" below. Recommend **server-key + userLocator** so the BFF stays the single point of credential use; client never holds a JWT for Crossmint.
+
+### Crossmint Console prerequisite
+- **Required if we go JWT mode:** Console → JWT authentication → 3P Auth providers → add Firebase → enter Firebase project ID, set `Verifier Id = sub`. Once per env.
+- **Required if we go server-key mode:** still useful to register Firebase so the SDK's verification components (which always sign-in via JWT) can authenticate the user inside the iframe.
+
+### `userLocator` value
+- Crossmint identifies users by stable identifier. Our owners are Firebase users. Options:
+  - `userId:<firebase_uid>` — most stable, opaque.
+  - `email:<firebase_user_email>` — readable but mutable.
+- **Recommend `userId:<firebase_uid>`** (immutable). Pair with Crossmint Console 3P Firebase registration so JWT-mode and key-mode resolve to the same user record.
+
+### Endpoint inventory we need
+From quickstart `lib/crossmint-api.ts` and the API reference, the full surface for Card Permissions is:
+
+| Method + Path | Purpose | Body / Notes |
 |---|---|---|
-| Auth bridge | None. No `CrossmintProvider`, no `setJwt`, no 3P config in Crossmint Console. | `CrossmintProvider` + `CrossmintWalletProvider` wrap dashboard; tiny `JwtSync` component calls `setJwt(firebaseIdToken)` on auth change. Firebase registered in Crossmint Console → JWT auth → 3P. |
-| Save card UI | `<iframe src=".../embed/save-payment-method?clientApiKey=…">` → **404**. | `<CrossmintPaymentMethodManagement />` SDK component. |
-| Verify card UI | Step 2 copy claims "complete the passkey ceremony in the popup that opened." No popup. Wizard just polls. | `<PaymentMethodAgenticEnrollmentVerification paymentMethodId>` SDK component with `onVerificationComplete`. |
-| Authorize orderIntent | `<iframe src=".../embed/order-intent-verification?...">` → also 404. | `<OrderIntentVerification orderIntent>` SDK component with `onVerificationComplete`. |
-| Agent creation | **Missing entirely.** Setup wizard expects `agentId` to arrive via postMessage from the fictional iframe. It never arrives. | Explicit "Create agent" step (or auto-create one per owner on first save). `POST /agents` via Crossmint REST → store `agentId` either on owner or on PM row. |
-| Backend REST paths | `client.ts` hits `crossmint.com/api/2025-06-09/payment-methods/{id}` and `/order-intents/{id}/credentials`. **Unverified.** | Cross-reference against actual Crossmint API endpoints; the reference repo's `lib/crossmint-api` is the canonical sample. |
-| Polling | We poll `/verification-status` and `/authorization-status` every few seconds. | SDK components fire `onVerificationComplete` synchronously. Drop polling, or keep as a webhook fallback. |
+| `GET /payment-methods` | List PMs for the user | Query: `limit`, `cursor`, `sort`, `type`, `userLocator`. Returns `{ data: PaymentMethod[], nextCursor?, previousCursor? }`. |
+| `DELETE /payment-methods/:paymentMethodId` | Remove PM | 204. |
+| `GET /payment-methods/:paymentMethodId/agentic-enrollment` | Check enrollment status | 404 = `not_started`; 200 returns `{ enrollmentId, status: "pending"\|"active", verificationConfig? }`. |
+| `POST /payment-methods/:paymentMethodId/agentic-enrollment` | Start enrollment | Body `{ email }`. Returns pending enrollment with `verificationConfig: { environment, publicApiKey }`. |
+| `POST /agents` | Create agent | Body `{ metadata: { name, description?, imageUrl? } }`. Returns `{ agentId, metadata }`. |
+| `GET /agents` | List agents | Returns `AgentResponse[]`. |
+| `DELETE /agents/:agentId` | Delete agent | 204. |
+| `POST /order-intents` | Create card permission | Body `{ agentId, payment: { paymentMethodId }, mandates }`. Returns full OrderIntent with `phase` + `verificationConfig` if `phase === "requires-verification"`. |
+| `GET /order-intents` | List intents | Returns `OrderIntentResponse[]`. |
+| `DELETE /order-intents/:orderIntentId` | Revoke intent | 204. |
+| `POST /order-intents/:orderIntentId/credentials` | Fetch one-time PAN for agent | Body `{ merchant: { name, url, countryCode } }`. Returns `{ card: { number, expirationMonth, expirationYear, cvc }, expiresAt }`. |
 
----
+There is **no** `GET /payment-methods/:id`. The list endpoint is the read path; if we need single-PM reads we'd filter client-side or list once and cache.
 
-## Proposed architecture
+### Type mismatches (our types → real shapes)
 
+```diff
+// PaymentMethod
+- { paymentMethodId, agentId, brand, last4, expMonth, expYear, cardholderName?, verificationStatus }
++ { paymentMethodId, type: "card", default, display?: { imageUrl },
++   card: { source: { type, id }, brand, last4,
++           expiration: { month: string, year: string },
++           billing: { name }, fundingType, bin } }
+
+// agentId is NOT on the PM. It's bound at order-intent creation.
+// verificationStatus is NOT on the PM. It's a separate GET /…/agentic-enrollment call.
+// expMonth/Year are STRINGS not numbers.
+
+// AgenticEnrollment (separate resource)
++ { status: "not_started" }
++ | { enrollmentId, status: "active" }
++ | { enrollmentId, status: "pending", verificationConfig: { environment, publicApiKey } }
+
+// Mandate
+- "maxAmount" | "description" | "merchantAllowlist" | "merchantBlocklist"
++ "maxAmount" | "description" | "prompt"
+// Allowlist/Blocklist are not in the public type. We'd be sending garbage Crossmint may reject.
+
+// OrderIntent
+- { orderIntentId, phase: "pending_authorization" | "active" | "revoked", agentId, paymentMethodId, mandates }
++ { orderIntentId,
++   phase: "requires-verification" | "active" | "expired",
++   payment: { paymentMethodId },                       // nested, not flat
++   mandates: Mandate[],
++   verificationConfig?: { environment, publicApiKey, agentId, instructionId } } // when requires-verification
+
+// Credentials
+- { cardNumber, expMonth: number, expYear: number, cvc, merchantName, merchantUrl?, expiresAt }
++ { card: { number, expirationMonth: string, expirationYear: string, cvc }, expiresAt }
+// merchant fields are inputs (in request body), not echoed back.
+
+// CreateOrderIntent request body
+- { agentId, paymentMethodId, mandates }
++ { agentId, payment: { paymentMethodId }, mandates }
 ```
-app/
-  (dashboard)/
-    layout.tsx                                ← wrap children in Crossmint providers + JwtSync
-  setup/rail3/page.tsx                        ← rewrite: agent (if none) → save card → verify card
-  setup/rail3/components/
-    agent-step.tsx                            ← create-agent button + status
-    save-card-step.tsx                        ← <CrossmintPaymentMethodManagement>
-    verify-card-step.tsx                      ← <PaymentMethodAgenticEnrollmentVerification>
 
-components/
-  rail3/
-    crossmint-providers.tsx                   ← <CrossmintProvider><CrossmintWalletProvider><JwtSync>…
-    jwt-sync.tsx                              ← effect: setJwt(await user.getIdToken()) on auth change
-    add-card-dialog.tsx                       ← keep shell; swap iframe → <OrderIntentVerification>
-    payment-methods-strip.tsx                 ← unchanged
+### Schema implications
 
-features/payment-rails/rail3/
-  client.ts                                   ← verify base URL + API version
-  paymentMethods.ts                           ← verify endpoint paths
-  permissions.ts                              ← verify endpoint paths
-  credentials.ts                              ← verify endpoint paths
-  agents.ts                                   ← NEW: createAgent, listAgents, deleteAgent
-```
+- `rail3_payment_methods.agent_id` — column is semantically wrong; agentId binds to the order intent, not the PM. Either drop it or rename to a "default agent" hint.
+- `rail3_payment_methods.verification_status` — also wrong place; should be a derived lookup against `/agentic-enrollment`, or denormalize into a separate `rail3_agentic_enrollments` table keyed by `payment_method_id`.
+- `rail3_payment_methods.{exp_month, exp_year}` — keep as ints internally, parse from API strings.
+- We need a new place for `agent_id` per owner (one agent reused across PMs; mirrors quickstart). Cheapest: a `rail3_owner_agent` table `(owner_id PK, agent_id, created_at)` so we don't pollute existing owner tables.
+- `rail3_virtual_cards.permission_phase` — values need to match real enum (`requires-verification | active | expired`), not `pending_authorization | active | revoked`.
+
+### Frontend mismatches
+
+- `app/setup/rail3/page.tsx` loads `<iframe src=".../embed/save-payment-method">` — endpoint doesn't exist. Replace with `<CrossmintPaymentMethodManagement onPaymentMethodSaved={...} />`. No `agentId` prop.
+- `components/rail3/add-card-dialog.tsx` loads `<iframe src=".../embed/order-intent-verification">` — endpoint doesn't exist. Replace with `<OrderIntentVerification orderIntent={createdIntent} appearance={…} onVerificationComplete onVerificationError />`. Needs the **full intent object**, not just the id.
+- Missing entirely: agent creation step, agentic-enrollment verification step (the post-save passkey ceremony before a card is usable for agents). Use `<PaymentMethodAgenticEnrollmentVerification enrollment={pendingEnrollment} appearance={…} onVerificationComplete onVerificationError />`.
+- Missing entirely: `CrossmintProvider` + `CrossmintWalletProvider` wrappers + a `JwtSync` component bridging Firebase `getIdToken()` → `useCrossmint().setJwt()`. Required even in server-key mode so the SDK iframe components can authenticate the user.
 
 ---
 
-## Open questions to answer **before** writing code
+## Decision points (need owner sign-off before implementing)
 
-1. **Where does `agentId` live in our model?**
-   Options:
-   - (a) One agent per owner — store on a new `rail3_owner` row or just memoize the most recent agentId on the owner record.
-   - (b) One agent per PM — keep `agent_id` on `rail3_payment_methods` (current schema).
-   - (c) One agent per virtual card — would let owner give each card a different agent identity.
+**Decision 1 — Where do REST calls originate?**
 
-   Quickstart uses (a) — single agent reused across cards. Simplest. Recommend (a) unless we have a reason to differentiate.
+- **Option A: Server-key + userLocator (recommended).** All Crossmint REST calls go through our existing BFF (`app/api/v1/rail3/*`). Server uses `CROSSMINT_SERVER_API_KEY` + `?userLocator=userId:<firebase_uid>`. Browser never holds a Crossmint JWT. Crossmint SDK components still need a JWT, but only for the verification iframes — bridged via `setJwt(firebaseIdToken)` once 3P Firebase is registered in Crossmint Console.
+- **Option B: Client-key + Bearer JWT proxy.** Mirror the quickstart: server actions that take the Firebase ID token from the browser and forward to Crossmint with client key + Bearer. Slightly thinner backend, but token round-trips on every call and we lose centralized rate-limiting/logging.
 
-2. **Should we keep the polling status endpoints?**
-   - The SDK fires `onVerificationComplete` so we know in real time on the same tab.
-   - Polling is still useful if the owner has the tab open across a passkey ceremony interruption, but is optional. Recommend: drop polling, rely on SDK callback, surface a "Refresh" button if anything looks stuck.
+Recommend **A**.
 
-3. **Webhook?** Already covered in `rail3-open-points.md` — defer. SDK callbacks plus on-demand REST reads are enough for the owner UI.
+**Decision 2 — Where does `agentId` live?**
 
-4. **Do our backend REST paths actually match Crossmint's API?**
-   Need to verify against the quickstart's `lib/crossmint-api.ts` (or equivalent OpenAPI). Specifically:
-   - `GET /payment-methods/{id}` — do we get back `{ paymentMethodId, agentId, brand, last4, expMonth, expYear, cardholderName, verificationStatus }` exactly?
-   - `POST /order-intents/{id}/credentials` — is the body `{ merchant: { name, url, countryCode } }`?
-   - `POST /agents` — exists? what's the body?
-   - `POST /payment-methods/{id}/verify` — separate call? or is verification a pure SDK passkey flow with no REST companion?
-   - `DELETE /payment-methods/{id}` — supported? required scope?
+- **Option A: One agent per owner (recommended).** New `rail3_owner_agent` row. All order intents for that owner reuse it. Mirrors quickstart.
+- **Option B: One agent per PM.** Today's `agent_id` column. Doesn't reflect how Crossmint models things and isn't necessary.
+- **Option C: One agent per virtual card.** Most granular; useful only if we ever want per-card agent identities. Not needed.
 
-5. **Does verification of the card create the agent association, or does the agent need to exist first?**
-   Per quickstart flow: agent first, then card save, then enrollment verification. Card save returns a `paymentMethodId` already linked to the agentId in the SDK call.
+Recommend **A**. Drop column from PM, add new owner-scoped table.
 
-6. **Does `CrossmintPaymentMethodManagement` take the `agentId` directly or via context?**
-   Need to read the component's prop signature (only exported type is `CrossmintPaymentMethodManagementProps` from `@crossmint/client-sdk-base`). Quick `cat` of the .d.ts in the next session.
+**Decision 3 — Drop polling endpoints?**
 
-7. **Crossmint Console — Firebase 3P registration.**
-   Owner action required, not code. Steps: Console → API Keys → JWT authentication → 3P Auth providers → Firebase → enter Firebase project ID → save. One-time setup per environment (staging + prod). Document in `replit.md` user-actions or `.env.example`.
+SDK verification components fire `onVerificationComplete` synchronously. We can drop the existing `/verification-status` and `/authorization-status` poll routes. Keep them only if we want a fallback for users who close the tab mid-ceremony (webhook would be cleaner — already in `rail3-open-points.md`).
+
+Recommend **drop** for now, revisit with the webhook work.
+
+**Decision 4 — Keep merchant allow/blocklist mandate support?**
+
+We invented these mandate types. Not in the public quickstart types. Either:
+- (a) drop them entirely (recommend), OR
+- (b) ask Crossmint if they exist on a private API surface.
+
+Recommend **drop**. Use `description` or `prompt` mandate text to express the same intent in a free-form field if needed.
 
 ---
 
-## Implementation steps (in order)
+## Implementation plan (in order)
 
-### Phase 0 — Verify
-1. `cat node_modules/@crossmint/client-sdk-base/dist/types/payment-method-management/*.d.ts` — read `CrossmintPaymentMethodManagementProps` exactly so we know required props (agentId? onSuccess shape? appearance?).
-2. Open the live quickstart demo, inspect network calls to confirm Crossmint REST paths + payloads. Adjust `features/payment-rails/rail3/*.ts` to match.
-3. Confirm Firebase 3P registration is configured in Crossmint Console for our staging project. If not, do it before testing.
+### Phase 0 — Audit + Console setup (30 min, owner work)
+1. Register Firebase as 3P auth provider in Crossmint **Staging** console (Settings → API Keys → JWT auth → 3P providers → Firebase → enter Firebase project ID, leave Verifier Id = `sub`).
+2. Repeat for production console when ready.
+3. Confirm `CROSSMINT_SERVER_API_KEY` is set in `.env` for staging.
+4. Confirm `NEXT_PUBLIC_CROSSMINT_CLIENT_API_KEY` is set (needed by SDK on the browser).
 
-### Phase 1 — Auth bridge (one-time setup)
-Files: new `components/rail3/crossmint-providers.tsx`, new `components/rail3/jwt-sync.tsx`, modified `app/(dashboard)/layout.tsx`.
+### Phase 1 — Backend rewrite (`features/payment-rails/rail3/`) (1.5 h)
 
+Rewrite all four files against the real API surface.
+
+`client.ts`:
+- Base URL: `https://staging.crossmint.com/api/unstable` / `https://www.crossmint.com/api/unstable`.
+- Drop `API_VERSION` constant.
+- `crossmintCardsFetch(path, { method, body, userLocator })` — always appends `?userLocator=userId:<uid>` (or merges into existing query) when caller passes one.
+- Accept `userLocator` as a required param on every user-scoped call.
+- Keep `CrossmintApiError` + `unwrapCrossmint` helpers.
+
+`agents.ts` (new):
+- `createAgent({ userLocator, name, description? })` → POST `/agents` with `{ metadata: { name, description } }`.
+- `listAgents({ userLocator })` → GET `/agents`.
+- `deleteAgent({ userLocator, agentId })` → DELETE `/agents/:agentId`.
+
+`paymentMethods.ts` (rename from `cards.ts`):
+- `listPaymentMethods({ userLocator, limit?, cursor? })` → GET `/payment-methods`. Return `{ data, nextCursor }`.
+- `deletePaymentMethod({ userLocator, paymentMethodId })`.
+- Drop `getPaymentMethod` (no such endpoint).
+- Drop `getVerificationStatus` (status lives in enrollment resource).
+- Keep `generateRail3CardId` / `generateRail3TransactionId` (internal IDs for our virtual card rows).
+
+`agenticEnrollment.ts` (new):
+- `getEnrollment({ userLocator, paymentMethodId })` → GET `/payment-methods/:id/agentic-enrollment`. Translate 404 to `{ status: "not_started" }`.
+- `createEnrollment({ userLocator, paymentMethodId, email })` → POST same path with `{ email }`. Returns pending enrollment with `verificationConfig`.
+
+`permissions.ts` (rewrite):
+- Mandate types: `maxAmount | description | prompt` only. Drop `merchantAllowlist`/`merchantBlocklist`.
+- `buildMandates(input)`: same shape as quickstart. Open mode = yearly maxAmount ceiling + description.
+- `createOrderIntent({ userLocator, agentId, paymentMethodId, mandates })` → POST `/order-intents` with `{ agentId, payment: { paymentMethodId }, mandates }`.
+- `getOrderIntent({ userLocator, orderIntentId })` → there's no single-get in quickstart — use `listOrderIntents` and filter, or omit.
+- `listOrderIntents({ userLocator })` → GET `/order-intents`.
+- `revokeOrderIntent({ userLocator, orderIntentId })` → DELETE.
+- `OrderIntent` type updated to match real shape (`payment.paymentMethodId`, real phase enum, `verificationConfig` when applicable).
+
+`credentials.ts`:
+- Body wraps `{ merchant: { name, url, countryCode } }` (already correct).
+- Response is `{ card: { number, expirationMonth, expirationYear, cvc }, expiresAt }` — rewrite our type, drop the merchant echo, drop expMonth/Year integer assumption.
+
+`index.ts`: re-export the new surface.
+
+### Phase 2 — Schema + storage changes (45 min)
+
+- New table `rail3_owner_agent (owner_id PK, agent_id, name, description?, created_at)`.
+- `rail3_payment_methods`: drop `agent_id` column (or keep as nullable historical). Drop `verification_status` (or move to a denormalized `rail3_agentic_enrollments` table, see below).
+- New optional table `rail3_agentic_enrollments (payment_method_id PK, enrollment_id?, status, updated_at)` for denormalized status. Or — simpler — don't store it, always re-read on demand.
+- `rail3_virtual_cards.permission_phase` enum: `requires_verification | active | expired` (rename from `pending_authorization | active | revoked`). Drizzle migration.
+- Storage fragment `server/storage/rail3-owner-agent.ts` for the new agent record.
+
+### Phase 3 — BFF routes (`app/api/v1/rail3/`) (1 h)
+
+Each BFF route resolves the owner from the Firebase session, derives `userLocator = "userId:" + firebase_uid`, and calls the rewritten client. Routes needed:
+
+- `GET /api/v1/rail3/agent` → returns owner's `agent` row or null.
+- `POST /api/v1/rail3/agent` → creates Crossmint agent + stores row.
+- `DELETE /api/v1/rail3/agent` → deletes Crossmint agent + drops row (optional).
+- `GET /api/v1/rail3/payment-methods` → list (proxy + pagination).
+- `DELETE /api/v1/rail3/payment-methods/:id` → delete.
+- `GET /api/v1/rail3/payment-methods/:id/enrollment` → returns enrollment status.
+- `POST /api/v1/rail3/payment-methods/:id/enrollment` → starts enrollment (server-side; the SDK component then verifies the returned `enrollmentId` + `verificationConfig` via passkey on the browser).
+- `POST /api/v1/rail3/order-intents` → create (used by AddCardDialog). Returns the **full** intent including `verificationConfig`.
+- `DELETE /api/v1/rail3/order-intents/:id` → revoke (used when a virtual card row is deleted).
+- `POST /api/v1/rail3/order-intents/:id/credentials` → fetch one-time PAN (bot-facing, gated by approvals).
+
+Delete old polling routes: `verification-status`, `authorization-status`.
+
+### Phase 4 — Frontend providers + JWT bridge (20 min)
+
+New `components/rail3/crossmint-providers.tsx`:
 ```tsx
-// components/rail3/crossmint-providers.tsx
 "use client";
 import { CrossmintProvider, CrossmintWalletProvider } from "@crossmint/client-sdk-react-ui";
 import { JwtSync } from "./jwt-sync";
-
 export function CrossmintProviders({ children }: { children: React.ReactNode }) {
   const apiKey = process.env.NEXT_PUBLIC_CROSSMINT_CLIENT_API_KEY;
   if (!apiKey) throw new Error("NEXT_PUBLIC_CROSSMINT_CLIENT_API_KEY required");
@@ -130,150 +259,127 @@ export function CrossmintProviders({ children }: { children: React.ReactNode }) 
 }
 ```
 
+New `components/rail3/jwt-sync.tsx`:
 ```tsx
-// components/rail3/jwt-sync.tsx
 "use client";
 import { useEffect } from "react";
 import { useCrossmint } from "@crossmint/client-sdk-react-ui";
 import { useAuth } from "@/features/platform-management/auth/auth-context";
-
 export function JwtSync() {
   const { user } = useAuth();
   const { setJwt } = useCrossmint();
   useEffect(() => {
-    if (!user) { setJwt(undefined); return; }
+    if (!user) return;
     let cancelled = false;
-    user.getIdToken().then((t) => { if (!cancelled) setJwt(t); });
+    user.getIdToken().then(t => { if (!cancelled) setJwt(t); });
     return () => { cancelled = true; };
   }, [user, setJwt]);
   return null;
 }
 ```
 
-Wrap dashboard children in `<CrossmintProviders>`. Setup pages live in `app/setup/` — wrap there too (or extract a shared `(authenticated)` group layout).
+Wrap dashboard + setup layouts in `<CrossmintProviders>`.
 
-### Phase 2 — Agents API
-Files: new `features/payment-rails/rail3/agents.ts`, new `app/api/v1/rail3/agents/route.ts`.
+**Risk:** `CrossmintWalletProvider` may try to auto-create a wallet on mount. Quickstart includes it because it's also a wallets demo. If it triggers unwanted side effects for card-only use, remove it. Verify in Phase 0.
 
-- Backend helpers: `createAgent(name, description)`, `listAgents()`, `deleteAgent(agentId)`.
-- API endpoints owner-authed via existing middleware.
-- Store reference on owner record (likely a new `rail3_owner_agents` row, or simplest: store the most recent agentId on the owner's row in an existing user/owner table — confirm during phase 0).
-- If we go owner-scoped, expose a single `GET /api/v1/rail3/agent` returning current agentId or null, and `POST` to create.
+### Phase 5 — Setup wizard rewrite (`app/setup/rail3/page.tsx`) (1 h)
 
-### Phase 3 — Setup wizard rewrite
-Files: `app/setup/rail3/page.tsx`.
+Five sequential steps matching the quickstart:
 
-New step sequence:
-1. **Ensure agent.** Load owner's agent; if none, show "Create agent" button → POST → store agentId.
-2. **Save card.** `<CrossmintPaymentMethodManagement agentId={agent.agentId} onSuccess={onPmSaved} />`. On success, `POST /api/v1/rail3/payment-methods` to persist the row.
-3. **Verify card.** `<PaymentMethodAgenticEnrollmentVerification paymentMethodId={pm.id} appearance={ourTheme} onVerificationComplete={onVerified} onVerificationError={onErr} />`. On success, mark PM `verification_status = active` (either via SDK callback firing `PATCH /api/v1/rail3/payment-methods/{id}` or by trusting the next read from Crossmint which we already do via `getVerificationStatus`).
-4. Redirect to `/virtual-cards`.
+1. **Ensure agent.** Call `GET /api/v1/rail3/agent`. If null, show "Create agent" button → `POST /api/v1/rail3/agent`. Store `agentId` in component state.
+2. **Save card.** Render `<CrossmintPaymentMethodManagement onPaymentMethodSaved={(pm) => onPmSaved(pm.paymentMethodId)} />`. On callback, re-list PMs via BFF.
+3. **Start enrollment.** Server-side POST `/payment-methods/:id/agentic-enrollment` with the owner's email. Store the returned enrollment.
+4. **Verify card (passkey).** Render `<PaymentMethodAgenticEnrollmentVerification enrollment={pendingEnrollment} appearance={verificationAppearance} onVerificationComplete={() => refetch()} onVerificationError={onErr} />`. On complete, enrollment status flips to `active` server-side.
+5. **Done.** Redirect to `/virtual-cards`.
 
-Delete:
-- The fake iframe block.
-- The `crossmint:paymentMethodSelected` postMessage listener.
-- Step 2 copy about "popup" — replace with the SDK modal.
-- Polling fallback (or keep as a hidden safety net behind a feature flag).
+Delete the postMessage listener entirely.
 
-### Phase 4 — AddCardDialog rewrite
-Files: `components/rail3/add-card-dialog.tsx`.
+### Phase 6 — AddCardDialog rewrite (`components/rail3/add-card-dialog.tsx`) (40 min)
 
-Post-create step (currently `<iframe src=".../embed/order-intent-verification">`):
-- Replace with `<OrderIntentVerification orderIntent={createdOrderIntent} appearance={ourTheme} onVerificationComplete={onAuthorized} onVerificationError={onErr} />`.
-- The component needs the **full `OrderIntent` object** (type from `@crossmint/client-sdk-base`), not just the `orderIntentId`. That means our `POST /api/v1/rail3/cards` response must include the Crossmint orderIntent object verbatim, not just the id. Update `app/api/v1/rail3/cards/route.ts` accordingly.
-- Drop the polling loop on `authorization-status`.
+Wizard:
+- Step 1: select PM + mode (open / limited) + maxAmount + period + description/prompt + merchant info — unchanged.
+- Step 2: submit → `POST /api/v1/rail3/order-intents` returns the full intent including `verificationConfig`.
+- Step 3: if `intent.phase === "requires-verification"`, render `<OrderIntentVerification orderIntent={intent} appearance={verificationAppearance} onVerificationComplete={onAuthorized} onVerificationError={onErr} />`. On complete, persist the virtual card row in our DB with `permission_phase = active`.
+- Step 4: success; close.
 
-### Phase 5 — Tenant theming for verification modals
-Files: shared `appearance` object passed to both verification components.
+Delete polling.
 
-CreditClaw uses Plus Jakarta Sans + pastel oranges + 1rem radius. Define once:
+### Phase 7 — Tenant theming (15 min)
 
+`components/rail3/verification-appearance.ts`:
 ```ts
-// components/rail3/verification-appearance.ts
 export const verificationAppearance = {
   variables: {
     fontFamily: "var(--font-jakarta), system-ui, sans-serif",
     fontSizeUnit: "14px",
     spacingUnit: "16px",
     borderRadius: "1rem",
-    colors: {
-      accent: "#f97316",            // orange-500
-      backgroundPrimary: "#ffffff",
-    },
+    colors: { accent: "#f97316", backgroundPrimary: "#ffffff" },
   },
 } as const;
 ```
 
-Pass to both `<PaymentMethodAgenticEnrollmentVerification>` and `<OrderIntentVerification>`.
+Pass to both verification components.
 
-### Phase 6 — Backend REST verification + cleanup
-Files: `features/payment-rails/rail3/{client.ts, paymentMethods.ts, permissions.ts, credentials.ts}`.
+### Phase 8 — End-to-end test on staging (1 h)
 
-- Adjust API base path and version if Phase 0 revealed mismatches.
-- Confirm `X-API-KEY` is the right header (it is per docs, but verify the value format — staging keys are `ck_staging_...`).
-- Remove now-unused polling endpoints OR leave them as a fallback for when the SDK callback misses (e.g. user closes the tab mid-ceremony).
+Test card `4242 4242 4242 4242`. Walk a fresh Firebase user through:
+1. Land on `/setup/rail3`.
+2. Create agent → POST /agents 201.
+3. Save card → SDK iframe → onPaymentMethodSaved fires → BFF refetch returns the new PM.
+4. Start enrollment → POST agentic-enrollment 200 with pending status.
+5. Verify card → passkey modal → `onVerificationComplete` fires → enrollment GET now returns `active`.
+6. Redirect to `/virtual-cards`. PM strip shows the card.
+7. AddCard → submit mandate form → POST /order-intents returns `requires-verification` intent.
+8. Passkey ceremony → `onVerificationComplete` → virtual card row persists with `permission_phase = active`.
+9. Bot integration test: `POST /api/v1/bot/rail3/checkout` → POST /credentials returns one-time PAN.
 
-### Phase 7 — Console config + env doc
-- Register Firebase as 3P auth in Crossmint Staging + Prod consoles (one-time owner action).
-- Add to `.env.example` (or `replit.md` user-actions section): `NEXT_PUBLIC_CROSSMINT_ENV=staging|production`, plus a note that the Crossmint Console must have Firebase 3P configured for the same project.
+### Phase 9 — Surface in nav (optional, separate task)
 
-### Phase 8 — Test end-to-end on staging
-1. Sign in on creditclaw tenant.
-2. Navigate to `/setup/rail3`.
-3. Create agent → save 4242 4242 4242 4242 test card → complete passkey ceremony.
-4. Land on `/virtual-cards` with one verified PM in the strip.
-5. "+ Add Virtual Card" → wizard → submit → passkey ceremony → card `permission_phase` = active.
-6. Bot integration test: hit `POST /api/v1/bot/rail3/checkout` with a test merchant → confirm one-time PAN returned.
-
-### Phase 9 — Surface in nav (separate optional task)
-- Flip sidebar "Virtual Cards" entry from `inactive: true` to active and fix path `/cards` → `/virtual-cards`.
-- Consider adding Rail 3 to the main onboarding wizard alongside Rail 5.
-- Out of scope for this plan; track separately.
+Flip sidebar "Virtual Cards" entry from `inactive: true` to active, fix path `/cards` → `/virtual-cards`. Add to onboarding wizard alongside Rail 5. Out of scope here.
 
 ---
 
 ## What stays the same
 
-- `shared/schema.ts` rail3 tables (PMs + cards).
-- All `server/storage/payment-rails/rail3*` storage code.
-- All bot endpoints (`/api/v1/bot/rail3/*`).
-- `rail3-fulfillment.ts` and approvals integration.
-- `payment-methods-strip.tsx`.
-- The intent-optional helper `buildMandates()` and the open/limited modes.
-- DELETE semantics (PM blocked when cards exist, card deletes revoke only its orderIntent).
-
-Backend stays. Owner-facing frontend gets rewired around real SDK components plus a missing agent-creation step.
-
----
-
-## Estimated effort
-
-| Phase | Effort |
-|---|---|
-| 0 — Verify SDK + REST | 30 min |
-| 1 — Auth bridge | 20 min |
-| 2 — Agents API + storage | 45 min (depends on Q1) |
-| 3 — Setup wizard rewrite | 45 min |
-| 4 — AddCardDialog rewrite | 30 min |
-| 5 — Tenant theming | 15 min |
-| 6 — Backend REST fixes | 15–60 min (depends what's wrong) |
-| 7 — Console + env doc | 10 min |
-| 8 — Live test + fixes | 30–60 min |
-| **Total** | **~4 hours** if no surprises, up to ~6 if backend REST needs major adjustments |
+- Bot endpoints `/api/v1/bot/rail3/*` keep their shape (internally call the new BFF or directly the new client with `userLocator` resolved from approver/owner).
+- `rail3-fulfillment.ts` and approvals integration — unchanged.
+- `payment-methods-strip.tsx` — minor: read PM list from new `GET /payment-methods` route, render the same way.
+- Approval gating semantics unchanged.
 
 ---
 
 ## Risks / unknowns
 
-- **Backend REST paths may be substantially wrong.** If `paymentMethods.ts` and `permissions.ts` were also written speculatively, they could be hitting endpoints that don't exist. Phase 0 surfaces this; Phase 6 fixes it. Worst case: rewrite half the backend client. Mitigation: clone the reference repo locally first and diff its `lib/crossmint-api.ts` against ours.
-- **`CrossmintWalletProvider` may force unwanted wallet creation.** The Firebase BYO-auth doc wraps in `CrossmintWalletProvider` because the doc example creates a wallet next. For Card Permissions specifically, we may not need it. If it pulls in unwanted UI or auto-creates a wallet, replace with a lighter wrapper or omit. Check during Phase 0.
-- **Agent storage choice (Q1)** affects how many files Phase 2 touches. (a) is one new column on an existing owner table; (b) is what we have today; (c) is a schema change. Recommend (a).
-- **Crossmint staging may have rate limits or test-card restrictions** that won't surface until Phase 8.
+- **`unstable` API surface.** Crossmint warns about breaking changes. We should pin a wrapper version and add a single integration test that hits staging weekly to catch drift.
+- **`CrossmintWalletProvider` side effects.** Verify in Phase 0 — may need to omit for card-only use.
+- **`PaymentMethodAgenticEnrollmentVerification` prop signature.** Customize-UI doc confirms it exists and accepts `appearance`. The `enrollment` prop shape (id vs full object) is inferred from the quickstart but not in the public docs. Phase 0 reads the .d.ts.
+- **Merchant `countryCode` requirement.** Quickstart marks it required on the credentials call. Our schema doesn't store merchant country today; we'd need it from the bot's checkout payload or default to `"US"`.
+- **Per-owner Firebase email** — needed for `POST /agentic-enrollment` body. We have it from Firebase user record; ensure available in BFF route.
+
+---
+
+## Estimated effort
+
+| Phase | Hours |
+|---|---|
+| 0 — Console + audit | 0.5 |
+| 1 — Backend client rewrite | 1.5 |
+| 2 — Schema + storage | 0.75 |
+| 3 — BFF routes | 1 |
+| 4 — Providers + JWT bridge | 0.3 |
+| 5 — Setup wizard | 1 |
+| 6 — AddCardDialog | 0.7 |
+| 7 — Tenant theming | 0.25 |
+| 8 — End-to-end test | 1 |
+| **Total** | **~7 hours** |
+
+Bigger than initially scoped because the backend was wrong, not just the frontend.
 
 ---
 
 ## Cross-references
 
-- Operational doc: `project_knowledge/currently_building/rail3/rail3-crossmint-card-permissions.md`
-- Open points (this plan resolves the first two): `project_knowledge/currently_building/rail3/rail3-open-points.md`
-- Original plan (historical): `project_knowledge/currently_building/rail3/rail3-virtual-cards-technical-plan.md`
+- Operational doc: `rail3-crossmint-card-permissions.md`
+- Open points (this plan resolves Q1, Q2; webhook + automated tests still open): `rail3-open-points.md`
+- Historical plan: `rail3-virtual-cards-technical-plan.md`
