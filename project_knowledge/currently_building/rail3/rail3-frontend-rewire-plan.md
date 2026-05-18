@@ -86,7 +86,9 @@ There is **no** `GET /payment-methods/:id`. The list endpoint is the read path; 
 // Mandate
 - "maxAmount" | "description" | "merchantAllowlist" | "merchantBlocklist"
 + "maxAmount" | "description" | "prompt"
-// Allowlist/Blocklist are not in the public type. We'd be sending garbage Crossmint may reject.
+// merchantAllowlist/Blocklist were invented — zero presence in Crossmint docs or quickstart types.
+// "prompt" appears in the quickstart's TS types but not in the public docs examples.
+// The API reference schema lists 4 mandate options but only exposes 2 (maxAmount, description) in markdown.
 
 // OrderIntent
 - { orderIntentId, phase: "pending_authorization" | "active" | "revoked", agentId, paymentMethodId, mandates }
@@ -145,9 +147,6 @@ Agent metadata (`name` / `description` for `POST /agents`) also undecided. Quick
 ### TBD-2 — Polling endpoints: keep or drop?
 SDK fires `onVerificationComplete` synchronously, so polling is redundant on the happy path. Question is whether to keep `/verification-status` and `/authorization-status` as a fallback for users who close the tab mid-ceremony, or drop them now and rely on the planned webhook (tracked in `rail3-open-points.md`).
 
-### TBD-3 — `merchantAllowlist` / `merchantBlocklist` mandates
-We invented these mandate types in `permissions.ts`. They're not in the public quickstart types. Either drop entirely (and use `description` / `prompt` free-text instead) or confirm with Crossmint whether they exist on an unlisted surface before deleting.
-
 ### TBD-4 — Schema migration posture
 Plan currently calls for dropping `rail3_payment_methods.agent_id`, dropping `verification_status`, renaming `permission_phase` enum values. Are there existing rows in those tables to preserve, or is this a clean-slate refactor (drop + recreate)?
 
@@ -198,7 +197,7 @@ Rewrite all four files against the real API surface.
 - `createEnrollment({ userLocator, paymentMethodId, email })` → POST same path with `{ email }`. Returns pending enrollment with `verificationConfig`.
 
 `permissions.ts` (rewrite):
-- Mandate types: `maxAmount | description | prompt` only. Drop `merchantAllowlist`/`merchantBlocklist`.
+- Mandate types: `maxAmount | description | prompt` only.
 - `buildMandates(input)`: same shape as quickstart. Open mode = yearly maxAmount ceiling + description.
 - `createOrderIntent({ userLocator, agentId, paymentMethodId, mandates })` → POST `/order-intents` with `{ agentId, payment: { paymentMethodId }, mandates }`.
 - `getOrderIntent({ userLocator, orderIntentId })` → there's no single-get in quickstart — use `listOrderIntents` and filter, or omit.

@@ -3,9 +3,7 @@ import { crossmintCardsFetch, unwrapCrossmint } from "./client";
 
 export type CrossmintMandate =
   | { type: "maxAmount"; value: string; details: { currency: string; period: "weekly" | "monthly" | "yearly" } }
-  | { type: "description"; value: string }
-  | { type: "merchantAllowlist"; value: string[] }
-  | { type: "merchantBlocklist"; value: string[] };
+  | { type: "description"; value: string };
 
 export type PermissionInput =
   | { mode: "limited"; maxAmountUsd: number; period: "weekly" | "monthly" | "yearly"; description?: string }
