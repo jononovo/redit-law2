@@ -50,7 +50,7 @@ const mainNavItems: NavItem[] = [
   // Shop Wallet hidden — Rail 2/Crossmint not yet functional
   // { icon: ShoppingCart, label: "Shop Wallet", subtitle: "USDC for Shopping API", href: "/card-wallet", tag: "coming soon", tooltip: "USDC wallet for Shopping at Amazon/Shopify.", requiredAccess: "admin" },
   { icon: Activity, label: "Transactions", href: "/transactions" },
-  { icon: CreditCard, label: "Virtual Cards", href: "/cards", inactive: true, requiredAccess: "admin" },
+  { icon: CreditCard, label: "Virtual Cards", href: "/virtual-cards", requiredAccess: "admin" },
 ];
 
 const procurementNavItems: NavItem[] = [
