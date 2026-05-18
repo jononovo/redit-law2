@@ -139,7 +139,7 @@ All previously open decisions answered from the public Crossmint docs (https://d
 Docs explicitly: *"You typically create one agent per user."* New table `rail3_agents (owner_uid PK, agent_id, created_at)`. In our model bots belong to owners, so "user" = owner. All of an owner's bots share the same Crossmint agent. Default metadata sent to `POST /agents`: `name = "Card Payment Agent"`, `description = "Default agent for card payments"` (Crossmint's own example values). Agent auto-created on first card save in the setup wizard; reused for every order intent that owner creates. Multi-agent-per-owner can be revisited later if dashboard attribution-per-bot becomes necessary.
 
 ### D-2 — Polling endpoints: **drop**
-SDK's `onVerificationComplete` is fired by the server's flip to `active` — it's authoritative. Existing `/verification-status` and `/authorization-status` BFF routes are deleted. Tab-close-mid-ceremony recovery is the planned webhook's job (tracked in `rail3-open-points.md`).
+SDK's `onVerificationComplete` is fired by the server's flip to `active` — it's authoritative. Existing `/verification-status` and `/authorization-status` BFF routes are deleted. Tab-close-mid-ceremony recovery falls back to owner re-polling on the next page visit.
 
 ### D-3 — Schema migration: **clean slate**
 All four rail3 tables contain 0 rows. No data preservation. Drizzle `db:push --force` to drop+recreate the affected columns and add `rail3_agents`.
@@ -400,5 +400,5 @@ ALTER TABLE rail3_cards ALTER COLUMN bot_id SET NOT NULL;
 ## Cross-references
 
 - Operational doc: `rail3-crossmint-card-permissions.md`
-- Open points (this plan resolves Q1, Q2; webhook + automated tests still open): `rail3-open-points.md`
+- Open points (this plan resolves Q1, Q2; remaining items still open): `rail3-open-points.md`
 - Historical plan: `rail3-virtual-cards-technical-plan.md`

@@ -8,7 +8,7 @@ status: in-process
 
 # Rail 3 — Open Points
 
-> All three Crossmint env vars are set (`CROSSMINT_SERVER_API_KEY`, `NEXT_PUBLIC_CROSSMINT_CLIENT_API_KEY`, `CROSSMINT_WEBHOOK_SECRET`). Backend client + storage + API routes compile and run. The 1-agent-per-bot rework (Phase 2.5 in the rewire plan) is in. The owner-facing ceremonies have **not** been live-tested end-to-end yet.
+> Crossmint server + client env vars are set (`CROSSMINT_SERVER_API_KEY`, `NEXT_PUBLIC_CROSSMINT_CLIENT_API_KEY`). Backend client + storage + API routes compile and run. The 1-agent-per-bot rework (Phase 2.5 in the rewire plan) is in. The owner-facing ceremonies have **not** been live-tested end-to-end yet.
 
 ---
 
@@ -40,19 +40,7 @@ Test path (Phase 8 of the rewire plan):
 
 This is the only remaining blocker to "rail3 actually works."
 
-### 4. Webhook handler — **NOT BUILT**
-`CROSSMINT_WEBHOOK_SECRET` is set but no route exists.
-
-State drift risk: if Crossmint revokes a PM or order intent server-side (issuer fraud, owner action in Crossmint dashboard), our `rail3_payment_methods.status` / `rail3_cards.permission_phase` will silently stay "active" until next poll. Bot checkout fails closed (Crossmint will reject the credentials fetch with a clear error), so it's degraded UX, not unsafe behavior.
-
-If we add it:
-- New route `app/api/v1/rail3/webhook/route.ts` — verify HMAC against `CROSSMINT_WEBHOOK_SECRET`, switch on event type, update PM or card row.
-- Register webhook URL in Crossmint Console.
-- Optionally drop owner-side polling.
-
-Pattern to copy: `features/agent-interaction/procurement/crossmint-worldstore/webhook.ts` (Rail 2 already verifies Crossmint signatures).
-
-### 5. Bot-delete → Crossmint agent cleanup — **NOT BUILT, NO CALLER YET**
+### 4. Bot-delete → Crossmint agent cleanup — **NOT BUILT, NO CALLER YET**
 Phase 2.5 added `deleteRail3AgentByBotId` to storage but nothing calls it. There is no `DELETE /api/v1/bots/:botId` route in the codebase today. When/if one gets built, it should:
 1. Call `deleteRail3AgentByBotId(botId)` on our DB.
 2. Call `DELETE /agents/:agentId` on Crossmint (we already have `createAgent` in `features/payment-rails/rail3/agents.ts` — add `deleteAgent`).
@@ -60,7 +48,7 @@ Phase 2.5 added `deleteRail3AgentByBotId` to storage but nothing calls it. There
 
 Until a bot-delete route exists, this is theoretical.
 
-### 6. Sidebar nav still inactive — **NOT FLIPPED**
+### 5. Sidebar nav still inactive — **NOT FLIPPED**
 `components/dashboard/sidebar.tsx:53`:
 ```ts
 { icon: CreditCard, label: "Virtual Cards", href: "/cards", inactive: true, requiredAccess: "admin" },
@@ -80,9 +68,8 @@ Should become `href: "/virtual-cards"` + drop `inactive: true`. Also worth remov
 ## Recommended order if you pick this up
 
 1. **Live-test end-to-end on staging** (#3). Everything else hinges on this passing.
-2. Flip sidebar nav (#6) once #3 passes.
-3. Decide on webhook (#4) based on whether silent state drift is actually observed in normal operation.
-4. Defer #5 until a bot-delete route is needed for unrelated reasons.
+2. Flip sidebar nav (#5) once #3 passes.
+3. Defer #4 until a bot-delete route is needed for unrelated reasons.
 
 ---
 
@@ -91,4 +78,3 @@ Should become `href: "/virtual-cards"` + drop `inactive: true`. Also worth remov
 - Operational doc: `project_knowledge/currently_building/rail3/rail3-crossmint-card-permissions.md`
 - Rewire plan (incl. Phase 2.5 per-bot agent rework): `project_knowledge/currently_building/rail3/rail3-frontend-rewire-plan.md`
 - Historical plan: `project_knowledge/currently_building/rail3/rail3-virtual-cards-technical-plan.md`
-- Rail 2 webhook pattern (for #4): `features/agent-interaction/procurement/crossmint-worldstore/webhook.ts`

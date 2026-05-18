@@ -289,15 +289,14 @@ The bot `/checkout` response shape matches Rail 5 exactly so OpenClaw's existing
 
 **v2 — bot integration (~3 days)**: Bot checkout + confirm APIs. `rail3-fulfillment.ts`. Order recording. OpenClaw credential adapter.
 
-**v3 — prod cutover (~1 day)**: Swap staging → prod Crossmint keys (assumes Crossmint contract covers Card Permissions; verify). Real-card smoke test. Wire charge webhooks if Crossmint emits them.
+**v3 — prod cutover (~1 day)**: Swap staging → prod Crossmint keys (assumes Crossmint contract covers Card Permissions; verify). Real-card smoke test.
 
 **Total: ~1 to 1.5 weeks.**
 
 ## Open questions to confirm before starting
 
 1. **Crossmint enterprise scope.** Does our existing Crossmint contract (Rail 2) cover Card Permissions API in production? Staging is open; prod may need a separate scope. Quick email.
-2. **Charge settlement webhooks.** Does Crossmint emit a webhook when a one-time credential is actually charged? If yes, wire it. If not, rely on bot's `/confirm` + periodic reconciliation.
-3. **Permission revocation semantics.** Does deleting an order intent invalidate already-issued one-time credentials, or do they live out their TTL?
+2. **Permission revocation semantics.** Does deleting an order intent invalidate already-issued one-time credentials, or do they live out their TTL?
 
 ## Files this plan will touch on implementation
 
