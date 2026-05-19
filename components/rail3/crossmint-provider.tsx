@@ -45,11 +45,15 @@ function FirebaseJwtBridge() {
 }
 
 export function Rail3CrossmintProvider({ children }: { children: ReactNode }) {
-  const apiKey = process.env.NEXT_PUBLIC_CROSSMINT_CLIENT_API_KEY;
+  const staging = process.env.NEXT_PUBLIC_CROSSMINT_ENV === "staging";
+  const apiKey = staging
+    ? process.env.NEXT_PUBLIC_CROSSMINT_CLIENT_API_KEY_STAGING
+    : process.env.NEXT_PUBLIC_CROSSMINT_CLIENT_API_KEY;
   if (!apiKey) {
+    const expected = staging ? "NEXT_PUBLIC_CROSSMINT_CLIENT_API_KEY_STAGING" : "NEXT_PUBLIC_CROSSMINT_CLIENT_API_KEY";
     return (
       <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-900">
-        Crossmint client API key not configured. Set <code className="font-mono">NEXT_PUBLIC_CROSSMINT_CLIENT_API_KEY</code>.
+        Crossmint client API key not configured for <code>NEXT_PUBLIC_CROSSMINT_ENV={staging ? "staging" : "prod"}</code>. Set <code className="font-mono">{expected}</code>.
       </div>
     );
   }

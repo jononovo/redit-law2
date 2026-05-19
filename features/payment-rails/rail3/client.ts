@@ -1,14 +1,25 @@
 import "server-only";
 
+function isStaging(): boolean {
+  return process.env.NEXT_PUBLIC_CROSSMINT_ENV === "staging";
+}
+
 export function getRail3BaseUrl(): string {
-  return process.env.CROSSMINT_ENV === "staging"
+  return isStaging()
     ? "https://staging.crossmint.com/api/unstable"
     : "https://www.crossmint.com/api/unstable";
 }
 
 export function getRail3ServerApiKey(): string {
-  const key = process.env.CROSSMINT_SERVER_API_KEY;
-  if (!key) throw new Error("CROSSMINT_SERVER_API_KEY is required for Rail 3 (Card Permissions)");
+  const staging = isStaging();
+  const key = staging
+    ? process.env.CROSSMINT_SERVER_API_KEY_STAGING
+    : process.env.CROSSMINT_SERVER_API_KEY;
+  if (!key) {
+    throw new Error(
+      `${staging ? "CROSSMINT_SERVER_API_KEY_STAGING" : "CROSSMINT_SERVER_API_KEY"} is required for Rail 3 (Card Permissions) — NEXT_PUBLIC_CROSSMINT_ENV=${staging ? "staging" : "prod"}`,
+    );
+  }
   return key;
 }
 

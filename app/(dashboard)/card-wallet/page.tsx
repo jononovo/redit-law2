@@ -459,8 +459,12 @@ export default function CardWalletPage() {
             </div>
           ) : (
             <div className="mt-4">
-              {process.env.NEXT_PUBLIC_CROSSMINT_CLIENT_API_KEY ? (
-                <CrossmintProvider apiKey={process.env.NEXT_PUBLIC_CROSSMINT_CLIENT_API_KEY}>
+              {(process.env.NEXT_PUBLIC_CROSSMINT_ENV === "staging"
+                ? process.env.NEXT_PUBLIC_CROSSMINT_CLIENT_API_KEY_STAGING
+                : process.env.NEXT_PUBLIC_CROSSMINT_CLIENT_API_KEY) ? (
+                <CrossmintProvider apiKey={(process.env.NEXT_PUBLIC_CROSSMINT_ENV === "staging"
+                  ? process.env.NEXT_PUBLIC_CROSSMINT_CLIENT_API_KEY_STAGING
+                  : process.env.NEXT_PUBLIC_CROSSMINT_CLIENT_API_KEY)!}>
                   <CrossmintCheckoutWrapper
                     orderId={fundOrderData.orderId}
                     clientSecret={fundOrderData.clientSecret}

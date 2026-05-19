@@ -5,16 +5,27 @@ const API_VERSIONS = {
 
 type ApiVersion = keyof typeof API_VERSIONS;
 
+function isStaging(): boolean {
+  return process.env.NEXT_PUBLIC_CROSSMINT_ENV === "staging";
+}
+
 function getBaseUrl(version: ApiVersion = "wallets"): string {
   const v = API_VERSIONS[version];
-  return process.env.CROSSMINT_ENV === "staging"
+  return isStaging()
     ? `https://staging.crossmint.com/api/${v}`
     : `https://www.crossmint.com/api/${v}`;
 }
 
 export function getServerApiKey(): string {
-  const key = process.env.CROSSMINT_SERVER_API_KEY;
-  if (!key) throw new Error("CROSSMINT_SERVER_API_KEY is required for Rail 2");
+  const staging = isStaging();
+  const key = staging
+    ? process.env.CROSSMINT_SERVER_API_KEY_STAGING
+    : process.env.CROSSMINT_SERVER_API_KEY;
+  if (!key) {
+    throw new Error(
+      `${staging ? "CROSSMINT_SERVER_API_KEY_STAGING" : "CROSSMINT_SERVER_API_KEY"} is required for Rail 2 — NEXT_PUBLIC_CROSSMINT_ENV=${staging ? "staging" : "prod"}`,
+    );
+  }
   return key;
 }
 
