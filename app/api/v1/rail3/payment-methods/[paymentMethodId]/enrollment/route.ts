@@ -4,17 +4,36 @@ import { storage } from "@/server/storage";
 import {
   getEnrollment,
   createEnrollment,
-  ownerUidToUserLocator,
   CrossmintApiError,
 } from "@/features/payment-rails/rail3";
+
+// Crossmint's agentic-enrollment endpoints are JWT-only — they reject the
+// server-key + userLocator path. Forward the caller's Firebase ID token
+// (which authFetch already sets as `Authorization: Bearer …`) directly to
+// Crossmint. The httpOnly session cookie is a Firebase *session cookie*, not
+// an ID token, so it can't be forwarded — Bearer is required here.
+function extractBearerJwt(request: NextRequest): string | null {
+  const authHeader = request.headers.get("authorization");
+  if (!authHeader?.startsWith("Bearer ")) return null;
+  return authHeader.slice(7);
+}
 
 async function loadOwnerPm(request: NextRequest, paymentMethodId: string) {
   const user = await getSessionUser(request);
   if (!user) return { error: NextResponse.json({ error: "unauthorized" }, { status: 401 }) };
+  const jwt = extractBearerJwt(request);
+  if (!jwt) {
+    return {
+      error: NextResponse.json(
+        { error: "bearer_required", message: "Firebase ID token required in Authorization header for agentic enrollment." },
+        { status: 401 }
+      ),
+    };
+  }
   const pm = await storage.getRail3PaymentMethodById(paymentMethodId);
   if (!pm) return { error: NextResponse.json({ error: "payment_method_not_found" }, { status: 404 }) };
   if (pm.ownerUid !== user.uid) return { error: NextResponse.json({ error: "forbidden" }, { status: 403 }) };
-  return { user, pm };
+  return { user, jwt, pm };
 }
 
 export async function GET(
@@ -22,14 +41,11 @@ export async function GET(
   { params }: { params: Promise<{ paymentMethodId: string }> }
 ) {
   const { paymentMethodId } = await params;
-  const { user, error } = await loadOwnerPm(request, paymentMethodId);
+  const { jwt, error } = await loadOwnerPm(request, paymentMethodId);
   if (error) return error;
 
   try {
-    const enrollment = await getEnrollment({
-      userLocator: ownerUidToUserLocator(user!.uid),
-      paymentMethodId,
-    });
+    const enrollment = await getEnrollment({ jwt: jwt!, paymentMethodId });
     return NextResponse.json({ payment_method_id: paymentMethodId, enrollment });
   } catch (err) {
     const status = err instanceof CrossmintApiError ? err.status : 500;
@@ -45,7 +61,7 @@ export async function POST(
   { params }: { params: Promise<{ paymentMethodId: string }> }
 ) {
   const { paymentMethodId } = await params;
-  const { user, error } = await loadOwnerPm(request, paymentMethodId);
+  const { user, jwt, error } = await loadOwnerPm(request, paymentMethodId);
   if (error) return error;
 
   const email = user!.email;
@@ -57,11 +73,7 @@ export async function POST(
   }
 
   try {
-    const enrollment = await createEnrollment({
-      userLocator: ownerUidToUserLocator(user!.uid),
-      paymentMethodId,
-      email,
-    });
+    const enrollment = await createEnrollment({ jwt: jwt!, paymentMethodId, email });
     return NextResponse.json({ payment_method_id: paymentMethodId, enrollment });
   } catch (err) {
     const status = err instanceof CrossmintApiError ? err.status : 500;
