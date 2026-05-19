@@ -1,0 +1,43 @@
+forward-logs-shared.ts:95 Download the React DevTools for a better development experience: https://react.dev/link/react-devtools
+forward-logs-shared.ts:95 [HMR] connected
+forward-logs-shared.ts:95 [EventEmitter] on() called - Registering listener for event: ui:height.changed
+forward-logs-shared.ts:95 [EventEmitter] on() - Listener registered with ID: io1l8u3gmfbo8 for event: ui:height.changed
+forward-logs-shared.ts:95 [EventEmitter] on() called - Registering listener for event: payment-method:selected
+forward-logs-shared.ts:95 [EventEmitter] on() - Listener registered with ID: kjqjrh2y5qw6h for event: payment-method:selected
+forward-logs-shared.ts:95 [EventEmitter] on() called - Registering listener for event: order-intent:created
+forward-logs-shared.ts:95 [EventEmitter] on() - Listener registered with ID: tc68alrnfmnbh for event: order-intent:created
+3774-c18c5474eaf774d4.js:1 Zod validation failed on client side.
+74580 @ 3774-c18c5474eaf774d4.js:1
+o @ webpack-d59cfa0ed04e2441.js:1
+9011 @ 3774-c18c5474eaf774d4.js:1
+o @ webpack-d59cfa0ed04e2441.js:1
+106 @ 4822-076edf22e9dd295b.js:1
+o @ webpack-d59cfa0ed04e2441.js:1
+93352 @ 4822-076edf22e9dd295b.js:1
+o @ webpack-d59cfa0ed04e2441.js:1
+48567 @ 4822-076edf22e9dd295b.js:1
+o @ webpack-d59cfa0ed04e2441.js:1
+39665 @ 9107-c5974af5aac17345.js:1
+o @ webpack-d59cfa0ed04e2441.js:1
+13113 @ page-3f5b5150219dec8d.js:1
+o @ webpack-d59cfa0ed04e2441.js:1
+Promise.then
+96354 @ page-3f5b5150219dec8d.js:1
+o @ webpack-d59cfa0ed04e2441.js:1
+(anonymous) @ page-3f5b5150219dec8d.js:1
+o.O @ webpack-d59cfa0ed04e2441.js:1
+(anonymous) @ page-3f5b5150219dec8d.js:1
+r @ webpack-d59cfa0ed04e2441.js:1
+(anonymous) @ page-3f5b5150219dec8d.js:1
+forward-logs-shared.ts:95 [EventEmitter] on() - Received message for event: ui:height.changed
+forward-logs-shared.ts:95 [EventEmitter] on() - Raw message data: {height: 96}
+forward-logs-shared.ts:95 [EventEmitter] on() - Calling callback with validated data: {height: 96}
+forward-logs-shared.ts:95 [EventEmitter] on() - Callback completed for event: ui:height.changed
+forward-logs-shared.ts:95 [EventEmitter] on() - Received message for event: ui:height.changed
+forward-logs-shared.ts:95 [EventEmitter] on() - Received message for event: ui:height.changed
+forward-logs-shared.ts:95 [EventEmitter] on() - Received message for event: ui:height.changed
+forward-logs-shared.ts:95 [EventEmitter] on() - Raw message data: {height: 362}
+forward-logs-shared.ts:95 [EventEmitter] on() - Calling callback with validated data: {height: 362}
+forward-logs-shared.ts:95 [EventEmitter] on() - Callback completed for event: ui:height.changed
+forward-logs-shared.ts:95 [EventEmitter] on() - Received message for event: ui:height.changed
+forward-logs-shared.ts:95 [EventEmitter] on() - Received message for event: ui:height.changed
