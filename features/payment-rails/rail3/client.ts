@@ -1,15 +1,15 @@
 import "server-only";
+import { CROSSMINT_HOST, CROSSMINT_SERVER_API_KEY } from "@/features/payment-rails/crossmint-env";
 
 export function getRail3BaseUrl(): string {
-  return process.env.CROSSMINT_ENV === "staging"
-    ? "https://staging.crossmint.com/api/unstable"
-    : "https://www.crossmint.com/api/unstable";
+  return `${CROSSMINT_HOST}/api/unstable`;
 }
 
 export function getRail3ServerApiKey(): string {
-  const key = process.env.CROSSMINT_SERVER_API_KEY;
-  if (!key) throw new Error("CROSSMINT_SERVER_API_KEY is required for Rail 3 (Card Permissions)");
-  return key;
+  if (!CROSSMINT_SERVER_API_KEY) {
+    throw new Error("Crossmint server API key is missing — set the env var referenced in features/payment-rails/crossmint-env.ts");
+  }
+  return CROSSMINT_SERVER_API_KEY;
 }
 
 /**

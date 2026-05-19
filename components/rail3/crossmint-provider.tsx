@@ -8,6 +8,7 @@
 import { useEffect, type ReactNode } from "react";
 import { CrossmintProvider, useCrossmint } from "@crossmint/client-sdk-react-ui";
 import { auth } from "@/features/platform-management/firebase/client";
+import { CROSSMINT_CLIENT_API_KEY } from "@/features/payment-rails/crossmint-env";
 
 function FirebaseJwtBridge() {
   const { setJwt } = useCrossmint();
@@ -45,11 +46,11 @@ function FirebaseJwtBridge() {
 }
 
 export function Rail3CrossmintProvider({ children }: { children: ReactNode }) {
-  const apiKey = process.env.NEXT_PUBLIC_CROSSMINT_CLIENT_API_KEY;
+  const apiKey = CROSSMINT_CLIENT_API_KEY;
   if (!apiKey) {
     return (
       <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-900">
-        Crossmint client API key not configured. Set <code className="font-mono">NEXT_PUBLIC_CROSSMINT_CLIENT_API_KEY</code>.
+        Crossmint client API key not configured. Set the env var referenced in <code className="font-mono">features/payment-rails/crossmint-env.ts</code>.
       </div>
     );
   }
