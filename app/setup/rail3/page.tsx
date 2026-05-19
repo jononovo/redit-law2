@@ -24,6 +24,13 @@ interface SavedPm {
   cardLast4?: string;
 }
 
+// Mirrors the AgenticEnrollment pending variant returned by our API.
+interface PendingEnrollment {
+  enrollmentId: string;
+  status: "pending";
+  verificationConfig: { environment: string; publicApiKey: string };
+}
+
 export default function Rail3SetupPage() {
   return (
     <Rail3CrossmintProvider>
@@ -40,6 +47,7 @@ function SetupInner() {
   const [step, setStep] = useState<Step>(1);
   const [savedPm, setSavedPm] = useState<SavedPm | null>(null);
   const [enrollmentStatus, setEnrollmentStatus] = useState<string | null>(null);
+  const [pendingEnrollment, setPendingEnrollment] = useState<PendingEnrollment | null>(null);
   const [enrollmentError, setEnrollmentError] = useState<string | null>(null);
   const pollRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -58,9 +66,14 @@ function SetupInner() {
           if (res.status === 404) return;
           throw new Error(json.message || json.error || "enrollment_failed");
         }
-        const status = json.enrollment?.status as string | undefined;
+        const enrollment = json.enrollment;
+        const status = enrollment?.status as string | undefined;
         if (status) setEnrollmentStatus(status);
+        if (status === "pending" && enrollment?.verificationConfig) {
+          setPendingEnrollment(enrollment as PendingEnrollment);
+        }
         if (status === "active" || status === "failed") {
+          setPendingEnrollment(null);
           if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
           if (status === "failed") setEnrollmentError("Enrollment failed. Check your email or retry.");
         }
@@ -102,7 +115,11 @@ function SetupInner() {
       const enrollRes = await authFetch(`/api/v1/rail3/payment-methods/${saved.paymentMethodId}/enrollment`, { method: "POST" });
       const enrollJson = await enrollRes.json();
       if (!enrollRes.ok) throw new Error(enrollJson.message || enrollJson.error || "enrollment_init_failed");
-      setEnrollmentStatus(enrollJson.enrollment?.status || "pending");
+      const enrollment = enrollJson.enrollment;
+      setEnrollmentStatus(enrollment?.status || "pending");
+      if (enrollment?.status === "pending" && enrollment?.verificationConfig) {
+        setPendingEnrollment(enrollment as PendingEnrollment);
+      }
       startEnrollmentPoll(saved.paymentMethodId);
     } catch (e: any) {
       setEnrollmentError(e.message);
@@ -148,13 +165,13 @@ function SetupInner() {
           )}
 
           {step === 2 && (
-            <Section icon={<ShieldCheck className="w-5 h-5" />} title="Authorize for agentic use" subtitle="Crossmint just emailed you a link. Open it and tap your passkey to authorize this card for agent use.">
+            <Section icon={<ShieldCheck className="w-5 h-5" />} title="Authorize for agentic use" subtitle="Enter the one-time code sent to your email, then create a passkey on this device. Future agent purchases only require a passkey tap.">
               {enrollmentError && (
                 <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700" data-testid="text-enrollment-error">
                   {enrollmentError}
                 </div>
               )}
-              <div className="flex items-center gap-3 p-4 bg-blue-50 rounded-lg" data-testid="status-enrollment">
+<div className="flex items-center gap-3 p-4 bg-blue-50 rounded-lg" data-testid="status-enrollment">
                 {enrolled ? (
                   <>
                     <CheckCircle2 className="w-5 h-5 text-green-600" />
