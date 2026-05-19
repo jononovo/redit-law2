@@ -330,13 +330,18 @@ function AddCardDialogInner({ open, onOpenChange, paymentMethods, onComplete }: 
               ) : (
                 <div className="rounded-lg border border-neutral-200 overflow-hidden" data-testid="container-order-intent-verification">
                   <OrderIntentVerification
-                    config={createdCard.verificationConfig}
-                    orderIntent={{ orderIntentId: createdCard.orderIntentId } as any}
+                    orderIntent={{
+                      orderIntentId: createdCard.orderIntentId,
+                      phase: "requires-verification",
+                      mandates: [],
+                      payment: { paymentMethodId: pmId },
+                      verificationConfig: createdCard.verificationConfig,
+                    } as any}
                     onVerificationComplete={() => {
                       setCreatedCard((cur) => cur ? { ...cur, phase: "active" } : cur);
                       onComplete();
                     }}
-                    onVerificationError={(err) => setError(err.message)}
+                    onVerificationError={(err) => setError(err instanceof Error ? err.message : String(err))}
                   />
                 </div>
               )}

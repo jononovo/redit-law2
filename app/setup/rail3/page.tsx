@@ -13,7 +13,10 @@ import { useAuth } from "@/features/platform-management/auth/auth-context";
 import { authFetch } from "@/features/platform-management/auth-fetch";
 import { Button } from "@/components/ui/button";
 import { CheckCircle2, Loader2, CreditCard, ShieldCheck } from "lucide-react";
-import { CrossmintPaymentMethodManagement } from "@crossmint/client-sdk-react-ui";
+import {
+  CrossmintPaymentMethodManagement,
+  PaymentMethodAgenticEnrollmentVerification,
+} from "@crossmint/client-sdk-react-ui";
 import { Rail3CrossmintProvider, useCrossmintJwt } from "@/components/rail3/crossmint-provider";
 
 type Step = 1 | 2;
@@ -28,7 +31,7 @@ interface SavedPm {
 interface PendingEnrollment {
   enrollmentId: string;
   status: "pending";
-  verificationConfig: { environment: string; publicApiKey: string };
+  verificationConfig: { environment: "production" | "test"; publicApiKey: string };
 }
 
 export default function Rail3SetupPage() {
@@ -171,7 +174,22 @@ function SetupInner() {
                   {enrollmentError}
                 </div>
               )}
-<div className="flex items-center gap-3 p-4 bg-blue-50 rounded-lg" data-testid="status-enrollment">
+              {!enrolled && pendingEnrollment && (
+                <div data-testid="container-enrollment-verification" className="rounded-lg border border-neutral-200 overflow-hidden">
+                  <PaymentMethodAgenticEnrollmentVerification
+                    paymentMethodAgenticEnrollment={pendingEnrollment}
+                    onVerificationComplete={() => {
+                      setEnrollmentStatus("active");
+                      setPendingEnrollment(null);
+                      if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
+                    }}
+                    onVerificationError={(err: unknown) => {
+                      setEnrollmentError(err instanceof Error ? err.message : String(err));
+                    }}
+                  />
+                </div>
+              )}
+              <div className="flex items-center gap-3 p-4 bg-blue-50 rounded-lg" data-testid="status-enrollment">
                 {enrolled ? (
                   <>
                     <CheckCircle2 className="w-5 h-5 text-green-600" />
