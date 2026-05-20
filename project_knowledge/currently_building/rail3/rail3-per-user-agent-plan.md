@@ -1,40 +1,41 @@
 ---
 name: Rail 3 — Per-User Agent Refactor (Bot-Optional Card Creation)
-description: Move from one-Crossmint-agent-per-bot to one-Crossmint-agent-per-user. Make `bot_id` optional on virtual card creation. Forward-compatible foundation for the future "Master Agent" feature. Strip dead UI surfaces left over from the per-bot model.
+description: Move from one-Crossmint-agent-per-bot to one-Crossmint-agent-per-user. Make `bot_id` optional on virtual card creation. Strip dead UI surfaces left over from the per-bot model.
 created: 2026-05-20
 status: planned — awaiting go
 ---
 
 ## Why this exists
 
-Today every virtual card requires a bot, and every bot lazily provisions its own Crossmint agent. That coupling forces the user to set up a bot before they can vault a card, preview it, or configure permissions. That's bad UX, and the bot↔agent mapping is also wrong long-term: Crossmint docs explicitly recommend **one agent per user**, not per bot.
+Today every virtual card requires a bot, and every bot lazily provisions its own Crossmint agent. That coupling forces the user to set up a bot before they can vault a card, preview it, or configure permissions. That's bad UX, and the bot↔agent mapping is also wrong long-term: **Crossmint docs explicitly say "you typically create one agent per user"** (`agents/payment-methods/cards/register-agent`).
 
 The fix is two changes that happen together:
 
 1. **Backend model:** one Crossmint agent per **owner** (`ownerUid`), lazy-created on first card. Bot becomes an optional pointer on the card row, not a creation prerequisite.
-2. **UX:** AddCardDialog no longer requires a bot. Card create flow tells the user "we issued you an agent" — internal name is currently `CreditClaw Agent — <email>` and represents *that user's* Crossmint agent. (Phase 2: this becomes the per-user alias on top of the shared Master Agent — see `internal_docs/04-payment-tools/master-agent-build.md`.)
+2. **UX:** AddCardDialog no longer requires a bot. Card create flow tells the user "we issued you an agent" — internally `CreditClaw Agent — <email>`.
 
-The user-facing language ("we generated an agent for you") is forward-compatible with both today's per-user-real-agent model and tomorrow's shared-Master-Agent model. The DB shape supports both.
+**Cross-rail impact:** zero. Rail 1 / Rail 2 / Rail 5 have no agent concept. They look up wallets/cards by `botId` and tolerate missing rows.
 
-**Cross-rail impact:** zero. Rail 1 / Rail 2 / Rail 5 have no agent concept. They look up wallets/cards by `botId` and tolerate missing rows. They are not touched by this change.
+**Crossmint constraint, called out explicitly:** `createOrderIntent` binds the orderIntent to an `agentId` at creation. There is no Crossmint API to reassign. So a card created today under the user's per-user agent stays under that agent forever — even if the user later links a real bot. The card↔bot link is a database-only relabel; the underlying Crossmint permission routes through the user's agent. This is fine.
 
-**Crossmint constraint, called out explicitly:** `createOrderIntent` binds the orderIntent to an `agentId` at creation. There is no Crossmint API to reassign. So a card created today under "CreditClaw Agent for user X" stays under that agent forever — even if the user later links a real bot. The card↔bot link is a database-only relabel; the underlying Crossmint permission routes through the user's agent. This is fine and matches the Master Agent end-state.
+**Forward link:** see `internal_docs/04-payment-tools/master-agent-build.md` for the future "in-house agent runtime" idea. That doc is a holding place — this refactor does **not** add speculative columns or interfaces for it. If/when Master Agent is built, schema changes happen then.
 
 ---
 
 ## Scope
 
 In:
-- Schema reshape on `rail3_agents` + `rail3_cards`.
+- Schema reshape on `rail3_agents` + nullable `rail3_cards.bot_id`.
 - Storage + POST route rewrite to use per-owner agent.
 - `add-card-dialog.tsx` cleanup (bot picker optional, `noBots` block deleted, hand-rolled card preview replaced with `CardVisual`).
-- Strip the broken `/bots` route reference (it 404s; nothing else points to it).
-- Sibling endpoints audited for "bot is required" assumptions.
+- Strip the broken `/bots` route reference.
+- Delete obsoleted open point #4 from `rail3-open-points.md` (per-user agents aren't tied to bot lifecycle).
+- Update stale `agent_id`-on-PM mention in `rail3-crossmint-card-permissions.md`.
 
 Out (separate follow-ups, noted but not built):
 - "Link a bot to an existing botless card later" endpoint. UI affordance already exists in `credit-card-item.tsx`. Backend wire-up = ~30 lines of PATCH but not in this pass.
 - Master Agent runtime / browser control / pool strategy. See its own doc.
-- Backfill of any phantom historical data. Per user direction, no backward compatibility — destructive migration on staging is acceptable.
+- Backfill of any prior data. Per user direction, no backward compatibility — destructive migration on staging is acceptable.
 
 ---
 
@@ -54,15 +55,12 @@ New:
 ```ts
 ownerUid: text("owner_uid").primaryKey(),  // 1 agent per OWNER
 agentId: text("agent_id").notNull(),
-agentAlias: text("agent_alias"),           // forward-compat: per-user label
-                                            // for the future shared Master Agent.
-                                            // For now mirrors agentId.
 createdAt: timestamp(...)
 ```
 
 - PK changes from `bot_id` to `owner_uid`. One row per user, ever.
-- `botId` column removed entirely (the link, if any, lives on `rail3_cards`).
-- `agentAlias` added for Master Agent forward-compat. In Phase 1 it equals `agentId`; in Phase 2 the alias is a virtual ID we issue per user while `agentId` points at the shared Master Agent's Crossmint ID.
+- `botId` column removed (the link, if any, lives on `rail3_cards`).
+- No speculative `agentAlias`/`metadata` columns. Add them only when an actual feature needs them.
 
 ### `rail3_cards.botId` (relax to nullable)
 
@@ -81,83 +79,88 @@ bot_id: z.string().min(1).max(200).optional(),
 
 ### Migration
 
-Drizzle migration in `drizzle/`. Two statements:
+Drizzle migration. Two statements:
 1. `DROP TABLE rail3_agents;` then re-create with new shape via `drizzle-kit generate`.
 2. `ALTER TABLE rail3_cards ALTER COLUMN bot_id DROP NOT NULL;`
 
-Existing `rail3_agents` rows and any `rail3_cards` rows (staging only) are wiped/relaxed. Confirmed acceptable per user direction.
+Existing `rail3_agents` rows wiped, `rail3_cards.bot_id` relaxed. Confirmed acceptable per user direction (staging only).
 
 ---
 
-## Storage layer (`server/storage/payment-rails/rail3-agents.ts`)
+## Code layout — separation of concerns
 
-Replace the entire file. New interface:
+Per project conventions (`replit.md`: "one file = one responsibility"), the Crossmint API call doesn't go inside storage. Three files, three jobs:
+
+### `features/payment-rails/rail3/per-user-agent.ts` (new)
+
+Owns the Crossmint side.
+
+```ts
+export async function provisionAgentForOwner(
+  ownerUid: string,
+  ownerEmail: string,
+): Promise<{ agentId: string }> {
+  const created = await createAgent({
+    userLocator: ownerUidToUserLocator(ownerUid),
+    name: `CreditClaw Agent — ${ownerEmail}`,
+  });
+  return { agentId: created.agentId };
+}
+```
+
+### `server/storage/payment-rails/rail3-agents.ts` (rewrite)
+
+Pure DB. Race handled at insert via `ON CONFLICT DO NOTHING ... RETURNING`.
 
 ```ts
 type Rail3AgentMethods = Pick<IStorage,
   | "getRail3AgentByOwnerUid"
-  | "getOrCreateRail3AgentForOwner"
+  | "insertRail3AgentIfAbsent"
 >;
-```
 
-Implementation:
-
-```ts
 async getRail3AgentByOwnerUid(ownerUid: string): Promise<Rail3Agent | null> {
   const [row] = await db.select().from(rail3Agents)
     .where(eq(rail3Agents.ownerUid, ownerUid)).limit(1);
   return row || null;
 }
 
-async getOrCreateRail3AgentForOwner(
-  ownerUid: string,
-  ownerEmail: string,
-): Promise<Rail3Agent> {
-  const existing = await this.getRail3AgentByOwnerUid(ownerUid);
-  if (existing) return existing;
-
-  // Create on Crossmint.
-  const created = await createAgent({
-    userLocator: ownerUidToUserLocator(ownerUid),
-    name: `CreditClaw Agent — ${ownerEmail}`,
-  });
-
-  // Insert. PK conflict on ownerUid = another concurrent request beat us;
-  // re-read and orphan our just-created Crossmint agent. Same pattern we
-  // already use for the per-bot agent path.
-  try {
-    const [row] = await db.insert(rail3Agents).values({
-      ownerUid,
-      agentId: created.agentId,
-      agentAlias: created.agentId,  // Phase 1: alias == agentId
-    }).returning();
-    return row;
-  } catch (err: any) {
-    if (err?.code === "23505") {
-      const winner = await this.getRail3AgentByOwnerUid(ownerUid);
-      if (winner) {
-        console.warn("[Rail3] orphaned Crossmint agent", created.agentId,
-          "for owner", ownerUid, "(lost race)");
-        return winner;
-      }
-    }
-    throw err;
-  }
+// Insert. If a row already exists (race), return null — caller re-reads.
+async insertRail3AgentIfAbsent(data: InsertRail3Agent): Promise<Rail3Agent | null> {
+  const [row] = await db.insert(rail3Agents).values(data)
+    .onConflictDoNothing()
+    .returning();
+  return row || null;
 }
 ```
 
-The Crossmint API call lives inside storage to keep the route thin. Reasonable because there's exactly one caller and it's not worth a separate service layer. If a second caller appears, extract to `features/payment-rails/rail3/agent-provisioning.ts`.
+Update `server/storage/types.ts` accordingly. Remove `getRail3AgentByBotId`, `createRail3Agent`, `deleteRail3AgentByBotId` (the delete method is unused — confirmed in `rail3-open-points.md` open point #4, which becomes obsolete with this change).
 
-Update `server/storage/types.ts` accordingly. Remove `getRail3AgentByBotId`, `createRail3Agent`, `deleteRail3AgentByBotId`.
+### `app/api/v1/rail3/cards/route.ts` (POST handler — composition)
+
+4-line orchestration replaces the old ~50-line per-bot block:
+
+```ts
+async function getOrProvisionAgent(ownerUid: string, ownerEmail: string) {
+  const existing = await storage.getRail3AgentByOwnerUid(ownerUid);
+  if (existing) return existing;
+
+  const { agentId } = await provisionAgentForOwner(ownerUid, ownerEmail);
+  const inserted = await storage.insertRail3AgentIfAbsent({ ownerUid, agentId });
+  if (inserted) return inserted;
+
+  // Race: another request inserted first. Re-read winner; orphan our Crossmint agent.
+  const winner = await storage.getRail3AgentByOwnerUid(ownerUid);
+  if (!winner) throw new Error("rail3_agent_race_unresolved");
+  console.warn("[Rail3] orphaned Crossmint agent", agentId, "for owner", ownerUid);
+  return winner;
+}
+```
 
 ---
 
 ## POST `/api/v1/rail3/cards` rewrite
 
-Current handler has ~50 lines of per-bot agent provisioning + race handling. After the refactor that all collapses into one storage call.
-
 ```ts
-// Validate body.
 const parsed = rail3CreateCardSchema.safeParse(body);
 // ...validate PM ownership...
 
@@ -170,15 +173,14 @@ if (parsed.data.bot_id) {
 }
 
 // Always use the per-owner Crossmint agent. Lazy-creates on first card.
-const agent = await storage.getOrCreateRail3AgentForOwner(user.uid, user.email!);
+const agent = await getOrProvisionAgent(user.uid, user.email!);
 
 // Build mandates + create orderIntent.
-const mandates = buildMandates({ /* unchanged */ });
 const intent = await createOrderIntent({
   userLocator: ownerUidToUserLocator(user.uid),
   agentId: agent.agentId,
   paymentMethodId: pm.paymentMethodId,
-  mandates,
+  mandates: buildMandates({ /* unchanged */ }),
 });
 
 // Persist card. botId is nullable.
@@ -190,18 +192,21 @@ const card = await storage.createRail3Card({
 return NextResponse.json({ /* unchanged */ });
 ```
 
-Net: ~40 lines removed, much easier to read.
+Net: ~40 lines removed.
 
 ---
 
-## GET endpoints — audit & light touch
+## Sibling endpoints — audit summary
 
-- `GET /api/v1/rail3/cards` — already handles `c.botId || null` defensively and only resolves names for non-null botIds. **No change.**
-- `GET /api/v1/rail3/cards/[cardId]` — same. **No change.**
-- `GET /api/v1/rail3/transactions` — transactions have their own `botId` (already nullable in the schema). **No change.**
-- `PATCH /api/v1/rail3/cards/[cardId]` — already guards `updated?.botId` before firing the webhook. **No change.** Stale comment at top of the file ("bot_id intentionally NOT patchable... bound 1:1 to a bot") needs rewriting to reflect the new model. Update the comment, don't add patchability of `bot_id` to the schema in this pass (that's the follow-up endpoint).
-- `DELETE /api/v1/rail3/cards/[cardId]` — already guards `if (card.botId)` before firing webhook. **No change.**
-- `POST /api/v1/bot/rail3/checkout` — line 24 enforces `card.botId !== bot.botId → forbidden`. Cards with `botId === null` will be forbidden to every bot, which is correct: a botless card is owner-vault-only until linked. **No change.** Worth a one-line comment so future readers understand the null case.
+All sibling endpoints already null-safe on `card.botId`. No code edits required.
+
+- `GET /api/v1/rail3/cards` and `GET /api/v1/rail3/cards/[cardId]` use `c.botId || null` and only resolve bot names for non-null IDs.
+- `PATCH /api/v1/rail3/cards/[cardId]` guards `updated?.botId` before firing webhook. **Stale comment at top** of the file claims "bot_id intentionally NOT patchable… bound 1:1 to a bot" — needs rewriting to reflect the new model (do not add `bot_id` patchability in this pass — that's the follow-up endpoint).
+- `DELETE /api/v1/rail3/cards/[cardId]` guards `if (card.botId)` before firing webhook.
+- `POST /api/v1/bot/rail3/checkout` line 24 enforces `card.botId !== bot.botId → forbidden`. A card with `botId === null` is forbidden to every bot — correct: vault-only until linked. Worth a one-line comment so future readers understand.
+- `GET /api/v1/rail3/transactions` already uses nullable `botId`.
+
+Bot-list UIs (`/api/v1/bots/mine` consumers: overview, settings, orders-panel, link-bot hook, rail5 wizard, AddCardDialog) all already handle empty `bots` arrays as a first-class state. No edits expected — verify during validation.
 
 ---
 
@@ -235,9 +240,9 @@ Lines around 152, 173–195. The whole `noBots ? ... : ...` ternary collapses. T
 
 Submit button: `disabled={submitting || !pmId}` (drop `!botId`).
 
-Submit body: omit `bot_id` if empty string (don't send empty string to the optional schema).
+Submit body: omit `bot_id` when empty string.
 
-Drop `useState<string>("")` initialization that auto-picks the first bot — pre-selecting biases the user toward linking when "none" is now the valid default.
+Drop the auto-pick-first-bot `useState` initialization — pre-selecting biases the user toward linking when "none" is now the valid default.
 
 ### 3. Replace hand-rolled card preview with `CardVisual`
 
@@ -258,22 +263,7 @@ import { CardVisual } from "@/components/wallet/card-visual";
 />
 ```
 
-This deletes ~40 lines of hand-rolled JSX and gets us correct chip, brand display, status badge, gradient, frozen-state behavior for free.
-
----
-
-## Bot-list UI cross-checks (no changes expected, just verify)
-
-These places call `/api/v1/bots/mine`. Confirm they still render correctly when a user has zero bots (which is now a valid first-class state):
-
-- `app/(dashboard)/overview/page.tsx`
-- `app/(dashboard)/settings/page.tsx`
-- `components/wallet/orders-panel.tsx`
-- `components/wallet/hooks/use-bot-linking.ts`
-- `components/onboarding/rail5-wizard/use-rail5-wizard.ts`
-- `components/rail3/add-card-dialog.tsx` (the one we just rewrote)
-
-Expected outcome: each already handles empty `bots` arrays. No edits.
+Deletes ~40 lines of hand-rolled JSX; gets correct chip, brand display, status badge, gradient, frozen-state behavior for free.
 
 ---
 
@@ -281,43 +271,37 @@ Expected outcome: each already handles empty `bots` arrays. No edits.
 
 ```
 shared/schema.ts                                          # 2 table reshapes + zod
-drizzle/<new-migration>.sql                               # drop+create rail3_agents, alter rail3_cards
-server/storage/payment-rails/rail3-agents.ts              # rewrite
+drizzle/<new-migration>.sql                               # drop+recreate rail3_agents, alter rail3_cards
+features/payment-rails/rail3/per-user-agent.ts            # NEW — Crossmint-side helper
+server/storage/payment-rails/rail3-agents.ts              # rewrite (pure DB only)
 server/storage/types.ts                                   # interface update
-app/api/v1/rail3/cards/route.ts                           # POST simplified
-app/api/v1/rail3/cards/[cardId]/route.ts                  # comment refresh only
+app/api/v1/rail3/cards/route.ts                           # POST simplified; getOrProvisionAgent helper
+app/api/v1/rail3/cards/[cardId]/route.ts                  # PATCH comment refresh only
 components/rail3/add-card-dialog.tsx                      # 3 edits described above
+project_knowledge/currently_building/rail3/rail3-open-points.md            # delete obsoleted open point #4
+project_knowledge/currently_building/rail3/rail3-crossmint-card-permissions.md  # fix stale `agent_id` on PM mention
 ```
 
-No new files. Net LOC change: negative (deletions > additions).
+Net LOC change: negative.
 
 ---
 
-## Risk register
+## Risks
 
 | # | Risk | Mitigation |
 |---|------|------------|
-| 1 | Concurrent first-card creates from the same owner double-provision Crossmint agents | PK on `ownerUid` + 23505 catch + orphan-and-recover pattern (same as today's per-bot code) |
-| 2 | `user.email` is null at agent-create time | `getSessionUser` returns email for authenticated sessions; if absent, fall back to `ownerUid` in the agent name string. Cosmetic only. |
-| 3 | Stale `/bots` UI references elsewhere | Confirmed only ref is in `add-card-dialog.tsx` which is being rewritten. Verified via `rg "/bots"`. |
-| 4 | Crossmint `agentAlias` field unused in Phase 1 | Acceptable — exists for Phase 2 (Master Agent) so the schema doesn't change again. Costs one nullable column. |
-| 5 | Production data | Per user direction: staging only, destructive migration acceptable. Re-verify before running migration in prod. |
+| 1 | Concurrent first-card creates from the same owner double-provision Crossmint agents | PK on `ownerUid` + `onConflictDoNothing` + re-read winner. Orphans the loser's Crossmint agent (warn-logged). |
+| 2 | Stale `/bots` UI references elsewhere | Confirmed only ref is in `add-card-dialog.tsx` (being rewritten). |
+| 3 | Production data | Per user direction: staging only, destructive migration acceptable. Re-verify before any prod migration. |
 
 ---
 
 ## Validation steps after implementation
 
-1. `npx drizzle-kit generate` — confirm migration is what we expect.
+1. `npx drizzle-kit generate` — confirm migration matches expectations.
 2. Apply migration on staging DB.
-3. Sign in as a fresh user. Visit `/virtual-cards`. AddCardDialog opens with no bots in the list, default "— None —" selected.
+3. Sign in as a fresh user. Visit `/virtual-cards`. AddCardDialog opens with no bots in the list, "— None —" selected by default.
 4. Vault a card via passkey → confirm `rail3_agents` has one row for owner, `rail3_cards.bot_id IS NULL`.
 5. Visit `/cards` and `/overview` — botless card renders, "Add Agent" affordance visible per existing `credit-card-item.tsx` logic.
 6. Repeat with a user who already has a bot — pick the bot in the dropdown, verify `rail3_cards.bot_id` is populated and bot-side `/api/v1/bot/rail3/checkout` succeeds.
-7. Concurrent submit (open dialog twice, submit both) — verify only one `rail3_agents` row, second request reuses winner.
-8. `code_review` skill — architect pass.
-
----
-
-## Forward link
-
-The per-user `agentAlias` column is the seed for the Master Agent. See `project_knowledge/internal_docs/04-payment-tools/master-agent-build.md` for the larger product bet and how this refactor sets it up without throwaway work.
+7. `code_review` skill — architect pass.
