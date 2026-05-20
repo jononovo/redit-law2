@@ -316,18 +316,27 @@ function AddCardDialogInner({ open, onOpenChange, paymentMethods, onComplete }: 
               ) : (
                 <div className="rounded-lg border border-neutral-200 overflow-hidden" data-testid="container-order-intent-verification">
                   <OrderIntentVerification
-                    orderIntent={{
-                      orderIntentId: createdCard.orderIntentId,
-                      phase: "requires-verification",
-                      mandates: [],
-                      payment: { paymentMethodId: pmId },
-                      verificationConfig: createdCard.verificationConfig,
-                    } as any}
-                    onVerificationComplete={() => {
+                    orderIntent={(() => {
+                      const oi = {
+                        orderIntentId: createdCard.orderIntentId,
+                        phase: "requires-verification",
+                        mandates: [],
+                        payment: { paymentMethodId: pmId },
+                        verificationConfig: createdCard.verificationConfig,
+                      };
+                      // TEMP debug — what we hand to the SDK
+                      console.log("[Rail3 DEBUG] OrderIntentVerification orderIntent prop:", JSON.parse(JSON.stringify(oi)));
+                      return oi as any;
+                    })()}
+                    onVerificationComplete={(...args) => {
+                      console.log("[Rail3 DEBUG] onVerificationComplete:", args);
                       setCreatedCard((cur) => cur ? { ...cur, phase: "active" } : cur);
                       onComplete();
                     }}
-                    onVerificationError={(err) => setError(err instanceof Error ? err.message : String(err))}
+                    onVerificationError={(err) => {
+                      console.error("[Rail3 DEBUG] onVerificationError:", err, JSON.stringify(err, Object.getOwnPropertyNames(err ?? {})));
+                      setError(err instanceof Error ? err.message : String(err));
+                    }}
                   />
                 </div>
               )}

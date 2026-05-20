@@ -190,6 +190,15 @@ export async function POST(request: NextRequest) {
 
   await storage.updateRail3PaymentMethod(pm.paymentMethodId, { lastUsedAt: new Date() });
 
+  // TEMP debug — surface verificationConfig shape (WebAuthn challenge,
+  // allowCredentials, RP info, etc.) to verify why the popup never opens.
+  console.log("[Rail3 DEBUG] createOrderIntent returned:", JSON.stringify({
+    orderIntentId: intent.orderIntentId,
+    phase: intent.phase,
+    agentId: intent.agentId,
+    verificationConfig: intent.verificationConfig ?? null,
+  }, null, 2));
+
   return NextResponse.json({
     card_id: card.cardId,
     order_intent_id: intent.orderIntentId,
