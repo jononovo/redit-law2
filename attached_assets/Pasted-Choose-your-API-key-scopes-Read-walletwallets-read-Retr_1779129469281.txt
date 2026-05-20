@@ -1,0 +1,85 @@
+Choose your API key scopes*
+Read walletwallets.read
+Retrieve all wallets for a user.
+Create walletwallets.create
+Create a wallet for a user.
+Create Transactionwallets:transactions.create
+Create a transaction from a user's wallet.
+Sign Transactionwallets:transactions.sign
+Sign a transaction from a user's wallet.
+Read Transactionswallets:transactions.read
+Read transactions from a user's wallet.
+Create Wallet Signatureswallets:signatures.create
+Create a signature for a wallet.
+Read Wallet Signatureswallets:signatures.read
+Read a signature for a wallet.
+Get NFTswallets:nfts.read
+Fetch the NFTs owned by a specific wallet address.
+Get wallet balancewallets:balance.read
+Get the balance of a specific wallet address.
+Create cardwallets:cards.create
+Register a card on a smart wallet.
+Read cardswallets:cards.read
+Retrieve cards registered on a smart wallet.
+Update cardwallets:cards.update
+Update a card on a smart wallet.
+Delete cardwallets:cards.delete
+Remove a card from a smart wallet.
+Fund Walletwallets.fund
+Send funds to a wallet.
+Transfer NFTswallets:nfts.transfer
+Transfer an NFT from a user's wallet.
+Sign Messageswallets:messages.sign
+Sign a message from a user's wallet.
+Get Credentialscredentials.read
+Fetch credentials, some endpoints will only work with a server side key.
+Decrypt Credentialscredentials.decrypt
+Decrypt credentials, mainly used by our client side SDK.
+Create Credentials Templatescredentials:templates.create
+Create a template for your credentials.
+Create Credentials and Typescredentials.create
+Issue your credentials and create credential types
+Revoke Credentialscredentials.delete
+Revoke a credential issued to a subject.
+Create an orderorders.create
+Create an order for headless checkout.
+Create worldstore orderorders.ws.create
+Create an order for a Worldstore listing.
+Search worldstore listingsorders.ws.search
+Search Worldstore listings.
+Read tokenstokens.read
+Retrieve availability and enabled features for tokens.
+Read payment methodspayment-methods.read
+Retrieve saved payment methods for a user.
+Save payment methodpayment-methods.create
+Save a new payment method for a user.
+Update payment methodpayment-methods.update
+Update an existing saved payment method.
+Delete payment methodpayment-methods.delete
+Delete a saved payment method.
+Read order intentsorder-intents.read
+Retrieve order intents for agentic transactions.
+Create order intentorder-intents.create
+Create an order intent for an agentic transaction.
+Get order intent credentialsorder-intents.credentials
+Retrieve credentials for an order intent to complete a transaction.
+Revoke order intentorder-intents.revoke
+Revoke an active order intent, disabling its virtual card credentials.
+Update a subscriptionsubscriptions.update
+Be able to update and cancel subscriptions
+Retrieve subscription informationsubscriptions.read
+Be able to read subscription information
+Get orderorders.read
+Get an existing order for headless checkout.
+Update orderorders.update
+Update an existing order for headless checkout.
+Read agentsagents.read
+Retrieve agents configured for virtual card issuance.
+Create agentagents.create
+Create a new agent for virtual card issuance.
+Delete agentagents.delete
+Delete an existing agent.
+Get userusers.read
+Get user information.
+Create userusers.create
+Create a user.

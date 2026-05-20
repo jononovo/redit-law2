@@ -1,3 +1,5 @@
+import { CROSSMINT_HOST, CROSSMINT_SERVER_API_KEY } from "@/features/payment-rails/crossmint-env";
+
 const API_VERSIONS = {
   wallets: "2025-06-09",
   orders: "2022-06-09",
@@ -6,16 +8,14 @@ const API_VERSIONS = {
 type ApiVersion = keyof typeof API_VERSIONS;
 
 function getBaseUrl(version: ApiVersion = "wallets"): string {
-  const v = API_VERSIONS[version];
-  return process.env.CROSSMINT_ENV === "staging"
-    ? `https://staging.crossmint.com/api/${v}`
-    : `https://www.crossmint.com/api/${v}`;
+  return `${CROSSMINT_HOST}/api/${API_VERSIONS[version]}`;
 }
 
 export function getServerApiKey(): string {
-  const key = process.env.CROSSMINT_SERVER_API_KEY;
-  if (!key) throw new Error("CROSSMINT_SERVER_API_KEY is required for Rail 2");
-  return key;
+  if (!CROSSMINT_SERVER_API_KEY) {
+    throw new Error("Crossmint server API key is missing — set the env var referenced in features/payment-rails/crossmint-env.ts");
+  }
+  return CROSSMINT_SERVER_API_KEY;
 }
 
 export async function crossmintFetch(

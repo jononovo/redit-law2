@@ -1,4 +1,4 @@
-export type RailType = "rail1" | "rail2" | "rail5";
+export type RailType = "rail1" | "rail2" | "rail3" | "rail5";
 
 export type WalletStatus = "active" | "paused" | "frozen" | "pending" | "pending_setup" | "awaiting_bot";
 
@@ -62,7 +62,65 @@ export interface Rail5CardInfo {
   created_at: string;
 }
 
-export type CreditCardInfo = Rail5CardInfo;
+export interface Rail3CardInfo {
+  card_id: string;
+  card_name: string;
+  card_color: string | null;
+  category: string | null;
+  status: string;
+  bot_id: string | null;
+  bot_name: string | null;
+  payment_method_id: string;
+  card_brand: string | null;
+  card_last4: string | null;
+  intent_mode: "limited" | "open";
+  permission_phase: string;
+  limit_amount_cents: number | null;
+  limit_period: "weekly" | "monthly" | "yearly" | null;
+  order_intent_id: string;
+  created_at: string;
+}
+
+export interface Rail3PaymentMethodInfo {
+  payment_method_id: string;
+  card_brand: string | null;
+  card_last4: string | null;
+  cardholder_name: string | null;
+  exp_month: number | null;
+  exp_year: number | null;
+  virtual_card_count: number;
+  created_at: string;
+  last_used_at: string | null;
+}
+
+export type CreditCardInfo = Rail5CardInfo | Rail3CardInfo;
+
+export function normalizeRail3Card(card: Rail3CardInfo, basePath: string): NormalizedCard {
+  const isLimited = card.intent_mode === "limited" && card.limit_amount_cents !== null && card.limit_period !== null;
+  const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+  const brand = card.card_brand || "card";
+  const last4 = card.card_last4 || "••••";
+  const pendingAuth = card.permission_phase !== "active";
+  return {
+    card_id: card.card_id,
+    card_name: card.card_name,
+    status: card.status,
+    bot_id: card.bot_id,
+    bot_name: card.bot_name,
+    card_color: resolveCardColor(card.card_color, card.card_id),
+    balance: isLimited ? formatCentsToUsd(card.limit_amount_cents!) : "—",
+    balanceLabel: isLimited ? `${capitalize(card.limit_period!)} Limit` : "No Limit",
+    balanceTooltip: isLimited
+      ? `Crossmint enforces this limit per ${card.limit_period}.`
+      : "Agent can use this card at any merchant. Each charge still uses a one-time merchant-scoped number.",
+    last4,
+    brand,
+    issuer: card.category || null,
+    line1: `${capitalize(brand)} •••• ${last4}`,
+    line2: pendingAuth ? "Awaiting authorization" : (isLimited ? "Active permission" : "Use anywhere"),
+    detailPath: `${basePath}/${card.card_id}`,
+  };
+}
 
 export interface NormalizedCard {
   card_id: string;

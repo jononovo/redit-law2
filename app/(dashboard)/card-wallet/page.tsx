@@ -10,6 +10,7 @@ import { useAuth } from "@/features/platform-management/auth/auth-context";
 import { authFetch } from "@/features/platform-management/auth-fetch";
 import { useToast } from "@/hooks/use-toast";
 import { CrossmintProvider, CrossmintEmbeddedCheckout } from "@crossmint/client-sdk-react-ui";
+import { CROSSMINT_CLIENT_API_KEY, CROSSMINT_HOST } from "@/features/payment-rails/crossmint-env";
 import type { Rail2WalletInfo, Rail2TransactionInfo } from "@/components/wallet/types";
 import { microUsdcToDisplay } from "@/components/wallet/types";
 import { useWalletActions } from "@/components/wallet/hooks/use-wallet-actions";
@@ -447,7 +448,7 @@ export default function CardWalletPage() {
               </p>
               <Button
                 onClick={() => {
-                  window.open(`https://www.crossmint.com/checkout?orderId=${fundOrderData.orderId}`, "_blank");
+                  window.open(`${CROSSMINT_HOST}/checkout?orderId=${fundOrderData.orderId}`, "_blank");
                   toast({ title: "CrossMint checkout opened in a new tab" });
                 }}
                 className="w-full bg-violet-600 hover:bg-violet-700 gap-2"
@@ -459,8 +460,8 @@ export default function CardWalletPage() {
             </div>
           ) : (
             <div className="mt-4">
-              {process.env.NEXT_PUBLIC_CROSSMINT_CLIENT_API_KEY ? (
-                <CrossmintProvider apiKey={process.env.NEXT_PUBLIC_CROSSMINT_CLIENT_API_KEY}>
+              {CROSSMINT_CLIENT_API_KEY ? (
+                <CrossmintProvider apiKey={CROSSMINT_CLIENT_API_KEY}>
                   <CrossmintCheckoutWrapper
                     orderId={fundOrderData.orderId}
                     clientSecret={fundOrderData.clientSecret}

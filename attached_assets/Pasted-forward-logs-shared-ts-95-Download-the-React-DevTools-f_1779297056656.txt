@@ -1,0 +1,162 @@
+forward-logs-shared.ts:95 Download the React DevTools for a better development experience: https://react.dev/link/react-devtools
+forward-logs-shared.ts:95 [HMR] connected
+forward-logs-shared.ts:95 [Fast Refresh] rebuilding
+forward-logs-shared.ts:95 [Fast Refresh] done in 101ms
+forward-logs-shared.ts:95 [Fast Refresh] rebuilding
+forward-logs-shared.ts:95 [Fast Refresh] done in 178ms
+forward-logs-shared.ts:95 [Fast Refresh] rebuilding
+forward-logs-shared.ts:95 [Fast Refresh] done in 179ms
+forward-logs-shared.ts:95 [Fast Refresh] rebuilding
+forward-logs-shared.ts:95 [Fast Refresh] done in 399ms
+forward-logs-shared.ts:95 [Fast Refresh] rebuilding
+forward-logs-shared.ts:95 [Fast Refresh] done in 258ms
+3774-c18c5474eaf774d4.js:1 Zod validation failed on client side.
+74580 @ staging.crossmint.com/_next/static/chunks/3774-c18c5474eaf774d4.js:1
+b @ staging.crossmint.com/_next/static/chunks/webpack-dc76d5212fa28721.js:1
+9011 @ staging.crossmint.com/_next/static/chunks/3774-c18c5474eaf774d4.js:1
+b @ staging.crossmint.com/_next/static/chunks/webpack-dc76d5212fa28721.js:1
+27232 @ staging.crossmint.com/_next/static/chunks/app/sdk/layout-30118d57a6909cd2.js:1
+b @ staging.crossmint.com/_next/static/chunks/webpack-dc76d5212fa28721.js:1
+Promise.then
+53437 @ staging.crossmint.com/_next/static/chunks/app/sdk/layout-30118d57a6909cd2.js:1
+b @ staging.crossmint.com/_next/static/chunks/webpack-dc76d5212fa28721.js:1
+(anonymous) @ staging.crossmint.com/_next/static/chunks/app/sdk/layout-30118d57a6909cd2.js:1
+b.O @ staging.crossmint.com/_next/static/chunks/webpack-dc76d5212fa28721.js:1
+r @ staging.crossmint.com/_next/static/chunks/webpack-dc76d5212fa28721.js:1
+(anonymous) @ staging.crossmint.com/_next/static/chunks/318-90917188dc20ee2d.js:1
+page-d091c9211be8ad94.js:1 Token created 01109d50-fc2b-41ff-89cb-7ffb0a149fc5
+page-d091c9211be8ad94.js:1 Payment method created {paymentMethodId: 'bd6b4068-1cbe-4fce-acff-d48fc90b1c21', default: false, displayName: 'Visa ••4242', display: {…}, type: 'card', …}
+1080-a7621df8932e4ec3.js:1 Network error for /api/unstable/payment-methods?limit=100: {message: 'Failed to fetch', name: 'TypeError', stack: 'TypeError: Failed to fetch\n    at i (https://stagi…ext/static/chunks/7301-1db49982ad1952fa.js:1:209)', cause: undefined}
+window.console.error @ staging.crossmint.com/_next/static/chunks/1080-a7621df8932e4ec3.js:1
+P.<computed> @ staging.crossmint.com/_next/static/chunks/318-90917188dc20ee2d.js:1
+(anonymous) @ staging.crossmint.com/_next/static/chunks/6244-aec38adb9fdd520a.js:1
+Promise.catch
+(anonymous) @ staging.crossmint.com/_next/static/chunks/6244-aec38adb9fdd520a.js:1
+(anonymous) @ staging.crossmint.com/_next/static/chunks/7301-1db49982ad1952fa.js:1
+(anonymous) @ staging.crossmint.com/_next/static/chunks/7301-1db49982ad1952fa.js:1
+(anonymous) @ staging.crossmint.com/_next/static/chunks/7301-1db49982ad1952fa.js:1
+u @ staging.crossmint.com/_next/static/chunks/7301-1db49982ad1952fa.js:1
+Promise.then
+a @ staging.crossmint.com/_next/static/chunks/7301-1db49982ad1952fa.js:1
+(anonymous) @ staging.crossmint.com/_next/static/chunks/7301-1db49982ad1952fa.js:1
+r @ staging.crossmint.com/_next/static/chunks/7301-1db49982ad1952fa.js:1
+t.execute @ staging.crossmint.com/_next/static/chunks/7301-1db49982ad1952fa.js:1
+(anonymous) @ staging.crossmint.com/_next/static/chunks/7301-1db49982ad1952fa.js:1
+(anonymous) @ staging.crossmint.com/_next/static/chunks/7301-1db49982ad1952fa.js:1
+(anonymous) @ staging.crossmint.com/_next/static/chunks/7301-1db49982ad1952fa.js:1
+(anonymous) @ staging.crossmint.com/_next/static/chunks/7301-1db49982ad1952fa.js:1
+r @ staging.crossmint.com/_next/static/chunks/7301-1db49982ad1952fa.js:1
+e.backOff @ staging.crossmint.com/_next/static/chunks/7301-1db49982ad1952fa.js:1
+backOffFew @ staging.crossmint.com/_next/static/chunks/6244-aec38adb9fdd520a.js:1
+fetchGetJSON @ staging.crossmint.com/_next/static/chunks/6244-aec38adb9fdd520a.js:1
+(anonymous) @ staging.crossmint.com/_next/static/chunks/9107-c5974af5aac17345.js:1
+fn @ staging.crossmint.com/_next/static/chunks/7747-3cb1fa1f5c7b3f4a.js:1
+w @ staging.crossmint.com/_next/static/chunks/6721-2965859e89251940.js:1
+f @ staging.crossmint.com/_next/static/chunks/6721-2965859e89251940.js:1
+(anonymous) @ staging.crossmint.com/_next/static/chunks/7747-3cb1fa1f5c7b3f4a.js:1
+execute @ staging.crossmint.com/_next/static/chunks/7747-3cb1fa1f5c7b3f4a.js:1
+await in execute
+mutate @ staging.crossmint.com/_next/static/chunks/1747-7c5105d27dbbcfa0.js:1
+P @ staging.crossmint.com/_next/static/chunks/app/sdk/unstable/payment-method-management/page-d091c9211be8ad94.js:1
+await in P
+a_ @ staging.crossmint.com/_next/static/chunks/1dd3208c-5b2f3b0afdeddb03.js:1
+aR @ staging.crossmint.com/_next/static/chunks/1dd3208c-5b2f3b0afdeddb03.js:1
+(anonymous) @ staging.crossmint.com/_next/static/chunks/1dd3208c-5b2f3b0afdeddb03.js:1
+sF @ staging.crossmint.com/_next/static/chunks/1dd3208c-5b2f3b0afdeddb03.js:1
+sM @ staging.crossmint.com/_next/static/chunks/1dd3208c-5b2f3b0afdeddb03.js:1
+(anonymous) @ staging.crossmint.com/_next/static/chunks/1dd3208c-5b2f3b0afdeddb03.js:1
+o4 @ staging.crossmint.com/_next/static/chunks/1dd3208c-5b2f3b0afdeddb03.js:1
+iV @ staging.crossmint.com/_next/static/chunks/1dd3208c-5b2f3b0afdeddb03.js:1
+sU @ staging.crossmint.com/_next/static/chunks/1dd3208c-5b2f3b0afdeddb03.js:1
+uR @ staging.crossmint.com/_next/static/chunks/1dd3208c-5b2f3b0afdeddb03.js:1
+uM @ staging.crossmint.com/_next/static/chunks/1dd3208c-5b2f3b0afdeddb03.js:1
+staging.crossmint.com/_next/static/chunks/6244-aec38adb9fdd520a.js:1 Execution failed on attempt 1. Will retry
+(anonymous) @ staging.crossmint.com/_next/static/chunks/6244-aec38adb9fdd520a.js:1
+(anonymous) @ staging.crossmint.com/_next/static/chunks/7301-1db49982ad1952fa.js:1
+(anonymous) @ staging.crossmint.com/_next/static/chunks/7301-1db49982ad1952fa.js:1
+(anonymous) @ staging.crossmint.com/_next/static/chunks/7301-1db49982ad1952fa.js:1
+s @ staging.crossmint.com/_next/static/chunks/7301-1db49982ad1952fa.js:1
+Promise.then
+a @ staging.crossmint.com/_next/static/chunks/7301-1db49982ad1952fa.js:1
+u @ staging.crossmint.com/_next/static/chunks/7301-1db49982ad1952fa.js:1
+Promise.then
+a @ staging.crossmint.com/_next/static/chunks/7301-1db49982ad1952fa.js:1
+(anonymous) @ staging.crossmint.com/_next/static/chunks/7301-1db49982ad1952fa.js:1
+r @ staging.crossmint.com/_next/static/chunks/7301-1db49982ad1952fa.js:1
+t.execute @ staging.crossmint.com/_next/static/chunks/7301-1db49982ad1952fa.js:1
+(anonymous) @ staging.crossmint.com/_next/static/chunks/7301-1db49982ad1952fa.js:1
+(anonymous) @ staging.crossmint.com/_next/static/chunks/7301-1db49982ad1952fa.js:1
+(anonymous) @ staging.crossmint.com/_next/static/chunks/7301-1db49982ad1952fa.js:1
+(anonymous) @ staging.crossmint.com/_next/static/chunks/7301-1db49982ad1952fa.js:1
+r @ staging.crossmint.com/_next/static/chunks/7301-1db49982ad1952fa.js:1
+e.backOff @ staging.crossmint.com/_next/static/chunks/7301-1db49982ad1952fa.js:1
+backOffFew @ staging.crossmint.com/_next/static/chunks/6244-aec38adb9fdd520a.js:1
+fetchGetJSON @ staging.crossmint.com/_next/static/chunks/6244-aec38adb9fdd520a.js:1
+(anonymous) @ staging.crossmint.com/_next/static/chunks/9107-c5974af5aac17345.js:1
+fn @ staging.crossmint.com/_next/static/chunks/7747-3cb1fa1f5c7b3f4a.js:1
+w @ staging.crossmint.com/_next/static/chunks/6721-2965859e89251940.js:1
+f @ staging.crossmint.com/_next/static/chunks/6721-2965859e89251940.js:1
+(anonymous) @ staging.crossmint.com/_next/static/chunks/7747-3cb1fa1f5c7b3f4a.js:1
+execute @ staging.crossmint.com/_next/static/chunks/7747-3cb1fa1f5c7b3f4a.js:1
+await in execute
+mutate @ staging.crossmint.com/_next/static/chunks/1747-7c5105d27dbbcfa0.js:1
+P @ staging.crossmint.com/_next/static/chunks/app/sdk/unstable/payment-method-management/page-d091c9211be8ad94.js:1
+await in P
+a_ @ staging.crossmint.com/_next/static/chunks/1dd3208c-5b2f3b0afdeddb03.js:1
+aR @ staging.crossmint.com/_next/static/chunks/1dd3208c-5b2f3b0afdeddb03.js:1
+(anonymous) @ staging.crossmint.com/_next/static/chunks/1dd3208c-5b2f3b0afdeddb03.js:1
+sF @ staging.crossmint.com/_next/static/chunks/1dd3208c-5b2f3b0afdeddb03.js:1
+sM @ staging.crossmint.com/_next/static/chunks/1dd3208c-5b2f3b0afdeddb03.js:1
+(anonymous) @ staging.crossmint.com/_next/static/chunks/1dd3208c-5b2f3b0afdeddb03.js:1
+o4 @ staging.crossmint.com/_next/static/chunks/1dd3208c-5b2f3b0afdeddb03.js:1
+iV @ staging.crossmint.com/_next/static/chunks/1dd3208c-5b2f3b0afdeddb03.js:1
+sU @ staging.crossmint.com/_next/static/chunks/1dd3208c-5b2f3b0afdeddb03.js:1
+uR @ staging.crossmint.com/_next/static/chunks/1dd3208c-5b2f3b0afdeddb03.js:1
+uM @ staging.crossmint.com/_next/static/chunks/1dd3208c-5b2f3b0afdeddb03.js:1
+staging.crossmint.com/_next/static/chunks/6244-aec38adb9fdd520a.js:1 s: TypeError: Failed to fetch
+    at staging.crossmint.com/_next/static/chunks/6244-aec38adb9fdd520a.js:1:4302
+    at async t.request (staging.crossmint.com/_next/static/chunks/6244-aec38adb9fdd520a.js:1:4030)
+(anonymous) @ staging.crossmint.com/_next/static/chunks/6244-aec38adb9fdd520a.js:1
+(anonymous) @ staging.crossmint.com/_next/static/chunks/7301-1db49982ad1952fa.js:1
+(anonymous) @ staging.crossmint.com/_next/static/chunks/7301-1db49982ad1952fa.js:1
+(anonymous) @ staging.crossmint.com/_next/static/chunks/7301-1db49982ad1952fa.js:1
+s @ staging.crossmint.com/_next/static/chunks/7301-1db49982ad1952fa.js:1
+Promise.then
+a @ staging.crossmint.com/_next/static/chunks/7301-1db49982ad1952fa.js:1
+u @ staging.crossmint.com/_next/static/chunks/7301-1db49982ad1952fa.js:1
+Promise.then
+a @ staging.crossmint.com/_next/static/chunks/7301-1db49982ad1952fa.js:1
+(anonymous) @ staging.crossmint.com/_next/static/chunks/7301-1db49982ad1952fa.js:1
+r @ staging.crossmint.com/_next/static/chunks/7301-1db49982ad1952fa.js:1
+t.execute @ staging.crossmint.com/_next/static/chunks/7301-1db49982ad1952fa.js:1
+(anonymous) @ staging.crossmint.com/_next/static/chunks/7301-1db49982ad1952fa.js:1
+(anonymous) @ staging.crossmint.com/_next/static/chunks/7301-1db49982ad1952fa.js:1
+(anonymous) @ staging.crossmint.com/_next/static/chunks/7301-1db49982ad1952fa.js:1
+(anonymous) @ staging.crossmint.com/_next/static/chunks/7301-1db49982ad1952fa.js:1
+r @ staging.crossmint.com/_next/static/chunks/7301-1db49982ad1952fa.js:1
+e.backOff @ staging.crossmint.com/_next/static/chunks/7301-1db49982ad1952fa.js:1
+backOffFew @ staging.crossmint.com/_next/static/chunks/6244-aec38adb9fdd520a.js:1
+fetchGetJSON @ staging.crossmint.com/_next/static/chunks/6244-aec38adb9fdd520a.js:1
+(anonymous) @ staging.crossmint.com/_next/static/chunks/9107-c5974af5aac17345.js:1
+fn @ staging.crossmint.com/_next/static/chunks/7747-3cb1fa1f5c7b3f4a.js:1
+w @ staging.crossmint.com/_next/static/chunks/6721-2965859e89251940.js:1
+f @ staging.crossmint.com/_next/static/chunks/6721-2965859e89251940.js:1
+(anonymous) @ staging.crossmint.com/_next/static/chunks/7747-3cb1fa1f5c7b3f4a.js:1
+execute @ staging.crossmint.com/_next/static/chunks/7747-3cb1fa1f5c7b3f4a.js:1
+await in execute
+mutate @ staging.crossmint.com/_next/static/chunks/1747-7c5105d27dbbcfa0.js:1
+P @ staging.crossmint.com/_next/static/chunks/app/sdk/unstable/payment-method-management/page-d091c9211be8ad94.js:1
+await in P
+a_ @ staging.crossmint.com/_next/static/chunks/1dd3208c-5b2f3b0afdeddb03.js:1
+aR @ staging.crossmint.com/_next/static/chunks/1dd3208c-5b2f3b0afdeddb03.js:1
+(anonymous) @ staging.crossmint.com/_next/static/chunks/1dd3208c-5b2f3b0afdeddb03.js:1
+sF @ staging.crossmint.com/_next/static/chunks/1dd3208c-5b2f3b0afdeddb03.js:1
+sM @ staging.crossmint.com/_next/static/chunks/1dd3208c-5b2f3b0afdeddb03.js:1
+(anonymous) @ staging.crossmint.com/_next/static/chunks/1dd3208c-5b2f3b0afdeddb03.js:1
+o4 @ staging.crossmint.com/_next/static/chunks/1dd3208c-5b2f3b0afdeddb03.js:1
+iV @ staging.crossmint.com/_next/static/chunks/1dd3208c-5b2f3b0afdeddb03.js:1
+sU @ staging.crossmint.com/_next/static/chunks/1dd3208c-5b2f3b0afdeddb03.js:1
+uR @ staging.crossmint.com/_next/static/chunks/1dd3208c-5b2f3b0afdeddb03.js:1
+uM @ staging.crossmint.com/_next/static/chunks/1dd3208c-5b2f3b0afdeddb03.js:1
+forward-logs-shared.ts:95 [BtAi] Visa SDK loaded successfully — production config is valid.
+forward-logs-shared.ts:95 [BtAi] Visa SDK loaded successfully — production config is valid.

@@ -185,11 +185,11 @@ A config-driven build system at `skill-variants/` (project root) that generates 
 
 # 3. Payment Tools
 
-Outbound payment rails — how users fund wallets and how their agents spend money at external merchants. Two fundamentally different systems: crypto wallets (Rails 1 & 2) and self-hosted cards (Rail 5).
+Outbound payment rails — how users fund wallets and how their agents spend money at external merchants. Three categories, segmented for the owner in the sidebar: **stablecoin wallets** (Rail 1, plus dormant Rail 2), **virtual cards** (Rail 3, via Crossmint Card Permissions), and **self-hosted real cards** (Rail 5).
 
 → Docs: `project_knowledge/internal_docs/04-payment-tools/`
 
-## Crypto Wallets (Rails 1 & 2)
+## Stablecoin Wallets (Rails 1 & 2)
 
 Custodial USDC wallets on Base chain. Both rails share the same funding → spending → reconciliation pattern, inter-wallet transfers, and guardrail enforcement. They differ by provider.
 
@@ -205,7 +205,7 @@ Uses Privy server wallets on Base chain, USDC funding via Stripe Crypto Onramp, 
   - `x402.ts` — x402 typed data builders (`buildTransferWithAuthorizationTypedData`, `buildXPaymentHeader`, `generateNonce`) and USDC format helpers (`formatUsdc`, `usdToMicroUsdc`, `microUsdcToUsd`).
   - Webhook: `STRIPE_WEBHOOK_SECRET_ONRAMP` env var, event type `crypto.onramp_session.updated`. Balance sync endpoint: `POST /api/v1/stripe-wallet/balance/sync` with 30-sec cooldown and `reconciliation` transaction type for discrepancies. Schema includes `last_synced_at` column on `privy_wallets`.
 
-### Rail 2 — Card Wallet (Not yet functional)
+### Rail 2 — Stablecoin Shop Wallet (dormant)
 
 Uses CrossMint smart wallets on Base chain, USDC funding via fiat onramp, and Amazon/commerce purchases via Orders API. Employs merchant allow/blocklists. **Modularized under `features/payment-rails/rail2/`:**
   - `client.ts` — shared CrossMint API client (`crossmintFetch`, `getServerApiKey`, format helpers). Handles both API versions: Wallets API (`2025-06-09`) and Orders API (`2022-06-09`).
@@ -246,6 +246,14 @@ CreditClaw supports USDC transfers between wallets across all rails and to exter
 - **Transaction Type:** `"transfer"` with metadata containing `direction` ("inbound"/"outbound"), `transfer_tier`, `counterparty_address`, `counterparty_wallet_id`, `counterparty_rail`, `tx_hash`
 - **Frontend:** Transfer button on both Crypto Wallet and Card Wallet pages, dialog with destination picker (own wallets across both rails or external address), amount input in USD
 - **Lib Functions:** `sendUsdcTransfer` in `features/payment-rails/rail1/wallet/transfer.ts` (Privy) and `features/payment-rails/rail2/wallet/transfer.ts` (CrossMint)
+
+## Virtual Cards (Rail 3) — Live
+
+Crossmint Card Permissions API. Owner saves their **own existing Visa/Mastercard** in Crossmint's PCI vault once, verifies it for agentic use via passkey, then mints N **virtual cards** — each one a Crossmint OrderIntent with its own spending mandate. At checkout, our backend fetches a fresh **one-time, merchant-scoped PAN + expiry + CVC** from Crossmint and returns it via the existing Rail 5 fill-card flow. The raw card never leaves Crossmint's vault. **1 Crossmint agent per CreditClaw bot** (Phase 2.5 rework) mirroring Rail 5's 1-card↔1-bot convention.
+
+**Modularized under `features/payment-rails/rail3/`:** `client.ts` (typed Crossmint fetch wrapper), `agents.ts` (`createAgent` — `deleteAgent` not yet added), `payment-methods.ts`, `permissions.ts` (OrderIntent CRUD + `buildDefaultMandate`), `credentials.ts` (per-merchant one-time PAN fetch). DB tables: `rail3_payment_methods`, `rail3_agents`, `rail3_cards`. Owner API: `/api/v1/rail3/{payment-methods,cards,setup-status}`. Bot API: `/api/v1/bot/rail3/{cards,checkout,confirm}`. Dashboard: `/virtual-cards` + 2-step setup wizard at `/setup/rail3`. Frontend wrapped in `<CrossmintProvider>` with Firebase→Crossmint JWT bridge (`components/rail3/crossmint-provider.tsx`).
+
+**Deep docs:** operational reference at `project_knowledge/currently_building/rail3/rail3-crossmint-card-permissions.md`; open items (live E2E test, bot-delete cleanup, sidebar nav flip) at `project_knowledge/currently_building/rail3/rail3-open-points.md`.
 
 ## Self-Hosted Cards (Rail 5) — Live
 

@@ -1,0 +1,83 @@
+ Download the React DevTools for a better development experience: https://react.dev/link/react-devtools
+ [HMR] connected
+ [Fast Refresh] rebuilding
+ [Fast Refresh] done in 140ms
+ [Fast Refresh] rebuilding
+ [Fast Refresh] done in 427ms
+ [Fast Refresh] rebuilding
+ [Fast Refresh] done in 137ms
+ [Fast Refresh] rebuilding
+ [Fast Refresh] done in 148ms
+ [Fast Refresh] rebuilding
+ [Fast Refresh] done in 139ms
+ [EventEmitter] on() called - Registering listener for event: ui:height.changed
+ [EventEmitter] on() - Listener registered with ID: hh8inn0eu8396 for event: ui:height.changed
+ [EventEmitter] on() called - Registering listener for event: payment-method:selected
+ [EventEmitter] on() - Listener registered with ID: a791s3z1fj615 for event: payment-method:selected
+ [EventEmitter] on() called - Registering listener for event: order-intent:created
+ [EventEmitter] on() - Listener registered with ID: xuwlkziw9oqd7 for event: order-intent:created
+3774-fb922929b6ea6caf.js:1 Zod validation failed on client side.
+59286 @ 3774-fb922929b6ea6caf.js:1
+ [EventEmitter] on() - Received message for event: ui:height.changed
+ [EventEmitter] on() - Raw message data: Object
+ [EventEmitter] on() - Calling callback with validated data: Object
+ [EventEmitter] on() - Callback completed for event: ui:height.changed
+ [EventEmitter] on() - Received message for event: ui:height.changed
+ [EventEmitter] on() - Received message for event: ui:height.changed
+www.crossmint.com/api/unstable/payment-methods?limit=100:1  Failed to load resource: the server responded with a status of 403 ()
+6244-aec38adb9fdd520a.js:1 Execution failed on attempt 1. Will NOT retry
+(anonymous) @ 6244-aec38adb9fdd520a.js:1
+6244-aec38adb9fdd520a.js:1 t: Authentication failed. Attempted methods: [API Key, API Key]. Errors: API Key: "The API key provided doesn't have the required scopes to perform this action: payment-methods.read. It has the scopes: wallets.read,wallets:transactions.read,wallets:balance.read,wallets.fund,orders.create,orders.ws.create,orders.ws.search,tokens.read,users.create,users.read.", API Key: "This endpoint requires a 'server'-side API key. The API key provided has usage origin 'client' but 'server' is required. Please use a 'server'-side API key for this operation.". Supported methods: [API Key, API Key].
+    at parseJsonFetchResponse (6244-aec38adb9fdd520a.js:1:4960)
+    at async t.request (6244-aec38adb9fdd520a.js:1:4521)
+(anonymous) @ 6244-aec38adb9fdd520a.js:1
+1080-a7621df8932e4ec3.js:1 [HeadlessPaymentMethodsProvider] Error getting payment methods t: Authentication failed. Attempted methods: [API Key, API Key]. Errors: API Key: "The API key provided doesn't have the required scopes to perform this action: payment-methods.read. It has the scopes: wallets.read,wallets:transactions.read,wallets:balance.read,wallets.fund,orders.create,orders.ws.create,orders.ws.search,tokens.read,users.create,users.read.", API Key: "This endpoint requires a 'server'-side API key. The API key provided has usage origin 'client' but 'server' is required. Please use a 'server'-side API key for this operation.". Supported methods: [API Key, API Key].
+    at parseJsonFetchResponse (6244-aec38adb9fdd520a.js:1:4960)
+    at async t.request (6244-aec38adb9fdd520a.js:1:4521)
+window.console.error @ 1080-a7621df8932e4ec3.js:1
+1080-a7621df8932e4ec3.js:1 [PaymentMethodManagementProvider] Error getting payment methods t: Authentication failed. Attempted methods: [API Key, API Key]. Errors: API Key: "The API key provided doesn't have the required scopes to perform this action: payment-methods.read. It has the scopes: wallets.read,wallets:transactions.read,wallets:balance.read,wallets.fund,orders.create,orders.ws.create,orders.ws.search,tokens.read,users.create,users.read.", API Key: "This endpoint requires a 'server'-side API key. The API key provided has usage origin 'client' but 'server' is required. Please use a 'server'-side API key for this operation.". Supported methods: [API Key, API Key].
+    at parseJsonFetchResponse (6244-aec38adb9fdd520a.js:1:4960)
+    at async t.request (6244-aec38adb9fdd520a.js:1:4521)
+window.console.error @ 1080-a7621df8932e4ec3.js:1
+ [EventEmitter] on() - Received message for event: ui:height.changed
+ [EventEmitter] on() - Raw message data: Object
+ [EventEmitter] on() - Calling callback with validated data: Object
+ [EventEmitter] on() - Callback completed for event: ui:height.changed
+ [EventEmitter] on() - Received message for event: ui:height.changed
+ [EventEmitter] on() - Received message for event: ui:height.changed
+ [EventEmitter] on() - Received message for event: ui:height.changed
+ [EventEmitter] on() - Raw message data: Object
+ [EventEmitter] on() - Calling callback with validated data: Object
+ [EventEmitter] on() - Callback completed for event: ui:height.changed
+ [EventEmitter] on() - Received message for event: ui:height.changed
+ [EventEmitter] on() - Received message for event: ui:height.changed
+ [EventEmitter] on() - Received message for event: ui:height.changed
+ [EventEmitter] on() - Raw message data: Object
+ [EventEmitter] on() - Calling callback with validated data: Object
+ [EventEmitter] on() - Callback completed for event: ui:height.changed
+ [EventEmitter] on() - Received message for event: ui:height.changed
+ [EventEmitter] on() - Received message for event: ui:height.changed
+ [EventEmitter] on() - Received message for event: ui:height.changed
+ [EventEmitter] on() - Raw message data: Object
+ [EventEmitter] on() - Calling callback with validated data: Object
+ [EventEmitter] on() - Callback completed for event: ui:height.changed
+ [EventEmitter] on() - Received message for event: ui:height.changed
+ [EventEmitter] on() - Received message for event: ui:height.changed
+page-ea51573cbad9c8a9.js:1 Token created 988fb70f-3a79-45af-83e1-5568172d50b1
+www.crossmint.com/api/unstable/payment-methods:1  Failed to load resource: the server responded with a status of 403 ()
+1080-a7621df8932e4ec3.js:1 POST /api/unstable/payment-methods: Authentication failed. Attempted methods: [API Key, API Key]. Errors: API Key: "The API key provided doesn't have the required scopes to perform this action: payment-methods.create. It has the scopes: wallets.read,wallets:transactions.read,wallets:balance.read,wallets.fund,orders.create,orders.ws.create,orders.ws.search,tokens.read,users.create,users.read.", API Key: "This endpoint requires a 'server'-side API key. The API key provided has usage origin 'client' but 'server' is required. Please use a 'server'-side API key for this operation.". Supported methods: [API Key, API Key].
+window.console.error @ 1080-a7621df8932e4ec3.js:1
+1080-a7621df8932e4ec3.js:1 [HeadlessPaymentMethodsProvider] Error creating payment method t: Authentication failed. Attempted methods: [API Key, API Key]. Errors: API Key: "The API key provided doesn't have the required scopes to perform this action: payment-methods.create. It has the scopes: wallets.read,wallets:transactions.read,wallets:balance.read,wallets.fund,orders.create,orders.ws.create,orders.ws.search,tokens.read,users.create,users.read.", API Key: "This endpoint requires a 'server'-side API key. The API key provided has usage origin 'client' but 'server' is required. Please use a 'server'-side API key for this operation.". Supported methods: [API Key, API Key].
+    at parseJsonFetchResponse (6244-aec38adb9fdd520a.js:1:4960)
+    at async fetchPostJSON (6244-aec38adb9fdd520a.js:1:6634)
+window.console.error @ 1080-a7621df8932e4ec3.js:1
+1080-a7621df8932e4ec3.js:1 Failed in handleClick t: Authentication failed. Attempted methods: [API Key, API Key]. Errors: API Key: "The API key provided doesn't have the required scopes to perform this action: payment-methods.create. It has the scopes: wallets.read,wallets:transactions.read,wallets:balance.read,wallets.fund,orders.create,orders.ws.create,orders.ws.search,tokens.read,users.create,users.read.", API Key: "This endpoint requires a 'server'-side API key. The API key provided has usage origin 'client' but 'server' is required. Please use a 'server'-side API key for this operation.". Supported methods: [API Key, API Key].
+    at parseJsonFetchResponse (6244-aec38adb9fdd520a.js:1:4960)
+    at async fetchPostJSON (6244-aec38adb9fdd520a.js:1:6634)
+window.console.error @ 1080-a7621df8932e4ec3.js:1
+ [EventEmitter] on() - Received message for event: ui:height.changed
+ [EventEmitter] on() - Raw message data: Object
+ [EventEmitter] on() - Calling callback with validated data: Object
+ [EventEmitter] on() - Callback completed for event: ui:height.changed
+ [EventEmitter] on() - Received message for event: ui:height.changed
+ [EventEmitter] on() - Received message for event: ui:height.changed
