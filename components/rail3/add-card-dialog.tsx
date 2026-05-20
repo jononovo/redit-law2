@@ -67,6 +67,27 @@ interface OrderIntentVerificationStableProps {
 const OrderIntentVerificationStable = memo(function OrderIntentVerificationStable({
   orderIntentId, paymentMethodId, verificationConfig, onComplete, onError,
 }: OrderIntentVerificationStableProps) {
+  // TEMP diagnostic — confirm whether BasisTheory's mock Visa overlay appears
+  // in the DOM and whether Radix Dialog's pointer-events trap is blocking it.
+  useEffect(() => {
+    const log = (label: string) => {
+      const el = document.getElementById("mock-visa-passkey-overlay");
+      const bodyPE = getComputedStyle(document.body).pointerEvents;
+      const elPE = el ? getComputedStyle(el).pointerEvents : null;
+      const elZ = el ? getComputedStyle(el).zIndex : null;
+      console.log(`[Rail3 OVERLAY CHECK ${label}]`, {
+        overlayExists: !!el,
+        bodyPointerEvents: bodyPE,
+        overlayPointerEvents: elPE,
+        overlayZIndex: elZ,
+      });
+    };
+    log("t=0ms");
+    const t1 = setTimeout(() => log("t=500ms"), 500);
+    const t2 = setTimeout(() => log("t=1500ms"), 1500);
+    const t3 = setTimeout(() => log("t=3000ms"), 3000);
+    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
+  }, []);
   const orderIntent = useMemo(
     () => ({
       orderIntentId,
