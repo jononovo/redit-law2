@@ -1,9 +1,9 @@
 "use client";
 
-// Create a virtual card (= one Crossmint orderIntent on top of a saved PM) for
-// a specific bot, then have the owner authorize it via the OrderIntentVerification
-// SDK. 1 card ↔ 1 bot (rail5 precedent); Crossmint agent for that bot is created
-// server-side on first card.
+// Create a virtual card (= one Crossmint orderIntent on top of a saved PM), then
+// have the owner authorize it via the OrderIntentVerification SDK. Linking a bot
+// is optional — botless cards are vault-only until the owner attaches a bot.
+// Crossmint agent is per-owner, created server-side on first card.
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CreditCard, Loader2, CheckCircle2, ChevronDown, Bot as BotIcon } from "lucide-react";
+import { CreditCard, Loader2, CheckCircle2, ChevronDown } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { OrderIntentVerification } from "@crossmint/client-sdk-react-ui";
 import { Rail3CrossmintProvider } from "@/components/rail3/crossmint-provider";
@@ -32,6 +32,7 @@ interface BotOption {
   bot_name: string;
 }
 
+const NO_BOT_VALUE = "__none__";
 const CATEGORY_SUGGESTIONS = ["Food", "Office", "Travel", "Marketing", "Subscriptions", "General"];
 
 interface CreatedCard {
@@ -56,7 +57,7 @@ function AddCardDialogInner({ open, onOpenChange, paymentMethods, onComplete }: 
   const noPMs = selectablePMs.length === 0;
 
   const [pmId, setPmId] = useState<string>("");
-  const [botId, setBotId] = useState<string>("");
+  const [botId, setBotId] = useState<string>(NO_BOT_VALUE);
   const [bots, setBots] = useState<BotOption[]>([]);
   const [botsLoading, setBotsLoading] = useState(true);
   const [mode, setMode] = useState<"limited" | "open">("limited");
@@ -70,7 +71,7 @@ function AddCardDialogInner({ open, onOpenChange, paymentMethods, onComplete }: 
   const [error, setError] = useState<string | null>(null);
   const [createdCard, setCreatedCard] = useState<CreatedCard | null>(null);
 
-  // Load this owner's bots so we can pick which one this card belongs to.
+  // Load this owner's bots so we can offer an optional link.
   useEffect(() => {
     if (!open) return;
     let cancelled = false;
@@ -83,7 +84,6 @@ function AddCardDialogInner({ open, onOpenChange, paymentMethods, onComplete }: 
         if (!res.ok) throw new Error(json.error || "bots_failed");
         const opts: BotOption[] = (json.bots || []).map((b: any) => ({ bot_id: b.bot_id, bot_name: b.bot_name }));
         setBots(opts);
-        setBotId((cur) => cur || opts[0]?.bot_id || "");
       } catch {
         if (!cancelled) setBots([]);
       } finally {
@@ -97,7 +97,7 @@ function AddCardDialogInner({ open, onOpenChange, paymentMethods, onComplete }: 
   useEffect(() => {
     if (!open) {
       setPmId(selectablePMs[0]?.payment_method_id || "");
-      setBotId("");
+      setBotId(NO_BOT_VALUE);
       setMode("limited");
       setMaxAmount("500");
       setPeriod("monthly");
@@ -118,11 +118,11 @@ function AddCardDialogInner({ open, onOpenChange, paymentMethods, onComplete }: 
     try {
       const body: any = {
         payment_method_id: pmId,
-        bot_id: botId,
         mode,
         card_name: cardName || undefined,
         category: category || null,
       };
+      if (botId && botId !== NO_BOT_VALUE) body.bot_id = botId;
       if (mode === "limited") {
         body.max_amount_usd = Number(maxAmount);
         body.period = period;
@@ -149,8 +149,6 @@ function AddCardDialogInner({ open, onOpenChange, paymentMethods, onComplete }: 
     }
   }
 
-  const noBots = !botsLoading && bots.length === 0;
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg" data-testid="dialog-add-card">
@@ -170,38 +168,23 @@ function AddCardDialogInner({ open, onOpenChange, paymentMethods, onComplete }: 
               </Button>
             </DialogFooter>
           </>
-        ) : noBots ? (
-          <>
-            <DialogHeader>
-              <DialogTitle>No bots yet</DialogTitle>
-              <DialogDescription>
-                Each virtual card is owned by one bot. Create your first bot, then come back here.
-              </DialogDescription>
-            </DialogHeader>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => onOpenChange(false)} data-testid="button-cancel-add-card">Cancel</Button>
-              <Button onClick={() => router.push("/bots")} data-testid="button-go-create-bot">
-                <BotIcon className="w-4 h-4 mr-2" />
-                Create a bot
-              </Button>
-            </DialogFooter>
-          </>
         ) : !createdCard ? (
           <>
             <DialogHeader>
               <DialogTitle>Add virtual card</DialogTitle>
-              <DialogDescription>One spending permission backed by a real card, scoped to one bot.</DialogDescription>
+              <DialogDescription>One spending permission backed by a real card. Link a bot now or later.</DialogDescription>
             </DialogHeader>
 
             <div className="space-y-4 py-2">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <Label htmlFor="bot-select">Bot</Label>
+                  <Label htmlFor="bot-select">Link a bot (optional)</Label>
                   <Select value={botId} onValueChange={setBotId}>
                     <SelectTrigger id="bot-select" data-testid="select-bot">
-                      <SelectValue placeholder={botsLoading ? "Loading…" : "Pick a bot"} />
+                      <SelectValue placeholder={botsLoading ? "Loading…" : "— None —"} />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value={NO_BOT_VALUE} data-testid="option-bot-none">— None (vault only) —</SelectItem>
                       {bots.map((b) => (
                         <SelectItem key={b.bot_id} value={b.bot_id} data-testid={`option-bot-${b.bot_id}`}>
                           {b.bot_name}
@@ -309,7 +292,7 @@ function AddCardDialogInner({ open, onOpenChange, paymentMethods, onComplete }: 
 
             <DialogFooter>
               <Button variant="outline" onClick={() => onOpenChange(false)} disabled={submitting} data-testid="button-cancel">Cancel</Button>
-              <Button onClick={handleCreate} disabled={submitting || !pmId || !botId} data-testid="button-create-card">
+              <Button onClick={handleCreate} disabled={submitting || !pmId} data-testid="button-create-card">
                 {submitting && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
                 Create card
               </Button>

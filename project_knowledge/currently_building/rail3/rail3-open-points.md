@@ -40,14 +40,6 @@ Test path (Phase 8 of the rewire plan):
 
 This is the only remaining blocker to "rail3 actually works."
 
-### 4. Bot-delete → Crossmint agent cleanup — **NOT BUILT, NO CALLER YET**
-Phase 2.5 added `deleteRail3AgentByBotId` to storage but nothing calls it. There is no `DELETE /api/v1/bots/:botId` route in the codebase today. When/if one gets built, it should:
-1. Call `deleteRail3AgentByBotId(botId)` on our DB.
-2. Call `DELETE /agents/:agentId` on Crossmint (we already have `createAgent` in `features/payment-rails/rail3/agents.ts` — add `deleteAgent`).
-3. Probably revoke any open OrderIntents for that bot first.
-
-Until a bot-delete route exists, this is theoretical.
-
 ### 5. Sidebar nav still inactive — **NOT FLIPPED**
 `components/dashboard/sidebar.tsx:53`:
 ```ts

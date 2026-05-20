@@ -51,7 +51,7 @@ Intent-optional logic lives in one helper: `features/payment-rails/rail3/permiss
 | id | serial PK | |
 | owner_uid | text | Firebase UID |
 | payment_method_id | text unique | Crossmint paymentMethod ID |
-| agent_id | text | Crossmint agentic-enrollment agent ID |
+| ~~agent_id~~ | — | **Not on PM.** Agent is per-owner; lives in `rail3_agents` keyed by `owner_uid`. |
 | card_brand | text | visa / mastercard |
 | card_last4 | text | |
 | cardholder_name | text | |
@@ -66,7 +66,7 @@ Intent-optional logic lives in one helper: `features/payment-rails/rail3/permiss
 | id | serial PK | |
 | card_id | text unique | Our internal ID |
 | owner_uid | text | |
-| bot_id | text | Linked bot |
+| bot_id | text (nullable) | Optional linked bot. Null = vault-only until owner attaches one. |
 | payment_method_id | text | → `rail3_payment_methods.payment_method_id` (application-enforced, no DB FK) |
 | order_intent_id | text | Crossmint orderIntent ID |
 | intent_mode | text | `limited` / `open` |

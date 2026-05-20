@@ -21,6 +21,7 @@ export const POST = withBotApi("/api/v1/bot/rail3/checkout", async (request, { b
 
   const card = await storage.getRail3CardByCardId(card_id);
   if (!card) return NextResponse.json({ error: "card_not_found" }, { status: 404 });
+  // A null card.botId (vault-only card) is forbidden to every bot until the owner links one.
   if (card.botId !== bot.botId) {
     return NextResponse.json({ error: "card_not_linked", message: "This card is not linked to your bot." }, { status: 403 });
   }

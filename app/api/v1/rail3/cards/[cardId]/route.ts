@@ -5,10 +5,10 @@ import { fireRailsUpdated } from "@/features/agent-interaction/webhooks";
 import { revokeOrderIntent, ownerUidToUserLocator } from "@/features/payment-rails/rail3";
 import { z } from "zod";
 
-// bot_id intentionally NOT patchable: Crossmint OrderIntent.agentId is immutable
-// after creation and the Crossmint agent is bound 1:1 to a bot. Re-linking would
-// strand the card on the wrong agent. Move a card to another bot by deleting and
-// recreating it.
+// bot_id is the only mutable link to a bot. Crossmint OrderIntent.agentId is
+// immutable after creation, but the agent is owner-scoped (one per owner), so
+// re-pointing a card to a different bot of the same owner is just a DB relabel
+// and is safe. Not exposed here yet — separate PATCH endpoint planned.
 const patchSchema = z.object({
   card_name: z.string().min(1).max(200).optional(),
   card_color: z.enum(["purple", "dark", "blue", "primary"]).optional(),

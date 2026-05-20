@@ -175,9 +175,8 @@ export interface IStorage {
   getRail3DailySpendCents(cardId: string): Promise<number>;
   getRail3MonthlySpendCents(cardId: string): Promise<number>;
 
-  getRail3AgentByBotId(botId: string): Promise<Rail3Agent | null>;
-  createRail3Agent(data: InsertRail3Agent): Promise<Rail3Agent>;
-  deleteRail3AgentByBotId(botId: string): Promise<void>;
+  getRail3AgentByOwnerUid(ownerUid: string): Promise<Rail3Agent | null>;
+  insertRail3AgentIfAbsent(data: InsertRail3Agent): Promise<Rail3Agent | null>;
 
   createRail3PaymentMethod(data: InsertRail3PaymentMethod): Promise<Rail3PaymentMethod>;
   getRail3PaymentMethodById(paymentMethodId: string): Promise<Rail3PaymentMethod | null>;
