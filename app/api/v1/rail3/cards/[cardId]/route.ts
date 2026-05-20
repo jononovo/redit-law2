@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSessionUser } from "@/features/platform-management/auth/session";
 import { storage } from "@/server/storage";
 import { fireRailsUpdated } from "@/features/agent-interaction/webhooks";
-import { revokeOrderIntent, ownerUidToUserLocator } from "@/features/payment-rails/rail3";
+import { revokeOrderIntent } from "@/features/payment-rails/rail3";
+import { extractBearerJwt } from "@/features/platform-management/auth/extract-bearer-jwt";
 import { z } from "zod";
 
 // bot_id is the only mutable link to a bot. Crossmint OrderIntent.agentId is
@@ -127,8 +128,15 @@ export async function DELETE(
   if (!card) return NextResponse.json({ error: "card_not_found" }, { status: 404 });
   if (card.ownerUid !== user.uid) return NextResponse.json({ error: "forbidden" }, { status: 403 });
 
+  const jwt = extractBearerJwt(request);
+  if (!jwt) {
+    return NextResponse.json(
+      { error: "bearer_required", message: "Firebase ID token required in Authorization header to revoke a Crossmint card." },
+      { status: 401 }
+    );
+  }
   await revokeOrderIntent({
-    userLocator: ownerUidToUserLocator(user.uid),
+    jwt,
     orderIntentId: card.orderIntentId,
   }).catch(() => {});
   await storage.deleteRail3Card(cardId);

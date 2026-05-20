@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionUser } from "@/features/platform-management/auth/session";
 import { storage } from "@/server/storage";
-import { deletePaymentMethod, ownerUidToUserLocator } from "@/features/payment-rails/rail3";
+import { deletePaymentMethod } from "@/features/payment-rails/rail3";
+import { extractBearerJwt } from "@/features/platform-management/auth/extract-bearer-jwt";
 
 // Remove a saved real card. Blocked if any virtual cards still reference it.
 export async function DELETE(
@@ -28,8 +29,15 @@ export async function DELETE(
     );
   }
 
+  const jwt = extractBearerJwt(request);
+  if (!jwt) {
+    return NextResponse.json(
+      { error: "bearer_required", message: "Firebase ID token required in Authorization header to delete a Crossmint payment method." },
+      { status: 401 }
+    );
+  }
   await deletePaymentMethod({
-    userLocator: ownerUidToUserLocator(user.uid),
+    jwt,
     paymentMethodId,
   }).catch(() => {});
   await storage.deleteRail3PaymentMethod(paymentMethodId);

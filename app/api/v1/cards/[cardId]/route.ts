@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSessionUser } from "@/features/platform-management/auth/session";
 import { storage } from "@/server/storage";
 import { fireRailsUpdated } from "@/features/agent-interaction/webhooks";
-import { revokeOrderIntent, ownerUidToUserLocator } from "@/features/payment-rails/rail3";
+import { revokeOrderIntent } from "@/features/payment-rails/rail3";
+import { extractBearerJwt } from "@/features/platform-management/auth/extract-bearer-jwt";
 
 export async function DELETE(
   request: NextRequest,
@@ -48,8 +49,15 @@ export async function DELETE(
 
     // Revoke just this virtual card's orderIntent. The underlying payment method
     // stays — it may back other virtual cards.
+    const jwt = extractBearerJwt(request);
+    if (!jwt) {
+      return NextResponse.json(
+        { error: "bearer_required", message: "Firebase ID token required in Authorization header to revoke a Crossmint card." },
+        { status: 401 }
+      );
+    }
     await revokeOrderIntent({
-      userLocator: ownerUidToUserLocator(user.uid),
+      jwt,
       orderIntentId: card.orderIntentId,
     }).catch(() => {});
 

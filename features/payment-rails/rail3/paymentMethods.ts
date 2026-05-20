@@ -39,13 +39,14 @@ export async function listPaymentMethods(params: {
   return payload.data;
 }
 
+// JWT-only on Crossmint's side — server-key + userLocator returns 403.
 export async function deletePaymentMethod(params: {
-  userLocator: string;
+  jwt: string;
   paymentMethodId: string;
 }): Promise<void> {
   const res = await crossmintCardsFetch(`/payment-methods/${params.paymentMethodId}`, {
     method: "DELETE",
-    userLocator: params.userLocator,
+    jwt: params.jwt,
   });
   if (!res.ok && res.status !== 404) {
     const body = await res.json().catch(() => ({}));

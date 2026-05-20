@@ -44,15 +44,17 @@ export interface OrderIntent {
   verificationConfig?: VerificationConfig & { agentId?: string; instructionId?: string };
 }
 
+// JWT-only on Crossmint's side — server-key + userLocator returns 403
+// ("requires a 'client'-side API key"). See features/payment-rails/rail3/client.ts.
 export async function createOrderIntent(params: {
-  userLocator: string;
+  jwt: string;
   agentId: string;
   paymentMethodId: string;
   mandates: CrossmintMandate[];
 }): Promise<OrderIntent> {
   const res = await crossmintCardsFetch(`/order-intents`, {
     method: "POST",
-    userLocator: params.userLocator,
+    jwt: params.jwt,
     body: {
       agentId: params.agentId,
       payment: { paymentMethodId: params.paymentMethodId },
@@ -63,12 +65,12 @@ export async function createOrderIntent(params: {
 }
 
 export async function revokeOrderIntent(params: {
-  userLocator: string;
+  jwt: string;
   orderIntentId: string;
 }): Promise<void> {
   const res = await crossmintCardsFetch(`/order-intents/${params.orderIntentId}`, {
     method: "DELETE",
-    userLocator: params.userLocator,
+    jwt: params.jwt,
   });
   if (!res.ok && res.status !== 404) {
     const body = await res.json().catch(() => ({}));

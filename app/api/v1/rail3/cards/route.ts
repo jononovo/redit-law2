@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionUser } from "@/features/platform-management/auth/session";
+import { extractBearerJwt } from "@/features/platform-management/auth/extract-bearer-jwt";
 import { storage } from "@/server/storage";
 import {
-  generateRail3CardId, buildMandates, createOrderIntent, ownerUidToUserLocator,
+  generateRail3CardId, buildMandates, createOrderIntent,
   CrossmintApiError, type PermissionInput,
 } from "@/features/payment-rails/rail3";
 import { provisionAgentForOwner } from "@/features/payment-rails/rail3/per-user-agent";
@@ -50,14 +51,6 @@ export async function GET(request: NextRequest) {
   });
 
   return NextResponse.json({ cards: result });
-}
-
-// Crossmint's `POST /agents` is JWT-only (see features/payment-rails/rail3/agents.ts).
-// Same Bearer extraction pattern as the enrollment route.
-function extractBearerJwt(request: NextRequest): string | null {
-  const authHeader = request.headers.get("authorization");
-  if (!authHeader?.startsWith("Bearer ")) return null;
-  return authHeader.slice(7);
 }
 
 // Get-or-create the one Crossmint agent for this owner. Lazy-creates on first
@@ -117,20 +110,19 @@ export async function POST(request: NextRequest) {
     botId = bot.botId;
   }
 
-  // JWT only required if we have to provision — but fetching it up front keeps
-  // the failure mode explicit. If the agent already exists this is unused.
+  // Crossmint requires a user JWT (Bearer) for both /agents and /order-intents.
+  // authFetch on the client always sends it; reject early if absent.
   const jwt = extractBearerJwt(request);
-  const hasAgent = await storage.getRail3AgentByOwnerUid(user.uid);
-  if (!hasAgent && !jwt) {
+  if (!jwt) {
     return NextResponse.json(
-      { error: "bearer_required", message: "Firebase ID token required in Authorization header to provision a Crossmint agent on first card." },
+      { error: "bearer_required", message: "Firebase ID token required in Authorization header for Crossmint card operations." },
       { status: 401 }
     );
   }
 
   let agent: Rail3Agent;
   try {
-    agent = await getOrProvisionAgent(user.uid, user.email, jwt!);
+    agent = await getOrProvisionAgent(user.uid, user.email, jwt);
   } catch (err) {
     const status = err instanceof CrossmintApiError ? err.status : 500;
     const message = err instanceof Error ? err.message : "create_agent_failed";
@@ -153,7 +145,7 @@ export async function POST(request: NextRequest) {
   let intent;
   try {
     intent = await createOrderIntent({
-      userLocator: ownerUidToUserLocator(user.uid),
+      jwt,
       agentId: agent.agentId,
       paymentMethodId: pm.paymentMethodId,
       mandates,
