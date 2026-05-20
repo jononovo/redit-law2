@@ -20,10 +20,14 @@ export function buildMandates(input: PermissionInput): CrossmintMandate[] {
       { type: "description", value: "General-purpose card permission — no merchant restriction" },
     ];
   }
+  // Crossmint requires at least one `description` mandate. If the caller didn't
+  // supply one, derive it from the limit so we always send something meaningful.
+  const description = input.description
+    ?? `Spending limit $${input.maxAmountUsd}/${input.period}`;
   const mandates: CrossmintMandate[] = [
     { type: "maxAmount", value: input.maxAmountUsd.toFixed(2), details: { currency: "usd", period: input.period } },
+    { type: "description", value: description },
   ];
-  if (input.description) mandates.push({ type: "description", value: input.description });
   if (input.prompt) mandates.push({ type: "prompt", value: input.prompt });
   return mandates;
 }
