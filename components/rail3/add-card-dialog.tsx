@@ -18,6 +18,7 @@ import { CreditCard, Loader2, CheckCircle2, ChevronDown } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { OrderIntentVerification } from "@crossmint/client-sdk-react-ui";
 import { Rail3CrossmintProvider } from "@/components/rail3/crossmint-provider";
+import { CardVisual } from "@/components/wallet/card-visual";
 import type { Rail3PaymentMethodInfo } from "@/components/wallet/types";
 
 interface Props {
@@ -57,6 +58,7 @@ function AddCardDialogInner({ open, onOpenChange, paymentMethods, onComplete }: 
   const noPMs = selectablePMs.length === 0;
 
   const [pmId, setPmId] = useState<string>("");
+  const selectedPm = useMemo(() => selectablePMs.find((p) => p.payment_method_id === pmId), [selectablePMs, pmId]);
   const [botId, setBotId] = useState<string>(NO_BOT_VALUE);
   const [bots, setBots] = useState<BotOption[]>([]);
   const [botsLoading, setBotsLoading] = useState(true);
@@ -176,6 +178,17 @@ function AddCardDialogInner({ open, onOpenChange, paymentMethods, onComplete }: 
             </DialogHeader>
 
             <div className="space-y-4 py-2">
+              <CardVisual
+                color="primary"
+                last4={selectedPm?.card_last4 || "••••"}
+                holder={(cardName || "New Virtual Card").toUpperCase()}
+                line1={category || undefined}
+                balance={mode === "limited" && maxAmount ? `$${maxAmount}` : "No limit"}
+                balanceLabel={mode === "limited" && period ? `Limit · ${period}` : "Spending"}
+                brand={selectedPm?.card_brand || undefined}
+                status="pending_setup"
+              />
+
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <Label htmlFor="bot-select">Link a bot (optional)</Label>
@@ -192,6 +205,9 @@ function AddCardDialogInner({ open, onOpenChange, paymentMethods, onComplete }: 
                       ))}
                     </SelectContent>
                   </Select>
+                  <p className="text-xs text-neutral-500 mt-1">
+                    We've issued you an agent. Link a bot now or later — your card works either way.
+                  </p>
                 </div>
                 <div>
                   <Label htmlFor="pm-select">Backing real card</Label>
