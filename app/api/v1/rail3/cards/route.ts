@@ -52,15 +52,27 @@ export async function GET(request: NextRequest) {
   return NextResponse.json({ cards: result });
 }
 
+// Crossmint's `POST /agents` is JWT-only (see features/payment-rails/rail3/agents.ts).
+// Same Bearer extraction pattern as the enrollment route.
+function extractBearerJwt(request: NextRequest): string | null {
+  const authHeader = request.headers.get("authorization");
+  if (!authHeader?.startsWith("Bearer ")) return null;
+  return authHeader.slice(7);
+}
+
 // Get-or-create the one Crossmint agent for this owner. Lazy-creates on first
 // virtual card. Concurrency-safe via ON CONFLICT DO NOTHING — on race, the
 // loser's Crossmint agent is orphaned (warn-logged, acceptable cost).
-async function getOrProvisionAgent(ownerUid: string, ownerEmail: string | null): Promise<Rail3Agent> {
+async function getOrProvisionAgent(
+  ownerUid: string,
+  ownerEmail: string | null,
+  jwt: string,
+): Promise<Rail3Agent> {
   const existing = await storage.getRail3AgentByOwnerUid(ownerUid);
   if (existing) return existing;
 
   const { agentId } = await provisionAgentForOwner({
-    userLocator: ownerUidToUserLocator(ownerUid),
+    jwt,
     ownerEmail,
   });
   const inserted = await storage.insertRail3AgentIfAbsent({ ownerUid, agentId });
@@ -105,9 +117,20 @@ export async function POST(request: NextRequest) {
     botId = bot.botId;
   }
 
+  // JWT only required if we have to provision — but fetching it up front keeps
+  // the failure mode explicit. If the agent already exists this is unused.
+  const jwt = extractBearerJwt(request);
+  const hasAgent = await storage.getRail3AgentByOwnerUid(user.uid);
+  if (!hasAgent && !jwt) {
+    return NextResponse.json(
+      { error: "bearer_required", message: "Firebase ID token required in Authorization header to provision a Crossmint agent on first card." },
+      { status: 401 }
+    );
+  }
+
   let agent: Rail3Agent;
   try {
-    agent = await getOrProvisionAgent(user.uid, user.email);
+    agent = await getOrProvisionAgent(user.uid, user.email, jwt!);
   } catch (err) {
     const status = err instanceof CrossmintApiError ? err.status : 500;
     const message = err instanceof Error ? err.message : "create_agent_failed";
