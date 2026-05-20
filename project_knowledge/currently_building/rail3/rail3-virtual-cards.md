@@ -198,6 +198,79 @@ Production migration applied 2026-05-20 via SQL Console. Replit Publish's auto-d
 ### Known broken paths
 - **Bot checkout against live Crossmint will 403** until the refresh-token plan ships (item #2).
 - **Dev-mode verification ceremony is broken** until StrictMode is worked around (item #6); prod is fine.
+- **Prod mobile verification ceremony unmounts mid-flow** (observed 2026-05-20). OTP path opens, loading spinner shows, then the overlay disappears within ~1s. Card row stays at `permission_phase='requires-verification'`, `last_used_at` empty. Different cause than dev StrictMode (prod has no StrictMode). See diagnostics catalogue below.
+
+---
+
+## Diagnostics catalogue: "verification overlay disappears immediately"
+
+Observed in three contexts so far. Same surface symptom, different root causes. Catalogue them before reaching for code changes.
+
+### A. React StrictMode double-mount (dev only)
+- **Symptom:** "[BtAi] Visa SDK loaded successfully" appears **twice** in console. Overlay flashes for ~1s and unmounts.
+- **Why:** Crossmint's `verifyInstruction(agentId, instructionId)` runs in an effect with deps `[ready, agentId, instructionId]`. StrictMode double-mounts the component; the second mount calls `verifyInstruction` with the same single-use `instructionId`; Crossmint resolves it instantly → `onVerificationComplete` fires → parent unmounts the SDK.
+- **Confirm:** count `[BtAi] Visa SDK loaded successfully` log lines. Two = StrictMode; one = something else.
+- **Workaround:** disable StrictMode locally for the Rail-3 surfaces, or gate `onVerificationComplete` behind a ≥500ms timer.
+
+### B. Radix Dialog dismisses on focus/blur (prod, mobile especially)
+- **Symptom:** "[BtAi] Visa SDK loaded successfully" appears **once**. OTP method picker shows, user selects → popup tab opens → original tab's Dialog closes itself → SDK unmounts mid-ceremony. Card stays `requires-verification`, `last_used_at` empty.
+- **Why:** Radix Dialog's outside-click / focus-trap logic treats the OTP popup's focus shift (or any in-page focus change the Basis Theory overlay does on body-portaled siblings) as an "outside interaction" and closes the dialog. iOS Safari + Chrome on Android handle popup focus differently than desktop, making this much more reproducible on mobile.
+- **Confirm:**
+  - Add a temporary `onOpenChange` log in `AddCardDialog`. If it logs `false` right when the overlay disappears, Radix is dismissing it.
+  - Or set `<Dialog onPointerDownOutside={(e) => { console.log("outside", e.target); e.preventDefault(); }} onEscapeKeyDown={...}>` temporarily and see whether the prevent-default keeps it open.
+- **Workaround (planned, not implemented):** render `<OrderIntentVerification>` as a sibling outside the Radix Dialog tree (Plan B revisited). Must also include a StrictMode guard so dev still works.
+
+### C. Body-portaled overlay click-through (prod, all platforms)
+- **Symptom:** Overlay renders but clicks pass through to the page beneath.
+- **Why:** Basis Theory's overlay portals to `<body>` at z-index 10001. Radix Dialog sets `pointer-events: none` on `<body>`, which the overlay inherits.
+- **Status:** worked-around by the MutationObserver in `OrderIntentVerificationStable` that forces `pointer-events: auto` on `<body>` and the overlay.
+- **Distinguishes from B:** in B the overlay vanishes; in C it stays but is dead to input. If you see overlay + dead clicks, check the MutationObserver is mounted.
+
+### D. Parent re-render loop ("Authenticating on the other window" forever)
+- **Symptom:** Passkey or OTP popup opens, primary tab shows the spinner forever even after the user completes the ceremony in the popup.
+- **Why:** Parent re-renders (JWT bridge ticks, bots loading, error toggles) hand `<OrderIntentVerification>` a fresh prop object each render → SDK re-mounts → WebAuthn ceremony restarts in a loop.
+- **Status:** worked-around by `OrderIntentVerificationStable = memo(...)` with stable identity.
+- **Confirm:** if you ever unwrap the memo, this regresses immediately.
+
+### E. Popup blocker swallows the WebAuthn window (prod, desktop)
+- **Symptom:** Spinner forever after Verify Now. No "[BtAi]" error in console. No second tab visible.
+- **Why:** Chrome/Safari blocked the popup because the click chain looks indirect.
+- **Confirm:** popup-blocked icon in the URL bar; allow popups for the prod domain.
+
+### F. Cross-device passkey mismatch (prod, any device with no matching passkey)
+- **Symptom:** Passkey ceremony hangs on "Authenticating with passkey…". SDK source logs `[BtAi] Cross-device passkey mismatch detected for instruction X. Card was enrolled on a different device. onNewDevice=reenroll`.
+- **Why:** Visa binds the passkey to the device that did the original enrollment. A different device → SDK's behavior depends on the `onNewDevice` prop on the Basis Theory provider (default `"reenroll"`). Crossmint's `<CrossmintProvider>` doesn't expose this prop, so we can't tune it without reaching past Crossmint's wrapper.
+- **Workaround:** complete the orderIntent ceremony on the device that did the original PM enrollment, or re-vault the PM on the device you want to use.
+
+### Authoritative check: ask Crossmint directly
+
+If the local row is `requires-verification` and you need to know whether the ceremony actually got through to Crossmint's backend:
+
+```
+GET https://www.crossmint.com/api/unstable/order-intents/:orderIntentId
+Headers: X-API-KEY: $CROSSMINT_SERVER_API_KEY
+```
+
+Response `phase` field is the source of truth:
+- `requires-verification` → SDK never finished talking to Crossmint. Local row is correct. Bug is on our SDK-mount side (A–F above).
+- `active` → ceremony succeeded on Crossmint's side but our row is stale. Bug is in our authorization-status polling / write-back path. Fix is to re-poll and update `permission_phase`.
+- `expired` → ceremony was abandoned. User must re-create the card.
+
+Same shape for enrollment (vault verification): `GET /api/unstable/payment-methods/:paymentMethodId/agentic-enrollment`.
+
+There's no dedicated dashboard route for this today. If we hit this often, a 1-line admin endpoint that proxies the GET would be cheap.
+
+### Local DB quick-look
+
+```sql
+SELECT card_id, owner_uid, payment_method_id, order_intent_id,
+       permission_phase, status, card_name, created_at, last_used_at
+FROM rail3_cards
+ORDER BY created_at DESC
+LIMIT 10;
+```
+
+`permission_phase='requires-verification'` + `last_used_at IS NULL` is the "stuck" signature.
 
 ---
 
