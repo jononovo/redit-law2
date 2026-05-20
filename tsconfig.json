@@ -41,6 +41,7 @@
     ".next",
     "client",
     "dist",
+    "skill-variants/**/dist/**",
     "docs/tests/**/*",
     "public/Plugins/**/*"
   ]

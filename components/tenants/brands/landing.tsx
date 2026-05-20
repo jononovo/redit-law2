@@ -13,6 +13,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { ASSIGNABLE_SECTORS } from "@/features/brand-engine/procurement-skills/taxonomy/sectors";
 import { ScanProgress } from "@/components/scan-progress";
 import { useDomainScan } from "@/hooks/use-domain-scan";
+import { PillButton } from "@/components/ui/pill-button";
 
 const ROTATING_BRANDS = [
   "nike", "gucci", "apple", "sephora", "walmart", "patagonia",
@@ -167,31 +168,7 @@ function CapabilityPills({ capabilities }: { capabilities: string[] | null }) {
 
 
 
-function SectorButton({
-  label,
-  active,
-  onClick,
-  testId,
-}: {
-  label: string;
-  active: boolean;
-  onClick: () => void;
-  testId: string;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className={`inline-flex items-center rounded-none px-3 py-1.5 text-xs font-mono font-medium whitespace-nowrap transition-colors border ${
-        active
-          ? "bg-white text-neutral-950 border-white"
-          : "bg-transparent text-neutral-500 border-neutral-800 hover:text-white hover:border-neutral-600"
-      }`}
-      data-testid={testId}
-    >
-      {label}
-    </button>
-  );
-}
+const SectorButton = PillButton;
 
 function SectorFilterBar({
   activeSector,

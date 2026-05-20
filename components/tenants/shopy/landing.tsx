@@ -5,9 +5,12 @@ import { Footer } from "@/components/footer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import Link from "next/link";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight } from "lucide-react";
+import { PillButton } from "@/components/ui/pill-button";
+
+type SortMode = "score" | "recent";
 
 type BrandRow = {
   slug: string;
@@ -39,24 +42,20 @@ export default function ShopyLanding() {
   const [domain, setDomain] = useState("");
   const [brands, setBrands] = useState<BrandRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [sortMode, setSortMode] = useState<SortMode>("score");
 
   useEffect(() => {
-    fetch("/api/v1/brands?limit=50&lite=true")
+    setLoading(true);
+    const sortParam = sortMode === "recent" ? "last_scanned" : "score";
+    fetch(`/api/v1/brands?limit=20&lite=true&sort=${sortParam}&dir=desc`)
       .then((r) => r.json())
       .then((data) => {
         setBrands(data.brands || data || []);
         setLoading(false);
       })
       .catch(() => setLoading(false));
-  }, []);
+  }, [sortMode]);
 
-  const scoredBrands = useMemo(
-    () => brands
-      .filter((b) => b.overallScore !== null)
-      .sort((a, b) => (b.overallScore ?? 0) - (a.overallScore ?? 0))
-      .slice(0, 10),
-    [brands]
-  );
 
   const handleScan = (e: React.FormEvent) => {
     e.preventDefault();
@@ -107,10 +106,21 @@ export default function ShopyLanding() {
         <section className="pb-24">
           <div className="container mx-auto px-6">
             <div className="max-w-5xl mx-auto">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-sm font-mono text-neutral-400 tracking-wide uppercase" data-testid="text-scores-title">
-                  Recent Scores
-                </h2>
+              <div className="flex items-center justify-between mb-6 gap-3 flex-wrap">
+                <div className="flex items-center gap-1.5" data-testid="filter-bar-shopy-sort">
+                  <PillButton
+                    label="Leaderboard"
+                    active={sortMode === "score"}
+                    onClick={() => setSortMode("score")}
+                    testId="filter-sort-score"
+                  />
+                  <PillButton
+                    label="Recent Scores"
+                    active={sortMode === "recent"}
+                    onClick={() => setSortMode("recent")}
+                    testId="filter-sort-recent"
+                  />
+                </div>
                 <Link href="/agentic-shopping-score" className="text-sm font-semibold text-neutral-500 hover:text-neutral-900 transition-colors flex items-center gap-1" data-testid="link-scan-now">
                   Scan yours <ArrowRight className="w-3 h-3" />
                 </Link>
@@ -128,13 +138,17 @@ export default function ShopyLanding() {
                     <div className="inline-block w-5 h-5 border-2 border-neutral-200 border-t-neutral-900 rounded-full animate-spin" />
                     <p className="text-sm text-neutral-400 mt-3 font-medium">Loading scores...</p>
                   </div>
-                ) : scoredBrands.length === 0 ? (
+                ) : brands.length === 0 ? (
                   <div className="px-5 py-16 text-center">
-                    <p className="text-sm text-neutral-400 font-medium">No scores yet. Scan a domain to see the first one.</p>
+                    <p className="text-sm text-neutral-400 font-medium">
+                      {sortMode === "score"
+                        ? "No scored brands yet. Scan a domain to see the first one."
+                        : "No recent scans yet. Scan a domain to see it appear here."}
+                    </p>
                   </div>
                 ) : (
                   <div className="divide-y divide-neutral-100">
-                    {scoredBrands.map((brand) => (
+                    {brands.map((brand) => (
                       <Link
                         key={brand.slug}
                         href={`/brands/${brand.slug}`}
