@@ -220,17 +220,8 @@ function AddCardDialogInner({ open, onOpenChange, paymentMethods, onComplete, cr
     !!createdCard && !!createdCard.verificationConfig && createdCard.phase !== "active";
 
   function finishVerification() {
-    console.log("[Rail3 DIAG] verification finished (complete) — clearing createdCard");
     setCreatedCard(null);
     onComplete();
-  }
-
-  function handleVerificationError(msg: string) {
-    // DIAGNOSTIC: don't unmount on error. Log what the SDK said and keep the
-    // overlay mounted so we can inspect the state of BtAi's modal / the Visa
-    // overlay. User can manually close via parent dialog reopen + cancel.
-    console.error("[Rail3 DIAG] OrderIntentVerification onError:", msg);
-    setError(msg);
   }
 
   return (
@@ -396,7 +387,7 @@ function AddCardDialogInner({ open, onOpenChange, paymentMethods, onComplete, cr
           paymentMethodId={createdCard.paymentMethodId}
           verificationConfig={createdCard.verificationConfig}
           onComplete={finishVerification}
-          onError={handleVerificationError}
+          onError={finishVerification}
         />
       )}
     </>
