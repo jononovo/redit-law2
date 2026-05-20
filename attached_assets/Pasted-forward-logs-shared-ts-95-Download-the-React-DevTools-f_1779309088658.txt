@@ -1,0 +1,18 @@
+forward-logs-shared.ts:95 Download the React DevTools for a better development experience: https://react.dev/link/react-devtools
+forward-logs-shared.ts:95 [HMR] connected
+forward-logs-shared.ts:95 [Fast Refresh] rebuilding
+forward-logs-shared.ts:95 [Fast Refresh] done in 229ms
+add-card-dialog.tsx:328 [Rail3 DEBUG] OrderIntentVerification orderIntent prop: {orderIntentId: '3cc5fee7-a68f-426c-8715-4a0b21babcf5', phase: 'requires-verification', mandates: Array(0), payment: {…}, verificationConfig: {…}}
+add-card-dialog.tsx:328 [Rail3 DEBUG] OrderIntentVerification orderIntent prop: {orderIntentId: '3cc5fee7-a68f-426c-8715-4a0b21babcf5', phase: 'requires-verification', mandates: Array(0), payment: {…}, verificationConfig: {…}}
+forward-logs-shared.ts:95 [BtAi] Visa SDK loaded successfully — production config is valid.
+forward-logs-shared.ts:95 [BtAi] Visa SDK loaded successfully — production config is valid.
+add-card-dialog.tsx:328 [Rail3 DEBUG] OrderIntentVerification orderIntent prop: {orderIntentId: '3cc5fee7-a68f-426c-8715-4a0b21babcf5', phase: 'requires-verification', mandates: Array(0), payment: {…}, verificationConfig: {…}}
+add-card-dialog.tsx:328 [Rail3 DEBUG] OrderIntentVerification orderIntent prop: {orderIntentId: '3cc5fee7-a68f-426c-8715-4a0b21babcf5', phase: 'requires-verification', mandates: Array(0), payment: {…}, verificationConfig: {…}}
+add-card-dialog.tsx:328 [Rail3 DEBUG] OrderIntentVerification orderIntent prop: {orderIntentId: '3cc5fee7-a68f-426c-8715-4a0b21babcf5', phase: 'requires-verification', mandates: Array(0), payment: {…}, verificationConfig: {…}}
+add-card-dialog.tsx:328 [Rail3 DEBUG] OrderIntentVerification orderIntent prop: {orderIntentId: '3cc5fee7-a68f-426c-8715-4a0b21babcf5', phase: 'requires-verification', mandates: Array(0), payment: {…}, verificationConfig: {…}}
+add-card-dialog.tsx:328 [Rail3 DEBUG] OrderIntentVerification orderIntent prop: {orderIntentId: '3cc5fee7-a68f-426c-8715-4a0b21babcf5', phase: 'requires-verification', mandates: Array(0), payment: {…}, verificationConfig: {…}}
+add-card-dialog.tsx:328 [Rail3 DEBUG] OrderIntentVerification orderIntent prop: {orderIntentId: '3cc5fee7-a68f-426c-8715-4a0b21babcf5', phase: 'requires-verification', mandates: Array(0), payment: {…}, verificationConfig: {…}}
+add-card-dialog.tsx:328 [Rail3 DEBUG] OrderIntentVerification orderIntent prop: {orderIntentId: '3cc5fee7-a68f-426c-8715-4a0b21babcf5', phase: 'requires-verification', mandates: Array(0), payment: {…}, verificationConfig: {…}}
+add-card-dialog.tsx:328 [Rail3 DEBUG] OrderIntentVerification orderIntent prop: {orderIntentId: '3cc5fee7-a68f-426c-8715-4a0b21babcf5', phase: 'requires-verification', mandates: Array(0), payment: {…}, verificationConfig: {…}}
+add-card-dialog.tsx:328 [Rail3 DEBUG] OrderIntentVerification orderIntent prop: {orderIntentId: '3cc5fee7-a68f-426c-8715-4a0b21babcf5', phase: 'requires-verification', mandates: Array(0), payment: {…}, verificationConfig: {…}}
+add-card-dialog.tsx:328 [Rail3 DEBUG] OrderIntentVerification orderIntent prop: {orderIntentId: '3cc5fee7-a68f-426c-8715-4a0b21babcf5', phase: 'requires-verification', mandates: Array(0), payment: {…}, verificationConfig: {…}}

@@ -5,7 +5,7 @@
 // is optional — botless cards are vault-only until the owner attaches a bot.
 // Crossmint agent is per-owner, created server-side on first card.
 
-import { useEffect, useMemo, useState } from "react";
+import { memo, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { authFetch } from "@/features/platform-management/auth-fetch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
@@ -50,6 +50,41 @@ export function AddCardDialog(props: Props) {
     </Rail3CrossmintProvider>
   );
 }
+
+// Memoized wrapper so OrderIntentVerification only re-mounts when the
+// orderIntent's identity actually changes. Without this, every parent re-render
+// (Firebase JWT bridge ticks, bots loading, error state, etc.) hands the SDK
+// a fresh object literal, restarting the WebAuthn ceremony in a loop — the
+// "Authenticating on the other window" hang.
+interface OrderIntentVerificationStableProps {
+  orderIntentId: string;
+  paymentMethodId: string;
+  verificationConfig: any;
+  onComplete: () => void;
+  onError: (msg: string) => void;
+}
+
+const OrderIntentVerificationStable = memo(function OrderIntentVerificationStable({
+  orderIntentId, paymentMethodId, verificationConfig, onComplete, onError,
+}: OrderIntentVerificationStableProps) {
+  const orderIntent = useMemo(
+    () => ({
+      orderIntentId,
+      phase: "requires-verification",
+      mandates: [],
+      payment: { paymentMethodId },
+      verificationConfig,
+    }),
+    [orderIntentId, paymentMethodId, verificationConfig],
+  );
+  return (
+    <OrderIntentVerification
+      orderIntent={orderIntent as any}
+      onVerificationComplete={onComplete}
+      onVerificationError={(err) => onError(err instanceof Error ? err.message : String(err))}
+    />
+  );
+});
 
 function AddCardDialogInner({ open, onOpenChange, paymentMethods, onComplete }: Props) {
   const router = useRouter();
@@ -315,28 +350,15 @@ function AddCardDialogInner({ open, onOpenChange, paymentMethods, onComplete }: 
                 </div>
               ) : (
                 <div className="rounded-lg border border-neutral-200 overflow-hidden" data-testid="container-order-intent-verification">
-                  <OrderIntentVerification
-                    orderIntent={(() => {
-                      const oi = {
-                        orderIntentId: createdCard.orderIntentId,
-                        phase: "requires-verification",
-                        mandates: [],
-                        payment: { paymentMethodId: pmId },
-                        verificationConfig: createdCard.verificationConfig,
-                      };
-                      // TEMP debug — what we hand to the SDK
-                      console.log("[Rail3 DEBUG] OrderIntentVerification orderIntent prop:", JSON.parse(JSON.stringify(oi)));
-                      return oi as any;
-                    })()}
-                    onVerificationComplete={(...args) => {
-                      console.log("[Rail3 DEBUG] onVerificationComplete:", args);
+                  <OrderIntentVerificationStable
+                    orderIntentId={createdCard.orderIntentId}
+                    paymentMethodId={pmId}
+                    verificationConfig={createdCard.verificationConfig}
+                    onComplete={() => {
                       setCreatedCard((cur) => cur ? { ...cur, phase: "active" } : cur);
                       onComplete();
                     }}
-                    onVerificationError={(err) => {
-                      console.error("[Rail3 DEBUG] onVerificationError:", err, JSON.stringify(err, Object.getOwnPropertyNames(err ?? {})));
-                      setError(err instanceof Error ? err.message : String(err));
-                    }}
+                    onError={(msg) => setError(msg)}
                   />
                 </div>
               )}
