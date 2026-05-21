@@ -31,13 +31,15 @@ Nothing polls. Nothing fires on a timer. Nothing runs on a generic pageview.
 ### 1. New endpoint — `POST /api/v1/rail3/cards/[cardId]/refresh-phase`
 
 - File: `app/api/v1/rail3/cards/[cardId]/refresh-phase/route.ts`
-- Auth: session (cookie) + Bearer JWT (Firebase ID token), same as the create route.
+- Auth:
+  - Verify the Firebase session via the same wrapper the create route uses.
+  - Extract the Bearer JWT from the request using `extractBearerJwt` — required because Crossmint reads on this endpoint are JWT-only (server-key + userLocator returns 403; confirmed in `permissions.ts` and `paymentMethods.ts`).
 - Body: none.
 - Logic:
-  1. Look up the card by `cardId`, verify ownership.
-  2. Call Crossmint `GET /order-intents/:orderIntentId` via `crossmintCardsFetch` with the Bearer JWT.
-  3. If Crossmint returns a `phase` that differs from `card.permissionPhase`, `UPDATE rail3_cards SET permission_phase = ?`.
-  4. Return `{ card_id, order_intent_id, permission_phase }` (the post-update value).
+  1. Look up the card by `cardId`, verify `ownerUid` matches the session user.
+  2. Call Crossmint `GET /order-intents/:orderIntentId` via `crossmintCardsFetch({ jwt })`.
+  3. If Crossmint returns a `phase` that differs from `card.permissionPhase`, `await storage.updateRail3Card(cardId, { permissionPhase: fresh.phase })`.
+  4. Return `{ card_id, order_intent_id, permission_phase }` (post-update value).
 - Failure: if Crossmint returns non-2xx, surface the status + body, do not mutate the DB.
 - ~30 lines. Auth shape copied from `app/api/v1/rail3/cards/route.ts`.
 
@@ -66,9 +68,10 @@ Nothing polls. Nothing fires on a timer. Nothing runs on a generic pageview.
     onComplete();
   }}
   ```
-- New:
+- New — **must be wrapped in `useCallback`**, otherwise a fresh function on every parent render will defeat the `OrderIntentVerificationStable` memo and restart the WebAuthn ceremony (see existing comment in the file about the "Authenticating on the other window" hang):
   ```ts
-  onComplete={async () => {
+  const handleVerificationComplete = useCallback(async () => {
+    if (!createdCard) return;
     try {
       const res = await authFetch(
         `/api/v1/rail3/cards/${createdCard.cardId}/refresh-phase`,
@@ -85,33 +88,23 @@ Nothing polls. Nothing fires on a timer. Nothing runs on a generic pageview.
     } finally {
       onComplete();
     }
-  }}
+  }, [createdCard?.cardId, onComplete]);
   ```
+  Then pass `onComplete={handleVerificationComplete}` to `OrderIntentVerificationStable`.
 - Behaviour:
   - Crossmint says `active` → dialog flips to "Authorized" with truth, DB is correct.
   - Crossmint says `requires-verification` → dialog stays on the SDK widget. User can retry by tapping passkey again. No false-positive flip.
 
-### 5. Bot checkout — error-triggered reconcile
+### 5. Bot checkout — NOT changing in this round
 
-- File: `app/api/v1/bot/rail3/checkout/route.ts`
-- Replace the current early-return:
-  ```ts
-  if (card.permissionPhase !== "active") return 403;
-  ```
-- With:
-  ```ts
-  if (card.permissionPhase !== "active") {
-    // Reconcile once against Crossmint in case the SDK flipped it but we missed the writeback.
-    const fresh = await getOrderIntent({ jwt, orderIntentId: card.orderIntentId }).catch(() => null);
-    if (fresh && fresh.phase !== card.permissionPhase) {
-      await storage.updateRail3Card(card.cardId, { permissionPhase: fresh.phase });
-      card = { ...card, permissionPhase: fresh.phase };
-    }
-    if (card.permissionPhase !== "active") return 403;
-  }
-  ```
-- Bot checkout uses a different JWT path (Firebase refresh token plan — currently unfinished). If `jwt` isn't available here, skip the reconcile and just 403. Document the gap; do not block this plan on it.
-- ~10 lines.
+Originally planned to add an error-triggered reconcile on the `permissionPhase !== "active"` gate in `app/api/v1/bot/rail3/checkout/route.ts`. **Dropped**, because:
+
+- The bot has no Firebase JWT. It auths via bot API key and uses server-key + `userLocator` for credential fetches.
+- Crossmint reads on order-intents are JWT-only (server-key + userLocator → 403), so a reconcile from this path would require either the in-flight Firebase refresh-token plan to land first, or server-side minting of a custom-token → ID-token via `firebase-admin` just for this call. Both are scope creep.
+- The dialog writeback (sections 1-4) is the actual fix: new cards land as `active` in the DB the moment the user finishes the passkey ceremony. The bot's phase gate will simply be correct going forward.
+- If a card is genuinely stuck at `requires-verification`, the user re-taps the passkey in the dashboard and the writeback corrects the DB. The bot retries and succeeds.
+
+Revisit only if real users hit a bot-side 403 on a card that Crossmint already considers active. Will not pre-emptively build.
 
 ## Cleanup (post-merge)
 
@@ -124,12 +117,11 @@ Nothing polls. Nothing fires on a timer. Nothing runs on a generic pageview.
 |---|---|
 | `app/api/v1/rail3/cards/[cardId]/refresh-phase/route.ts` | NEW — ~30 lines |
 | `features/payment-rails/rail3/permissions.ts` | ADD `getOrderIntent` — ~10 lines |
-| `components/rail3/add-card-dialog.tsx` | EDIT onComplete handler — ~15 lines diff |
-| `app/api/v1/bot/rail3/checkout/route.ts` | EDIT phase gate — ~10 lines diff |
+| `components/rail3/add-card-dialog.tsx` | EDIT verification onComplete (wrap in `useCallback`) — ~20 lines diff |
 | `app/api/v1/rail3/cards/[cardId]/crossmint-state/route.ts` | DELETE (post-merge) |
 | `app/api/v1/rail3/cards/route.ts` | REMOVE temp debug log (post-merge) |
 
-Total: ~65 lines of real change.
+Total: ~55 lines of real change. Three files edited, one file deleted, one file with debug-log removed.
 
 ## Test plan (manual, in staging)
 
