@@ -68,6 +68,19 @@ export async function createOrderIntent(params: {
   return unwrapCrossmint<OrderIntent>(res, "createOrderIntent");
 }
 
+// Read a single order intent. JWT-only (server-key returns 403 in practice,
+// matching the other agentic-commerce read paths).
+export async function getOrderIntent(params: {
+  jwt: string;
+  orderIntentId: string;
+}): Promise<OrderIntent> {
+  const res = await crossmintCardsFetch(`/order-intents/${params.orderIntentId}`, {
+    method: "GET",
+    jwt: params.jwt,
+  });
+  return unwrapCrossmint<OrderIntent>(res, "getOrderIntent");
+}
+
 export async function revokeOrderIntent(params: {
   jwt: string;
   orderIntentId: string;

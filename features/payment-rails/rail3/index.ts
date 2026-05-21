@@ -21,6 +21,7 @@ export {
 export {
   buildMandates,
   createOrderIntent,
+  getOrderIntent,
   revokeOrderIntent,
   type CrossmintMandate,
   type PermissionInput,

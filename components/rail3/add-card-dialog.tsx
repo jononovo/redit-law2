@@ -5,7 +5,7 @@
 // is optional — botless cards are vault-only until the owner attaches a bot.
 // Crossmint agent is per-owner, created server-side on first card.
 
-import { memo, useEffect, useMemo, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { authFetch } from "@/features/platform-management/auth-fetch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
@@ -128,6 +128,30 @@ function AddCardDialogInner({ open, onOpenChange, paymentMethods, onComplete }: 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [createdCard, setCreatedCard] = useState<CreatedCard | null>(null);
+
+  // Reconcile against Crossmint when the SDK signals verification finished.
+  // The SDK callback only says "ceremony ended"; only Crossmint knows the
+  // resulting phase. Wrapped in useCallback so the memoized
+  // OrderIntentVerificationStable doesn't re-mount and restart WebAuthn.
+  const createdCardId = createdCard?.cardId;
+  const handleVerificationComplete = useCallback(async () => {
+    if (!createdCardId) return;
+    try {
+      const res = await authFetch(`/api/v1/rail3/cards/${createdCardId}/refresh-phase`, { method: "POST" });
+      const json = await res.json();
+      if (res.ok && json.permission_phase) {
+        setCreatedCard((cur) => cur ? { ...cur, phase: json.permission_phase } : cur);
+      } else {
+        setError(json.message || json.error || "verification_refresh_failed");
+      }
+    } catch (e: any) {
+      setError(e.message);
+    } finally {
+      onComplete();
+    }
+  }, [createdCardId, onComplete]);
+
+  const handleVerificationError = useCallback((msg: string) => setError(msg), []);
 
   // Load this owner's bots so we can offer an optional link.
   useEffect(() => {
@@ -377,11 +401,8 @@ function AddCardDialogInner({ open, onOpenChange, paymentMethods, onComplete }: 
                     orderIntentId={createdCard.orderIntentId}
                     paymentMethodId={pmId}
                     verificationConfig={createdCard.verificationConfig}
-                    onComplete={() => {
-                      setCreatedCard((cur) => cur ? { ...cur, phase: "active" } : cur);
-                      onComplete();
-                    }}
-                    onError={(msg) => setError(msg)}
+                    onComplete={handleVerificationComplete}
+                    onError={handleVerificationError}
                   />
                 </div>
               )}
