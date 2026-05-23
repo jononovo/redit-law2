@@ -575,8 +575,11 @@ Owner dashboard after the wizard: vaulted real card at the top, virtual cards (=
 
 ### Internal
 
-- **Only open plan:** `project_knowledge/currently_building/rail3/rail3-firebase-refresh-token-plan.md` — refresh-token store so headless bot checkout can fetch JWT-only credentials.
-- Archived plans + superseded docs: `project_knowledge/currently_building/rail3/_completed/` — per-user agent rework, env single-source, verification writeback, staging migration, frontend rewire, add-card preview, open-points tracker, prior operational docs.
+- **Open-points tracker (start here):** `project_knowledge/currently_building/rail3/_open-points.md` — flat checklist of everything outstanding on Rail 3.
+- **Open plans (deep dives):**
+  - `project_knowledge/currently_building/rail3/rail3-firebase-refresh-token-plan.md` — encrypted refresh-token store so headless bot checkout can mint JWTs for `/order-intents/:id/credentials`.
+  - `project_knowledge/currently_building/rail3/rail3-master-agent-plan.md` — holding doc for the in-house Master Agent capability. Coupled to Rail 3 via the auth-model question (one shared `agentId` vs JWT-bound). Path-A outcome partially obviates the refresh-token plan.
+- Archived plans + superseded docs: `project_knowledge/currently_building/rail3/_completed/` — per-user agent rework, env single-source, verification writeback, staging migration, frontend rewire, add-card preview, prior open-points tracker, prior operational docs.
 
 ### External
 
