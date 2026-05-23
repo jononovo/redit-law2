@@ -277,14 +277,8 @@ Same shape for enrollment: `GET /api/unstable/payment-methods/:id/agentic-enroll
 
 ### Internal
 
-- Existing build-cycle docs (now superseded by this one):
-  - `project_knowledge/currently_building/rail3/rail3-virtual-cards.md`
-  - `project_knowledge/currently_building/rail3/rail3-crossmint-card-permissions.md`
-- Refresh-token plan: `project_knowledge/currently_building/rail3/rail3-firebase-refresh-token-plan.md`
-- Per-user agent rework: `project_knowledge/currently_building/rail3/rail3-per-user-agent-plan.md`
-- Crossmint env single-source: `project_knowledge/currently_building/rail3/rail3-crossmint-env-single-source-plan.md`
-- Verification writeback (implemented): `project_knowledge/currently_building/rail3/rail3-verification-writeback-plan.md`
-- Open points tracker: `project_knowledge/currently_building/rail3/rail3-open-points.md`
+- **Only open plan:** `project_knowledge/currently_building/rail3/rail3-firebase-refresh-token-plan.md` — refresh-token store so headless bot checkout can fetch JWT-only credentials.
+- Historical plans + superseded docs (archived): `project_knowledge/currently_building/rail3/_completed/` — per-user agent rework, env single-source, verification writeback, staging migration, frontend rewire, add-card preview, open-points tracker, prior operational docs.
 
 ### External
 
