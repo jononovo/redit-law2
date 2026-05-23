@@ -45,7 +45,7 @@ status: living
 ## Recently closed (kept for one cycle, then prune)
 
 - ✅ Dialog → inline panel refactor on `AddCardDialog` (2026-05-23) — passkey ceremony was un-clickable inside Radix Dialog.
-- ✅ End-to-end verified on Crossmint staging (2026-05-23) — orderIntent reached `permission_phase: "active"`.
+- ✅ End-to-end verified on Crossmint staging (2026-05-23) — orderIntent reached `status: "active"`.
 - ✅ Per-owner agent provisioning, race-safe via `ON CONFLICT DO NOTHING` (see `_completed/rail3-per-user-agent-plan.md`).
 - ✅ Verification writeback via `/refresh-phase` (see `_completed/rail3-verification-writeback-plan.md`).
 - ✅ `crossmint-env.ts` single source of truth for host + keys (see `_completed/rail3-crossmint-env-single-source-plan.md`).

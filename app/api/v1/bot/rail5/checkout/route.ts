@@ -42,6 +42,12 @@ export const POST = withBotApi("/api/v1/bot/rail5/checkout", async (request, { b
     );
   }
 
+  if (card.isFrozen) {
+    return NextResponse.json(
+      { error: "card_frozen", message: "Card is frozen by the owner." },
+      { status: 403 }
+    );
+  }
   if (!["confirmed", "active"].includes(card.status)) {
     return NextResponse.json(
       { error: "card_not_active", message: `Card is ${card.status}. Cannot checkout.` },

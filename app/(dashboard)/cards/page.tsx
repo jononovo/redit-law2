@@ -128,28 +128,28 @@ export default function CardsPage() {
   }, [fetchCards]);
 
   async function handleFreeze(card: NormalizedCard) {
-    const isFrozen = card.status === "frozen";
-    const newStatus = isFrozen ? "active" : "frozen";
-    setCards((prev) => prev.map((c) => (c.card_id === card.card_id ? { ...c, status: newStatus } : c)));
+    const wasFrozen = card.is_frozen;
+    const nextIsFrozen = !wasFrozen;
+    setCards((prev) => prev.map((c) => (c.card_id === card.card_id ? { ...c, is_frozen: nextIsFrozen } : c)));
 
     try {
       const res = await authFetch(`/api/v1/rail5/cards/${card.card_id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: newStatus }),
+        body: JSON.stringify({ is_frozen: nextIsFrozen }),
       });
 
       if (!res.ok) {
-        setCards((prev) => prev.map((c) => (c.card_id === card.card_id ? { ...c, status: isFrozen ? "frozen" : "active" } : c)));
+        setCards((prev) => prev.map((c) => (c.card_id === card.card_id ? { ...c, is_frozen: wasFrozen } : c)));
         toast({ title: "Failed to update", description: "Please try again.", variant: "destructive" });
       } else {
         toast({
-          title: isFrozen ? "Card unfrozen" : "Card frozen",
-          description: isFrozen ? "Spending is resumed." : "All spending is paused.",
+          title: nextIsFrozen ? "Card frozen" : "Card unfrozen",
+          description: nextIsFrozen ? "All spending is paused." : "Spending is resumed.",
         });
       }
     } catch {
-      setCards((prev) => prev.map((c) => (c.card_id === card.card_id ? { ...c, status: isFrozen ? "frozen" : "active" } : c)));
+      setCards((prev) => prev.map((c) => (c.card_id === card.card_id ? { ...c, is_frozen: wasFrozen } : c)));
       toast({ title: "Network error", description: "Please try again.", variant: "destructive" });
     }
   }
@@ -213,7 +213,7 @@ export default function CardsPage() {
                 balanceLabel={card.balanceLabel}
                 last4={card.last4}
                 holder={(card.bot_name || card.card_name).toUpperCase()}
-                frozen={card.status === "frozen"}
+                frozen={card.is_frozen}
                 line1={card.line1 ?? undefined}
                 line2={card.line2 ?? undefined}
                 brand={card.brand ?? undefined}
@@ -227,10 +227,10 @@ export default function CardsPage() {
                     "data-testid": `button-limits-${card.card_id}`,
                   },
                   {
-                    icon: card.status === "frozen" ? Play : Snowflake,
-                    label: card.status === "frozen" ? "Unfreeze" : "Freeze",
+                    icon: card.is_frozen ? Play : Snowflake,
+                    label: card.is_frozen ? "Unfreeze" : "Freeze",
                     onClick: () => handleFreeze(card),
-                    className: `flex-1 text-xs gap-2 ${card.status === "frozen" ? "text-blue-600" : "text-neutral-600"} cursor-pointer hover:bg-neutral-100 rounded-lg transition-colors`,
+                    className: `flex-1 text-xs gap-2 ${card.is_frozen ? "text-blue-600" : "text-neutral-600"} cursor-pointer hover:bg-neutral-100 rounded-lg transition-colors`,
                     "data-testid": `button-freeze-${card.card_id}`,
                   },
                 ]}

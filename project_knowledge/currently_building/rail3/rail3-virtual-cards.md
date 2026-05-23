@@ -143,7 +143,7 @@ The overlay is body-portaled from `basistheory.com` and we have **zero control o
 |---|---|
 | `rail3_payment_methods` | One row per vaulted real card. Mirrors the Crossmint PM (last4, brand, expiry, cardholder). No FK to anything. `last_used_at` drives the "default PM" pick in `AddCardDialog`. |
 | `rail3_agents` | PK `owner_uid`, columns `(owner_uid, agent_id, created_at)`. Exactly one row per owner once they've created their first virtual card. Inserted via `ON CONFLICT DO NOTHING` to survive concurrent first-card creates. |
-| `rail3_cards` | One row per orderIntent. Holds our `card_id` (our nickname for it), the `order_intent_id`, the mandate array (`mandates` jsonb), `intent_mode` (`limited`/`open`), `permission_phase` (mirror of Crossmint's `phase`), `bot_id` (nullable), `category`, `card_name`. |
+| `rail3_cards` | One row per orderIntent. Holds our `card_id` (our nickname for it), the `order_intent_id`, the mandate array (`mandates` jsonb), `intent_mode` (`limited`/`open`), `status` (= mirror of Crossmint's `phase`: `requires-verification` / `active` / `expired` / `revoked`), `is_frozen` (owner overlay, orthogonal to lifecycle — same column shape as `rail5_cards.is_frozen`), `bot_id` (nullable), `category`, `card_name`. |
 | `rail3_guardrails` | Per-card spending caps (per-tx, daily, monthly). Enforced server-side in `features/agent-interaction/approvals/rail3-fulfillment.ts` *before* credentials are fetched. |
 | `rail3_transactions` | Recorded on credential issuance + settlement. |
 
@@ -266,11 +266,11 @@ What the route does in order:
      }
    ```
    `verificationConfig.instructionId` is the **single-use** id the SDK will redeem in the browser. It cannot be re-used (relevant to StrictMode gotcha below).
-5. **Write the row.** `rail3_cards` insert with `permission_phase = intent.phase` (`"requires-verification"`). Bump `rail3_payment_methods.last_used_at`.
+5. **Write the row.** `rail3_cards` insert with `status = intent.phase` (`"requires-verification"`) and `is_frozen = false`. Bump `rail3_payment_methods.last_used_at`.
 6. **Respond with the full intent** so the browser can mount the ceremony without a follow-up GET:
    ```
    200 {
-     card_id, order_intent_id, permission_phase,
+     card_id, order_intent_id, status, is_frozen,
      intent_mode, limit_amount_cents, limit_period,
      verification_config       ← the SDK consumes this directly
    }
@@ -307,8 +307,8 @@ Authorization: Bearer <firebase-id-token>      ← REQUIRED; route 401s without 
     X-API-KEY: <CLIENT API KEY>
     Authorization: Bearer <firebase-id-token>   ← JWT-only, server key gets 403
 
-→ updates rail3_cards.permission_phase if it changed
-→ returns { card_id, order_intent_id, permission_phase }
+→ updates rail3_cards.status if it changed
+→ returns { card_id, order_intent_id, status }
 ```
 
 **Why a separate reconcile step.** The SDK's `onVerificationComplete` only means "the ceremony's UI finished". Crossmint's backend is authoritative on the actual `phase`. Trusting the SDK alone caused the writeback gap (DB stuck on `requires-verification` forever) that the pre-2026-05-23 code had — see `_completed/rail3-verification-writeback-plan.md`.
@@ -322,7 +322,7 @@ POST /api/v1/bot/rail3/checkout    (called by the bot at purchase time)
 Body: { card_id, merchant: { name, url, countryCode } }
 ```
 
-1. Load card + PM. Assert `pm.verification_status === "active"` (locally tracked) and `card.permission_phase === "active"`.
+1. Load card + PM. Assert `pm.verification_status === "active"` (locally tracked), `card.status === "active"`, and `!card.isFrozen`. Frozen returns `403 card_frozen`; non-active lifecycle returns `403 card_not_active`.
 2. Run guardrails (`rail3-fulfillment.ts`) against the requested amount.
 3. Fetch one-time credentials:
    ```
@@ -481,7 +481,7 @@ All paths under `https://staging.crossmint.com/api/` (staging) or `https://www.c
 **Step 1.** Get DB state:
 
 ```sql
-SELECT card_id, order_intent_id, permission_phase, last_used_at, created_at
+SELECT card_id, order_intent_id, status, is_frozen, last_used_at, created_at
 FROM rail3_cards
 WHERE owner_uid = '<uid>'
 ORDER BY created_at DESC LIMIT 5;
@@ -500,7 +500,7 @@ For local diagnostics, mint a Firebase ID token via firebase-admin → identityt
 
 **Step 3.** Interpret:
 
-| Crossmint `phase` | DB `permission_phase` | Diagnosis | Fix |
+| Crossmint `phase` | DB `status` | Diagnosis | Fix |
 |---|---|---|---|
 | `requires-verification` | `requires-verification` | Ceremony never finished on Crossmint's side. SDK didn't complete. | Look at the SDK-mount path. Common: popup blocked, StrictMode dev double-mount, dialog wrapping the SDK, cross-device passkey mismatch. |
 | `active` | `requires-verification` | Ceremony succeeded on Crossmint; our writeback didn't run. | Call `POST /api/v1/rail3/cards/:cardId/refresh-phase` manually. If that works, investigate why the SDK's `onVerificationComplete` never fired (or wasn't wired to the refresh call). |
@@ -522,7 +522,7 @@ Same shape for PM enrollment via `GET /api/unstable/payment-methods/:id/agentic-
 - Firebase ↔ Crossmint JWT bridge with 50-min auto-refresh (`Rail3CrossmintProvider`).
 - Lazy per-owner agent provisioning on first card create, race-safe via `ON CONFLICT DO NOTHING`.
 - Per-card guardrails (`rail3_guardrails`) enforced in `rail3-fulfillment.ts`.
-- Verified end-to-end on Crossmint staging (2026-05-23): create card → passkey ceremony → `permission_phase='active'` written back to DB.
+- Verified end-to-end on Crossmint staging (2026-05-23): create card → passkey ceremony → `status='active'` written back to DB.
 
 ### Outstanding ❌
 
@@ -559,7 +559,7 @@ The quickstart's reference shape: three numbered sections (Create agent / Save c
 
 ### Our `/virtual-cards` page (current as of 2026-05-23)
 
-Owner dashboard after the wizard: vaulted real card at the top, virtual cards (= orderIntents) below. The right-hand card showing `AWAITING AUTHORIZATION` is the visible state for `permission_phase: "requires-verification"` — owner needs to open it and complete the passkey ceremony.
+Owner dashboard after the wizard: vaulted real card at the top, virtual cards (= orderIntents) below. The right-hand card showing `AWAITING AUTHORIZATION` is the visible state for `status: "requires-verification"` — owner needs to open it and complete the passkey ceremony.
 
 ![Virtual Cards page — current state](./_images/rail3/virtual-cards-page-current.png)
 

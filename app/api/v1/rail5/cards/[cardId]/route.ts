@@ -13,7 +13,7 @@ const patchSchema = z.object({
   monthly_limit_cents: z.number().int().min(100).max(100000000).optional(),
   recurring_allowed: z.boolean().optional(),
   notes: z.string().max(2000).nullable().optional(),
-  status: z.enum(["active", "frozen"]).optional(),
+  is_frozen: z.boolean().optional(),
   card_color: z.enum(["purple", "dark", "blue", "primary"]).optional(),
 });
 
@@ -65,17 +65,11 @@ export async function PATCH(
   if (data.recurring_allowed !== undefined) guardrailUpdates.recurringAllowed = data.recurring_allowed;
   if (data.notes !== undefined) guardrailUpdates.notes = data.notes;
 
-  if (data.status !== undefined) {
+  if (data.is_frozen !== undefined) {
     if (card.status === "pending_setup" || card.status === "pending_delivery") {
-      return NextResponse.json({ error: "cannot_change_status", message: "Card must be set up and delivered before changing status." }, { status: 400 });
+      return NextResponse.json({ error: "cannot_freeze", message: "Card must be set up and delivered before freezing." }, { status: 400 });
     }
-    if (data.status === "active" && card.status === "frozen") {
-      const checkouts = await storage.getRail5TransactionsByCardId(cardId, 50);
-      const hasCompleted = checkouts.some((c) => c.status === "completed");
-      updates.status = hasCompleted ? "active" : "confirmed";
-    } else {
-      updates.status = data.status;
-    }
+    updates.isFrozen = data.is_frozen;
   }
 
   if (Object.keys(updates).length === 0 && Object.keys(guardrailUpdates).length === 0) {
@@ -101,12 +95,12 @@ export async function PATCH(
     }
   }
 
-  if (data.status !== undefined && (data.status === "frozen" || data.status === "active")) {
+  if (data.is_frozen !== undefined) {
     const botId = updated!.botId;
     if (botId) {
       const bot = await storage.getBotByBotId(botId);
       if (bot) {
-        const action = data.status === "frozen" ? "card_frozen" as const : "card_unfrozen" as const;
+        const action = data.is_frozen ? "card_frozen" as const : "card_unfrozen" as const;
         fireRailsUpdated(bot, action, "rail5", { card_id: cardId }).catch(() => {});
       }
     }
@@ -121,6 +115,7 @@ export async function PATCH(
     card_brand: updated!.cardBrand,
     card_last4: updated!.cardLast4,
     status: updated!.status,
+    is_frozen: updated!.isFrozen,
     bot_id: updated!.botId || null,
     card_color: updated!.cardColor || null,
     spending_limit_cents: guard?.maxPerTxCents ?? GUARDRAIL_DEFAULTS.rail5.maxPerTxCents,
@@ -163,6 +158,7 @@ export async function GET(
     card_brand: card.cardBrand,
     card_last4: card.cardLast4,
     status: card.status,
+    is_frozen: card.isFrozen,
     bot_id: card.botId || null,
     card_color: card.cardColor || null,
     issuer_name: card.cardFirst6 ? (lookupIssuer(card.cardFirst6) || null) : null,

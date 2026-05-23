@@ -27,6 +27,7 @@ interface Rail5CardDetail {
   card_brand: string;
   card_last4: string;
   status: string;
+  is_frozen: boolean;
   bot_id: string | null;
   card_color: string | null;
   spending_limit_cents: number;
@@ -80,18 +81,18 @@ export default function Rail5CardDetailPage() {
 
   async function handleFreeze() {
     if (!card) return;
-    const newStatus = card.status === "frozen" ? "active" : "frozen";
+    const nextIsFrozen = !card.is_frozen;
     setFreezeLoading(true);
     try {
       const res = await authFetch(`/api/v1/rail5/cards/${card.card_id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: newStatus }),
+        body: JSON.stringify({ is_frozen: nextIsFrozen }),
       });
       if (res.ok) {
         const updated = await res.json();
         setCard((prev) => prev ? { ...prev, ...updated } : prev);
-        toast({ title: newStatus === "frozen" ? "Card frozen" : "Card unfrozen" });
+        toast({ title: nextIsFrozen ? "Card frozen" : "Card unfrozen" });
       } else {
         toast({ title: "Error", description: "Failed to update status.", variant: "destructive" });
       }
@@ -140,13 +141,13 @@ export default function Rail5CardDetailPage() {
       <div className="flex items-center gap-4">
         <h1 className="text-2xl font-bold text-neutral-900" data-testid="text-r5-card-name">{card.card_name}</h1>
         <span className={`text-xs font-semibold px-2 py-1 rounded-full ${
+          card.is_frozen ? "bg-blue-100 text-blue-700" :
           card.status === "active" ? "bg-green-100 text-green-700" :
-          card.status === "frozen" ? "bg-blue-100 text-blue-700" :
           card.status === "confirmed" ? "bg-teal-100 text-teal-700" :
           card.status === "pending_delivery" ? "bg-amber-100 text-amber-700" :
           "bg-amber-100 text-amber-700"
         }`} data-testid="badge-r5-status">
-          {card.status}
+          {card.is_frozen ? "frozen" : card.status}
         </span>
       </div>
 
@@ -156,7 +157,7 @@ export default function Rail5CardDetailPage() {
         balanceLabel="Spending Limit"
         last4={card.card_last4}
         holder={card.card_name.toUpperCase()}
-        frozen={card.status === "frozen"}
+        frozen={card.is_frozen}
         expiry="••/••"
         line1={`Daily: ${formatLimit(card.daily_limit_cents)}`}
         line2={`Monthly: ${formatLimit(card.monthly_limit_cents)}`}
@@ -268,16 +269,16 @@ export default function Rail5CardDetailPage() {
         )}
       </div>
 
-      {["confirmed", "active", "frozen"].includes(card.status) && (
+      {["confirmed", "active"].includes(card.status) && (
         <Button
           variant="outline"
           onClick={handleFreeze}
           disabled={freezeLoading}
-          className={`gap-2 ${card.status === "frozen" ? "text-emerald-600 border-emerald-200" : "text-blue-600 border-blue-200"}`}
+          className={`gap-2 ${card.is_frozen ? "text-emerald-600 border-emerald-200" : "text-blue-600 border-blue-200"}`}
           data-testid="button-r5-toggle-freeze"
         >
-          {freezeLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : card.status === "frozen" ? <Play className="w-4 h-4" /> : <Snowflake className="w-4 h-4" />}
-          {card.status === "frozen" ? "Unfreeze Card" : "Freeze Card"}
+          {freezeLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : card.is_frozen ? <Play className="w-4 h-4" /> : <Snowflake className="w-4 h-4" />}
+          {card.is_frozen ? "Unfreeze Card" : "Freeze Card"}
         </Button>
       )}
 

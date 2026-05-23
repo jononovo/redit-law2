@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
       card_brand: pm?.cardBrand || null,
       card_last4: pm?.cardLast4 || null,
       intent_mode: c.intentMode,
-      permission_phase: c.permissionPhase,
+      is_frozen: c.isFrozen,
       limit_amount_cents: c.limitAmountCents,
       limit_period: c.limitPeriod,
       order_intent_id: c.orderIntentId,
@@ -181,10 +181,10 @@ export async function POST(request: NextRequest) {
     orderIntentId: intent.orderIntentId,
     intentMode: parsed.data.mode,
     mandates,
-    permissionPhase: intent.phase,
     limitAmountCents,
     limitPeriod,
-    status: "active",
+    status: intent.phase,    // lifecycle = Crossmint orderIntent.phase
+    isFrozen: false,
     botId,
   });
 
@@ -193,7 +193,8 @@ export async function POST(request: NextRequest) {
   return NextResponse.json({
     card_id: card.cardId,
     order_intent_id: intent.orderIntentId,
-    permission_phase: intent.phase,
+    status: card.status,
+    is_frozen: card.isFrozen,
     intent_mode: card.intentMode,
     limit_amount_cents: card.limitAmountCents,
     limit_period: card.limitPeriod,

@@ -25,8 +25,9 @@ export function CreditCardItem({
   onDelete,
 }: CreditCardItemProps) {
   const router = useRouter();
-  const isFrozen = card.status === "frozen";
-  const canFreeze = card.status === "active" || card.status === "frozen";
+  const isFrozen = card.is_frozen;
+  // Lifecycle states where freezing is meaningful (excludes pre-active and terminal states).
+  const canFreeze = card.status === "active" || card.status === "confirmed";
 
   return (
     <div className="flex flex-col gap-4 min-w-[320px]" data-testid={`card-item-${card.card_id}`}>

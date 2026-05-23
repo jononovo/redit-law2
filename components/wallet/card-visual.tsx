@@ -58,12 +58,14 @@ export function CardVisual({
 
   const statusColors: Record<string, string> = {
     active: "bg-emerald-500/20 text-emerald-100 border-emerald-300/30",
-    pending_setup: "bg-amber-500/20 text-amber-100 border-amber-300/30",
-    pending_delivery: "bg-orange-500/20 text-orange-100 border-orange-300/30",
-    confirmed: "bg-teal-500/20 text-teal-100 border-teal-300/30",
+    pending_setup: "bg-amber-500/20 text-amber-100 border-amber-300/30",      // rail5
+    pending_delivery: "bg-orange-500/20 text-orange-100 border-orange-300/30", // rail5
+    confirmed: "bg-teal-500/20 text-teal-100 border-teal-300/30",             // rail5
     awaiting_bot: "bg-violet-500/20 text-violet-100 border-violet-300/30",
-    frozen: "bg-blue-500/20 text-blue-100 border-blue-300/30",
-    paused: "bg-blue-500/20 text-blue-100 border-blue-300/30",
+    "requires-verification": "bg-amber-500/20 text-amber-100 border-amber-300/30", // rail3
+    expired: "bg-neutral-500/20 text-neutral-100 border-neutral-300/30",            // rail3
+    revoked: "bg-red-500/20 text-red-100 border-red-300/30",                        // rail3
+    frozen: "bg-blue-500/20 text-blue-100 border-blue-300/30",                // synthesized when is_frozen
   };
 
   const statusLabels: Record<string, string> = {
@@ -72,8 +74,10 @@ export function CardVisual({
     pending_delivery: "Ready to Test",
     confirmed: "Confirmed",
     awaiting_bot: "Awaiting Bot",
+    "requires-verification": "Awaiting Authorization",
+    expired: "Expired",
+    revoked: "Revoked",
     frozen: "Frozen",
-    paused: "Paused",
   };
 
   const displayStatus = frozen ? "frozen" : status;

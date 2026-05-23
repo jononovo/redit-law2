@@ -25,15 +25,14 @@ export const POST = withBotApi("/api/v1/bot/rail3/checkout", async (request, { b
   if (card.botId !== bot.botId) {
     return NextResponse.json({ error: "card_not_linked", message: "This card is not linked to your bot." }, { status: 403 });
   }
-  if (card.status !== "active") {
-    return NextResponse.json({ error: "card_not_active", message: `Card is ${card.status}.` }, { status: 403 });
+  if (card.isFrozen) {
+    return NextResponse.json({ error: "card_frozen", message: "Card is frozen by the owner." }, { status: 403 });
   }
-  // PM enrollment status is enforced upstream: the order intent will not be in `active`
-  // phase unless the PM has completed agentic-enrollment AND the owner has run the
-  // OrderIntentVerification passkey ceremony for this intent. So the phase check is the gate.
-  if (card.permissionPhase !== "active") {
+  // Lifecycle (= Crossmint orderIntent.phase + terminal owner action). Anything other than
+  // "active" means PM enrollment / passkey verification incomplete, or the card is expired/revoked.
+  if (card.status !== "active") {
     return NextResponse.json(
-      { error: "card_not_authorized", message: "Owner must complete the authorization passkey before this card can be used." },
+      { error: "card_not_active", message: `Card status is "${card.status}".` },
       { status: 403 }
     );
   }

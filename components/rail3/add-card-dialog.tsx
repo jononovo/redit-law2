@@ -118,8 +118,8 @@ function AddCardPanel({ open, onOpenChange, paymentMethods, onComplete }: Props)
     try {
       const res = await authFetch(`/api/v1/rail3/cards/${createdCardId}/refresh-phase`, { method: "POST" });
       const json = await res.json();
-      if (res.ok && json.permission_phase) {
-        setCreatedCard((cur) => cur ? { ...cur, phase: json.permission_phase } : cur);
+      if (res.ok && json.status) {
+        setCreatedCard((cur) => cur ? { ...cur, phase: json.status } : cur);
       } else {
         setError(json.message || json.error || "verification_refresh_failed");
       }
@@ -215,7 +215,7 @@ function AddCardPanel({ open, onOpenChange, paymentMethods, onComplete }: Props)
       setCreatedCard({
         cardId: json.card_id,
         orderIntentId: json.order_intent_id,
-        phase: json.permission_phase,
+        phase: json.status,
         verificationConfig: json.verification_config || null,
       });
       onComplete();

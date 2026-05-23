@@ -29,6 +29,7 @@ export async function GET(request: NextRequest) {
       card_brand: c.cardBrand,
       card_last4: c.cardLast4,
       status: c.status,
+      is_frozen: c.isFrozen,
       bot_id: c.botId || null,
       bot_name: c.botId ? (botLookup[c.botId] || null) : null,
       card_color: c.cardColor || null,

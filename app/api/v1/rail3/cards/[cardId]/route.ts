@@ -14,7 +14,7 @@ const patchSchema = z.object({
   card_name: z.string().min(1).max(200).optional(),
   card_color: z.enum(["purple", "dark", "blue", "primary"]).optional(),
   category: z.string().max(100).nullable().optional(),
-  status: z.enum(["active", "frozen"]).optional(),
+  is_frozen: z.boolean().optional(),
 });
 
 async function serializeCard(c: NonNullable<Awaited<ReturnType<typeof storage.getRail3CardByCardId>>>) {
@@ -25,6 +25,7 @@ async function serializeCard(c: NonNullable<Awaited<ReturnType<typeof storage.ge
     card_color: c.cardColor || null,
     category: c.category || null,
     status: c.status,
+    is_frozen: c.isFrozen,
     bot_id: c.botId || null,
     payment_method_id: c.paymentMethodId,
     card_brand: pm?.cardBrand || null,
@@ -33,7 +34,6 @@ async function serializeCard(c: NonNullable<Awaited<ReturnType<typeof storage.ge
     exp_month: pm?.expMonth || null,
     exp_year: pm?.expYear || null,
     intent_mode: c.intentMode,
-    permission_phase: c.permissionPhase,
     order_intent_id: c.orderIntentId,
     mandates: c.mandates,
     limit_amount_cents: c.limitAmountCents,
@@ -95,7 +95,7 @@ export async function PATCH(
   if (parsed.data.card_name !== undefined) updates.cardName = parsed.data.card_name;
   if (parsed.data.card_color !== undefined) updates.cardColor = parsed.data.card_color;
   if (parsed.data.category !== undefined) updates.category = parsed.data.category;
-  if (parsed.data.status !== undefined) updates.status = parsed.data.status;
+  if (parsed.data.is_frozen !== undefined) updates.isFrozen = parsed.data.is_frozen;
 
   if (Object.keys(updates).length === 0) {
     return NextResponse.json({ error: "no_updates" }, { status: 400 });
@@ -103,10 +103,10 @@ export async function PATCH(
 
   const updated = await storage.updateRail3Card(cardId, updates);
 
-  if (parsed.data.status !== undefined && updated?.botId) {
+  if (parsed.data.is_frozen !== undefined && updated?.botId) {
     const bot = await storage.getBotByBotId(updated.botId);
     if (bot) {
-      const action = parsed.data.status === "frozen" ? "card_frozen" as const : "card_unfrozen" as const;
+      const action = parsed.data.is_frozen ? "card_frozen" as const : "card_unfrozen" as const;
       fireRailsUpdated(bot, action, "rail3", { card_id: cardId }).catch(() => {});
     }
   }

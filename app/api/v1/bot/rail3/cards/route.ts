@@ -25,8 +25,8 @@ export const GET = withBotApi("/api/v1/bot/rail3/cards", async (_request, { bot 
         card_brand: pm?.cardBrand || null,
         card_last4: pm?.cardLast4 || null,
         status: c.status,
+        is_frozen: c.isFrozen,
         intent_mode: c.intentMode,
-        permission_phase: c.permissionPhase,
         limit_amount_cents: c.limitAmountCents,
         limit_period: c.limitPeriod,
       };

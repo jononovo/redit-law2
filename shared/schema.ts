@@ -517,7 +517,10 @@ export const rail5Cards = pgTable("rail5_cards", {
   encryptedTagHex: text("encrypted_tag_hex").notNull().default(""),
   cardLast4: text("card_last4").notNull().default(""),
   cardBrand: text("card_brand").notNull().default("visa"),
+  // Lifecycle: pending_setup | pending_delivery | confirmed | active
   status: text("status").notNull().default("pending_setup"),
+  // Owner overlay (orthogonal to lifecycle).
+  isFrozen: boolean("is_frozen").notNull().default(false),
   cardColor: text("card_color"),
   cardFirst6: text("card_first6").notNull().default(""),
   expMonth: text("exp_month").notNull().default(""),
@@ -1516,13 +1519,16 @@ export const rail3Cards = pgTable("rail3_cards", {
   orderIntentId: text("order_intent_id").notNull(),
   intentMode: text("intent_mode").notNull(),                      // "limited" | "open"
   mandates: jsonb("mandates").notNull(),                          // raw Crossmint mandate array
-  permissionPhase: text("permission_phase").notNull().default("requires-verification"), // requires-verification | active | expired
 
   // Denormalized for display + queries. Source of truth = mandates. Null for "open" mode.
   limitAmountCents: integer("limit_amount_cents"),
   limitPeriod: text("limit_period"),                              // "weekly" | "monthly" | "yearly"
 
-  status: text("status").notNull().default("active"),             // active | frozen | revoked
+  // Unified lifecycle. Mirrors Crossmint's orderIntent.phase plus terminal owner action.
+  // Values: requires-verification | active | expired | revoked
+  status: text("status").notNull().default("requires-verification"),
+  // Owner overlay (orthogonal to lifecycle). Sticky across Crossmint sync.
+  isFrozen: boolean("is_frozen").notNull().default(false),
   botId: text("bot_id"),                                          // optional — null = vault-only until linked
 
   createdAt: timestamp("created_at").notNull().defaultNow(),

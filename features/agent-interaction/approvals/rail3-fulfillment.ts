@@ -12,10 +12,10 @@ async function fulfillRail3Approval(approval: UnifiedApproval): Promise<void> {
   }
 
   const card = await storage.getRail3CardByCardId(tx.cardId);
-  if (!card || card.permissionPhase !== "active") {
+  if (!card || card.status !== "active" || card.isFrozen) {
     await storage.updateRail3Transaction(transactionId, {
       status: "failed",
-      metadata: { ...(tx.metadata as object || {}), failureReason: "card_not_authorized" },
+      metadata: { ...(tx.metadata as object || {}), failureReason: card?.isFrozen ? "card_frozen" : "card_not_authorized" },
     });
     return;
   }

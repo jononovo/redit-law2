@@ -4,7 +4,7 @@ import { extractBearerJwt } from "@/features/platform-management/auth/extract-be
 import { storage } from "@/server/storage";
 import { getOrderIntent, CrossmintApiError } from "@/features/payment-rails/rail3";
 
-// Reconcile rail3_cards.permission_phase against Crossmint's source of truth.
+// Reconcile rail3_cards.status against Crossmint's source of truth.
 // Called by the AddCardDialog right after OrderIntentVerification's onComplete
 // fires — the SDK callback tells us the ceremony finished, but only Crossmint
 // knows the resulting phase. Trusting the SDK alone causes the writeback gap
@@ -39,13 +39,13 @@ export async function POST(
     return NextResponse.json({ error: "get_order_intent_failed", message }, { status });
   }
 
-  if (fresh.phase !== card.permissionPhase) {
-    await storage.updateRail3Card(cardId, { permissionPhase: fresh.phase });
+  if (fresh.phase !== card.status) {
+    await storage.updateRail3Card(cardId, { status: fresh.phase });
   }
 
   return NextResponse.json({
     card_id: cardId,
     order_intent_id: card.orderIntentId,
-    permission_phase: fresh.phase,
+    status: fresh.phase,
   });
 }
