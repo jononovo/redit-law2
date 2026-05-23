@@ -20,10 +20,27 @@ Three stacked vendors. Knowing which one owns which surface is the single most i
 | Layer | Vendor | Owns | Where they appear |
 |---|---|---|---|
 | **API + orchestration** | **Crossmint** (Card Permissions API) | Real card vaulting, agents, orderIntents, merchant-scoped credentials. PCI scope lives here. | `features/payment-rails/rail3/*` → `https://staging.crossmint.com/api/...`. SDK: `@crossmint/client-sdk-react-ui`. |
-| **Ceremony UI + card issuance** | **Basis Theory** (`@basis-theory/react-agentic` v2.0.0) | Renders the Visa Agentic Commerce overlay (passkey, OTP, Click to Pay). Mock Visa SDK in test env; real Visa in prod. | Transitive dep of the Crossmint SDK. Body-portaled overlays at `z-index: 10001`. |
+| **Ceremony UI + card issuance** | **Basis Theory** (`@basis-theory/react-agentic`) — **inferred, not documented** | Renders the Visa Agentic Commerce overlay (passkey, OTP, Click to Pay). Mock Visa SDK in test env; real Visa in prod. | Transitive dep of the Crossmint SDK. Body-portaled overlays at `z-index: 10001`. Console logs prefixed `[BtAi]`. |
 | **Owner identity** | **Firebase** | Owner auth. Registered in the Crossmint Console as the 3P auth provider; Crossmint maps Firebase's `sub` claim to its `userLocator`. | `components/rail3/crossmint-provider.tsx` calls `setJwt(firebaseIdToken)`; `authFetch` sends `Authorization: Bearer <id-token>` on every BFF call. |
 
 **Operationally:** Crossmint owns API + agent + orderIntent state. Basis Theory owns every owner-facing ceremony UI. Bugs in the overlay (z-index, pointer-events, focus, double-mount) are Basis Theory bugs, not Crossmint API bugs. Firebase produces the JWT that gates almost everything Crossmint does — see [Auth model](#auth-model).
+
+### Basis Theory attribution — what's actually documented vs inferred
+
+**Crossmint does not publicly name Basis Theory as the underlying provider.** Their docs, console, and SDK refer to it only as "agentic commerce" / "card permissions". The Basis Theory attribution comes from our investigation:
+
+- The Crossmint SDK pulls in `@basis-theory/react-agentic` as a transitive dep (visible in `node_modules` and `package-lock.json`).
+- The Visa Agentic Commerce overlay's iframe is hosted on a `basistheory.com` domain (visible in DevTools Network).
+- Browser console logs from the overlay are prefixed `[BtAi]` (Basis Theory Agentic Initiative).
+
+**Operational consequence:** Crossmint support won't engage on iframe / overlay / passkey UI questions framed as "Basis Theory" issues. Always frame them as "the agentic-commerce verification UI" or reference the specific symptom. Don't rely on Basis Theory's public docs — they describe a direct SDK integration we don't have. We only see the slice of Basis Theory's surface that Crossmint chose to expose through their SDK.
+
+### SDK version policy
+
+- **Direct dep:** `@crossmint/client-sdk-react-ui ^4.2.1` (latest npm at 2026-05-23: **4.2.2** — small drift, worth bumping).
+- **No Basis Theory direct dep.** `@basis-theory/react-agentic` is transitive only. **Never install it directly.** Adding it as a top-level dep risks resolving a different version than the one Crossmint pins, breaking the overlay silently.
+- **Keep Crossmint SDK current.** The agentic-commerce surface is `unstable` API-wise and the SDK absorbs that churn. Bump on every minor release, smoke-test the full ceremony in staging, then ship. Pinned-but-stale = silent breakage when Crossmint changes the overlay protocol.
+- **Where to check:** `npm view @crossmint/client-sdk-react-ui versions` and the SDK's GitHub releases page (linked from the quickstart repo's README).
 
 ---
 
@@ -68,6 +85,55 @@ Owner (Firebase user)
 ```
 
 The Crossmint agent is **not** stored on the PM — it's bound when the orderIntent is created. That's why deleting an agent doesn't cascade-delete PMs and vice versa.
+
+---
+
+## Verification mechanics (what the owner actually sees, and where every piece of data comes from)
+
+There are **two distinct passkey ceremonies** in Rail 3, and they're often conflated:
+
+| # | When | Endpoint that kicks it off | What the owner sees | What gets created |
+|---|---|---|---|---|
+| 1 | **PM agentic-enrollment** (Phase A4) | `POST /payment-methods/:id/agentic-enrollment` | Email OTP → "create passkey on this device" | A device-bound passkey that authorizes the **payment method** for any future agent purchase. One per `(owner, device, PM)`. |
+| 2 | **OrderIntent verification** (Phase B3) | `POST /order-intents` (returns `verificationConfig` for the next step) | Single passkey tap (no OTP) | Crossmint marks the **orderIntent** as `phase: "active"`. |
+
+The first one is the heavy ceremony (OTP + passkey enroll). The second one is the light one (just a tap of the already-enrolled passkey). Both run inside the same `<…Verification>` SDK component family.
+
+### Verification factor: email, not phone
+
+**The agentic-enrollment ceremony uses email OTP only.** No phone number is ever requested.
+
+- **What we send to Crossmint:** `{email}` in the POST body of `createEnrollment`. Source: `getSessionUser(request).email` (Firebase session) in `app/api/v1/rail3/payment-methods/[paymentMethodId]/enrollment/route.ts`. Server-side. The browser never sees the email field for this purpose.
+- **What we'd send for phone:** nothing. The Crossmint endpoint does not accept a `phone` field. Their docs and SDK only document email as the contact channel for the OTP. **We do not need to add a phone field to our user model for Rail 3.**
+- **Where the OTP goes:** to the email we sent. Owner receives `noreply@…` from Crossmint, clicks link / enters code in the overlay, then taps passkey.
+
+### Where the data flows in (definitive)
+
+The overlay is body-portaled from `basistheory.com` and we have **zero control over its DOM, copy, or fields**. Every piece of data it consumes is one of:
+
+| What the overlay shows / uses | Source | Who sets it |
+|---|---|---|
+| **Owner email** (for OTP delivery) | `{email}` body of `POST /agentic-enrollment` | **Us, server-side**, from Firebase session. Pre-supplied; overlay does not prompt for it. |
+| **Owner identity** (whose passkey to bind) | Firebase JWT in the create-enrollment + create-order-intent calls | **Us, server-side via the browser-forwarded JWT.** |
+| **Payment method** (which card the passkey authorizes) | `paymentMethodId` in the URL path | **Us, set on the wizard side after the SDK reports `onPaymentMethodSelected`.** |
+| **`verificationConfig` blob** (`environment`, `publicApiKey`, plus `agentId` + `instructionId` for orderIntent ceremonies) | Response from Crossmint to our enrollment/orderIntent create call | **Crossmint.** We pass it untouched into the SDK component as a prop. |
+| **Passkey UI copy, OTP form, "Cross-device passkey" warnings, "Authenticating on the other window" copy** | Basis Theory overlay code | **Vendor.** We cannot restyle, relabel, or skip steps. |
+| **Visa Click to Pay confirmation** (prod only) | Visa's own UI inside the Basis Theory overlay | **Vendor (Visa).** Mock SDK in staging shows a stub instead. |
+
+**Operational implication:** if the overlay shows the wrong email, or asks for something we didn't expect, the cause is always upstream of the overlay — usually `user.email` mismatch in our session or a stale `verificationConfig`. The overlay itself is a pure consumer of what we hand it.
+
+### What kinds of verification are accepted
+
+| Factor | Used? | Notes |
+|---|---|---|
+| Email magic-link / OTP | **Yes** (enrollment) | The only contact channel Crossmint accepts on `/agentic-enrollment`. |
+| SMS / phone OTP | **No** | Not part of the agentic-enrollment surface. |
+| Device passkey (WebAuthn platform authenticator) | **Yes, required** | Created during enrollment, re-tapped at every orderIntent verification. Binds to the device that did the enrollment. |
+| Cross-device passkey (security key, phone-as-roaming-authenticator) | **Limited** | Basis Theory's `onNewDevice` defaults to `reenroll` — different device → owner must re-enroll the PM. Crossmint's `<CrossmintProvider>` doesn't expose this prop to us. |
+| TOTP / authenticator app | **No** | Not supported. |
+| Knowledge factors (password, security questions) | **No** | Not part of the agentic-commerce ceremony. |
+
+**Net:** the only owner-supplied verification factor is **email OTP + a device passkey.** Everything else is vendor-side machinery.
 
 ---
 
@@ -295,6 +361,62 @@ Three auth modes against Crossmint. **Picking the wrong one is the most common R
 
 ---
 
+## Staging vs production
+
+### Where we are today
+
+**Pinned to staging.** `features/payment-rails/crossmint-env.ts` hardcodes:
+
+```ts
+export const CROSSMINT_HOST = "https://staging.crossmint.com";
+export const CROSSMINT_SERVER_API_KEY = process.env.CROSSMINT_SERVER_API_KEY_STAGING;
+export const CROSSMINT_CLIENT_API_KEY = process.env.NEXT_PUBLIC_CROSSMINT_CLIENT_API_KEY_STAGING;
+```
+
+Available env secrets today: `CROSSMINT_SERVER_API_KEY` (prod), `CROSSMINT_SERVER_API_KEY_STAGING`, `NEXT_PUBLIC_CROSSMINT_CLIENT_API_KEY` (prod), `NEXT_PUBLIC_CROSSMINT_CLIENT_API_KEY_STAGING`. Prod keys exist but are not wired up.
+
+### What's different in production
+
+| Surface | Staging | Production |
+|---|---|---|
+| API host | `staging.crossmint.com` | `www.crossmint.com` |
+| Test cards | `4242 4242 4242 4242` etc — Crossmint test PMs accepted | Only real US-issued Visa/Mastercard credit/debit |
+| Visa overlay | **Mock Visa SDK** — no real Click to Pay confirmation, passkey simulated | **Real Visa Click to Pay** — actual confirmation, real device passkey, real cross-device-passkey rejection |
+| OTP delivery | Real emails (Crossmint sends them) | Same — real emails |
+| Money | Test money — no real charges, but Crossmint will still issue PANs | Real money — real charges hit the vaulted card |
+| Webhooks | n/a (we don't use webhooks) | n/a |
+| Console | <https://staging.crossmint.com/console> | <https://www.crossmint.com/console> — separate project, separate 3P auth config |
+
+**Implication:** the staging Visa mock hides every real-world failure mode (popup blocker, cross-device passkey mismatch, Visa Click to Pay UX glitches, slow Visa response). Anything that "works in staging" is necessary but not sufficient.
+
+### How to flip to production
+
+1. **Configure the prod Crossmint project (console):** register Firebase as the 3P auth provider (paste Firebase project ID + JWKS URL), copy the prod client + server API keys, allowlist the prod app's domain.
+2. **Set env vars in the prod environment:** ensure `CROSSMINT_SERVER_API_KEY` and `NEXT_PUBLIC_CROSSMINT_CLIENT_API_KEY` are present (they are). Set `CROSSMINT_ENV=production` and `NEXT_PUBLIC_CROSSMINT_ENV=production` only if we want a runtime switch later — today they're unused.
+3. **Edit `crossmint-env.ts` (three lines):**
+   ```ts
+   export const CROSSMINT_HOST = "https://www.crossmint.com";
+   export const CROSSMINT_SERVER_API_KEY = process.env.CROSSMINT_SERVER_API_KEY;
+   export const CROSSMINT_CLIENT_API_KEY = process.env.NEXT_PUBLIC_CROSSMINT_CLIENT_API_KEY;
+   ```
+4. **Bump `@crossmint/client-sdk-react-ui`** to the latest minor (currently 4.2.2) before testing prod — Crossmint absorbs the prod-vs-staging overlay differences inside the SDK; running the latest minimizes drift from their reference quickstart.
+5. **Verify the refresh-token plan is shipped** (`project_knowledge/currently_building/rail3/rail3-firebase-refresh-token-plan.md`) **before** turning on bot checkout in prod. Without it, `/order-intents/:id/credentials` will 403 for every headless bot purchase.
+6. **Smoke test the full ceremony in prod (real card, real money in trivial amount):**
+   - PM save → agentic-enrollment → email OTP → real passkey on the test device → status `active`.
+   - Create one virtual card → `<OrderIntentVerification>` → real passkey tap → `phase: active`.
+   - Manual bot checkout (`POST /api/v1/bot/rail3/checkout`) at a low-risk merchant → real PAN issued → real charge → settlement → `confirm` records the order.
+   - Repeat each ceremony from a **second device** to surface the cross-device-passkey path that staging hides.
+7. **Watch the first 10 prod owners closely** — popup blocker, mobile Safari WebAuthn quirks, slow Visa overlay responses are the failure modes that don't appear in staging.
+
+### What we can't test until prod
+
+- Real Visa Click to Pay UX (timing, copy, third-party-cookie reqs).
+- Real cross-device passkey rejection (Visa's `onNewDevice=reenroll` path).
+- Real declines from the vaulted card issuer (insufficient funds, fraud holds).
+- Production webhook URLs (n/a today — we don't use them).
+
+---
+
 ## Crossmint API surface (what we call, mapped to wrappers)
 
 All paths under `https://staging.crossmint.com/api/` (staging) or `https://www.crossmint.com/api/` (prod).
@@ -410,6 +532,42 @@ Same shape for PM enrollment via `GET /api/unstable/payment-methods/:id/agentic-
 | 2 | **`/api/v1/rail3/transactions/` route audit** | Unknown | Route exists, never validated against current schema. |
 | 3 | **Mobile prod verification ceremony unmounting mid-flow** | Unverified post-refactor | Was observed pre-dialog-removal. May or may not still reproduce — needs re-test. |
 | 4 | **Stale comment in `app/setup/rail3/page.tsx`** | Cosmetic | "Crossmint agents are created lazily per-bot" — should say per-owner. |
+
+---
+
+## Screenshots
+
+Captured UI for the ceremonies and surfaces that aren't in the code. Drop new screenshots into `_images/rail3/` next to this doc and reference them here.
+
+### Our wizard — `/setup/rail3`, step 2 (Authorize for agentic use)
+
+The happy-path pending state after `POST /payment-methods/:id/enrollment` succeeds. The blue strip is our own UI; the email + passkey UI that appears next is Basis Theory's overlay portaled to `<body>` (not captured here because the overlay closes on success).
+
+![Wizard step 2 — authorize pending](./_images/rail3/wizard-step2-authorize-pending.png)
+
+### Our wizard — same step, surfacing the historic `client-side API key` 403
+
+This is what `createEnrollment` returned through 2026-05-22 when our wrapper sent the server-key + userLocator combo to the JWT-only `/agentic-enrollment` endpoint. If this string ever shows up again, the wrapper is sending the wrong auth — check `agenticEnrollment.ts` is using `enrollmentHeaders(jwt)` (client key + Bearer), not the shared `crossmintCardsFetch` helper.
+
+![Wizard step 2 — client-side API key 403 error](./_images/rail3/wizard-step2-client-key-403-error.png)
+
+### Crossmint's own Card Permissions quickstart UI (reference only)
+
+The quickstart's reference shape: three numbered sections (Create agent / Save credit card / Allow payments). Our wizard collapses 1+2 (lazy agent on first card, save card in step 1) and treats 3 as the separate `/virtual-cards` page. Useful when comparing what they show vs what we show.
+
+![Crossmint quickstart — Card Permissions reference](./_images/rail3/crossmint-quickstart-reference.png)
+
+### Our `/virtual-cards` page (current as of 2026-05-23)
+
+Owner dashboard after the wizard: vaulted real card at the top, virtual cards (= orderIntents) below. The right-hand card showing `AWAITING AUTHORIZATION` is the visible state for `permission_phase: "requires-verification"` — owner needs to open it and complete the passkey ceremony.
+
+![Virtual Cards page — current state](./_images/rail3/virtual-cards-page-current.png)
+
+### Adding more
+
+- File location: `project_knowledge/internal_docs/04-payment-tools/_images/rail3/`
+- Naming: `kebab-case-descriptive.png`. Prefer "what + state" (`wizard-step2-authorize-pending.png`) over filenames/dates.
+- Worth capturing next: the Basis Theory email-OTP overlay, the passkey-create overlay, the cross-device-passkey rejection screen (will only appear in prod), the AddCardDialog inline panel in its three states (form / authorize / done).
 
 ---
 
