@@ -1,9 +1,12 @@
 ---
-name: Rail 3 — Virtual Cards (Crossmint Card Permissions)
-description: End-to-end technical overview of Rail 3 — how vaulted real cards spawn merchant-scoped virtual cards via Crossmint + Basis Theory, how it's wired, and what's still outstanding.
+name: Rail 3 — Virtual Cards (Crossmint Card Permissions) [SUPERSEDED]
+description: SUPERSEDED 2026-05-21. Canonical operational doc is now project_knowledge/internal_docs/04-payment-tools/rail3-virtual-cards.md. Kept for history (pre-dialog-removal gotchas, schema migration notes, diagnostics catalogue A–F).
 created: 2026-05-20
-last_updated: 2026-05-20
+last_updated: 2026-05-21
+status: superseded
 ---
+
+> **⚠️ Superseded.** Read `project_knowledge/internal_docs/04-payment-tools/rail3-virtual-cards.md` first. The pointer-events MutationObserver gotcha and `OrderIntentVerificationStable` memo described below are no longer in the code (dialog→panel refactor, 2026-05-21). This file is kept for historical context only.
 
 # Rail 3 — Virtual Cards
 

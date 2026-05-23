@@ -1,9 +1,12 @@
 ---
-name: Rail 3 — Crossmint Card Permissions
-description: Owner vaults a real Visa/Mastercard in Crossmint once (payment method), then spawns N virtual cards on top of it — each virtual card is one orderIntent that yields fresh merchant-scoped one-time numbers at checkout.
+name: Rail 3 — Crossmint Card Permissions [SUPERSEDED]
+description: SUPERSEDED 2026-05-21. Canonical operational doc is now project_knowledge/internal_docs/04-payment-tools/rail3-virtual-cards.md.
 created: 2026-05-17
-last_updated: 2026-05-17
+last_updated: 2026-05-21
+status: superseded
 ---
+
+> **⚠️ Superseded.** Read `project_knowledge/internal_docs/04-payment-tools/rail3-virtual-cards.md` first.
 
 # Rail 3: Crossmint Card Permissions
 
