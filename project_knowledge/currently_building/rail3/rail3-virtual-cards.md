@@ -565,7 +565,7 @@ Owner dashboard after the wizard: vaulted real card at the top, virtual cards (=
 
 ### Adding more
 
-- File location: `project_knowledge/internal_docs/04-payment-tools/_images/rail3/`
+- File location: `project_knowledge/currently_building/rail3/_images/rail3/`
 - Naming: `kebab-case-descriptive.png`. Prefer "what + state" (`wizard-step2-authorize-pending.png`) over filenames/dates.
 - Worth capturing next: the Basis Theory email-OTP overlay, the passkey-create overlay, the cross-device-passkey rejection screen (will only appear in prod), the AddCardDialog inline panel in its three states (form / authorize / done).
 

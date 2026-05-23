@@ -8,7 +8,7 @@ status: living
 
 # Rail 3 — Open Points
 
-> Canonical operational doc: `project_knowledge/internal_docs/04-payment-tools/rail3-virtual-cards.md`.
+> Canonical operational doc: `rail3-virtual-cards.md` (sibling in this folder).
 > This file is the **what's left** tracker. Update it as items close — don't archive until everything ships.
 
 ---
