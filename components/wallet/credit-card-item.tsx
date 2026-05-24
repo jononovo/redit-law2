@@ -45,6 +45,7 @@ export function CreditCardItem({
         status={card.status}
         brand={card.brand || undefined}
         issuer={card.issuer || undefined}
+        numberCaption={card.numberCaption || undefined}
       />
 
       <div className="bg-white rounded-xl border border-neutral-100 p-2 flex items-center" data-testid={`action-bar-${card.card_id}`}>

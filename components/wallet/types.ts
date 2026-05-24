@@ -123,11 +123,14 @@ export function normalizeRail3Card(card: Rail3CardInfo, basePath: string): Norma
     balanceTooltip: isLimited
       ? `Crossmint enforces this limit per ${card.limit_period}.`
       : "Agent can use this card at any merchant. Each charge still uses a one-time merchant-scoped number.",
-    last4,
+    last4: card.order_intent_id.slice(-4),
     brand,
     issuer: card.issuer_name || null,
     line1: card.category || null,
     line2: null,
+    numberCaption: card.card_last4
+      ? `Funded by ${(card.card_brand || "card").toUpperCase()} ····${card.card_last4}`
+      : null,
     detailPath: `${basePath}/${card.card_id}`,
   };
 }
@@ -148,6 +151,7 @@ export interface NormalizedCard {
   issuer: string | null;
   line1: string | null;
   line2: string | null;
+  numberCaption: string | null;
   detailPath: string;
 }
 
@@ -167,6 +171,7 @@ export function normalizeRail5Card(card: Rail5CardInfo, basePath: string): Norma
     issuer: card.issuer_name || null,
     line1: `Daily: ${formatCentsToUsd(card.daily_limit_cents)}`,
     line2: `Monthly: ${formatCentsToUsd(card.monthly_limit_cents)}`,
+    numberCaption: null,
     detailPath: `${basePath}/${card.card_id}`,
   };
 }

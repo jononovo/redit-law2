@@ -20,6 +20,7 @@ interface CardVisualProps {
   issuer?: string;
   bottomRightLabel?: string;
   bottomRightValue?: string;
+  numberCaption?: string;
 }
 
 const BRAND_DISPLAY: Record<string, string> = {
@@ -47,6 +48,7 @@ export function CardVisual({
   issuer,
   bottomRightLabel,
   bottomRightValue,
+  numberCaption,
 }: CardVisualProps) {
 
   const gradients = {
@@ -159,11 +161,18 @@ export function CardVisual({
       <div className="relative z-10">
         <div className="flex items-end justify-between">
           <div className="flex flex-col gap-4">
-            <div className="flex gap-3 text-lg font-mono tracking-widest opacity-90" data-testid="text-card-number">
-              <span>····</span>
-              <span>····</span>
-              <span>····</span>
-              <span>{last4}</span>
+            <div className="flex flex-col gap-0.5">
+              {numberCaption && (
+                <span className="text-[10px] font-medium uppercase tracking-wider opacity-70" data-testid="text-card-number-caption">
+                  {numberCaption}
+                </span>
+              )}
+              <div className="flex gap-3 text-lg font-mono tracking-widest opacity-90" data-testid="text-card-number">
+                <span>····</span>
+                <span>····</span>
+                <span>····</span>
+                <span>{last4}</span>
+              </div>
             </div>
             <div className="flex flex-col">
               <span className="text-[10px] uppercase opacity-70 tracking-wider">{holderLabel}</span>
