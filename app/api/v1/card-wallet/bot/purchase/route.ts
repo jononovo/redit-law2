@@ -44,8 +44,11 @@ async function handler(request: NextRequest, botId: string) {
       return NextResponse.json({ error: "Shipping address required. Provide one in the request or set a default address." }, { status: 400 });
     }
 
+    if (wallet.isFrozen) {
+      return NextResponse.json({ error: "Wallet is frozen" }, { status: 403 });
+    }
     if (wallet.status !== "active") {
-      return NextResponse.json({ error: "Wallet is paused", status: wallet.status }, { status: 403 });
+      return NextResponse.json({ error: "Wallet is not active", status: wallet.status }, { status: 403 });
     }
 
     const estimatedAmountUsdc = estimated_price_usd

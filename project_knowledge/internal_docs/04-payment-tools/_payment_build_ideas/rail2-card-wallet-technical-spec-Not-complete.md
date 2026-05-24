@@ -63,7 +63,8 @@ Four tables prefixed `crossmint_` for rail segmentation, plus the shared `master
 | address | text | 0x address on Base |
 | balance_usdc | bigint | Micro-USDC (6 decimals). 1000000 = $1.00. Cached locally, queried on-demand from CrossMint chain balance. |
 | chain | text | Always `base` |
-| status | text | `active` / `paused` |
+| status | text | Lifecycle state. Currently always `active` (no other lifecycle states defined for rail2). |
+| is_frozen | boolean | Owner-controlled freeze overlay. When true, all purchase requests are rejected regardless of `status`. Toggled via `/freeze`. |
 | created_at / updated_at | timestamp | |
 
 ### crossmint_guardrails
@@ -126,7 +127,7 @@ All routes under `/api/v1/card-wallet/`. Owner endpoints use Firebase session co
 | POST | `/create` | Create a CrossMint smart wallet for a bot. Calls CrossMint `POST /wallets` with `evm-smart-wallet` type and Fireblocks custodial signer. Stores wallet record, creates default guardrails. |
 | GET | `/list` | List owner's wallets with balances, guardrails, and merchant controls. Queries CrossMint chain balance on-demand for each wallet. |
 | GET | `/balance` | Single wallet balance from CrossMint chain query (`/wallets/{locator}/balances?tokens=usdc&chains=base`). |
-| POST | `/freeze` | Toggle wallet status between `active` and `paused`. Paused wallets reject all purchase requests. |
+| POST | `/freeze` | Body `{wallet_id, is_frozen: boolean}`. Sets `is_frozen` on the wallet. Frozen wallets reject all purchase requests. Lifecycle `status` is unaffected. |
 | POST | `/onramp/session` | Create CrossMint fiat onramp order (fiat → USDC via Checkout.com flow). Returns `clientSecret` for embedded widget. |
 | GET/POST | `/guardrails` | View or update spending controls and merchant allow/blocklists. |
 | GET | `/transactions` | List transactions for a wallet. |
