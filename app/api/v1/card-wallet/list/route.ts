@@ -28,6 +28,7 @@ export async function GET(request: NextRequest) {
           balance_display: formatUsdc(w.balanceUsdc),
           chain: w.chain,
           status: w.status,
+          is_frozen: w.isFrozen,
           guardrails: guardrails ? {
             max_per_tx_usdc: guardrails.maxPerTxUsdc,
             daily_budget_usdc: guardrails.dailyBudgetUsdc,

@@ -18,7 +18,7 @@ export interface UseWalletActionsConfig {
 export interface FreezeTarget {
   id: number | string;
   name: string;
-  status: string;
+  is_frozen: boolean;
 }
 
 export function useWalletActions(config: UseWalletActionsConfig) {
@@ -27,18 +27,17 @@ export function useWalletActions(config: UseWalletActionsConfig) {
   const [syncCooldowns, setSyncCooldowns] = useState<Record<number, number>>({});
 
   const handleFreeze = useCallback(async (target: FreezeTarget) => {
-    const isFrozen = target.status === "frozen" || target.status === "paused";
-    const freeze = !isFrozen;
+    const nextIsFrozen = !target.is_frozen;
     const label = config.entityType === "wallet" ? "Wallet" : "Card";
     try {
       const endpoint = config.freezeEndpoint || `/api/v1/${config.railPrefix}/freeze`;
       const res = await authFetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ [config.entityIdField]: target.id, frozen: freeze }),
+        body: JSON.stringify({ [config.entityIdField]: target.id, is_frozen: nextIsFrozen }),
       });
       if (res.ok) {
-        toast({ title: freeze ? `${label} paused` : `${label} activated` });
+        toast({ title: nextIsFrozen ? `${label} frozen` : `${label} unfrozen` });
         config.onUpdate?.();
       } else {
         toast({ title: "Error", description: "Failed to update status.", variant: "destructive" });

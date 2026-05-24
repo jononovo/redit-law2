@@ -11,7 +11,7 @@ import type { IStorage } from "../types";
 type Rail1Methods = Pick<IStorage,
   | "privyCreateWallet" | "privyGetWalletById" | "privyGetWalletByBotId"
   | "privyGetWalletsByOwnerUid" | "privyGetWalletByAddress"
-  | "privyUpdateWalletBalance" | "privyUpdateWalletStatus"
+  | "privyUpdateWalletBalance" | "privyUpdateWalletStatus" | "privyUpdateWalletFrozen"
   | "privyUnlinkBot" | "privyLinkBot"
   | "privyUpdateWalletBalanceAndSync" | "privyUpdateWalletSyncedAt"
   | "privyGetGuardrails" | "privyUpsertGuardrails"
@@ -61,6 +61,15 @@ export const rail1Methods: Rail1Methods = {
     const [updated] = await db
       .update(privyWallets)
       .set({ status, updatedAt: new Date() })
+      .where(and(eq(privyWallets.id, id), eq(privyWallets.ownerUid, ownerUid)))
+      .returning();
+    return updated || null;
+  },
+
+  async privyUpdateWalletFrozen(id: number, isFrozen: boolean, ownerUid: string): Promise<PrivyWallet | null> {
+    const [updated] = await db
+      .update(privyWallets)
+      .set({ isFrozen, updatedAt: new Date() })
       .where(and(eq(privyWallets.id, id), eq(privyWallets.ownerUid, ownerUid)))
       .returning();
     return updated || null;

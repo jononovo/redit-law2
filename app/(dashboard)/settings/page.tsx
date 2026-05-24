@@ -361,7 +361,6 @@ function BotRailManagement() {
               </div>
               <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
                 bot.wallet_status === "active" ? "bg-emerald-50 text-emerald-700" :
-                bot.wallet_status === "frozen" ? "bg-red-50 text-red-700" :
                 "bg-neutral-100 text-neutral-500"
               }`} data-testid={`status-bot-${bot.bot_id}`}>
                 {bot.wallet_status}

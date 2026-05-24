@@ -5,7 +5,7 @@ import { WalletActionBar, type ActionItem } from "./wallet-action-bar";
 
 export interface CryptoActionBarProps {
   walletId: number;
-  status: string;
+  isFrozen: boolean;
   onFund: () => void;
   onFreeze: () => void;
   onGuardrails: () => void;
@@ -16,7 +16,7 @@ export interface CryptoActionBarProps {
 
 export function CryptoActionBar({
   walletId,
-  status,
+  isFrozen,
   onFund,
   onFreeze,
   onGuardrails,
@@ -24,8 +24,6 @@ export function CryptoActionBar({
   fundLabel = "Fund",
   testIdPrefix = "stripe",
 }: CryptoActionBarProps) {
-  const isActive = status === "active";
-
   const actions: ActionItem[] = [
     {
       icon: DollarSign,
@@ -35,8 +33,8 @@ export function CryptoActionBar({
       "data-testid": `button-fund-${walletId}`,
     },
     {
-      icon: isActive ? Snowflake : Play,
-      label: isActive ? "Freeze" : "Activate",
+      icon: isFrozen ? Play : Snowflake,
+      label: isFrozen ? "Unfreeze" : "Freeze",
       onClick: onFreeze,
       className: "flex-1 text-xs gap-2 text-neutral-600 cursor-pointer hover:bg-neutral-100 rounded-lg transition-colors",
       "data-testid": `button-freeze-${walletId}`,

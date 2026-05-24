@@ -1,7 +1,7 @@
 export type RailType = "rail1" | "rail2" | "rail3" | "rail5";
 
-// Crypto wallet lifecycle (rail1/rail2). Separate concept from card lifecycle.
-export type WalletStatus = "active" | "paused" | "frozen" | "pending" | "pending_setup" | "awaiting_bot";
+// Crypto wallet lifecycle (rail1/rail2). Owner-controlled freeze is a separate boolean (is_frozen), not a lifecycle state.
+export type WalletStatus = "active" | "pending" | "pending_setup" | "awaiting_bot";
 
 // Card lifecycle. Owner-controlled freeze is a separate boolean (is_frozen), not a lifecycle state.
 // rail5: pending_setup | pending_delivery | confirmed | active
@@ -32,6 +32,7 @@ export interface Rail1WalletInfo {
   balance_usdc: number;
   balance_display: string;
   status: string;
+  is_frozen: boolean;
   guardrails: CryptoWalletGuardrails | null;
   created_at: string;
 }
@@ -45,6 +46,7 @@ export interface Rail2WalletInfo {
   balance_display: string;
   chain: string;
   status: string;
+  is_frozen: boolean;
   guardrails: CardWalletGuardrails | null;
   created_at: string;
 }

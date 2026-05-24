@@ -107,6 +107,7 @@ export interface IStorage {
   crossmintUpdateWalletBalanceAndSync(id: number, balanceUsdc: number): Promise<CrossmintWallet | null>;
   crossmintUpdateWalletSyncedAt(id: number): Promise<void>;
   crossmintUpdateWalletStatus(id: number, status: string, ownerUid: string): Promise<CrossmintWallet | null>;
+  crossmintUpdateWalletFrozen(id: number, isFrozen: boolean, ownerUid: string): Promise<CrossmintWallet | null>;
   crossmintLinkBot(id: number, botId: string, ownerUid: string): Promise<CrossmintWallet | null>;
   crossmintUnlinkBot(id: number, ownerUid: string): Promise<CrossmintWallet | null>;
 
@@ -128,6 +129,7 @@ export interface IStorage {
   privyGetWalletByAddress(address: string): Promise<PrivyWallet | null>;
   privyUpdateWalletBalance(id: number, balanceUsdc: number): Promise<PrivyWallet | null>;
   privyUpdateWalletStatus(id: number, status: string, ownerUid: string): Promise<PrivyWallet | null>;
+  privyUpdateWalletFrozen(id: number, isFrozen: boolean, ownerUid: string): Promise<PrivyWallet | null>;
   privyUnlinkBot(id: number, ownerUid: string): Promise<PrivyWallet | null>;
   privyLinkBot(id: number, botId: string, ownerUid: string): Promise<PrivyWallet | null>;
 

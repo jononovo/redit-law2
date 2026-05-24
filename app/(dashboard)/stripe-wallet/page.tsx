@@ -225,7 +225,7 @@ export default function StripeWalletPage() {
                     wallet={wallet}
                     color="blue"
                     onFund={() => { setFundTarget({ id: wallet.id, address: wallet.address, botName: wallet.bot_name }); setFundSheetOpen(true); }}
-                    onFreeze={() => walletActions.handleFreeze({ id: wallet.id, name: wallet.bot_name || "Wallet", status: wallet.status })}
+                    onFreeze={() => walletActions.handleFreeze({ id: wallet.id, name: wallet.bot_name || "Wallet", is_frozen: wallet.is_frozen })}
                     onGuardrails={() => guardrails.openDialog(wallet)}
                     onActivity={() => { setSelectedWallet(wallet); setActiveTab("transactions"); }}
                     onAddAgent={() => botLinking.openLinkDialog({ id: wallet.id, name: wallet.bot_name || "Wallet", bot_id: wallet.bot_id || null, bot_name: wallet.bot_name || null })}

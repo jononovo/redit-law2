@@ -340,7 +340,7 @@ export default function DashboardOverview() {
                   wallet={firstWallet}
                   color="blue"
                   onFund={() => { setFundTarget({ id: firstWallet.id, address: firstWallet.address, botName: firstWallet.bot_name }); setFundSheetOpen(true); }}
-                  onFreeze={() => rail1WalletActions.handleFreeze({ id: firstWallet.id, name: firstWallet.bot_name || "Wallet", status: firstWallet.status })}
+                  onFreeze={() => rail1WalletActions.handleFreeze({ id: firstWallet.id, name: firstWallet.bot_name || "Wallet", is_frozen: firstWallet.is_frozen })}
                   onGuardrails={() => rail1Guardrails.openDialog(firstWallet)}
                   onActivity={() => router.push("/stripe-wallet")}
                   onAddAgent={() => rail1BotLinking.openLinkDialog({ id: firstWallet.id, name: firstWallet.bot_name || "Wallet", bot_id: firstWallet.bot_id || null, bot_name: firstWallet.bot_name || null })}

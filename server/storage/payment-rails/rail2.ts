@@ -12,7 +12,7 @@ type Rail2Methods = Pick<IStorage,
   | "crossmintCreateWallet" | "crossmintGetWalletById" | "crossmintGetWalletByBotId"
   | "crossmintGetWalletsByOwnerUid" | "crossmintUpdateWalletBalance"
   | "crossmintUpdateWalletBalanceAndSync" | "crossmintUpdateWalletSyncedAt"
-  | "crossmintUpdateWalletStatus" | "crossmintLinkBot" | "crossmintUnlinkBot"
+  | "crossmintUpdateWalletStatus" | "crossmintUpdateWalletFrozen" | "crossmintLinkBot" | "crossmintUnlinkBot"
   | "crossmintGetGuardrails" | "crossmintUpsertGuardrails"
   | "crossmintCreateTransaction" | "crossmintGetTransactionsByWalletId"
   | "crossmintGetTransactionById" | "crossmintGetTransactionByOrderId"
@@ -68,6 +68,15 @@ export const rail2Methods: Rail2Methods = {
     const [updated] = await db
       .update(crossmintWallets)
       .set({ status, updatedAt: new Date() })
+      .where(and(eq(crossmintWallets.id, id), eq(crossmintWallets.ownerUid, ownerUid)))
+      .returning();
+    return updated || null;
+  },
+
+  async crossmintUpdateWalletFrozen(id: number, isFrozen: boolean, ownerUid: string): Promise<CrossmintWallet | null> {
+    const [updated] = await db
+      .update(crossmintWallets)
+      .set({ isFrozen, updatedAt: new Date() })
       .where(and(eq(crossmintWallets.id, id), eq(crossmintWallets.ownerUid, ownerUid)))
       .returning();
     return updated || null;

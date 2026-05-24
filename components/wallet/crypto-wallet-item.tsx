@@ -44,7 +44,7 @@ export function CryptoWalletItem({
   basescanUrl,
   guardrailValueFormatter,
 }: CryptoWalletItemProps) {
-  const isFrozen = wallet.status === "paused" || wallet.status === "frozen";
+  const isFrozen = wallet.is_frozen;
   const chain = "chain" in wallet ? wallet.chain : "Base";
   const fmt = guardrailValueFormatter ?? ((v: number) => `$${v}`);
 
@@ -97,7 +97,7 @@ export function CryptoWalletItem({
 
       <CryptoActionBar
         walletId={wallet.id}
-        status={wallet.status}
+        isFrozen={isFrozen}
         onFund={onFund}
         onFreeze={onFreeze}
         onGuardrails={onGuardrails}

@@ -70,7 +70,7 @@ export const GET = withBotApi("/api/v1/bot/status", async (_request, { bot }) =>
   return NextResponse.json({
     bot_id: bot.botId,
     bot_name: bot.botName,
-    status: bot.walletStatus === "frozen" ? "frozen" : (activeRailCount > 0 ? "active" : "inactive"),
+    status: activeRailCount > 0 ? "active" : "inactive",
     default_rail: bot.defaultRail || null,
     active_rails: Object.keys(rails),
     rails,
