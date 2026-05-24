@@ -129,7 +129,7 @@ export function normalizeRail3Card(card: Rail3CardInfo, basePath: string): Norma
     line1: card.category || null,
     line2: null,
     numberCaption: card.card_last4
-      ? `Funded by ${(card.card_brand || "card").toUpperCase()} ····${card.card_last4}`
+      ? `Funded by: ${(card.card_brand || "card").toUpperCase()} ····${card.card_last4}`
       : null,
     detailPath: `${basePath}/${card.card_id}`,
   };
