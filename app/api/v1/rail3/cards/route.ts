@@ -162,13 +162,12 @@ export async function POST(request: NextRequest) {
     : null;
   const limitPeriod = parsed.data.mode === "limited" ? (parsed.data.period ?? null) : null;
 
-  const last4 = pm.cardLast4 ? ` •••• ${pm.cardLast4}` : "";
   const limitLabel = parsed.data.mode === "limited"
     ? `$${parsed.data.max_amount_usd}/${parsed.data.period}`
     : "no limit";
   const defaultName = parsed.data.category
-    ? `${parsed.data.category}${last4}`
-    : `${(pm.cardBrand || "Card").toUpperCase()}${last4} — ${limitLabel}`;
+    ? parsed.data.category
+    : `${(pm.cardBrand || "Card").toUpperCase()} — ${limitLabel}`;
 
   const cardId = generateRail3CardId();
   const card = await storage.createRail3Card({
