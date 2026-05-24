@@ -9,6 +9,7 @@ import {
 import { provisionAgentForOwner } from "@/features/payment-rails/rail3/per-user-agent";
 import { rail3CreateCardSchema, type Rail3Agent } from "@/shared/schema";
 import { randomCardName } from "@/features/payment-rails/card/card-naming";
+import { lookupIssuer } from "@/features/payment-rails/card/bin-lookup";
 
 export async function GET(request: NextRequest) {
   const user = await getSessionUser(request);
@@ -42,6 +43,7 @@ export async function GET(request: NextRequest) {
       payment_method_id: c.paymentMethodId,
       card_brand: pm?.cardBrand || null,
       card_last4: pm?.cardLast4 || null,
+      issuer_name: pm?.cardFirst6 ? (lookupIssuer(pm.cardFirst6) || null) : null,
       intent_mode: c.intentMode,
       is_frozen: c.isFrozen,
       limit_amount_cents: c.limitAmountCents,

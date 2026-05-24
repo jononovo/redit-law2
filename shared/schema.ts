@@ -1468,6 +1468,7 @@ export const rail3PaymentMethods = pgTable("rail3_payment_methods", {
   cardholderName: text("cardholder_name"),
   cardLast4: text("card_last4"),
   cardBrand: text("card_brand"),                                  // visa | mastercard
+  cardFirst6: text("card_first6").notNull().default(""),          // BIN — feeds lookupIssuer(), mirrors rail5
   expMonth: integer("exp_month"),
   expYear: integer("exp_year"),
 
@@ -1575,6 +1576,7 @@ export const rail3SavePaymentMethodSchema = z.object({
   payment_method_id: z.string().min(1),
   card_last4: z.string().length(4).regex(/^\d{4}$/).optional(),
   card_brand: z.enum(["visa", "mastercard"]).optional(),
+  card_first6: z.string().min(4).max(6).regex(/^\d{4,6}$/).optional(),
   cardholder_name: z.string().min(1).max(200).optional(),
   exp_month: z.number().int().min(1).max(12).optional(),
   exp_year: z.number().int().min(2024).max(2099).optional(),

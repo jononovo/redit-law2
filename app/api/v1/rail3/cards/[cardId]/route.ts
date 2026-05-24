@@ -5,6 +5,7 @@ import { fireRailsUpdated } from "@/features/agent-interaction/webhooks";
 import { revokeOrderIntent } from "@/features/payment-rails/rail3";
 import { extractBearerJwt } from "@/features/platform-management/auth/extract-bearer-jwt";
 import { z } from "zod";
+import { lookupIssuer } from "@/features/payment-rails/card/bin-lookup";
 
 // bot_id is the only mutable link to a bot. Crossmint OrderIntent.agentId is
 // immutable after creation, but the agent is owner-scoped (one per owner), so
@@ -30,6 +31,7 @@ async function serializeCard(c: NonNullable<Awaited<ReturnType<typeof storage.ge
     payment_method_id: c.paymentMethodId,
     card_brand: pm?.cardBrand || null,
     card_last4: pm?.cardLast4 || null,
+    issuer_name: pm?.cardFirst6 ? (lookupIssuer(pm.cardFirst6) || null) : null,
     cardholder_name: pm?.cardholderName || null,
     exp_month: pm?.expMonth || null,
     exp_year: pm?.expYear || null,

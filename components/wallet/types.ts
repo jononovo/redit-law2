@@ -82,6 +82,7 @@ export interface Rail3CardInfo {
   payment_method_id: string;
   card_brand: string | null;
   card_last4: string | null;
+  issuer_name: string | null;
   intent_mode: "limited" | "open";
   limit_amount_cents: number | null;
   limit_period: "weekly" | "monthly" | "yearly" | null;
@@ -93,6 +94,7 @@ export interface Rail3PaymentMethodInfo {
   payment_method_id: string;
   card_brand: string | null;
   card_last4: string | null;
+  issuer_name: string | null;
   cardholder_name: string | null;
   exp_month: number | null;
   exp_year: number | null;
@@ -123,8 +125,8 @@ export function normalizeRail3Card(card: Rail3CardInfo, basePath: string): Norma
       : "Agent can use this card at any merchant. Each charge still uses a one-time merchant-scoped number.",
     last4,
     brand,
-    issuer: card.category || null,
-    line1: null,
+    issuer: card.issuer_name || null,
+    line1: card.category || null,
     line2: null,
     detailPath: `${basePath}/${card.card_id}`,
   };

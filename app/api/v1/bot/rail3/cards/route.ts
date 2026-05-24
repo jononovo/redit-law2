@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { withBotApi } from "@/features/platform-management/agent-management/agent-api/middleware";
 import { storage } from "@/server/storage";
+import { lookupIssuer } from "@/features/payment-rails/card/bin-lookup";
 
 export const GET = withBotApi("/api/v1/bot/rail3/cards", async (_request, { bot }) => {
   const cards = await storage.getRail3CardsByBotId(bot.botId);
@@ -24,6 +25,7 @@ export const GET = withBotApi("/api/v1/bot/rail3/cards", async (_request, { bot 
         category: c.category,
         card_brand: pm?.cardBrand || null,
         card_last4: pm?.cardLast4 || null,
+        issuer_name: pm?.cardFirst6 ? (lookupIssuer(pm.cardFirst6) || null) : null,
         status: c.status,
         is_frozen: c.isFrozen,
         intent_mode: c.intentMode,

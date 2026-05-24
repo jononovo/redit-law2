@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSessionUser } from "@/features/platform-management/auth/session";
 import { storage } from "@/server/storage";
 import { rail3SavePaymentMethodSchema } from "@/shared/schema";
+import { lookupIssuer } from "@/features/payment-rails/card/bin-lookup";
 
 export async function GET(request: NextRequest) {
   const user = await getSessionUser(request);
@@ -19,6 +20,7 @@ export async function GET(request: NextRequest) {
       payment_method_id: p.paymentMethodId,
       card_brand: p.cardBrand,
       card_last4: p.cardLast4,
+      issuer_name: p.cardFirst6 ? (lookupIssuer(p.cardFirst6) || null) : null,
       cardholder_name: p.cardholderName,
       exp_month: p.expMonth,
       exp_year: p.expYear,
@@ -64,6 +66,7 @@ export async function POST(request: NextRequest) {
     cardholderName: parsed.data.cardholder_name,
     cardLast4: parsed.data.card_last4,
     cardBrand: parsed.data.card_brand,
+    cardFirst6: parsed.data.card_first6 || "",
     expMonth: parsed.data.exp_month,
     expYear: parsed.data.exp_year,
     status: "active",
