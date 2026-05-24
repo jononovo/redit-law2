@@ -8,6 +8,7 @@ import {
 } from "@/features/payment-rails/rail3";
 import { provisionAgentForOwner } from "@/features/payment-rails/rail3/per-user-agent";
 import { rail3CreateCardSchema, type Rail3Agent } from "@/shared/schema";
+import { randomCardName } from "@/features/payment-rails/card/card-naming";
 
 export async function GET(request: NextRequest) {
   const user = await getSessionUser(request);
@@ -162,12 +163,7 @@ export async function POST(request: NextRequest) {
     : null;
   const limitPeriod = parsed.data.mode === "limited" ? (parsed.data.period ?? null) : null;
 
-  const limitLabel = parsed.data.mode === "limited"
-    ? `$${parsed.data.max_amount_usd}/${parsed.data.period}`
-    : "no limit";
-  const defaultName = parsed.data.category
-    ? parsed.data.category
-    : `${(pm.cardBrand || "Card").toUpperCase()} — ${limitLabel}`;
+  const defaultName = randomCardName();
 
   const cardId = generateRail3CardId();
   const card = await storage.createRail3Card({

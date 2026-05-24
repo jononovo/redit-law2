@@ -108,11 +108,9 @@ export function normalizeRail3Card(card: Rail3CardInfo, basePath: string): Norma
   const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
   const brand = card.card_brand || "card";
   const last4 = card.card_last4 || "••••";
-  // Strip any legacy " •••• 1234" suffix baked into card_name by older create flows.
-  const cleanCardName = card.card_name.replace(/\s*••••\s*\d{2,4}\s*$/, "").trim() || card.card_name;
   return {
     card_id: card.card_id,
-    card_name: cleanCardName,
+    card_name: card.card_name,
     status: card.status,
     is_frozen: card.is_frozen,
     bot_id: card.bot_id,
@@ -126,7 +124,7 @@ export function normalizeRail3Card(card: Rail3CardInfo, basePath: string): Norma
     last4,
     brand,
     issuer: card.category || null,
-    line1: card.category || null,
+    line1: null,
     line2: null,
     detailPath: `${basePath}/${card.card_id}`,
   };
