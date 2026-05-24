@@ -61,7 +61,6 @@ export const POST = withBotApi("/api/v1/bot/rail5/checkout", async (request, { b
     dailyBudgetCents: guardrails?.dailyBudgetCents ?? GUARDRAIL_DEFAULTS.rail5.dailyBudgetCents,
     monthlyBudgetCents: guardrails?.monthlyBudgetCents ?? GUARDRAIL_DEFAULTS.rail5.monthlyBudgetCents,
     requireApprovalAbove: null as number | null,
-    autoPauseOnZero: guardrails?.autoPauseOnZero ?? GUARDRAIL_DEFAULTS.rail5.autoPauseOnZero,
   };
 
   const masterDecision = await evaluateMasterGuardrails(card.ownerUid, centsToMicroUsdc(amount_cents));

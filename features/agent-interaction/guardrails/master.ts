@@ -37,7 +37,6 @@ export async function evaluateMasterGuardrails(
       dailyBudgetUsdc: config.dailyBudgetUsdc,
       monthlyBudgetUsdc: config.monthlyBudgetUsdc,
       requireApprovalAbove: null,
-      autoPauseOnZero: false,
     },
     { amountUsdc: amountMicroUsdc },
     { dailyUsdc: dailySpend.total, monthlyUsdc: monthlySpend.total },

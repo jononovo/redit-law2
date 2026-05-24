@@ -63,7 +63,6 @@ export async function POST(request: NextRequest) {
     if (guardrailData.daily_budget_usdc !== undefined) updateData.dailyBudgetUsdc = guardrailData.daily_budget_usdc;
     if (guardrailData.monthly_budget_usdc !== undefined) updateData.monthlyBudgetUsdc = guardrailData.monthly_budget_usdc;
     if (guardrailData.recurring_allowed !== undefined) updateData.recurringAllowed = guardrailData.recurring_allowed;
-    if (guardrailData.auto_pause_on_zero !== undefined) updateData.autoPauseOnZero = guardrailData.auto_pause_on_zero;
     if (guardrailData.notes !== undefined) updateData.notes = guardrailData.notes;
 
     const guardrails = await storage.privyUpsertGuardrails(wallet_id, updateData);

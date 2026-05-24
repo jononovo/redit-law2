@@ -91,7 +91,6 @@ async function handler(request: NextRequest, botId: string) {
         dailyBudgetUsdc: guardrails.dailyBudgetUsdc,
         monthlyBudgetUsdc: guardrails.monthlyBudgetUsdc,
         requireApprovalAbove: null,
-        autoPauseOnZero: guardrails.autoPauseOnZero,
       },
       { amountUsdc: estimatedAmountUsdc },
       { dailyUsdc: dailySpend, monthlyUsdc: monthlySpend }

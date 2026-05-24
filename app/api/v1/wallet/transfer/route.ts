@@ -162,7 +162,6 @@ export async function POST(request: NextRequest) {
           dailyBudgetUsdc: guardrails.dailyBudgetUsdc,
           monthlyBudgetUsdc: guardrails.monthlyBudgetUsdc,
           requireApprovalAbove: null,
-          autoPauseOnZero: guardrails.autoPauseOnZero,
         },
         { amountUsdc: amount_usdc },
         { dailyUsdc: dailySpend, monthlyUsdc: monthlySpend }

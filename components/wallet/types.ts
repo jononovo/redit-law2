@@ -22,7 +22,6 @@ export interface CryptoWalletGuardrails {
 export interface CardWalletGuardrails extends CryptoWalletGuardrails {
   allowlisted_merchants: string[] | null;
   blocklisted_merchants: string[] | null;
-  auto_pause_on_zero: boolean;
 }
 
 export interface Rail1WalletInfo {

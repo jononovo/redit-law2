@@ -14,7 +14,6 @@ const defaultRules: GuardrailRules = {
   dailyBudgetUsdc: 50,
   monthlyBudgetUsdc: 500,
   requireApprovalAbove: null,
-  autoPauseOnZero: false,
 };
 
 const zeroSpend: CumulativeSpend = {
@@ -102,7 +101,6 @@ describe("evaluateCardGuardrails", () => {
     dailyBudgetCents: 5000,
     monthlyBudgetCents: 50000,
     requireApprovalAbove: null,
-    autoPauseOnZero: false,
   };
 
   const zeroCardSpend: CardCumulativeSpend = {

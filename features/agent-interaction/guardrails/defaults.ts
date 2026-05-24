@@ -13,7 +13,6 @@ export const GUARDRAIL_DEFAULTS = {
     dailyBudgetUsdc: 10,
     monthlyBudgetUsdc: 50,
     recurringAllowed: false,
-    autoPauseOnZero: true,
   },
 
   rail2: {
@@ -21,7 +20,6 @@ export const GUARDRAIL_DEFAULTS = {
     dailyBudgetUsdc: 10,
     monthlyBudgetUsdc: 50,
     recurringAllowed: false,
-    autoPauseOnZero: true,
   },
 
   rail5: {
@@ -29,7 +27,6 @@ export const GUARDRAIL_DEFAULTS = {
     dailyBudgetCents: 10000,
     monthlyBudgetCents: 50000,
     recurringAllowed: false,
-    autoPauseOnZero: false,
   },
 
   rail3: {
@@ -37,7 +34,6 @@ export const GUARDRAIL_DEFAULTS = {
     dailyBudgetCents: 10000,
     monthlyBudgetCents: 50000,
     recurringAllowed: false,
-    autoPauseOnZero: false,
   },
 } as const;
 

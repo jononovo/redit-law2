@@ -207,7 +207,6 @@ export const privyGuardrails = pgTable("privy_guardrails", {
   dailyBudgetUsdc: integer("daily_budget_usdc").notNull().default(GUARDRAIL_DEFAULTS.rail1.dailyBudgetUsdc),
   monthlyBudgetUsdc: integer("monthly_budget_usdc").notNull().default(GUARDRAIL_DEFAULTS.rail1.monthlyBudgetUsdc),
   recurringAllowed: boolean("recurring_allowed").notNull().default(GUARDRAIL_DEFAULTS.rail1.recurringAllowed),
-  autoPauseOnZero: boolean("auto_pause_on_zero").notNull().default(GUARDRAIL_DEFAULTS.rail1.autoPauseOnZero),
   notes: text("notes"),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
   updatedBy: text("updated_by"),
@@ -252,7 +251,6 @@ export const setPrivyGuardrailsSchema = z.object({
   daily_budget_usdc: z.number().int().min(0).optional(),
   monthly_budget_usdc: z.number().int().min(0).optional(),
   recurring_allowed: z.boolean().optional(),
-  auto_pause_on_zero: z.boolean().optional(),
   notes: z.string().max(2000).nullable().optional(),
 });
 
@@ -296,7 +294,6 @@ export const crossmintGuardrails = pgTable("crossmint_guardrails", {
   dailyBudgetUsdc: integer("daily_budget_usdc").notNull().default(GUARDRAIL_DEFAULTS.rail2.dailyBudgetUsdc),
   monthlyBudgetUsdc: integer("monthly_budget_usdc").notNull().default(GUARDRAIL_DEFAULTS.rail2.monthlyBudgetUsdc),
   recurringAllowed: boolean("recurring_allowed").notNull().default(GUARDRAIL_DEFAULTS.rail2.recurringAllowed),
-  autoPauseOnZero: boolean("auto_pause_on_zero").notNull().default(GUARDRAIL_DEFAULTS.rail2.autoPauseOnZero),
   notes: text("notes"),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
   updatedBy: text("updated_by"),
@@ -358,7 +355,6 @@ export const setCrossmintGuardrailsSchema = z.object({
   daily_budget_usdc: z.number().int().min(0).optional(),
   monthly_budget_usdc: z.number().int().min(0).optional(),
   recurring_allowed: z.boolean().optional(),
-  auto_pause_on_zero: z.boolean().optional(),
   notes: z.string().max(2000).nullable().optional(),
 });
 
@@ -442,7 +438,6 @@ export const rail5Guardrails = pgTable("rail5_guardrails", {
   dailyBudgetCents: integer("daily_budget_cents").notNull().default(GUARDRAIL_DEFAULTS.rail5.dailyBudgetCents),
   monthlyBudgetCents: integer("monthly_budget_cents").notNull().default(GUARDRAIL_DEFAULTS.rail5.monthlyBudgetCents),
   recurringAllowed: boolean("recurring_allowed").notNull().default(GUARDRAIL_DEFAULTS.rail5.recurringAllowed),
-  autoPauseOnZero: boolean("auto_pause_on_zero").notNull().default(GUARDRAIL_DEFAULTS.rail5.autoPauseOnZero),
   notes: text("notes"),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
   updatedBy: text("updated_by"),
@@ -459,7 +454,6 @@ export const upsertRail5GuardrailsSchema = z.object({
   daily_budget_cents: z.number().int().min(0).max(10000000).optional(),
   monthly_budget_cents: z.number().int().min(0).max(100000000).optional(),
   recurring_allowed: z.boolean().optional(),
-  auto_pause_on_zero: z.boolean().optional(),
   notes: z.string().max(2000).nullable().optional(),
 });
 
@@ -1442,7 +1436,6 @@ export const rail3Guardrails = pgTable("rail3_guardrails", {
   dailyBudgetCents: integer("daily_budget_cents").notNull().default(GUARDRAIL_DEFAULTS.rail3.dailyBudgetCents),
   monthlyBudgetCents: integer("monthly_budget_cents").notNull().default(GUARDRAIL_DEFAULTS.rail3.monthlyBudgetCents),
   recurringAllowed: boolean("recurring_allowed").notNull().default(GUARDRAIL_DEFAULTS.rail3.recurringAllowed),
-  autoPauseOnZero: boolean("auto_pause_on_zero").notNull().default(GUARDRAIL_DEFAULTS.rail3.autoPauseOnZero),
   notes: text("notes"),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
   updatedBy: text("updated_by"),
@@ -1459,7 +1452,6 @@ export const upsertRail3GuardrailsSchema = z.object({
   daily_budget_cents: z.number().int().min(0).max(10000000).optional(),
   monthly_budget_cents: z.number().int().min(0).max(100000000).optional(),
   recurring_allowed: z.boolean().optional(),
-  auto_pause_on_zero: z.boolean().optional(),
   notes: z.string().max(2000).nullable().optional(),
 });
 

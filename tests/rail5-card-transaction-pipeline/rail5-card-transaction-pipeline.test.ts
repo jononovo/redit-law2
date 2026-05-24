@@ -290,7 +290,6 @@ describe("Rail 5 — card guardrails (cents-based)", () => {
     dailyBudgetCents: defaults.dailyBudgetCents,
     monthlyBudgetCents: defaults.monthlyBudgetCents,
     requireApprovalAbove: null as number | null,
-    autoPauseOnZero: defaults.autoPauseOnZero,
   };
 
   it("allows transaction under per-tx limit", () => {
@@ -546,10 +545,6 @@ describe("Rail 5 — guardrail defaults are sensible", () => {
 
   it("default monthly budget is $500", () => {
     expect(GUARDRAIL_DEFAULTS.rail5.monthlyBudgetCents).toBe(50000);
-  });
-
-  it("autoPauseOnZero is off for rail5", () => {
-    expect(GUARDRAIL_DEFAULTS.rail5.autoPauseOnZero).toBe(false);
   });
 
   it("master default approval mode is ask_for_everything", () => {

@@ -34,7 +34,6 @@ export async function GET(request: NextRequest) {
             monthly_budget_usdc: guardrails.monthlyBudgetUsdc,
             allowlisted_merchants: procControls?.allowlistedMerchants ?? [],
             blocklisted_merchants: procControls?.blocklistedMerchants ?? [],
-            auto_pause_on_zero: guardrails.autoPauseOnZero,
           } : null,
           created_at: w.createdAt,
         };
