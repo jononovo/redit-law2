@@ -101,15 +101,6 @@ export function CardVisual({
       <div className="absolute inset-0 opacity-20 bg-[url('/assets/noise.svg')] mix-blend-overlay pointer-events-none" />
       <div className="absolute -top-[100%] -left-[100%] w-[300%] h-[300%] bg-gradient-to-br from-white/20 via-transparent to-transparent rotate-45 pointer-events-none" />
 
-      <div
-        aria-hidden
-        className="absolute left-6 top-1/2 -translate-y-1/2 z-10 w-12 h-9 rounded-md bg-white/20 backdrop-blur-sm border border-white/30 overflow-hidden"
-      >
-        <div className="absolute top-1/3 left-0 w-full h-[1px] bg-white/40" />
-        <div className="absolute top-2/3 left-0 w-full h-[1px] bg-white/40" />
-        <div className="absolute left-1/2 top-0 h-full w-[1px] bg-white/40" />
-      </div>
-
       {frozen && (
         <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/20 backdrop-blur-[1px]">
           <div className="flex items-center gap-2 bg-white/90 text-neutral-800 px-4 py-2 rounded-full shadow-lg font-bold text-sm">
@@ -147,6 +138,11 @@ export function CardVisual({
               <span className="text-2xl font-bold font-mono tracking-tight" data-testid="text-balance-value">{balance}</span>
             </>
           )}
+          <div className="mt-2 w-10 h-6 rounded-[2px] bg-white/20 backdrop-blur-sm border border-white/30 overflow-hidden relative">
+            <div className="absolute top-1/3 left-0 w-full h-[1px] bg-white/40" />
+            <div className="absolute top-2/3 left-0 w-full h-[1px] bg-white/40" />
+            <div className="absolute left-1/2 top-0 h-full w-[1px] bg-white/40" />
+          </div>
         </div>
         {statusLabel && (
           <span
