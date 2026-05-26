@@ -140,14 +140,19 @@ export function CardVisual({
           )}
           <div
             aria-hidden
-            className="mt-2 w-10 h-7 rounded-[15%] border border-slate-500/50 overflow-hidden relative bg-[linear-gradient(135deg,#e2e8f0_0%,#cbd5e1_45%,#94a3b8_55%,#cbd5e1_100%)] shadow-inner"
+            className="mt-2 w-10 h-7 rounded-[15%] border border-slate-500/60 overflow-hidden relative shadow-inner bg-[radial-gradient(ellipse_at_28%_22%,rgba(255,255,255,0.55),transparent_60%),radial-gradient(ellipse_at_75%_85%,rgba(71,85,105,0.35),transparent_65%),linear-gradient(155deg,#f1f5f9_0%,#e2e8f0_22%,#cbd5e1_48%,#94a3b8_72%,#b6c2d0_100%)]"
           >
-            <div className="absolute top-[12%] left-[10%] w-[28%] h-[28%] rounded-[20%] bg-slate-600/30" />
-            <div className="absolute top-[12%] right-[10%] w-[28%] h-[28%] rounded-[20%] bg-slate-600/30" />
-            <div className="absolute bottom-[12%] left-[10%] w-[28%] h-[28%] rounded-[20%] bg-slate-600/30" />
-            <div className="absolute bottom-[12%] right-[10%] w-[28%] h-[28%] rounded-[20%] bg-slate-600/30" />
-            <div className="absolute top-1/2 left-[8%] -translate-y-1/2 w-[84%] h-[10%] rounded-[2px] bg-slate-600/35" />
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[18%] h-[26%] rounded-[2px] bg-slate-700/40" />
+            <div className="absolute inset-0 rounded-[15%] shadow-[inset_0_0_0_0.5px_rgba(255,255,255,0.35)] pointer-events-none" />
+            <div className="absolute top-[10%] left-[10%] w-[28%] h-[18%] rounded-[20%] bg-slate-600/35" />
+            <div className="absolute top-[10%] right-[10%] w-[28%] h-[18%] rounded-[20%] bg-slate-600/35" />
+            <div className="absolute top-[32%] left-[10%] w-[28%] h-[18%] rounded-[20%] bg-slate-600/30" />
+            <div className="absolute top-[32%] right-[10%] w-[28%] h-[18%] rounded-[20%] bg-slate-600/30" />
+            <div className="absolute bottom-[32%] left-[10%] w-[28%] h-[18%] rounded-[20%] bg-slate-600/30" />
+            <div className="absolute bottom-[32%] right-[10%] w-[28%] h-[18%] rounded-[20%] bg-slate-600/30" />
+            <div className="absolute bottom-[10%] left-[10%] w-[28%] h-[18%] rounded-[20%] bg-slate-600/35" />
+            <div className="absolute bottom-[10%] right-[10%] w-[28%] h-[18%] rounded-[20%] bg-slate-600/35" />
+            <div className="absolute top-1/2 left-0 -translate-y-1/2 w-full h-[14%] bg-[linear-gradient(90deg,transparent_0%,rgba(51,65,85,0.5)_25%,rgba(51,65,85,0.55)_75%,transparent_100%)]" />
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[20%] h-[32%] rounded-[2px] bg-slate-700/55 shadow-[inset_0_0_0_0.5px_rgba(255,255,255,0.2)]" />
           </div>
         </div>
         {statusLabel && (
