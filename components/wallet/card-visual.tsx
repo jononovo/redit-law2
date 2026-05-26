@@ -79,7 +79,7 @@ export function CardVisual({
     ),
     purple: (
       <>
-        <div className="absolute inset-0 opacity-[0.09] mix-blend-overlay pointer-events-none bg-[repeating-linear-gradient(0deg,#fff_0px,#fff_1px,transparent_1px,transparent_8px),repeating-linear-gradient(90deg,#fff_0px,#fff_1px,transparent_1px,transparent_8px)]" />
+        <div className="absolute inset-0 opacity-[0.09] mix-blend-overlay pointer-events-none bg-[repeating-linear-gradient(0deg,#fff_0px,#fff_1px,transparent_1px,transparent_4px),repeating-linear-gradient(90deg,#fff_0px,#fff_1px,transparent_1px,transparent_4px)]" />
         <div className="absolute -bottom-16 -right-16 w-40 h-40 rotate-45 border border-white/10 pointer-events-none" />
       </>
     ),
