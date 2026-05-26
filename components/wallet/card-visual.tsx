@@ -151,7 +151,6 @@ export function CardVisual({
             <div className="absolute bottom-[32%] right-[10%] w-[28%] h-[18%] rounded-[20%] border border-slate-600/40" />
             <div className="absolute bottom-[10%] left-[10%] w-[28%] h-[18%] rounded-[20%] border border-slate-600/45" />
             <div className="absolute bottom-[10%] right-[10%] w-[28%] h-[18%] rounded-[20%] border border-slate-600/45" />
-            <div className="absolute top-1/2 left-0 -translate-y-px w-full h-[1px] bg-[linear-gradient(90deg,transparent_0%,rgba(51,65,85,0.55)_25%,rgba(51,65,85,0.55)_75%,transparent_100%)]" />
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[20%] h-[32%] rounded-[2px] border border-slate-600/55" />
           </div>
         </div>
