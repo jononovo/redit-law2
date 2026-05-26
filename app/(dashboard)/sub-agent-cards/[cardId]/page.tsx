@@ -170,7 +170,7 @@ export default function Rail5CardDetailPage() {
         <div className="flex items-center gap-2">
           {CARD_COLORS.map((c) => {
             const active = resolveCardColor(card.card_color, card.card_id) === c;
-            const bg = c === "purple" ? "bg-purple-600" : c === "dark" ? "bg-neutral-800" : c === "blue" ? "bg-blue-600" : "bg-emerald-600";
+            const bg = c === "purple" ? "bg-purple-600" : c === "dark" ? "bg-neutral-800" : c === "blue" ? "bg-blue-600" : c === "emerald" ? "bg-emerald-600" : "bg-orange-600";
             return (
               <button
                 key={c}

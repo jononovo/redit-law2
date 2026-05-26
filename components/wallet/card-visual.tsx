@@ -3,7 +3,7 @@ import { Snowflake } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface CardVisualProps {
-  color?: "primary" | "dark" | "blue" | "purple";
+  color?: "primary" | "dark" | "blue" | "purple" | "emerald";
   last4?: string;
   expiry?: string;
   holder?: string;
@@ -55,7 +55,8 @@ export function CardVisual({
     primary: "bg-gradient-to-br from-primary to-orange-600",
     dark: "bg-gradient-to-br from-neutral-900 to-neutral-800",
     blue: "bg-gradient-to-br from-blue-500 to-blue-700",
-    purple: "bg-gradient-to-br from-purple-500 to-purple-700"
+    purple: "bg-gradient-to-br from-purple-500 to-purple-700",
+    emerald: "bg-gradient-to-br from-emerald-500 to-emerald-700"
   };
 
   const statusColors: Record<string, string> = {

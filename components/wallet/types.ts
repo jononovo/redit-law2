@@ -142,7 +142,7 @@ export interface NormalizedCard {
   is_frozen: boolean;
   bot_id: string | null;
   bot_name: string | null;
-  card_color: "primary" | "blue" | "purple" | "dark";
+  card_color: CardColor;
   balance: string;
   balanceLabel: string;
   balanceTooltip?: string | null;
@@ -268,9 +268,11 @@ export function formatCentsToUsd(cents: number): string {
   return `$${(cents / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
-export const CARD_COLORS: ("primary" | "blue" | "purple" | "dark")[] = ["purple", "dark", "blue", "primary"];
+export type CardColor = "primary" | "blue" | "purple" | "dark" | "emerald";
 
-export function stableCardColor(cardId: string): "primary" | "blue" | "purple" | "dark" {
+export const CARD_COLORS: CardColor[] = ["purple", "dark", "blue", "emerald", "primary"];
+
+export function stableCardColor(cardId: string): CardColor {
   let hash = 0;
   for (let i = 0; i < cardId.length; i++) {
     hash = ((hash << 5) - hash + cardId.charCodeAt(i)) | 0;
@@ -278,8 +280,8 @@ export function stableCardColor(cardId: string): "primary" | "blue" | "purple" |
   return CARD_COLORS[Math.abs(hash) % CARD_COLORS.length];
 }
 
-export function resolveCardColor(color: string | null | undefined, cardId: string): "primary" | "blue" | "purple" | "dark" {
-  if (color && CARD_COLORS.includes(color as any)) return color as "primary" | "blue" | "purple" | "dark";
+export function resolveCardColor(color: string | null | undefined, cardId: string): CardColor {
+  if (color && CARD_COLORS.includes(color as CardColor)) return color as CardColor;
   return stableCardColor(cardId);
 }
 
