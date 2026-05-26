@@ -14,7 +14,7 @@ const patchSchema = z.object({
   recurring_allowed: z.boolean().optional(),
   notes: z.string().max(2000).nullable().optional(),
   is_frozen: z.boolean().optional(),
-  card_color: z.enum(["purple", "dark", "blue", "primary"]).optional(),
+  card_color: z.enum(["purple", "dark", "blue", "primary", "emerald"]).optional(),
 });
 
 export async function PATCH(

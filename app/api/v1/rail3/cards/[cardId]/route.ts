@@ -13,7 +13,7 @@ import { lookupIssuer } from "@/features/payment-rails/card/bin-lookup";
 // and is safe. Not exposed here yet — separate PATCH endpoint planned.
 const patchSchema = z.object({
   card_name: z.string().min(1).max(200).optional(),
-  card_color: z.enum(["purple", "dark", "blue", "primary"]).optional(),
+  card_color: z.enum(["purple", "dark", "blue", "primary", "emerald"]).optional(),
   category: z.string().max(100).nullable().optional(),
   is_frozen: z.boolean().optional(),
 });

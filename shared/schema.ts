@@ -1591,7 +1591,7 @@ export const rail3CreateCardSchema = z.object({
   description: z.string().max(500).optional(),
   prompt: z.string().max(1000).optional(),
   card_name: z.string().min(1).max(200).optional(),
-  card_color: z.enum(["purple", "dark", "blue", "primary"]).optional(),
+  card_color: z.enum(["purple", "dark", "blue", "primary", "emerald"]).optional(),
   category: z.string().max(100).nullable().optional(),
   bot_id: z.string().min(1).max(200).optional(),
 }).refine(
