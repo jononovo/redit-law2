@@ -49,7 +49,7 @@ export default function DashboardLayout({
       <AppSidebar onNewCard={() => setNewCardModalOpen(true)} />
       <SidebarInset className="min-h-screen bg-neutral-50">
         <Header title="Dashboard" />
-        <main className="flex-1 p-8 max-w-7xl mx-auto w-full">
+        <main className="flex-1 p-8 max-w-[110rem] mx-auto w-full">
           {children}
         </main>
       </SidebarInset>
