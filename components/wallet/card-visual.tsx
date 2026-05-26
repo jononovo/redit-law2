@@ -138,10 +138,16 @@ export function CardVisual({
               <span className="text-2xl font-bold font-mono tracking-tight" data-testid="text-balance-value">{balance}</span>
             </>
           )}
-          <div className="mt-2 w-10 h-6 rounded-[2px] bg-white/20 backdrop-blur-sm border border-white/30 overflow-hidden relative">
-            <div className="absolute top-1/3 left-0 w-full h-[1px] bg-white/40" />
-            <div className="absolute top-2/3 left-0 w-full h-[1px] bg-white/40" />
-            <div className="absolute left-1/2 top-0 h-full w-[1px] bg-white/40" />
+          <div
+            aria-hidden
+            className="mt-2 w-10 h-7 rounded-[15%] border border-slate-500/50 overflow-hidden relative bg-[linear-gradient(135deg,#e2e8f0_0%,#cbd5e1_45%,#94a3b8_55%,#cbd5e1_100%)] shadow-inner"
+          >
+            <div className="absolute top-[12%] left-[10%] w-[28%] h-[28%] rounded-[20%] bg-slate-600/30" />
+            <div className="absolute top-[12%] right-[10%] w-[28%] h-[28%] rounded-[20%] bg-slate-600/30" />
+            <div className="absolute bottom-[12%] left-[10%] w-[28%] h-[28%] rounded-[20%] bg-slate-600/30" />
+            <div className="absolute bottom-[12%] right-[10%] w-[28%] h-[28%] rounded-[20%] bg-slate-600/30" />
+            <div className="absolute top-1/2 left-[8%] -translate-y-1/2 w-[84%] h-[10%] rounded-[2px] bg-slate-600/35" />
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[18%] h-[26%] rounded-[2px] bg-slate-700/40" />
           </div>
         </div>
         {statusLabel && (
