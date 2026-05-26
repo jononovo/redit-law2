@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Eye, Snowflake, Play, Plus, Bot, Copy, Unlink, MoreHorizontal, Trash2, type LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -31,22 +32,28 @@ export function CreditCardItem({
 
   return (
     <div className="flex flex-col gap-4 w-full" data-testid={`card-item-${card.card_id}`}>
-      <CardVisual
-        color={card.card_color}
-        balance={card.balance}
-        balanceLabel={card.balanceLabel}
-        balanceTooltip={card.balanceTooltip || undefined}
-        last4={card.last4}
-        holder={card.card_name.toUpperCase()}
-        frozen={isFrozen}
-        expiry="••/••"
-        line1={card.line1 || undefined}
-        line2={card.line2 || undefined}
-        status={card.status}
-        brand={card.brand || undefined}
-        issuer={card.issuer || undefined}
-        numberCaption={card.numberCaption || undefined}
-      />
+      <Link
+        href={card.detailPath}
+        className="block cursor-pointer rounded-2xl transition hover:brightness-105 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400"
+        data-testid={`link-card-${card.card_id}`}
+      >
+        <CardVisual
+          color={card.card_color}
+          balance={card.balance}
+          balanceLabel={card.balanceLabel}
+          balanceTooltip={card.balanceTooltip || undefined}
+          last4={card.last4}
+          holder={card.card_name.toUpperCase()}
+          frozen={isFrozen}
+          expiry="••/••"
+          line1={card.line1 || undefined}
+          line2={card.line2 || undefined}
+          status={card.status}
+          brand={card.brand || undefined}
+          issuer={card.issuer || undefined}
+          numberCaption={card.numberCaption || undefined}
+        />
+      </Link>
 
       <div className="bg-white rounded-xl border border-neutral-100 p-2 flex items-center" data-testid={`action-bar-${card.card_id}`}>
         <Button
