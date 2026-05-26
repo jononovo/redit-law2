@@ -52,11 +52,11 @@ export function CardVisual({
 }: CardVisualProps) {
 
   const gradients = {
-    primary: "bg-gradient-to-br from-primary to-orange-600",
-    dark: "bg-gradient-to-br from-neutral-900 to-neutral-800",
-    blue: "bg-gradient-to-br from-blue-500 to-blue-700",
-    purple: "bg-gradient-to-br from-purple-500 to-purple-700",
-    emerald: "bg-gradient-to-br from-emerald-500 to-emerald-700"
+    primary: "bg-[radial-gradient(circle_at_15%_15%,rgba(255,220,180,0.35),transparent_45%),radial-gradient(circle_at_85%_90%,rgba(180,60,20,0.45),transparent_55%),linear-gradient(135deg,#fb923c_0%,#f97316_45%,#c2410c_100%)]",
+    dark: "bg-[radial-gradient(circle_at_15%_15%,rgba(120,120,140,0.25),transparent_45%),radial-gradient(circle_at_85%_90%,rgba(0,0,0,0.55),transparent_55%),linear-gradient(135deg,#262626_0%,#171717_50%,#0a0a0a_100%)]",
+    blue: "bg-[radial-gradient(circle_at_15%_15%,rgba(180,210,255,0.35),transparent_45%),radial-gradient(circle_at_85%_90%,rgba(20,40,120,0.55),transparent_55%),linear-gradient(135deg,#3b82f6_0%,#2563eb_50%,#1e3a8a_100%)]",
+    purple: "bg-[radial-gradient(circle_at_15%_15%,rgba(220,190,255,0.35),transparent_45%),radial-gradient(circle_at_85%_90%,rgba(80,20,120,0.55),transparent_55%),linear-gradient(135deg,#a855f7_0%,#9333ea_50%,#6b21a8_100%)]",
+    emerald: "bg-[radial-gradient(circle_at_15%_15%,rgba(180,255,220,0.35),transparent_45%),radial-gradient(circle_at_85%_90%,rgba(6,78,59,0.55),transparent_55%),linear-gradient(135deg,#10b981_0%,#059669_50%,#065f46_100%)]"
   };
 
   const statusColors: Record<string, string> = {
