@@ -23,13 +23,14 @@ export function Header({ title }: { title: string }) {
   const [feedbackDialogOpen, setFeedbackDialogOpen] = useState(false);
 
   return (
-    <header className="h-16 bg-white/80 backdrop-blur-md border-b border-neutral-100 sticky top-0 z-40 px-4 md:px-8 flex items-center justify-between">
-      <div className="flex items-center gap-2">
-        <SidebarTrigger className="md:hidden" data-testid="button-sidebar-toggle" />
-        <h1 className="text-xl font-bold text-neutral-900">{title}</h1>
-      </div>
+    <header className="h-16 bg-white/80 backdrop-blur-md border-b border-neutral-100 sticky top-0 z-40 flex items-center">
+      <div className="max-w-[110rem] mx-auto w-full px-4 md:px-8 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <SidebarTrigger className="md:hidden" data-testid="button-sidebar-toggle" />
+          <h1 className="text-xl font-bold text-neutral-900">{title}</h1>
+        </div>
 
-      <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4">
         <div className="relative w-64 hidden md:block">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
             <Input 
@@ -99,6 +100,7 @@ export function Header({ title }: { title: string }) {
           open={feedbackDialogOpen}
           onOpenChange={setFeedbackDialogOpen}
         />
+        </div>
       </div>
     </header>
   );

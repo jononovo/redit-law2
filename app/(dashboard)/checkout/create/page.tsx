@@ -261,7 +261,7 @@ export default function CreateCheckoutPage() {
   }
 
   return (
-    <div className="space-y-6" data-testid="create-checkout-page">
+    <div className="space-y-6 max-w-3xl" data-testid="create-checkout-page">
       <div>
         <h1 className="text-2xl font-bold text-neutral-900" data-testid="text-create-checkout-title">
           Create Checkout Page
