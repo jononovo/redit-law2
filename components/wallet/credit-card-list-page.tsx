@@ -208,7 +208,7 @@ export function CreditCardListPage({ config }: { config: CreditCardListPageConfi
       <p className="text-sm text-neutral-400 mt-2">{config.emptySubtitle}</p>
     </div>
   ) : (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-8" data-testid="grid-cards">
+    <div className="grid grid-cols-[repeat(auto-fill,minmax(28rem,1fr))] gap-6 justify-items-center" data-testid="grid-cards">
       {cards.map((card) => (
         <CreditCardItem
           key={card.card_id}
