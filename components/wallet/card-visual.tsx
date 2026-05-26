@@ -92,7 +92,7 @@ export function CardVisual({
 
   return (
     <div className={cn(
-      "@container/card relative aspect-[1.586/1] w-full rounded-2xl p-6 text-white shadow-xl overflow-hidden flex flex-col justify-between select-none transition-all",
+      "relative aspect-[1.586/1] w-full rounded-2xl p-6 text-white shadow-xl overflow-hidden flex flex-col justify-between select-none transition-all",
       gradients[color],
       frozen && "grayscale opacity-70",
       !frozen && "hover:scale-[1.02]",
@@ -113,18 +113,18 @@ export function CardVisual({
       <div className="relative z-10 flex justify-between items-start">
         <div className="flex flex-col">
           {line1 && (
-            <span className="text-[clamp(0.625rem,1.75cqw,0.875rem)] font-medium opacity-70 uppercase tracking-wider mb-0.5" data-testid="text-card-line1">{line1}</span>
+            <span className="text-[10px] font-medium opacity-70 uppercase tracking-wider mb-0.5" data-testid="text-card-line1">{line1}</span>
           )}
           {line2 && (
-            <span className="text-[clamp(0.625rem,1.75cqw,0.875rem)] font-medium opacity-70 uppercase tracking-wider mb-1" data-testid="text-card-line2">{line2}</span>
+            <span className="text-[10px] font-medium opacity-70 uppercase tracking-wider mb-1" data-testid="text-card-line2">{line2}</span>
           )}
           {balanceTooltip ? (
             <TooltipProvider delayDuration={200}>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <div className="cursor-help">
-                    <span className="text-[clamp(0.6875rem,2cqw,1rem)] font-medium opacity-80 uppercase tracking-wider mb-1 block" data-testid="text-balance-label">{balanceLabel}</span>
-                    <span className="text-[clamp(1rem,3.5cqw,1.75rem)] font-bold font-mono tracking-tight block" data-testid="text-balance-value">{balance}</span>
+                    <span className="text-xs font-medium opacity-80 uppercase tracking-wider mb-1 block" data-testid="text-balance-label">{balanceLabel}</span>
+                    <span className="text-2xl font-bold font-mono tracking-tight block" data-testid="text-balance-value">{balance}</span>
                   </div>
                 </TooltipTrigger>
                 <TooltipContent side="bottom" className="bg-black/90 text-white text-[11px] whitespace-pre-line max-w-[220px] border-white/10" data-testid="tooltip-balance">
@@ -134,11 +134,11 @@ export function CardVisual({
             </TooltipProvider>
           ) : (
             <>
-              <span className="text-[clamp(0.6875rem,2cqw,1rem)] font-medium opacity-80 uppercase tracking-wider mb-1" data-testid="text-balance-label">{balanceLabel}</span>
-              <span className="text-[clamp(1rem,3.5cqw,1.75rem)] font-bold font-mono tracking-tight" data-testid="text-balance-value">{balance}</span>
+              <span className="text-xs font-medium opacity-80 uppercase tracking-wider mb-1" data-testid="text-balance-label">{balanceLabel}</span>
+              <span className="text-2xl font-bold font-mono tracking-tight" data-testid="text-balance-value">{balance}</span>
             </>
           )}
-          <div className="mt-2 w-[clamp(2rem,6cqw,3rem)] aspect-[5/3] rounded bg-white/20 backdrop-blur-sm border border-white/30 flex items-center justify-center">
+          <div className="mt-2 w-10 h-6 rounded bg-white/20 backdrop-blur-sm border border-white/30 flex items-center justify-center">
             <div className="w-6 h-4 border border-white/40 rounded-[2px] relative overflow-hidden">
               <div className="absolute top-1 left-0 w-full h-[1px] bg-white/40" />
               <div className="absolute bottom-1 left-0 w-full h-[1px] bg-white/40" />
@@ -149,7 +149,7 @@ export function CardVisual({
         {statusLabel && (
           <span
             className={cn(
-              "text-[clamp(0.625rem,1.75cqw,0.875rem)] font-semibold uppercase tracking-wider px-2.5 py-1 rounded-full border backdrop-blur-sm",
+              "text-[10px] font-semibold uppercase tracking-wider px-2.5 py-1 rounded-full border backdrop-blur-sm",
               statusStyle
             )}
             data-testid="text-card-status"
@@ -164,11 +164,11 @@ export function CardVisual({
           <div className="flex flex-col gap-4">
             <div className="flex flex-col gap-0.5">
               {numberCaption && (
-                <span className="text-[clamp(0.625rem,1.75cqw,0.875rem)] font-medium uppercase tracking-wider opacity-70" data-testid="text-card-number-caption">
+                <span className="text-[10px] font-medium uppercase tracking-wider opacity-70" data-testid="text-card-number-caption">
                   {numberCaption}
                 </span>
               )}
-              <div className="flex gap-3 text-[clamp(0.875rem,2.75cqw,1.375rem)] font-mono tracking-widest opacity-90" data-testid="text-card-number">
+              <div className="flex gap-3 text-lg font-mono tracking-widest opacity-90" data-testid="text-card-number">
                 <span>····</span>
                 <span>····</span>
                 <span>····</span>
@@ -176,8 +176,8 @@ export function CardVisual({
               </div>
             </div>
             <div className="flex flex-col">
-              <span className="text-[clamp(0.625rem,1.75cqw,0.875rem)] uppercase opacity-70 tracking-wider">{holderLabel}</span>
-              <span className="text-[clamp(0.75rem,2.25cqw,1.125rem)] font-medium uppercase tracking-wide">{holder}</span>
+              <span className="text-[10px] uppercase opacity-70 tracking-wider">{holderLabel}</span>
+              <span className="text-sm font-medium uppercase tracking-wide">{holder}</span>
             </div>
           </div>
 
@@ -185,20 +185,20 @@ export function CardVisual({
             <div className="flex flex-col items-end">
               {bottomRightLabel ? (
                 <>
-                  <span className="text-[clamp(0.625rem,1.75cqw,0.875rem)] uppercase opacity-70 tracking-wider">{bottomRightLabel}</span>
-                  <span className="text-[clamp(0.75rem,2.25cqw,1.125rem)] font-mono">{bottomRightValue}</span>
+                  <span className="text-[10px] uppercase opacity-70 tracking-wider">{bottomRightLabel}</span>
+                  <span className="text-sm font-mono">{bottomRightValue}</span>
                 </>
               ) : (
                 <>
-                  <span className="text-[clamp(0.625rem,1.75cqw,0.875rem)] uppercase opacity-70 tracking-wider">Expires</span>
-                  <span className="text-[clamp(0.75rem,2.25cqw,1.125rem)] font-mono">{expiry}</span>
+                  <span className="text-[10px] uppercase opacity-70 tracking-wider">Expires</span>
+                  <span className="text-sm font-mono">{expiry}</span>
                 </>
               )}
               {brandDisplay && (
-                <div className="mt-2 text-[clamp(1rem,3cqw,1.5rem)] font-bold italic tracking-tighter opacity-90" data-testid="text-card-brand">{brandDisplay}</div>
+                <div className="mt-2 text-xl font-bold italic tracking-tighter opacity-90" data-testid="text-card-brand">{brandDisplay}</div>
               )}
               {issuer && (
-                <div className="text-[clamp(0.625rem,1.75cqw,0.875rem)] font-medium uppercase tracking-wider opacity-70 mt-0.5" data-testid="text-card-issuer">{issuer}</div>
+                <div className="text-[10px] font-medium uppercase tracking-wider opacity-70 mt-0.5" data-testid="text-card-issuer">{issuer}</div>
               )}
             </div>
           )}

@@ -30,7 +30,7 @@ export function CreditCardItem({
   const canFreeze = card.status === "active" || card.status === "confirmed";
 
   return (
-    <div className="flex flex-col gap-4 w-full max-w-[49.375rem]" data-testid={`card-item-${card.card_id}`}>
+    <div className="flex flex-col gap-4 w-full" data-testid={`card-item-${card.card_id}`}>
       <CardVisual
         color={card.card_color}
         balance={card.balance}

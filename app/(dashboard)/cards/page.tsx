@@ -204,9 +204,9 @@ export default function CardsPage() {
           <p className="text-sm text-neutral-400 mt-2">Add a card and pair it with a bot to see it here.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-[repeat(auto-fill,minmax(28rem,1fr))] gap-6 justify-items-center">
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(22rem,26rem))] gap-6 justify-items-center">
           {cards.map((card) => (
-            <div className="flex flex-col gap-4 w-full max-w-[49.375rem]" key={card.card_id} data-testid={`card-wallet-${card.card_id}`}>
+            <div className="flex flex-col gap-4 w-full" key={card.card_id} data-testid={`card-wallet-${card.card_id}`}>
               <CardVisual
                 color={card.card_color}
                 balance={card.balance}
