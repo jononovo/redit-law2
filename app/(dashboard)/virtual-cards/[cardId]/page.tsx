@@ -10,7 +10,6 @@ import { CardVisual } from "@/components/wallet/card-visual";
 import { CardColorPicker } from "@/components/wallet/card-color-picker";
 import { CardFreezeButton } from "@/components/wallet/card-freeze-button";
 import { CardDetailShell } from "@/components/wallet/card-detail-shell";
-import { StatusBadge } from "@/components/wallet/status-badge";
 import {
   resolveCardColor, formatCentsToUsd, normalizeRail3Card,
   type CardColor, type Rail3CardInfo,
@@ -152,10 +151,7 @@ export default function Rail3CardDetailPage() {
     >
       {card && visual && (
         <>
-          <div className="flex items-center gap-4">
-            <h1 className="text-2xl font-bold text-neutral-900" data-testid="text-card-name">{card.card_name}</h1>
-            <StatusBadge status={card.status} isFrozen={card.is_frozen} />
-          </div>
+          <h1 className="text-2xl font-bold text-neutral-900" data-testid="text-card-name">{card.card_name}</h1>
 
           <CardVisual
             color={resolveCardColor(card.card_color, card.card_id)}
