@@ -52,11 +52,11 @@ export function CardVisual({
 }: CardVisualProps) {
 
   const gradients = {
-    primary: "bg-[radial-gradient(circle_at_15%_15%,rgba(255,220,180,0.35),transparent_45%),radial-gradient(circle_at_85%_90%,rgba(180,60,20,0.45),transparent_55%),linear-gradient(135deg,#fb923c_0%,#f97316_45%,#c2410c_100%)]",
-    dark: "bg-[radial-gradient(circle_at_15%_15%,rgba(120,120,140,0.25),transparent_45%),radial-gradient(circle_at_85%_90%,rgba(0,0,0,0.55),transparent_55%),linear-gradient(135deg,#262626_0%,#171717_50%,#0a0a0a_100%)]",
-    blue: "bg-[radial-gradient(circle_at_15%_15%,rgba(180,210,255,0.35),transparent_45%),radial-gradient(circle_at_85%_90%,rgba(20,40,120,0.55),transparent_55%),linear-gradient(135deg,#3b82f6_0%,#2563eb_50%,#1e3a8a_100%)]",
-    purple: "bg-[radial-gradient(circle_at_15%_15%,rgba(220,190,255,0.35),transparent_45%),radial-gradient(circle_at_85%_90%,rgba(80,20,120,0.55),transparent_55%),linear-gradient(135deg,#a855f7_0%,#9333ea_50%,#6b21a8_100%)]",
-    emerald: "bg-[radial-gradient(circle_at_15%_15%,rgba(180,255,220,0.35),transparent_45%),radial-gradient(circle_at_85%_90%,rgba(6,78,59,0.55),transparent_55%),linear-gradient(135deg,#10b981_0%,#059669_50%,#065f46_100%)]"
+    primary: "bg-[radial-gradient(circle_at_85%_20%,rgba(255,220,180,0.30),transparent_45%),radial-gradient(circle_at_15%_15%,rgba(120,40,10,0.40),transparent_55%),radial-gradient(circle_at_85%_90%,rgba(180,60,20,0.45),transparent_55%),linear-gradient(135deg,#fb923c_0%,#f97316_45%,#c2410c_100%)]",
+    dark: "bg-[radial-gradient(circle_at_85%_20%,rgba(140,140,160,0.22),transparent_45%),radial-gradient(circle_at_15%_15%,rgba(0,0,0,0.50),transparent_55%),radial-gradient(circle_at_85%_90%,rgba(0,0,0,0.55),transparent_55%),linear-gradient(135deg,#262626_0%,#171717_50%,#0a0a0a_100%)]",
+    blue: "bg-[radial-gradient(circle_at_85%_20%,rgba(180,210,255,0.30),transparent_45%),radial-gradient(circle_at_15%_15%,rgba(15,25,80,0.50),transparent_55%),radial-gradient(circle_at_85%_90%,rgba(20,40,120,0.55),transparent_55%),linear-gradient(135deg,#3b82f6_0%,#2563eb_50%,#1e3a8a_100%)]",
+    purple: "bg-[radial-gradient(circle_at_85%_20%,rgba(220,190,255,0.30),transparent_45%),radial-gradient(circle_at_15%_15%,rgba(55,15,90,0.50),transparent_55%),radial-gradient(circle_at_85%_90%,rgba(80,20,120,0.55),transparent_55%),linear-gradient(135deg,#a855f7_0%,#9333ea_50%,#6b21a8_100%)]",
+    emerald: "bg-[radial-gradient(circle_at_85%_20%,rgba(180,255,220,0.30),transparent_45%),radial-gradient(circle_at_15%_15%,rgba(4,50,40,0.50),transparent_55%),radial-gradient(circle_at_85%_90%,rgba(6,78,59,0.55),transparent_55%),linear-gradient(135deg,#10b981_0%,#059669_50%,#065f46_100%)]"
   };
 
   const statusColors: Record<string, string> = {
@@ -99,6 +99,9 @@ export function CardVisual({
       className
     )}>
       <div className="absolute inset-0 opacity-20 bg-[url('/assets/noise.svg')] mix-blend-overlay pointer-events-none" />
+      <div className="absolute inset-0 opacity-[0.07] mix-blend-overlay pointer-events-none bg-[repeating-linear-gradient(45deg,#fff_0px,#fff_1px,transparent_1px,transparent_9px)]" />
+      <div className="absolute -bottom-24 -right-24 w-72 h-72 rounded-full border border-white/10 pointer-events-none" />
+      <div className="absolute -bottom-32 -right-32 w-96 h-96 rounded-full border border-white/[0.06] pointer-events-none" />
       <div className="absolute -top-[100%] -left-[100%] w-[300%] h-[300%] bg-gradient-to-br from-white/20 via-transparent to-transparent rotate-45 pointer-events-none" />
 
       {frozen && (
