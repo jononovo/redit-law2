@@ -79,13 +79,13 @@ export function CardVisual({
     ),
     purple: (
       <>
-        <div className="absolute inset-0 opacity-[0.06] mix-blend-overlay pointer-events-none bg-[repeating-linear-gradient(30deg,#fff_0px,#fff_2px,transparent_2px,transparent_18px),repeating-linear-gradient(-30deg,#fff_0px,#fff_2px,transparent_2px,transparent_18px)]" />
+        <div className="absolute inset-0 opacity-[0.07] mix-blend-overlay pointer-events-none bg-[repeating-linear-gradient(0deg,#fff_0px,#fff_1px,transparent_1px,transparent_16px),repeating-linear-gradient(90deg,#fff_0px,#fff_1px,transparent_1px,transparent_16px)]" />
         <div className="absolute -bottom-16 -right-16 w-40 h-40 rotate-45 border border-white/10 pointer-events-none" />
       </>
     ),
     emerald: (
       <>
-        <div className="absolute inset-0 opacity-[0.05] mix-blend-overlay pointer-events-none bg-[repeating-linear-gradient(45deg,#fff_0px,#fff_1px,transparent_1px,transparent_12px),repeating-linear-gradient(-45deg,#fff_0px,#fff_1px,transparent_1px,transparent_12px)]" />
+        <div className="absolute inset-0 opacity-[0.07] mix-blend-overlay pointer-events-none bg-[repeating-linear-gradient(45deg,#fff_0px,#fff_1px,transparent_1px,transparent_9px)]" />
         <div className="absolute top-3 right-3 w-3 h-3 rounded-full border border-white/15 pointer-events-none" />
         <div className="absolute top-6 right-8 w-2 h-2 rounded-full border border-white/15 pointer-events-none" />
         <div className="absolute top-2 right-10 w-1.5 h-1.5 rounded-full border border-white/15 pointer-events-none" />
