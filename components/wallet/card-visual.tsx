@@ -144,13 +144,12 @@ export function CardVisual({
           >
             <div className="absolute inset-0 rounded-[15%] shadow-[inset_0_0_0_0.5px_rgba(255,255,255,0.35)] pointer-events-none" />
             <div className="absolute top-[-2%] left-[-2%] w-[48%] h-[27%] border border-slate-600/45" />
-            <div className="absolute top-[-2%] right-[-2%] w-[48%] h-[27%] border border-slate-600/45" />
+            <div className="absolute top-[-2%] right-[-2%] w-[48%] h-[35.33%] border border-slate-600/45" />
             <div className="absolute top-[25%] left-[-2%] w-[48%] h-[25%] border border-slate-600/40" />
-            <div className="absolute top-[25%] right-[-2%] w-[48%] h-[25%] border border-slate-600/40" />
+            <div className="absolute top-[33.33%] right-[-2%] w-[48%] h-[33.34%] border border-slate-600/40" />
             <div className="absolute top-[50%] left-[-2%] w-[48%] h-[25%] border border-slate-600/40" />
-            <div className="absolute top-[50%] right-[-2%] w-[48%] h-[25%] border border-slate-600/40" />
             <div className="absolute bottom-[-2%] left-[-2%] w-[48%] h-[27%] border border-slate-600/45" />
-            <div className="absolute bottom-[-2%] right-[-2%] w-[48%] h-[27%] border border-slate-600/45" />
+            <div className="absolute bottom-[-2%] right-[-2%] w-[48%] h-[35.33%] border border-slate-600/45" />
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[20%] h-[32%] rounded-[2px] border border-slate-600/55" />
           </div>
         </div>
