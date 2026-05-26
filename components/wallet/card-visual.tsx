@@ -150,7 +150,7 @@ export function CardVisual({
             <div className="absolute top-[50%] left-[-2%] w-[48%] h-[25%] border border-slate-600/40" />
             <div className="absolute bottom-[-2%] left-[-2%] w-[48%] h-[27%] border border-slate-600/45" />
             <div className="absolute bottom-[-2%] right-[-2%] w-[48%] h-[35.33%] border border-slate-600/45" />
-            <div className="absolute top-1/2 left-[48%] right-[48%] h-px -translate-y-px bg-slate-600/55" />
+            <div className="absolute top-1/2 left-[47%] right-[47%] h-px -translate-y-px bg-slate-600/55" />
           </div>
         </div>
         {statusLabel && (
