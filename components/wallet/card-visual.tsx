@@ -143,14 +143,14 @@ export function CardVisual({
             className="mt-2 w-10 h-7 rounded-[15%] border border-slate-500/60 overflow-hidden relative shadow-inner bg-[radial-gradient(ellipse_at_28%_22%,rgba(255,255,255,0.55),transparent_60%),radial-gradient(ellipse_at_75%_85%,rgba(71,85,105,0.35),transparent_65%),linear-gradient(155deg,#f1f5f9_0%,#e2e8f0_22%,#cbd5e1_48%,#94a3b8_72%,#b6c2d0_100%)]"
           >
             <div className="absolute inset-0 rounded-[15%] shadow-[inset_0_0_0_0.5px_rgba(255,255,255,0.35)] pointer-events-none" />
-            <div className="absolute top-[-2%] left-[-2%] w-[48%] h-[27%] rounded-[15%] border border-slate-600/45" />
-            <div className="absolute top-[-2%] right-[-2%] w-[48%] h-[27%] rounded-[15%] border border-slate-600/45" />
-            <div className="absolute top-[25%] left-[-2%] w-[48%] h-[25%] rounded-[15%] border border-slate-600/40" />
-            <div className="absolute top-[25%] right-[-2%] w-[48%] h-[25%] rounded-[15%] border border-slate-600/40" />
-            <div className="absolute top-[50%] left-[-2%] w-[48%] h-[25%] rounded-[15%] border border-slate-600/40" />
-            <div className="absolute top-[50%] right-[-2%] w-[48%] h-[25%] rounded-[15%] border border-slate-600/40" />
-            <div className="absolute bottom-[-2%] left-[-2%] w-[48%] h-[27%] rounded-[15%] border border-slate-600/45" />
-            <div className="absolute bottom-[-2%] right-[-2%] w-[48%] h-[27%] rounded-[15%] border border-slate-600/45" />
+            <div className="absolute top-[-2%] left-[-2%] w-[48%] h-[27%] border border-slate-600/45" />
+            <div className="absolute top-[-2%] right-[-2%] w-[48%] h-[27%] border border-slate-600/45" />
+            <div className="absolute top-[25%] left-[-2%] w-[48%] h-[25%] border border-slate-600/40" />
+            <div className="absolute top-[25%] right-[-2%] w-[48%] h-[25%] border border-slate-600/40" />
+            <div className="absolute top-[50%] left-[-2%] w-[48%] h-[25%] border border-slate-600/40" />
+            <div className="absolute top-[50%] right-[-2%] w-[48%] h-[25%] border border-slate-600/40" />
+            <div className="absolute bottom-[-2%] left-[-2%] w-[48%] h-[27%] border border-slate-600/45" />
+            <div className="absolute bottom-[-2%] right-[-2%] w-[48%] h-[27%] border border-slate-600/45" />
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[20%] h-[32%] rounded-[2px] border border-slate-600/55" />
           </div>
         </div>
