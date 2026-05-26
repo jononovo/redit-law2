@@ -1,11 +1,14 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, Loader2, CreditCard, Shield, Bot, Snowflake, Play, Clock, CheckCircle2, XCircle, AlertTriangle, ShoppingCart } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { useParams } from "next/navigation";
+import { Shield, Bot, Clock, CheckCircle2, XCircle, AlertTriangle, ShoppingCart } from "lucide-react";
 import { CardVisual } from "@/components/wallet/card-visual";
-import { CARD_COLORS, resolveCardColor } from "@/components/wallet/types";
+import { CardColorPicker } from "@/components/wallet/card-color-picker";
+import { CardFreezeButton } from "@/components/wallet/card-freeze-button";
+import { CardDetailShell } from "@/components/wallet/card-detail-shell";
+import { StatusBadge } from "@/components/wallet/status-badge";
+import { resolveCardColor, formatCentsToUsd, type CardColor } from "@/components/wallet/types";
 import { useAuth } from "@/features/platform-management/auth/auth-context";
 import { authFetch } from "@/features/platform-management/auth-fetch";
 import { useToast } from "@/hooks/use-toast";
@@ -38,13 +41,6 @@ interface Rail5CardDetail {
   checkouts: Rail5Transaction[];
 }
 
-const BRAND_LABELS: Record<string, string> = {
-  visa: "Visa",
-  mastercard: "Mastercard",
-  amex: "Amex",
-  discover: "Discover",
-};
-
 const STATUS_CONFIG: Record<string, { icon: typeof CheckCircle2; color: string; bg: string; label: string }> = {
   approved: { icon: CheckCircle2, color: "text-blue-600", bg: "bg-blue-50", label: "Approved" },
   completed: { icon: CheckCircle2, color: "text-green-600", bg: "bg-green-50", label: "Completed" },
@@ -57,7 +53,6 @@ const STATUS_CONFIG: Record<string, { icon: typeof CheckCircle2; color: string; 
 export default function Rail5CardDetailPage() {
   const { user } = useAuth();
   const { cardId } = useParams<{ cardId: string }>();
-  const router = useRouter();
   const { toast } = useToast();
   const [card, setCard] = useState<Rail5CardDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -67,11 +62,7 @@ export default function Rail5CardDetailPage() {
   useEffect(() => {
     if (user && cardId) {
       authFetch(`/api/v1/rail5/cards/${cardId}`)
-        .then(async (res) => {
-          if (res.ok) {
-            setCard(await res.json());
-          }
-        })
+        .then(async (res) => { if (res.ok) setCard(await res.json()); })
         .catch(() => {})
         .finally(() => setLoading(false));
     } else {
@@ -103,186 +94,134 @@ export default function Rail5CardDetailPage() {
     }
   }
 
-  function formatLimit(cents: number) {
-    return `$${(cents / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-  }
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-24">
-        <Loader2 className="w-8 h-8 animate-spin text-neutral-400" />
-      </div>
-    );
-  }
-
-  if (!card) {
-    return (
-      <div className="text-center py-24">
-        <CreditCard className="w-12 h-12 text-neutral-300 mx-auto mb-4" />
-        <p className="text-lg text-neutral-400 font-medium">Card not found.</p>
-        <Button variant="outline" onClick={() => router.push("/sub-agent-cards")} className="mt-4">
-          Back to Cards
-        </Button>
-      </div>
-    );
+  async function handleColorChange(color: CardColor) {
+    if (!card) return;
+    setColorSaving(true);
+    try {
+      const res = await authFetch(`/api/v1/rail5/cards/${card.card_id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ card_color: color }),
+      });
+      if (res.ok) setCard((prev) => prev ? { ...prev, card_color: color } : prev);
+    } catch {}
+    setColorSaving(false);
   }
 
   return (
-    <div className="flex flex-col gap-8 animate-fade-in-up max-w-2xl">
-      <Button
-        variant="ghost"
-        onClick={() => router.push("/sub-agent-cards")}
-        className="self-start gap-2 text-neutral-500"
-        data-testid="button-r5-back"
-      >
-        <ArrowLeft className="w-4 h-4" /> Back to Sub-Agent Cards
-      </Button>
-
-      <div className="flex items-center gap-4">
-        <h1 className="text-2xl font-bold text-neutral-900" data-testid="text-r5-card-name">{card.card_name}</h1>
-        <span className={`text-xs font-semibold px-2 py-1 rounded-full ${
-          card.is_frozen ? "bg-blue-100 text-blue-700" :
-          card.status === "active" ? "bg-green-100 text-green-700" :
-          card.status === "confirmed" ? "bg-teal-100 text-teal-700" :
-          card.status === "pending_delivery" ? "bg-amber-100 text-amber-700" :
-          "bg-amber-100 text-amber-700"
-        }`} data-testid="badge-r5-status">
-          {card.is_frozen ? "frozen" : card.status}
-        </span>
-      </div>
-
-      <CardVisual
-        color={resolveCardColor(card.card_color, card.card_id)}
-        balance={formatLimit(card.spending_limit_cents)}
-        balanceLabel="Spending Limit"
-        last4={card.card_last4}
-        holder={card.card_name.toUpperCase()}
-        frozen={card.is_frozen}
-        expiry="••/••"
-        line1={`Daily: ${formatLimit(card.daily_limit_cents)}`}
-        line2={`Monthly: ${formatLimit(card.monthly_limit_cents)}`}
-        status={card.status}
-        brand={card.card_brand}
-      />
-
-      <div className="flex items-center gap-3">
-        <span className="text-sm text-neutral-500 font-medium">Card Color</span>
-        <div className="flex items-center gap-2">
-          {CARD_COLORS.map((c) => {
-            const active = resolveCardColor(card.card_color, card.card_id) === c;
-            const bg = c === "purple" ? "bg-purple-600" : c === "dark" ? "bg-neutral-800" : c === "blue" ? "bg-blue-600" : c === "emerald" ? "bg-emerald-600" : "bg-orange-600";
-            return (
-              <button
-                key={c}
-                disabled={colorSaving}
-                onClick={async () => {
-                  setColorSaving(true);
-                  try {
-                    const res = await authFetch(`/api/v1/rail5/cards/${card.card_id}`, {
-                      method: "PATCH",
-                      headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({ card_color: c }),
-                    });
-                    if (res.ok) {
-                      setCard((prev) => prev ? { ...prev, card_color: c } : prev);
-                    }
-                  } catch {}
-                  setColorSaving(false);
-                }}
-                className={`w-7 h-7 rounded-full transition-all ${bg} ${active ? "ring-2 ring-offset-2 ring-neutral-400 scale-110" : "opacity-60 hover:opacity-100"}`}
-                data-testid={`color-picker-${c}`}
-              />
-            );
-          })}
-        </div>
-      </div>
-
-      <div className="bg-white rounded-2xl border border-neutral-100 p-6 space-y-4">
-        <h3 className="font-bold text-neutral-900 flex items-center gap-2">
-          <Shield className="w-5 h-5 text-primary" /> Spending Controls
-        </h3>
-        <div className="grid grid-cols-2 gap-4 text-sm">
-          <div className="bg-neutral-50 rounded-xl p-4">
-            <p className="text-neutral-500">Per-Checkout</p>
-            <p className="font-bold text-neutral-900 text-lg" data-testid="text-r5-per-checkout">{formatLimit(card.spending_limit_cents)}</p>
+    <CardDetailShell
+      loading={loading}
+      notFound={!card}
+      backHref="/sub-agent-cards"
+      backLabel="Back to Sub-Agent Cards"
+    >
+      {card && (
+        <>
+          <div className="flex items-center gap-4">
+            <h1 className="text-2xl font-bold text-neutral-900" data-testid="text-card-name">{card.card_name}</h1>
+            <StatusBadge status={card.status} isFrozen={card.is_frozen} />
           </div>
-          <div className="bg-neutral-50 rounded-xl p-4">
-            <p className="text-neutral-500">Daily Limit</p>
-            <p className="font-bold text-neutral-900 text-lg" data-testid="text-r5-daily">{formatLimit(card.daily_limit_cents)}</p>
-          </div>
-          <div className="bg-neutral-50 rounded-xl p-4">
-            <p className="text-neutral-500">Monthly Limit</p>
-            <p className="font-bold text-neutral-900 text-lg" data-testid="text-r5-monthly">{formatLimit(card.monthly_limit_cents)}</p>
-          </div>
-          <div className="bg-neutral-50 rounded-xl p-4">
-            <p className="text-neutral-500">Approval Above</p>
-            <p className="font-bold text-neutral-900 text-lg" data-testid="text-r5-approval">{formatLimit(card.human_approval_above_cents)}</p>
-          </div>
-        </div>
-      </div>
 
-      <div className="bg-white rounded-2xl border border-neutral-100 p-6 space-y-4">
-        <h3 className="font-bold text-neutral-900 flex items-center gap-2">
-          <Bot className="w-5 h-5 text-blue-600" /> Linked Bot
-        </h3>
-        {card.bot_id ? (
-          <p className="text-sm text-neutral-700 font-mono bg-neutral-50 rounded-xl p-3" data-testid="text-r5-bot-id">{card.bot_id}</p>
-        ) : (
-          <p className="text-sm text-neutral-400" data-testid="text-r5-no-bot">No bot linked yet.</p>
-        )}
-      </div>
+          <CardVisual
+            color={resolveCardColor(card.card_color, card.card_id)}
+            balance={formatCentsToUsd(card.spending_limit_cents)}
+            balanceLabel="Spending Limit"
+            last4={card.card_last4}
+            holder={card.card_name.toUpperCase()}
+            frozen={card.is_frozen}
+            expiry="••/••"
+            line1={`Daily: ${formatCentsToUsd(card.daily_limit_cents)}`}
+            line2={`Monthly: ${formatCentsToUsd(card.monthly_limit_cents)}`}
+            status={card.status}
+            brand={card.card_brand}
+          />
 
-      <div className="bg-white rounded-2xl border border-neutral-100 p-6 space-y-4">
-        <h3 className="font-bold text-neutral-900 flex items-center gap-2">
-          <ShoppingCart className="w-5 h-5 text-purple-600" /> Checkout History
-        </h3>
-        {card.checkouts && card.checkouts.length > 0 ? (
-          <div className="space-y-3">
-            {card.checkouts.map((c) => {
-              const cfg = STATUS_CONFIG[c.status] || STATUS_CONFIG.failed;
-              const Icon = cfg.icon;
-              return (
-                <div key={c.checkout_id} className={`flex items-center gap-4 p-4 rounded-xl ${cfg.bg}`} data-testid={`checkout-row-${c.checkout_id}`}>
-                  <Icon className={`w-5 h-5 flex-shrink-0 ${cfg.color}`} />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-neutral-900 truncate">{c.item_name}</p>
-                    <p className="text-xs text-neutral-500">{c.merchant_name}</p>
-                  </div>
-                  <div className="text-right flex-shrink-0">
-                    <p className="text-sm font-bold text-neutral-900">{formatLimit(c.amount_cents)}</p>
-                    <p className={`text-xs font-medium ${cfg.color}`}>{cfg.label}</p>
-                  </div>
-                  <div className="text-right flex-shrink-0 hidden sm:block">
-                    <p className="text-xs text-neutral-400">
-                      {new Date(c.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-                    </p>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        ) : (
-          <div className="text-center py-8">
-            <ShoppingCart className="w-8 h-8 text-neutral-200 mx-auto mb-2" />
-            <p className="text-sm text-neutral-400">No checkouts yet.</p>
-          </div>
-        )}
-      </div>
+          <CardColorPicker
+            color={card.card_color}
+            cardId={card.card_id}
+            disabled={colorSaving}
+            onChange={handleColorChange}
+          />
 
-      {["confirmed", "active"].includes(card.status) && (
-        <Button
-          variant="outline"
-          onClick={handleFreeze}
-          disabled={freezeLoading}
-          className={`gap-2 ${card.is_frozen ? "text-emerald-600 border-emerald-200" : "text-blue-600 border-blue-200"}`}
-          data-testid="button-r5-toggle-freeze"
-        >
-          {freezeLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : card.is_frozen ? <Play className="w-4 h-4" /> : <Snowflake className="w-4 h-4" />}
-          {card.is_frozen ? "Unfreeze Card" : "Freeze Card"}
-        </Button>
+          <div className="bg-white rounded-2xl border border-neutral-100 p-6 space-y-4">
+            <h3 className="font-bold text-neutral-900 flex items-center gap-2">
+              <Shield className="w-5 h-5 text-primary" /> Spending Controls
+            </h3>
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <div className="bg-neutral-50 rounded-xl p-4">
+                <p className="text-neutral-500">Per-Checkout</p>
+                <p className="font-bold text-neutral-900 text-lg" data-testid="text-r5-per-checkout">{formatCentsToUsd(card.spending_limit_cents)}</p>
+              </div>
+              <div className="bg-neutral-50 rounded-xl p-4">
+                <p className="text-neutral-500">Daily Limit</p>
+                <p className="font-bold text-neutral-900 text-lg" data-testid="text-r5-daily">{formatCentsToUsd(card.daily_limit_cents)}</p>
+              </div>
+              <div className="bg-neutral-50 rounded-xl p-4">
+                <p className="text-neutral-500">Monthly Limit</p>
+                <p className="font-bold text-neutral-900 text-lg" data-testid="text-r5-monthly">{formatCentsToUsd(card.monthly_limit_cents)}</p>
+              </div>
+              <div className="bg-neutral-50 rounded-xl p-4">
+                <p className="text-neutral-500">Approval Above</p>
+                <p className="font-bold text-neutral-900 text-lg" data-testid="text-r5-approval">{formatCentsToUsd(card.human_approval_above_cents)}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-2xl border border-neutral-100 p-6 space-y-4">
+            <h3 className="font-bold text-neutral-900 flex items-center gap-2">
+              <Bot className="w-5 h-5 text-blue-600" /> Linked Bot
+            </h3>
+            {card.bot_id ? (
+              <p className="text-sm text-neutral-700 font-mono bg-neutral-50 rounded-xl p-3" data-testid="text-r5-bot-id">{card.bot_id}</p>
+            ) : (
+              <p className="text-sm text-neutral-400" data-testid="text-r5-no-bot">No bot linked yet.</p>
+            )}
+          </div>
+
+          <div className="bg-white rounded-2xl border border-neutral-100 p-6 space-y-4">
+            <h3 className="font-bold text-neutral-900 flex items-center gap-2">
+              <ShoppingCart className="w-5 h-5 text-purple-600" /> Checkout History
+            </h3>
+            {card.checkouts && card.checkouts.length > 0 ? (
+              <div className="space-y-3">
+                {card.checkouts.map((c) => {
+                  const cfg = STATUS_CONFIG[c.status] || STATUS_CONFIG.failed;
+                  const Icon = cfg.icon;
+                  return (
+                    <div key={c.checkout_id} className={`flex items-center gap-4 p-4 rounded-xl ${cfg.bg}`} data-testid={`checkout-row-${c.checkout_id}`}>
+                      <Icon className={`w-5 h-5 flex-shrink-0 ${cfg.color}`} />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-neutral-900 truncate">{c.item_name}</p>
+                        <p className="text-xs text-neutral-500">{c.merchant_name}</p>
+                      </div>
+                      <div className="text-right flex-shrink-0">
+                        <p className="text-sm font-bold text-neutral-900">{formatCentsToUsd(c.amount_cents)}</p>
+                        <p className={`text-xs font-medium ${cfg.color}`}>{cfg.label}</p>
+                      </div>
+                      <div className="text-right flex-shrink-0 hidden sm:block">
+                        <p className="text-xs text-neutral-400">
+                          {new Date(c.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <ShoppingCart className="w-8 h-8 text-neutral-200 mx-auto mb-2" />
+                <p className="text-sm text-neutral-400">No checkouts yet.</p>
+              </div>
+            )}
+          </div>
+
+          {(["confirmed", "active"].includes(card.status) || card.is_frozen) && (
+            <CardFreezeButton isFrozen={card.is_frozen} loading={freezeLoading} onClick={handleFreeze} />
+          )}
+
+          <p className="text-xs text-neutral-400">Created: {new Date(card.created_at).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}</p>
+        </>
       )}
-
-      <p className="text-xs text-neutral-400">Created: {new Date(card.created_at).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}</p>
-    </div>
+    </CardDetailShell>
   );
 }
