@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { Snowflake } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -59,6 +60,39 @@ export function CardVisual({
     emerald: "bg-[radial-gradient(circle_at_85%_20%,rgba(180,255,220,0.30),transparent_45%),radial-gradient(circle_at_15%_15%,rgba(4,50,40,0.50),transparent_55%),radial-gradient(circle_at_85%_90%,rgba(6,78,59,0.55),transparent_55%),linear-gradient(135deg,#10b981_0%,#059669_50%,#065f46_100%)]"
   };
 
+  const patternOverlays: Record<string, ReactNode> = {
+    primary: (
+      <>
+        <div className="absolute inset-0 opacity-[0.07] mix-blend-overlay pointer-events-none bg-[repeating-linear-gradient(45deg,#fff_0px,#fff_1px,transparent_1px,transparent_9px)]" />
+        <div className="absolute -bottom-24 -right-24 w-72 h-72 rounded-full border border-white/10 pointer-events-none" />
+        <div className="absolute -bottom-32 -right-32 w-96 h-96 rounded-full border border-white/[0.06] pointer-events-none" />
+      </>
+    ),
+    dark: (
+      <div className="absolute inset-0 opacity-[0.08] mix-blend-overlay pointer-events-none bg-[radial-gradient(circle,rgba(255,255,255,0.5)_1px,transparent_1.5px)] bg-[length:12px_12px]" />
+    ),
+    blue: (
+      <>
+        <div className="absolute inset-0 opacity-[0.10] mix-blend-overlay pointer-events-none bg-[repeating-radial-gradient(circle_at_100%_0%,transparent_0_38px,rgba(255,255,255,0.7)_38px_39px)]" />
+        <div className="absolute -bottom-40 -left-40 w-[28rem] h-[28rem] rounded-full border border-white/[0.07] pointer-events-none" />
+      </>
+    ),
+    purple: (
+      <>
+        <div className="absolute inset-0 opacity-[0.06] mix-blend-overlay pointer-events-none bg-[repeating-linear-gradient(30deg,#fff_0px,#fff_2px,transparent_2px,transparent_18px),repeating-linear-gradient(-30deg,#fff_0px,#fff_2px,transparent_2px,transparent_18px)]" />
+        <div className="absolute -bottom-16 -right-16 w-40 h-40 rotate-45 border border-white/10 pointer-events-none" />
+      </>
+    ),
+    emerald: (
+      <>
+        <div className="absolute inset-0 opacity-[0.05] mix-blend-overlay pointer-events-none bg-[repeating-linear-gradient(45deg,#fff_0px,#fff_1px,transparent_1px,transparent_12px),repeating-linear-gradient(-45deg,#fff_0px,#fff_1px,transparent_1px,transparent_12px)]" />
+        <div className="absolute top-3 right-3 w-3 h-3 rounded-full border border-white/15 pointer-events-none" />
+        <div className="absolute top-6 right-8 w-2 h-2 rounded-full border border-white/15 pointer-events-none" />
+        <div className="absolute top-2 right-10 w-1.5 h-1.5 rounded-full border border-white/15 pointer-events-none" />
+      </>
+    ),
+  };
+
   const statusColors: Record<string, string> = {
     active: "bg-emerald-500/20 text-emerald-100 border-emerald-300/30",
     pending_setup: "bg-amber-500/20 text-amber-100 border-amber-300/30",      // rail5
@@ -99,9 +133,7 @@ export function CardVisual({
       className
     )}>
       <div className="absolute inset-0 opacity-20 bg-[url('/assets/noise.svg')] mix-blend-overlay pointer-events-none" />
-      <div className="absolute inset-0 opacity-[0.07] mix-blend-overlay pointer-events-none bg-[repeating-linear-gradient(45deg,#fff_0px,#fff_1px,transparent_1px,transparent_9px)]" />
-      <div className="absolute -bottom-24 -right-24 w-72 h-72 rounded-full border border-white/10 pointer-events-none" />
-      <div className="absolute -bottom-32 -right-32 w-96 h-96 rounded-full border border-white/[0.06] pointer-events-none" />
+      {patternOverlays[color]}
       <div className="absolute -top-[100%] -left-[100%] w-[300%] h-[300%] bg-gradient-to-br from-white/20 via-transparent to-transparent rotate-45 pointer-events-none" />
 
       {frozen && (
