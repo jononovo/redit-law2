@@ -8,8 +8,8 @@ export interface CryptoActionBarProps {
   isFrozen: boolean;
   onFund: () => void;
   onFreeze: () => void;
-  onGuardrails: () => void;
-  onActivity: () => void;
+  onGuardrails?: () => void;
+  onActivity?: () => void;
   fundLabel?: string;
   testIdPrefix?: string;
 }
@@ -42,16 +42,18 @@ export function CryptoActionBar({
     {
       icon: Settings2,
       label: "Guardrails",
-      onClick: onGuardrails,
+      onClick: onGuardrails ?? (() => {}),
       className: "flex-1 text-xs gap-2 text-neutral-600 cursor-pointer hover:bg-neutral-100 rounded-lg transition-colors",
       "data-testid": `button-guardrails-${walletId}`,
+      hidden: !onGuardrails,
     },
     {
       icon: ArrowUpRight,
       label: "Activity",
-      onClick: onActivity,
+      onClick: onActivity ?? (() => {}),
       className: "flex-1 text-xs gap-2 text-neutral-600 cursor-pointer hover:bg-neutral-100 rounded-lg transition-colors",
       "data-testid": `button-activity-${walletId}`,
+      hidden: !onActivity,
     },
   ];
 
