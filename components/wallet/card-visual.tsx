@@ -126,7 +126,7 @@ export function CardVisual({
 
   return (
     <div className={cn(
-      "relative aspect-[1.586/1] w-full rounded-2xl p-6 text-white shadow-xl overflow-hidden flex flex-col justify-between select-none transition-all",
+      "relative aspect-[1.586/1] w-full max-w-[26rem] rounded-2xl p-6 text-white shadow-xl overflow-hidden flex flex-col justify-between select-none transition-all",
       gradients[color],
       frozen && "grayscale opacity-70",
       !frozen && "hover:scale-[1.02]",

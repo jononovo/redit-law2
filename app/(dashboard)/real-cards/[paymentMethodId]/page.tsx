@@ -110,6 +110,7 @@ export default function Rail3RealCardDetailPage() {
             holderLabel="Cardholder"
             balance={String(pm.virtual_cards.length)}
             balanceLabel="Virtual Cards"
+            status="active"
             brand={pm.card_brand || undefined}
             issuer={pm.issuer_name || undefined}
           />
