@@ -21,7 +21,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { CreditCard, Loader2, CheckCircle2, ChevronDown, X } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { OrderIntentVerification } from "@crossmint/client-sdk-react-ui";
-import { Rail3CrossmintProvider } from "@/components/rail3/crossmint-provider";
+import { Rail3CrossmintProvider } from "@/components/wallet/rail3/crossmint-provider";
 import type { Rail3PaymentMethodInfo } from "@/components/wallet/types";
 
 interface Props {

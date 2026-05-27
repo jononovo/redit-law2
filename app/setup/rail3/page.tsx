@@ -17,7 +17,7 @@ import {
   CrossmintPaymentMethodManagement,
   PaymentMethodAgenticEnrollmentVerification,
 } from "@crossmint/client-sdk-react-ui";
-import { Rail3CrossmintProvider, useCrossmintJwt } from "@/components/rail3/crossmint-provider";
+import { Rail3CrossmintProvider, useCrossmintJwt } from "@/components/wallet/rail3/crossmint-provider";
 
 type Step = 1 | 2;
 

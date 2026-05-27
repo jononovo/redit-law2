@@ -6,8 +6,8 @@ import { CreditCardListPage, type CreditCardListPageConfig } from "@/components/
 import { normalizeRail3Card, type Rail3CardInfo, type Rail3PaymentMethodInfo } from "@/components/wallet/types";
 import { authFetch } from "@/features/platform-management/auth-fetch";
 import { useAuth } from "@/features/platform-management/auth/auth-context";
-import { PaymentMethodsStrip } from "@/components/rail3/payment-methods-strip";
-import { AddCardDialog } from "@/components/rail3/add-card-dialog";
+import { PaymentMethodsStrip } from "@/components/wallet/rail3/payment-methods-strip";
+import { AddCardDialog } from "@/components/wallet/rail3/add-card-dialog";
 
 export default function VirtualCardsPage() {
   const { user } = useAuth();
