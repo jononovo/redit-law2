@@ -7,7 +7,6 @@ import {
   CreditCard, MapPin, Phone, Shield, ShieldCheck, AlertCircle, Loader2,
   Wallet, Hash, ExternalLink, Copy,
 } from "lucide-react";
-import { CardVisual } from "@/components/wallet/card-visual";
 import { CardDetailShell } from "@/components/wallet/card-detail-shell";
 import { RAIL3_FUNDING_TYPE_LABEL, type Rail3BillingAddress } from "@/components/wallet/types";
 import { useAuth } from "@/features/platform-management/auth/auth-context";
@@ -102,25 +101,12 @@ export default function Rail3RealCardDetailPage() {
             </div>
           </div>
 
-          {pm.display_image_url ? (
+          {pm.display_image_url && (
             <img
               src={pm.display_image_url}
               alt="Card art from issuer"
               className="w-full max-w-md rounded-2xl shadow-xl"
               data-testid="img-card-art"
-            />
-          ) : (
-            <CardVisual
-              color="dark"
-              last4={pm.card_last4 || "••••"}
-              expiry={expiry}
-              holder={(pm.cardholder_name || "CARDHOLDER").toUpperCase()}
-              holderLabel="Cardholder"
-              balanceLabel="Virtual Cards"
-              balance={String(pm.virtual_cards.length)}
-              brand={pm.card_brand || undefined}
-              issuer={pm.issuer_name || undefined}
-              status="active"
             />
           )}
 
