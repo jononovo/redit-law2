@@ -102,14 +102,17 @@ export default function Rail3RealCardDetailPage() {
             </div>
           </div>
 
-          {pm.display_image_url && (
-            <img
-              src={pm.display_image_url}
-              alt="Card art from issuer"
-              className="w-full max-w-md rounded-2xl shadow-xl"
-              data-testid="img-card-art"
-            />
-          )}
+          <CardVisual
+            color={resolveCardColor(null, pm.payment_method_id)}
+            last4={pm.card_last4 || "••••"}
+            expiry={expiry}
+            holder={(pm.cardholder_name || "CARDHOLDER").toUpperCase()}
+            holderLabel="Cardholder"
+            balance={String(pm.virtual_cards.length)}
+            balanceLabel="Virtual Cards"
+            brand={pm.card_brand || undefined}
+            issuer={pm.issuer_name || undefined}
+          />
 
           {/* Enrollment status */}
           <div className="bg-white rounded-2xl border border-neutral-100 p-6 space-y-3">
