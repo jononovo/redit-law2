@@ -79,31 +79,15 @@ export default function Rail3RealCardDetailPage() {
   const { toast } = useToast();
   const [pm, setPm] = useState<Rail3PaymentMethodDetail | null>(null);
   const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState<string | null>(null);
-  const [notFound, setNotFound] = useState(false);
 
   useEffect(() => {
     if (!user || !paymentMethodId) {
       setLoading(false);
       return;
     }
-    setLoading(true);
-    setLoadError(null);
-    setNotFound(false);
     authFetch(`/api/v1/rail3/payment-methods/${paymentMethodId}`)
-      .then(async (res) => {
-        if (res.ok) {
-          setPm(await res.json());
-          return;
-        }
-        if (res.status === 404) {
-          setNotFound(true);
-          return;
-        }
-        const body = await res.json().catch(() => ({}));
-        setLoadError(body.message || body.error || `HTTP ${res.status}`);
-      })
-      .catch((err) => setLoadError(err instanceof Error ? err.message : String(err)))
+      .then(async (res) => { if (res.ok) setPm(await res.json()); })
+      .catch(() => {})
       .finally(() => setLoading(false));
   }, [user, paymentMethodId]);
 
@@ -118,22 +102,14 @@ export default function Rail3RealCardDetailPage() {
 
   const enrollmentStatus = pm?.enrollment?.status;
 
-  // Distinct error UI for load failures so we don't conflate them with 404.
-  // The shell only knows loading vs. notFound; render the error inside.
   return (
     <CardDetailShell
       loading={loading}
-      notFound={notFound}
+      notFound={!pm}
       backHref="/virtual-cards"
       backLabel="Back to Virtual Cards"
       notFoundLabel="Real card not found."
     >
-      {loadError && (
-        <div className="flex items-center gap-2 text-sm text-red-700 bg-red-50 rounded-xl p-4" data-testid="text-load-error">
-          <AlertCircle className="w-4 h-4 flex-shrink-0" />
-          <span>Couldn't load this real card: {loadError}</span>
-        </div>
-      )}
       {pm && (
         <>
           <div className="flex items-start justify-between gap-4">

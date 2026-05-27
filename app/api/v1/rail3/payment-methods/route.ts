@@ -16,12 +16,16 @@ import {
  * our DB (covers PMs created outside our wizard) and update existing rows with
  * any fields the client never sent (funding type, billing, image, source token,
  * default flag). One Crossmint call per call site; owners typically have <10 PMs.
- *
- * Throws on Crossmint failure — callers must surface the error rather than
- * serve stale data (project convention: explicit failure over silent fallback).
+ * Logs and continues on Crossmint failure — list endpoint still serves stale row.
  */
 async function reconcileOwnerPaymentMethodsWithCrossmint(ownerUid: string) {
-  const remotePms = await listPaymentMethods({ userLocator: ownerUidToUserLocator(ownerUid) });
+  let remotePms: CrossmintPaymentMethod[];
+  try {
+    remotePms = await listPaymentMethods({ userLocator: ownerUidToUserLocator(ownerUid) });
+  } catch (err) {
+    console.error("[rail3] listPaymentMethods failed during reconcile:", err);
+    return;
+  }
 
   for (const pm of remotePms) {
     const columns = mapCrossmintPmToDbColumns(pm);
@@ -43,15 +47,7 @@ export async function GET(request: NextRequest) {
   const user = await getSessionUser(request);
   if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
-  try {
-    await reconcileOwnerPaymentMethodsWithCrossmint(user.uid);
-  } catch (err) {
-    console.error("[rail3] reconcile failed in list GET:", err);
-    return NextResponse.json(
-      { error: "crossmint_reconcile_failed", message: err instanceof Error ? err.message : String(err) },
-      { status: 502 }
-    );
-  }
+  await reconcileOwnerPaymentMethodsWithCrossmint(user.uid);
 
   const pms = await storage.getRail3PaymentMethodsByOwnerUid(user.uid);
   const cards = await storage.getRail3CardsByOwnerUid(user.uid);

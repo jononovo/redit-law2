@@ -32,8 +32,8 @@ export async function GET(
   if (!existing) return NextResponse.json({ error: "payment_method_not_found" }, { status: 404 });
   if (existing.ownerUid !== user.uid) return NextResponse.json({ error: "forbidden" }, { status: 403 });
 
-  // Refresh this PM from Crossmint before reading. Explicit failure if
-  // Crossmint is unreachable — we don't want to serve stale detail data.
+  // Refresh this PM from Crossmint before reading. Log and continue on
+  // failure — stale row is still useful.
   try {
     const remotePms = await listPaymentMethods({ userLocator: ownerUidToUserLocator(user.uid) });
     const remote = remotePms.find((p) => p.paymentMethodId === paymentMethodId);
@@ -42,10 +42,6 @@ export async function GET(
     }
   } catch (err) {
     console.error("[rail3] reconcile failed in detail GET:", err);
-    return NextResponse.json(
-      { error: "crossmint_reconcile_failed", message: err instanceof Error ? err.message : String(err) },
-      { status: 502 }
-    );
   }
 
   const pm = (await storage.getRail3PaymentMethodById(paymentMethodId))!;
