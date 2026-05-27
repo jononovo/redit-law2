@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import { CardVisual } from "@/components/wallet/card-visual";
 import { CardDetailShell } from "@/components/wallet/card-detail-shell";
-import { RAIL3_FUNDING_TYPE_LABEL, type Rail3BillingAddress, type CardColor } from "@/components/wallet/types";
+import { RAIL3_FUNDING_TYPE_LABEL, type Rail3BillingAddress } from "@/components/wallet/types";
 import { useAuth } from "@/features/platform-management/auth/auth-context";
 import { authFetch } from "@/features/platform-management/auth-fetch";
 import { useToast } from "@/hooks/use-toast";
@@ -47,13 +47,6 @@ interface Rail3PaymentMethodDetail {
   enrollment: { status?: string } | null;
   enrollment_error: string | null;
   virtual_cards: LinkedVirtualCard[];
-}
-
-function resolveBrandColor(brand: string | null): CardColor {
-  const b = brand?.toLowerCase();
-  if (b === "visa") return "blue";
-  if (b === "mastercard" || b === "discover") return "primary";
-  return "dark";
 }
 
 export default function Rail3RealCardDetailPage() {
@@ -118,7 +111,7 @@ export default function Rail3RealCardDetailPage() {
             />
           ) : (
             <CardVisual
-              color={resolveBrandColor(pm.card_brand)}
+              color="dark"
               last4={pm.card_last4 || "••••"}
               expiry={expiry}
               holder={(pm.cardholder_name || "CARDHOLDER").toUpperCase()}
