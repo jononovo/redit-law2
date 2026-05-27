@@ -90,14 +90,29 @@ export interface Rail3CardInfo {
   created_at: string;
 }
 
+export interface Rail3BillingAddress {
+  line1: string;
+  line2?: string;
+  city: string;
+  stateOrRegion?: string;
+  postalCode: string;
+  country: string;
+}
+
 export interface Rail3PaymentMethodInfo {
   payment_method_id: string;
   card_brand: string | null;
   card_last4: string | null;
+  card_first6: string | null;
   issuer_name: string | null;
   cardholder_name: string | null;
   exp_month: number | null;
   exp_year: number | null;
+  funding_type: "credit" | "debit" | "prepaid" | "unknown" | null;
+  is_default: boolean;
+  display_image_url: string | null;
+  billing_address: Rail3BillingAddress | null;
+  billing_phone: string | null;
   virtual_card_count: number;
   created_at: string;
   last_used_at: string | null;

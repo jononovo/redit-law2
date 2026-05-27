@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { authFetch } from "@/features/platform-management/auth-fetch";
 import { Button } from "@/components/ui/button";
@@ -11,6 +12,13 @@ import {
 import { CreditCard, Plus, Trash2, ShieldCheck, AlertCircle, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { Rail3PaymentMethodInfo } from "@/components/wallet/types";
+
+const FUNDING_TYPE_LABEL: Record<string, string> = {
+  credit: "Credit",
+  debit: "Debit",
+  prepaid: "Prepaid",
+  unknown: "Card",
+};
 
 interface Props {
   paymentMethods: Rail3PaymentMethodInfo[];
@@ -108,33 +116,47 @@ export function PaymentMethodsStrip({ paymentMethods, loading, onChange }: Props
         <div className="flex flex-wrap gap-2">
           {paymentMethods.map((pm) => {
             const e = enrollments[pm.payment_method_id];
+            const fundingLabel = pm.funding_type ? (FUNDING_TYPE_LABEL[pm.funding_type] || pm.funding_type) : null;
+            const hasVirtuals = pm.virtual_card_count > 0;
             return (
-              <div
+              <Link
                 key={pm.payment_method_id}
-                className="flex items-center gap-3 px-3 py-2 rounded-lg border border-neutral-200 bg-neutral-50"
+                href={`/real-cards/${pm.payment_method_id}`}
+                className="flex items-center gap-3 px-3 py-2 rounded-lg border border-neutral-200 bg-neutral-50 hover:bg-neutral-100 hover:border-neutral-300 transition-colors"
                 data-testid={`pm-${pm.payment_method_id}`}
               >
                 <CreditCard className="w-4 h-4 text-neutral-500" />
                 <div className="flex flex-col">
-                  <div className="text-sm font-medium text-neutral-900">
-                    {(pm.card_brand || "Card").toUpperCase()} •••• {pm.card_last4 || "????"}
+                  <div className="text-sm font-medium text-neutral-900 flex items-center gap-1.5">
+                    {pm.issuer_name && <span className="text-neutral-600 font-normal">{pm.issuer_name}</span>}
+                    <span>{(pm.card_brand || "Card").toUpperCase()} •••• {pm.card_last4 || "????"}</span>
+                    {pm.is_default && (
+                      <span className="text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-orange-100 text-orange-700 font-semibold">Default</span>
+                    )}
                   </div>
                   <div className="text-xs text-neutral-500 flex items-center gap-2">
                     <EnrollmentBadge status={e?.status} />
+                    {fundingLabel && (
+                      <>
+                        <span className="text-neutral-400">·</span>
+                        <span>{fundingLabel}</span>
+                      </>
+                    )}
                     <span className="text-neutral-400">·</span>
                     <span>{pm.virtual_card_count} virtual card{pm.virtual_card_count === 1 ? "" : "s"}</span>
                   </div>
                 </div>
                 <button
                   type="button"
-                  onClick={() => setRemoveTarget(pm)}
-                  className="ml-1 p-1 rounded hover:bg-neutral-200 text-neutral-400 hover:text-red-600"
-                  title="Remove real card"
+                  onClick={(ev) => { ev.preventDefault(); ev.stopPropagation(); setRemoveTarget(pm); }}
+                  disabled={hasVirtuals}
+                  className="ml-1 p-1 rounded hover:bg-neutral-200 text-neutral-400 hover:text-red-600 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-neutral-400"
+                  title={hasVirtuals ? "Remove the virtual cards first" : "Remove real card"}
                   data-testid={`button-remove-pm-${pm.payment_method_id}`}
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>
-              </div>
+              </Link>
             );
           })}
         </div>

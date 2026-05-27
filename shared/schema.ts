@@ -1467,10 +1467,19 @@ export const rail3PaymentMethods = pgTable("rail3_payment_methods", {
 
   cardholderName: text("cardholder_name"),
   cardLast4: text("card_last4"),
-  cardBrand: text("card_brand"),                                  // visa | mastercard
+  cardBrand: text("card_brand"),                                  // visa | mastercard | amex | discover | jcb | unionpay | diners-club
   cardFirst6: text("card_first6").notNull().default(""),          // BIN — feeds lookupIssuer(), mirrors rail5
   expMonth: integer("exp_month"),
   expYear: integer("exp_year"),
+
+  // Hydrated server-side from Crossmint's listPaymentMethods response. Not trusted from the client.
+  fundingType: text("funding_type"),                              // credit | debit | prepaid | unknown
+  isDefault: boolean("is_default").notNull().default(false),
+  displayImageUrl: text("display_image_url"),                     // Crossmint-rendered card art
+  billingAddress: jsonb("billing_address"),                       // { line1, line2?, city, stateOrRegion?, postalCode, country }
+  billingPhone: text("billing_phone"),
+  sourceTokenId: text("source_token_id"),                         // card.source.id (basis-theory token)
+  networkTokenId: text("network_token_id"),                       // card.source.networkTokenId
 
   // No agent_id: agent binds at order-intent creation, lives in rail3Agents (owner-scoped).
   // No verification_status: status lives on Crossmint's agentic-enrollment sub-resource;
@@ -1574,8 +1583,10 @@ export type InsertRail3Agent = typeof rail3Agents.$inferInsert;
 
 export const rail3SavePaymentMethodSchema = z.object({
   payment_method_id: z.string().min(1),
+  // Crossmint's full brand enum. Anything richer (funding type, billing, etc.)
+  // is hydrated server-side from listPaymentMethods, not accepted here.
   card_last4: z.string().length(4).regex(/^\d{4}$/).optional(),
-  card_brand: z.enum(["visa", "mastercard"]).optional(),
+  card_brand: z.enum(["visa", "mastercard", "amex", "discover", "jcb", "unionpay", "diners-club"]).optional(),
   card_first6: z.string().min(4).max(6).regex(/^\d{4,6}$/).optional(),
   cardholder_name: z.string().min(1).max(200).optional(),
   exp_month: z.number().int().min(1).max(12).optional(),

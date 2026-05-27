@@ -10,6 +10,7 @@ export { createAgent, type CrossmintAgent, type CrossmintAgentMetadata } from ".
 export {
   listPaymentMethods,
   deletePaymentMethod,
+  mapCrossmintPmToDbColumns,
   type CrossmintPaymentMethod,
 } from "./paymentMethods";
 export {
