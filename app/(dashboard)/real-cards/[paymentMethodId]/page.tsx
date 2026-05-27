@@ -7,8 +7,9 @@ import {
   CreditCard, MapPin, Phone, Shield, ShieldCheck, AlertCircle, Loader2,
   Wallet, Hash, ExternalLink, Copy,
 } from "lucide-react";
+import { CardVisual } from "@/components/wallet/card-visual";
 import { CardDetailShell } from "@/components/wallet/card-detail-shell";
-import { RAIL3_FUNDING_TYPE_LABEL, type Rail3BillingAddress } from "@/components/wallet/types";
+import { RAIL3_FUNDING_TYPE_LABEL, resolveCardColor, type Rail3BillingAddress } from "@/components/wallet/types";
 import { useAuth } from "@/features/platform-management/auth/auth-context";
 import { authFetch } from "@/features/platform-management/auth-fetch";
 import { useToast } from "@/hooks/use-toast";
