@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import { CardVisual } from "@/components/wallet/card-visual";
 import { CardDetailShell } from "@/components/wallet/card-detail-shell";
-import type { Rail3BillingAddress, CardColor } from "@/components/wallet/types";
+import { RAIL3_FUNDING_TYPE_LABEL, type Rail3BillingAddress, type CardColor } from "@/components/wallet/types";
 import { useAuth } from "@/features/platform-management/auth/auth-context";
 import { authFetch } from "@/features/platform-management/auth-fetch";
 import { useToast } from "@/hooks/use-toast";
@@ -49,28 +49,11 @@ interface Rail3PaymentMethodDetail {
   virtual_cards: LinkedVirtualCard[];
 }
 
-const FUNDING_TYPE_LABEL: Record<string, string> = {
-  credit: "Credit",
-  debit: "Debit",
-  prepaid: "Prepaid",
-  unknown: "Card",
-};
-
-// Brand→color decision: brand-themed where the network has an obvious palette,
-// dark for everything else. Hardcoded — see plan.
-const BRAND_COLOR: Record<string, CardColor> = {
-  visa: "blue",
-  mastercard: "primary",
-  amex: "dark",
-  discover: "primary",
-  jcb: "dark",
-  unionpay: "dark",
-  "diners-club": "dark",
-};
-
 function resolveBrandColor(brand: string | null): CardColor {
-  if (!brand) return "dark";
-  return BRAND_COLOR[brand.toLowerCase()] || "dark";
+  const b = brand?.toLowerCase();
+  if (b === "visa") return "blue";
+  if (b === "mastercard" || b === "discover") return "primary";
+  return "dark";
 }
 
 export default function Rail3RealCardDetailPage() {
@@ -166,7 +149,7 @@ export default function Rail3RealCardDetailPage() {
             </h3>
             <div className="grid grid-cols-2 gap-3 text-sm">
               <Fact label="Brand" value={(pm.card_brand || "—").toUpperCase()} testid="text-pm-brand" />
-              <Fact label="Funding" value={pm.funding_type ? FUNDING_TYPE_LABEL[pm.funding_type] || pm.funding_type : "—"} testid="text-pm-funding" />
+              <Fact label="Funding" value={pm.funding_type ? RAIL3_FUNDING_TYPE_LABEL[pm.funding_type] || pm.funding_type : "—"} testid="text-pm-funding" />
               <Fact label="Last 4" value={pm.card_last4 || "—"} mono testid="text-pm-last4" />
               <Fact label="BIN" value={pm.card_first6 || "—"} mono testid="text-pm-bin" />
               <Fact label="Expires" value={expiry} mono testid="text-pm-expiry" />

@@ -11,14 +11,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { CreditCard, Plus, Trash2, ShieldCheck, AlertCircle, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import type { Rail3PaymentMethodInfo } from "@/components/wallet/types";
-
-const FUNDING_TYPE_LABEL: Record<string, string> = {
-  credit: "Credit",
-  debit: "Debit",
-  prepaid: "Prepaid",
-  unknown: "Card",
-};
+import { RAIL3_FUNDING_TYPE_LABEL, type Rail3PaymentMethodInfo } from "@/components/wallet/types";
 
 interface Props {
   paymentMethods: Rail3PaymentMethodInfo[];
@@ -116,7 +109,7 @@ export function PaymentMethodsStrip({ paymentMethods, loading, onChange }: Props
         <div className="flex flex-wrap gap-2">
           {paymentMethods.map((pm) => {
             const e = enrollments[pm.payment_method_id];
-            const fundingLabel = pm.funding_type ? (FUNDING_TYPE_LABEL[pm.funding_type] || pm.funding_type) : null;
+            const fundingLabel = pm.funding_type ? (RAIL3_FUNDING_TYPE_LABEL[pm.funding_type] || pm.funding_type) : null;
             const hasVirtuals = pm.virtual_card_count > 0;
             return (
               <Link

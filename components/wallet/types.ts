@@ -90,6 +90,13 @@ export interface Rail3CardInfo {
   created_at: string;
 }
 
+export const RAIL3_FUNDING_TYPE_LABEL: Record<string, string> = {
+  credit: "Credit",
+  debit: "Debit",
+  prepaid: "Prepaid",
+  unknown: "Card",
+};
+
 export interface Rail3BillingAddress {
   line1: string;
   line2?: string;
