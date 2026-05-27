@@ -1,0 +1,20 @@
+Found 4 real bugs in the plan. Walking through them:
+
+Bug 1 — Backfill plan is wrong (critical)
+I wrote "the existing GET hydration loop will backfill organically." It doesn't exist. GET /api/v1/rail3/payment-methods is a pure local DB read — never calls listPaymentMethods on Crossmint. There is no reconciliation loop. Without one, existing rows stay empty forever.
+
+Fix: Add the Crossmint reconciliation to GET /api/v1/rail3/payment-methods itself (fetch listPaymentMethods, then updateRail3PaymentMethod for any rows missing the new fields). One extra Crossmint call per page load, batched per user, returns the hydrated data in the same response. Self-heals over time without a one-shot script.
+
+Bug 2 — Client SDK callback doesn't deliver the new fields (critical)
+Per Crossmint's save-card docs, onPaymentMethodSelected is documented to return only { paymentMethodId }. Our setup page currently also sees card.{brand,last4,bin,expiration} (works empirically), but fundingType, billing.address, billing.phone, display.imageUrl, source.id, default are not promised by the callback. Relying on the client to POST them is fragile.
+
+Fix: After the client POSTs { payment_method_id }, do a server-side listPaymentMethods({ userLocator }) in the POST handler, find the matching PM, and write everything from that response. Drop the wide POST schema. This also handles the case where Crossmint changes its SDK payload.
+
+Bug 3 — POST early-return skips updates for existing rows
+Current POST has if (existing) return { already_saved: true } at lines 53–61. Even after we widen the schema, re-saving an already-saved PM won't trigger an update. Combined with Bug 2's fix, this means: even if Crossmint adds a field later, we never re-pull it for old rows.
+
+Fix: Change the early-return branch into an update: re-fetch from Crossmint and updateRail3PaymentMethod regardless. Backfill via GET (Bug 1 fix) covers passive refresh; this covers the explicit "re-save" case.
+
+Bug 4 — Brand zod enum too narrow
+rail3SavePaymentMethodSchema.card_brand is z.enum(["visa","mastercard"]). Crossmint returns 7 brands (visa, mastercard, amex, discover, jcb, unionpay, diners-club). If we ever onboard an AMEX card, validation fails on save.
+
