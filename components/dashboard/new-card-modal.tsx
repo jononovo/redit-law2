@@ -2,7 +2,7 @@
 
 import type { ElementType } from "react";
 import { useRouter } from "next/navigation";
-import { Wallet, ShoppingCart, Shield, CreditCard } from "lucide-react";
+import { Wallet, ShoppingCart, Shield } from "lucide-react";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 
@@ -44,16 +44,6 @@ const cardTypes: CardTypeOption[] = [
     color: "text-violet-600",
     iconBg: "bg-violet-50",
     borderColor: "border-violet-200 hover:border-violet-400 hover:bg-violet-50/50",
-  },
-  {
-    icon: CreditCard,
-    label: "Virtual Card",
-    description: "CreditClaw issues a virtual card for your bot with built-in spending controls.",
-    href: "/cards",
-    color: "text-neutral-400",
-    iconBg: "bg-neutral-100",
-    borderColor: "border-neutral-100",
-    comingSoon: true,
   },
 ];
 
