@@ -137,10 +137,17 @@ export async function DELETE(
       { status: 401 }
     );
   }
-  await revokeOrderIntent({
-    jwt,
-    orderIntentId: card.orderIntentId,
-  }).catch(() => {});
+  try {
+    await revokeOrderIntent({
+      jwt,
+      orderIntentId: card.orderIntentId,
+    });
+  } catch (e: any) {
+    return NextResponse.json(
+      { error: "crossmint_revoke_failed", message: e?.message || "Crossmint did not revoke this card. Try again." },
+      { status: 502 }
+    );
+  }
   await storage.deleteRail3Card(cardId);
 
   if (card.botId) {

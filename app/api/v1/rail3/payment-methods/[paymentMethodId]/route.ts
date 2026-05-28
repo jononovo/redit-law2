@@ -129,10 +129,17 @@ export async function DELETE(
       { status: 401 }
     );
   }
-  await deletePaymentMethod({
-    jwt,
-    paymentMethodId,
-  }).catch(() => {});
+  try {
+    await deletePaymentMethod({
+      jwt,
+      paymentMethodId,
+    });
+  } catch (e: any) {
+    return NextResponse.json(
+      { error: "crossmint_delete_failed", message: e?.message || "Crossmint did not remove this card. Try again." },
+      { status: 502 }
+    );
+  }
   await storage.deleteRail3PaymentMethod(paymentMethodId);
 
   return NextResponse.json({ ok: true });
