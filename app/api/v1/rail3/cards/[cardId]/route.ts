@@ -10,12 +10,13 @@ import { lookupIssuer } from "@/features/payment-rails/card/bin-lookup";
 // bot_id is the only mutable link to a bot. Crossmint OrderIntent.agentId is
 // immutable after creation, but the agent is owner-scoped (one per owner), so
 // re-pointing a card to a different bot of the same owner is just a DB relabel
-// and is safe. Not exposed here yet — separate PATCH endpoint planned.
+// and is safe.
 const patchSchema = z.object({
   card_name: z.string().min(1).max(200).optional(),
   card_color: z.enum(["purple", "dark", "blue", "primary", "emerald"]).optional(),
   category: z.string().max(100).nullable().optional(),
   is_frozen: z.boolean().optional(),
+  bot_id: z.string().nullable().optional(),
 });
 
 async function serializeCard(c: NonNullable<Awaited<ReturnType<typeof storage.getRail3CardByCardId>>>) {
@@ -98,6 +99,7 @@ export async function PATCH(
   if (parsed.data.card_color !== undefined) updates.cardColor = parsed.data.card_color;
   if (parsed.data.category !== undefined) updates.category = parsed.data.category;
   if (parsed.data.is_frozen !== undefined) updates.isFrozen = parsed.data.is_frozen;
+  if (parsed.data.bot_id !== undefined) updates.botId = parsed.data.bot_id;
 
   if (Object.keys(updates).length === 0) {
     return NextResponse.json({ error: "no_updates" }, { status: 400 });
