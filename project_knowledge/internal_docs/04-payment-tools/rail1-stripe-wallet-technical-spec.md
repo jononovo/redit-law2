@@ -78,7 +78,6 @@ Four tables, all prefixed `privy_` for rail segmentation.
 | *(approval thresholds are now in master_guardrails)* | | |
 | allowlisted_domains | jsonb | Array of allowed domains |
 | blocklisted_domains | jsonb | Array of blocked domains |
-| auto_pause_on_zero | boolean | Pause wallet when balance hits zero (default: true) |
 
 ### privy_transactions
 | Column | Type | Description |
