@@ -69,16 +69,20 @@ export function Rail3SyncButton({ onSynced }: Props) {
 
   return (
     <>
-      <Button
-        variant="outline"
-        size="sm"
+      <button
+        type="button"
         onClick={runSync}
         disabled={loading}
+        aria-label={loading ? "Refreshing from Visa" : "Refresh from Visa"}
+        title="Refresh from Visa"
         data-testid="button-rail3-sync"
+        className="group inline-flex items-center h-9 px-2 rounded-full border border-neutral-200 bg-white text-neutral-600 hover:text-neutral-900 hover:border-neutral-300 hover:bg-neutral-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        <RefreshCw className={`w-4 h-4 mr-2 ${loading ? "animate-spin" : ""}`} />
-        {loading ? "Refreshing…" : "Refresh from Crossmint"}
-      </Button>
+        <RefreshCw className={`w-4 h-4 flex-shrink-0 ${loading ? "animate-spin" : ""}`} />
+        <span className="overflow-hidden max-w-0 group-hover:max-w-[180px] transition-[max-width,margin] duration-200 whitespace-nowrap text-sm group-hover:ml-2">
+          {loading ? "Refreshing…" : "Refresh from Visa"}
+        </span>
+      </button>
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-lg" data-testid="dialog-rail3-sync-result">
@@ -94,10 +98,10 @@ export function Rail3SyncButton({ onSynced }: Props) {
             </DialogTitle>
             <DialogDescription>
               {error
-                ? "Couldn't reach Crossmint. Try again in a moment."
+                ? "Couldn't reach Visa. Try again in a moment."
                 : changes === 0
-                ? "Your local state matches Crossmint."
-                : "Your local cards and payment methods are now in sync with Crossmint."}
+                ? "Your local state matches Visa."
+                : "Your local cards and payment methods are now in sync with Visa."}
             </DialogDescription>
           </DialogHeader>
 
@@ -120,7 +124,7 @@ export function Rail3SyncButton({ onSynced }: Props) {
               )}
               {result.payment_methods.removed_blocked.length > 0 && (
                 <ChangeBlock
-                  title="Payment methods gone on Crossmint but kept locally"
+                  title="Payment methods gone on Visa but kept locally"
                   tone="amber"
                   items={result.payment_methods.removed_blocked.map((p) => `${pmLabel(p)} — ${p.reason ?? "has local dependents"}`)}
                 />

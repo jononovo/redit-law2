@@ -63,22 +63,20 @@ export default function VirtualCardsPage() {
         </div>
       </div>
     ),
+    titleAdornment: (
+      <Rail3SyncButton
+        onSynced={() => {
+          fetchPaymentMethods();
+          setCardListRefreshKey((k) => k + 1);
+        }}
+      />
+    ),
     headerSection: (
-      <div className="space-y-4">
-        <div className="flex justify-end">
-          <Rail3SyncButton
-            onSynced={() => {
-              fetchPaymentMethods();
-              setCardListRefreshKey((k) => k + 1);
-            }}
-          />
-        </div>
-        <PaymentMethodsStrip
-          paymentMethods={paymentMethods}
-          loading={pmLoading}
-          onChange={fetchPaymentMethods}
-        />
-      </div>
+      <PaymentMethodsStrip
+        paymentMethods={paymentMethods}
+        loading={pmLoading}
+        onChange={fetchPaymentMethods}
+      />
     ),
     refreshKey: cardListRefreshKey,
     setupWizard: ({ open, onOpenChange, onComplete }) => (

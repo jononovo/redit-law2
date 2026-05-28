@@ -34,6 +34,7 @@ export interface CreditCardListPageConfig {
   setupWizard?: (props: { open: boolean; onOpenChange: (v: boolean) => void; onComplete: () => void }) => ReactNode;
   setupWizardHref?: string;
   headerSection?: ReactNode;
+  titleAdornment?: ReactNode;
   supportsBotLinking?: boolean;
   transactionsEndpoint?: string;
   railId?: string;
@@ -266,9 +267,12 @@ export function CreditCardListPage({ config }: { config: CreditCardListPageConfi
   return (
     <div className="flex flex-col gap-8 animate-fade-in-up">
       <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-bold text-neutral-900 mb-1" data-testid="text-page-title">{config.title}</h1>
-          <p className="text-neutral-500">{config.subtitle}</p>
+        <div className="flex items-center gap-3">
+          {config.titleAdornment}
+          <div>
+            <h1 className="text-2xl font-bold text-neutral-900 mb-1" data-testid="text-page-title">{config.title}</h1>
+            <p className="text-neutral-500">{config.subtitle}</p>
+          </div>
         </div>
         <Button
           onClick={() => config.setupWizardHref ? router.push(config.setupWizardHref) : setWizardOpen(true)}
