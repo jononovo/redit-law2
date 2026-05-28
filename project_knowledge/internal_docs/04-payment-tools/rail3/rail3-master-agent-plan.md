@@ -6,7 +6,7 @@ last_updated: 2026-05-23
 status: idea — not started, blocked on the auth-model question below
 ---
 
-> **Where this lives.** Parked under `currently_building/rail3/` because the single blocking question is a Rail 3 auth question. Once the runtime decision is made and this has more than one sibling doc, graduate to its own `currently_building/master-agent/` folder.
+> **Where this lives.** Parked under `internal_docs/04-payment-tools/rail3/` because the single blocking question is a Rail 3 auth question. Once the runtime decision is made and this has more than one sibling doc, graduate to its own `currently_building/master-agent/` folder.
 > **Open-points tracker:** `_open-points.md` (sibling) lists this plan alongside the refresh-token plan.
 
 ## What it is

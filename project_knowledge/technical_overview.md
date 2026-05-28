@@ -253,7 +253,7 @@ Crossmint Card Permissions API. Owner saves their **own existing Visa/Mastercard
 
 **Modularized under `features/payment-rails/rail3/`:** `client.ts` (typed Crossmint fetch wrapper), `agents.ts` (`createAgent` — `deleteAgent` not yet added), `payment-methods.ts`, `permissions.ts` (OrderIntent CRUD + `buildDefaultMandate`), `credentials.ts` (per-merchant one-time PAN fetch). DB tables: `rail3_payment_methods`, `rail3_agents`, `rail3_cards`. Owner API: `/api/v1/rail3/{payment-methods,cards,setup-status}`. Bot API: `/api/v1/bot/rail3/{cards,checkout,confirm}`. Dashboard: `/virtual-cards` + 2-step setup wizard at `/setup/rail3`. Frontend wrapped in `<CrossmintProvider>` with Firebase→Crossmint JWT bridge (`components/wallet/rail3/crossmint-provider.tsx`).
 
-**Deep docs:** operational reference at `project_knowledge/currently_building/rail3/rail3-crossmint-card-permissions.md`; open items (live E2E test, bot-delete cleanup, sidebar nav flip) at `project_knowledge/currently_building/rail3/rail3-open-points.md`.
+**Deep docs:** operational reference at `project_knowledge/internal_docs/04-payment-tools/rail3-virtual-cards.md`; open items at `project_knowledge/internal_docs/04-payment-tools/rail3/_open-points.md`.
 
 ## Self-Hosted Cards (Rail 5) — Live
 

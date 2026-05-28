@@ -19,7 +19,7 @@ The strategic bet is that **agent-native commerce will need all of these rails s
 |---|---|---|---|---|
 | 1 | Stablecoin Wallet (Privy) | Live | "Crypto Wallet" | Privy-managed self-custodied stablecoin wallet on Base. Used for x402 payments and crypto-native flows. |
 | 2 | Crossmint USDC Wallet | Dormant — likely retired | "Shop Wallet" (deprecated) | Earlier exploration for Worldstore. Rail 1 covers the same use case directly; this rail is not actively developed. |
-| 3 | Virtual Cards (Crossmint Card Permissions) | Live | "Virtual Cards" | Owner vaults their own Visa/Mastercard with Crossmint once, then mints N **virtual cards** as OrderIntents — each with its own spending mandate. Real card never leaves Crossmint's PCI vault. One Crossmint agent per bot. |
+| 3 | Virtual Cards (Crossmint Card Permissions) | Live | "Virtual Cards" | Owner vaults their own Visa/Mastercard with Crossmint once, then mints N **virtual cards** as OrderIntents — each with its own spending mandate. Real card never leaves Crossmint's PCI vault. One Crossmint agent per owner. Owner-triggered sync ("Refresh from Visa" icon) reconciles local DB ↔ Crossmint truth on demand. |
 | 5 | Self-hosted Cards | Live | "My Card · Encrypted" | Owner pastes a real card PAN/CVC, encrypted at rest. Used for BYO scenarios where the owner controls the underlying card and wants no third-party vault. |
 
 (Rail 4 is intentionally absent — the numbering reflects historical exploration order, not a gap to fill.)
@@ -85,6 +85,8 @@ components/wallet/
 | `payments_overview.md` | This file — entry point, big picture, conventions. |
 | `guardrails.md` | Cross-rail spending-limit engine reference. |
 | `rail1-stripe-wallet-technical-spec.md` | Rail 1 (Privy stablecoin) deep dive. |
+| `rail3-virtual-cards.md` | Rail 3 (Crossmint Card Permissions) canonical operational doc. |
+| `rail3/` | Rail 3 sub-tree: open-points tracker, refresh-token plan, master-agent plan, archived `_completed/` plans, `_images/`. |
 | `rail5-overview_260309.md` | Rail 5 (self-hosted cards) deep dive. |
 | `APPROVAL_HISTORY_ON_RAIL_PAGES_PLAN.md` | Plan for per-rail approval history surface. |
 | `ORDERS_PAGE_CLEANUP_PLAN.md` | Orders ledger cleanup notes. |
@@ -93,4 +95,4 @@ components/wallet/
 | `_payment_build_ideas/` | Forward-looking ideas not yet planned. |
 | `_research/` | Industry research and decision reasoning. |
 
-Rail 3 has its own deep-doc tree under `project_knowledge/currently_building/rail3/` (operational doc: `rail3-crossmint-card-permissions.md`).
+Rail 3's canonical operational doc is `rail3-virtual-cards.md` (sibling in this folder). Its deeper plans + archived work live under the `rail3/` subfolder.

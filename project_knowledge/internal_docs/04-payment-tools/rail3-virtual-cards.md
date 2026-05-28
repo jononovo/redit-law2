@@ -2,7 +2,7 @@
 name: Rail 3 — Virtual Cards (Crossmint Card Permissions)
 description: Canonical operational doc for Rail 3 — vaulted real card → N virtual cards (Crossmint orderIntents) → merchant-scoped one-time PAN/CVC at bot checkout. Read this first when touching anything in features/payment-rails/rail3/, app/api/v1/rail3/, or components/wallet/rail3/.
 created: 2026-05-21
-last_updated: 2026-05-27
+last_updated: 2026-05-28
 ---
 
 # Rail 3 — Virtual Cards
@@ -400,7 +400,7 @@ Available env secrets today: `CROSSMINT_SERVER_API_KEY` (prod), `CROSSMINT_SERVE
    export const CROSSMINT_CLIENT_API_KEY = process.env.NEXT_PUBLIC_CROSSMINT_CLIENT_API_KEY;
    ```
 4. **Bump `@crossmint/client-sdk-react-ui`** to the latest minor (currently 4.2.2) before testing prod — Crossmint absorbs the prod-vs-staging overlay differences inside the SDK; running the latest minimizes drift from their reference quickstart.
-5. **Verify the refresh-token plan is shipped** (`project_knowledge/currently_building/rail3/rail3-firebase-refresh-token-plan.md`) **before** turning on bot checkout in prod. Without it, `/order-intents/:id/credentials` will 403 for every headless bot purchase.
+5. **Verify the refresh-token plan is shipped** (`project_knowledge/internal_docs/04-payment-tools/rail3/rail3-firebase-refresh-token-plan.md`) **before** turning on bot checkout in prod. Without it, `/order-intents/:id/credentials` will 403 for every headless bot purchase.
 6. **Smoke test the full ceremony in prod (real card, real money in trivial amount):**
    - PM save → agentic-enrollment → email OTP → real passkey on the test device → status `active`.
    - Create one virtual card → `<OrderIntentVerification>` → real passkey tap → `phase: active`.
@@ -523,12 +523,13 @@ Same shape for PM enrollment via `GET /api/unstable/payment-methods/:id/agentic-
 - Lazy per-owner agent provisioning on first card create, race-safe via `ON CONFLICT DO NOTHING`.
 - Per-card guardrails (`rail3_guardrails`) enforced in `rail3-fulfillment.ts`.
 - Verified end-to-end on Crossmint staging (2026-05-23): create card → passkey ceremony → `status='active'` written back to DB.
+- **Owner-triggered sync from Crossmint** (`POST /api/v1/rail3/sync` + `Rail3SyncButton` compact icon next to the `/virtual-cards` page title). Single-pass converging diff against Crossmint's truth: cards-removed before PMs-removed (tracked via `deletedCardIds: Set`), update path recomputes `intentMode` / `limitAmountCents` / `limitPeriod` from the latest mandates, recursive canonical-JSON compare on mandates (Crossmint reorders `details` keys e.g. `{period,currency}` ↔ `{currency,period}`). Helper: `listOrderIntents` in `features/payment-rails/rail3/permissions.ts` — JWT-only, client-key + Bearer. Storage: `getAllRail3CardsByOwnerUid`. Live test (2026-05-27) confirmed convergence in one pass and surfaced a Crossmint orphan-intent (PM deleted but orderIntent still exists) which the sync correctly skips + reports in `errors[]`. **Owner-facing branding:** the button label, hover label, and modal copy say "**Refresh from Visa**" / "in sync with **Visa**" — Crossmint is hidden behind Visa in this surface only (backend/code/internal docs still say Crossmint).
 
 ### Outstanding ❌
 
 | # | Item | Blocking? | Notes |
 |---|---|---|---|
-| 1 | **Firebase refresh-token store for headless bot checkout** | Yes for bot flow | `/order-intents/:id/credentials` requires Bearer JWT. No live user = 403. Plan: `project_knowledge/currently_building/rail3/rail3-firebase-refresh-token-plan.md`. |
+| 1 | **Firebase refresh-token store for headless bot checkout** | Yes for bot flow | `/order-intents/:id/credentials` requires Bearer JWT. No live user = 403. Plan: `project_knowledge/internal_docs/04-payment-tools/rail3/rail3-firebase-refresh-token-plan.md`. |
 | 2 | **`/api/v1/rail3/transactions/` route audit** | Unknown | Route exists, never validated against current schema. |
 | 3 | **Mobile prod verification ceremony unmounting mid-flow** | Unverified post-refactor | Was observed pre-dialog-removal. May or may not still reproduce — needs re-test. |
 | 4 | **Stale comment in `app/setup/rail3/page.tsx`** | Cosmetic | "Crossmint agents are created lazily per-bot" — should say per-owner. |
@@ -543,29 +544,29 @@ Captured UI for the ceremonies and surfaces that aren't in the code. Drop new sc
 
 The happy-path pending state after `POST /payment-methods/:id/enrollment` succeeds. The blue strip is our own UI; the email + passkey UI that appears next is Basis Theory's overlay portaled to `<body>` (not captured here because the overlay closes on success).
 
-![Wizard step 2 — authorize pending](./_images/rail3/wizard-step2-authorize-pending.png)
+![Wizard step 2 — authorize pending](./rail3/_images/rail3/wizard-step2-authorize-pending.png)
 
 ### Our wizard — same step, surfacing the historic `client-side API key` 403
 
 This is what `createEnrollment` returned through 2026-05-22 when our wrapper sent the server-key + userLocator combo to the JWT-only `/agentic-enrollment` endpoint. If this string ever shows up again, the wrapper is sending the wrong auth — check `agenticEnrollment.ts` is using `enrollmentHeaders(jwt)` (client key + Bearer), not the shared `crossmintCardsFetch` helper.
 
-![Wizard step 2 — client-side API key 403 error](./_images/rail3/wizard-step2-client-key-403-error.png)
+![Wizard step 2 — client-side API key 403 error](./rail3/_images/rail3/wizard-step2-client-key-403-error.png)
 
 ### Crossmint's own Card Permissions quickstart UI (reference only)
 
 The quickstart's reference shape: three numbered sections (Create agent / Save credit card / Allow payments). Our wizard collapses 1+2 (lazy agent on first card, save card in step 1) and treats 3 as the separate `/virtual-cards` page. Useful when comparing what they show vs what we show.
 
-![Crossmint quickstart — Card Permissions reference](./_images/rail3/crossmint-quickstart-reference.png)
+![Crossmint quickstart — Card Permissions reference](./rail3/_images/rail3/crossmint-quickstart-reference.png)
 
 ### Our `/virtual-cards` page (current as of 2026-05-23)
 
 Owner dashboard after the wizard: vaulted real card at the top, virtual cards (= orderIntents) below. The right-hand card showing `AWAITING AUTHORIZATION` is the visible state for `status: "requires-verification"` — owner needs to open it and complete the passkey ceremony.
 
-![Virtual Cards page — current state](./_images/rail3/virtual-cards-page-current.png)
+![Virtual Cards page — current state](./rail3/_images/rail3/virtual-cards-page-current.png)
 
 ### Adding more
 
-- File location: `project_knowledge/currently_building/rail3/_images/rail3/`
+- File location: `project_knowledge/internal_docs/04-payment-tools/rail3/_images/rail3/`
 - Naming: `kebab-case-descriptive.png`. Prefer "what + state" (`wizard-step2-authorize-pending.png`) over filenames/dates.
 - Worth capturing next: the Basis Theory email-OTP overlay, the passkey-create overlay, the cross-device-passkey rejection screen (will only appear in prod), the AddCardDialog inline panel in its three states (form / authorize / done).
 
@@ -575,11 +576,11 @@ Owner dashboard after the wizard: vaulted real card at the top, virtual cards (=
 
 ### Internal
 
-- **Open-points tracker (start here):** `project_knowledge/currently_building/rail3/_open-points.md` — flat checklist of everything outstanding on Rail 3.
+- **Open-points tracker (start here):** `project_knowledge/internal_docs/04-payment-tools/rail3/_open-points.md` — flat checklist of everything outstanding on Rail 3.
 - **Open plans (deep dives):**
-  - `project_knowledge/currently_building/rail3/rail3-firebase-refresh-token-plan.md` — encrypted refresh-token store so headless bot checkout can mint JWTs for `/order-intents/:id/credentials`.
-  - `project_knowledge/currently_building/rail3/rail3-master-agent-plan.md` — holding doc for the in-house Master Agent capability. Coupled to Rail 3 via the auth-model question (one shared `agentId` vs JWT-bound). Path-A outcome partially obviates the refresh-token plan.
-- Archived plans + superseded docs: `project_knowledge/currently_building/rail3/_completed/` — per-user agent rework, env single-source, verification writeback, staging migration, frontend rewire, add-card preview, prior open-points tracker, prior operational docs.
+  - `project_knowledge/internal_docs/04-payment-tools/rail3/rail3-firebase-refresh-token-plan.md` — encrypted refresh-token store so headless bot checkout can mint JWTs for `/order-intents/:id/credentials`.
+  - `project_knowledge/internal_docs/04-payment-tools/rail3/rail3-master-agent-plan.md` — holding doc for the in-house Master Agent capability. Coupled to Rail 3 via the auth-model question (one shared `agentId` vs JWT-bound). Path-A outcome partially obviates the refresh-token plan.
+- Archived plans + superseded docs: `project_knowledge/internal_docs/04-payment-tools/rail3/_completed/` — per-user agent rework, env single-source, verification writeback, staging migration, frontend rewire, add-card preview, prior open-points tracker, prior operational docs.
 
 ### External
 
