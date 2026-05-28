@@ -9,7 +9,10 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { CreditCard, Plus, Trash2, ShieldCheck, AlertCircle, Loader2 } from "lucide-react";
+import { CreditCard, Plus, Trash2, ShieldCheck, AlertCircle, Loader2, MoreVertical, Settings } from "lucide-react";
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
 import { RAIL3_FUNDING_TYPE_LABEL, type Rail3PaymentMethodInfo } from "@/components/wallet/types";
 
@@ -139,16 +142,36 @@ export function PaymentMethodsStrip({ paymentMethods, loading, onChange }: Props
                     <span>{pm.virtual_card_count} virtual card{pm.virtual_card_count === 1 ? "" : "s"}</span>
                   </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={(ev) => { ev.preventDefault(); ev.stopPropagation(); setRemoveTarget(pm); }}
-                  disabled={hasVirtuals}
-                  className="ml-1 p-1 rounded hover:bg-neutral-200 text-neutral-400 hover:text-red-600 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-neutral-400"
-                  title={hasVirtuals ? "Remove the virtual cards first" : "Remove real card"}
-                  data-testid={`button-remove-pm-${pm.payment_method_id}`}
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      type="button"
+                      onClick={(ev) => { ev.preventDefault(); ev.stopPropagation(); }}
+                      aria-label={`Actions for ${(pm.card_brand || "card").toUpperCase()} ending ${pm.card_last4 || "????"}`}
+                      className="ml-1 p-1 rounded hover:bg-neutral-200 text-neutral-400 hover:text-neutral-600"
+                      data-testid={`button-pm-menu-${pm.payment_method_id}`}
+                    >
+                      <MoreVertical className="w-4 h-4" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" onClick={(ev) => ev.stopPropagation()}>
+                    <DropdownMenuItem
+                      onSelect={(ev) => { ev.preventDefault(); router.push(`/real-cards/${pm.payment_method_id}`); }}
+                      data-testid={`menu-manage-pm-${pm.payment_method_id}`}
+                    >
+                      <Settings className="w-4 h-4 mr-2" /> Manage
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      disabled={hasVirtuals}
+                      onSelect={(ev) => { ev.preventDefault(); setRemoveTarget(pm); }}
+                      data-testid={`menu-delete-pm-${pm.payment_method_id}`}
+                      className="text-red-600 focus:text-red-600"
+                    >
+                      <Trash2 className="w-4 h-4 mr-2" />
+                      Delete{hasVirtuals ? " (remove virtual cards first)" : ""}
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </Link>
             );
           })}
