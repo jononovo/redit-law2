@@ -1,8 +1,8 @@
 ---
 name: Rail 3 — Virtual Cards (Crossmint Card Permissions)
-description: Canonical operational doc for Rail 3 — vaulted real card → N virtual cards (Crossmint orderIntents) → merchant-scoped one-time PAN/CVC at bot checkout. Read this first when touching anything in features/payment-rails/rail3/, app/api/v1/rail3/, or components/rail3/.
+description: Canonical operational doc for Rail 3 — vaulted real card → N virtual cards (Crossmint orderIntents) → merchant-scoped one-time PAN/CVC at bot checkout. Read this first when touching anything in features/payment-rails/rail3/, app/api/v1/rail3/, or components/wallet/rail3/.
 created: 2026-05-21
-last_updated: 2026-05-23
+last_updated: 2026-05-27
 ---
 
 # Rail 3 — Virtual Cards
@@ -21,7 +21,7 @@ Three stacked vendors. Knowing which one owns which surface is the single most i
 |---|---|---|---|
 | **API + orchestration** | **Crossmint** (Card Permissions API) | Real card vaulting, agents, orderIntents, merchant-scoped credentials. PCI scope lives here. | `features/payment-rails/rail3/*` → `https://staging.crossmint.com/api/...`. SDK: `@crossmint/client-sdk-react-ui`. |
 | **Ceremony UI + card issuance** | **Basis Theory** (`@basis-theory/react-agentic`) — **inferred, not documented** | Renders the Visa Agentic Commerce overlay (passkey, OTP, Click to Pay). Mock Visa SDK in test env; real Visa in prod. | Transitive dep of the Crossmint SDK. Body-portaled overlays at `z-index: 10001`. Console logs prefixed `[BtAi]`. |
-| **Owner identity** | **Firebase** | Owner auth. Registered in the Crossmint Console as the 3P auth provider; Crossmint maps Firebase's `sub` claim to its `userLocator`. | `components/rail3/crossmint-provider.tsx` calls `setJwt(firebaseIdToken)`; `authFetch` sends `Authorization: Bearer <id-token>` on every BFF call. |
+| **Owner identity** | **Firebase** | Owner auth. Registered in the Crossmint Console as the 3P auth provider; Crossmint maps Firebase's `sub` claim to its `userLocator`. | `components/wallet/rail3/crossmint-provider.tsx` calls `setJwt(firebaseIdToken)`; `authFetch` sends `Authorization: Bearer <id-token>` on every BFF call. |
 
 **Operationally:** Crossmint owns API + agent + orderIntent state. Basis Theory owns every owner-facing ceremony UI. Bugs in the overlay (z-index, pointer-events, focus, double-mount) are Basis Theory bugs, not Crossmint API bugs. Firebase produces the JWT that gates almost everything Crossmint does — see [Auth model](#auth-model).
 
