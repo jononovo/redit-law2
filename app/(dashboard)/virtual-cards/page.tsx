@@ -6,13 +6,15 @@ import { CreditCardListPage, type CreditCardListPageConfig } from "@/components/
 import { normalizeRail3Card, type Rail3CardInfo, type Rail3PaymentMethodInfo } from "@/components/wallet/types";
 import { authFetch } from "@/features/platform-management/auth-fetch";
 import { useAuth } from "@/features/platform-management/auth/auth-context";
-import { PaymentMethodsStrip } from "@/components/rail3/payment-methods-strip";
-import { AddCardDialog } from "@/components/rail3/add-card-dialog";
+import { PaymentMethodsStrip } from "@/components/wallet/rail3/payment-methods-strip";
+import { AddCardDialog } from "@/components/wallet/rail3/add-card-dialog";
+import { Rail3SyncButton } from "@/components/wallet/rail3/sync-button";
 
 export default function VirtualCardsPage() {
   const { user } = useAuth();
   const [paymentMethods, setPaymentMethods] = useState<Rail3PaymentMethodInfo[]>([]);
   const [pmLoading, setPmLoading] = useState(true);
+  const [cardListRefreshKey, setCardListRefreshKey] = useState(0);
 
   const fetchPaymentMethods = useCallback(async () => {
     try {
@@ -62,12 +64,23 @@ export default function VirtualCardsPage() {
       </div>
     ),
     headerSection: (
-      <PaymentMethodsStrip
-        paymentMethods={paymentMethods}
-        loading={pmLoading}
-        onChange={fetchPaymentMethods}
-      />
+      <div className="space-y-4">
+        <div className="flex justify-end">
+          <Rail3SyncButton
+            onSynced={() => {
+              fetchPaymentMethods();
+              setCardListRefreshKey((k) => k + 1);
+            }}
+          />
+        </div>
+        <PaymentMethodsStrip
+          paymentMethods={paymentMethods}
+          loading={pmLoading}
+          onChange={fetchPaymentMethods}
+        />
+      </div>
     ),
+    refreshKey: cardListRefreshKey,
     setupWizard: ({ open, onOpenChange, onComplete }) => (
       <AddCardDialog
         open={open}

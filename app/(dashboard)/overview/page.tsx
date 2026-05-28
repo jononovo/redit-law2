@@ -168,32 +168,32 @@ export default function DashboardOverview() {
   async function handleRail5FreezeConfirm() {
     if (!rail5FreezeTarget) return;
     setRail5FreezeLoading(true);
-    const isFrozen = rail5FreezeTarget.status === "frozen";
-    const newStatus = isFrozen ? "active" : "frozen";
+    const wasFrozen = rail5FreezeTarget.is_frozen;
+    const nextIsFrozen = !wasFrozen;
 
-    setRail5Cards((prev) => prev.map((c) => c.card_id === rail5FreezeTarget.card_id ? { ...c, status: newStatus } : c));
+    setRail5Cards((prev) => prev.map((c) => c.card_id === rail5FreezeTarget.card_id ? { ...c, is_frozen: nextIsFrozen } : c));
 
     try {
       const res = await authFetch(`/api/v1/rail5/cards/${rail5FreezeTarget.card_id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: newStatus }),
+        body: JSON.stringify({ is_frozen: nextIsFrozen }),
       });
       if (res.ok) {
         const updated = await res.json().catch(() => null);
-        if (updated?.status) {
-          setRail5Cards((prev) => prev.map((c) => c.card_id === rail5FreezeTarget.card_id ? { ...c, status: updated.status } : c));
+        if (typeof updated?.is_frozen === "boolean") {
+          setRail5Cards((prev) => prev.map((c) => c.card_id === rail5FreezeTarget.card_id ? { ...c, is_frozen: updated.is_frozen } : c));
         }
         toast({
-          title: newStatus === "frozen" ? "Card frozen" : "Card unfrozen",
-          description: newStatus === "frozen" ? "All transactions on this card are paused." : "Transactions on this card are resumed.",
+          title: nextIsFrozen ? "Card frozen" : "Card unfrozen",
+          description: nextIsFrozen ? "All transactions on this card are paused." : "Transactions on this card are resumed.",
         });
       } else {
-        setRail5Cards((prev) => prev.map((c) => c.card_id === rail5FreezeTarget.card_id ? { ...c, status: rail5FreezeTarget.status } : c));
+        setRail5Cards((prev) => prev.map((c) => c.card_id === rail5FreezeTarget.card_id ? { ...c, is_frozen: wasFrozen } : c));
         toast({ title: "Error", description: "Failed to update card status.", variant: "destructive" });
       }
     } catch {
-      setRail5Cards((prev) => prev.map((c) => c.card_id === rail5FreezeTarget.card_id ? { ...c, status: rail5FreezeTarget.status } : c));
+      setRail5Cards((prev) => prev.map((c) => c.card_id === rail5FreezeTarget.card_id ? { ...c, is_frozen: wasFrozen } : c));
       toast({ title: "Error", description: "Something went wrong.", variant: "destructive" });
     } finally {
       setRail5FreezeLoading(false);
@@ -340,7 +340,7 @@ export default function DashboardOverview() {
                   wallet={firstWallet}
                   color="blue"
                   onFund={() => { setFundTarget({ id: firstWallet.id, address: firstWallet.address, botName: firstWallet.bot_name }); setFundSheetOpen(true); }}
-                  onFreeze={() => rail1WalletActions.handleFreeze({ id: firstWallet.id, name: firstWallet.bot_name || "Wallet", status: firstWallet.status })}
+                  onFreeze={() => rail1WalletActions.handleFreeze({ id: firstWallet.id, name: firstWallet.bot_name || "Wallet", is_frozen: firstWallet.is_frozen })}
                   onGuardrails={() => rail1Guardrails.openDialog(firstWallet)}
                   onActivity={() => router.push("/stripe-wallet")}
                   onAddAgent={() => rail1BotLinking.openLinkDialog({ id: firstWallet.id, name: firstWallet.bot_name || "Wallet", bot_id: firstWallet.bot_id || null, bot_name: firstWallet.bot_name || null })}
@@ -429,7 +429,7 @@ export default function DashboardOverview() {
         open={!!rail5FreezeTarget}
         onOpenChange={(open) => !open && setRail5FreezeTarget(null)}
         itemName={rail5FreezeTarget?.card_name || ""}
-        isFrozen={rail5FreezeTarget?.status === "frozen"}
+        isFrozen={!!rail5FreezeTarget?.is_frozen}
         loading={rail5FreezeLoading}
         onConfirm={handleRail5FreezeConfirm}
         itemType="card"

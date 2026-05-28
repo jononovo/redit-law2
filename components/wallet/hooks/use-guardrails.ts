@@ -22,7 +22,6 @@ const DEFAULTS: GuardrailDefaults = {
     monthly_budget_usdc: 1000,
     allowlisted_merchants: "",
     blocklisted_merchants: "",
-    auto_pause_on_zero: true,
   },
 };
 
@@ -60,7 +59,6 @@ export function useGuardrails<W extends { id: number; bot_name?: string; guardra
           monthly_budget_usdc: wallet.guardrails.monthly_budget_usdc / m,
           allowlisted_merchants: (wallet.guardrails.allowlisted_merchants || []).join(", "),
           blocklisted_merchants: (wallet.guardrails.blocklisted_merchants || []).join(", "),
-          auto_pause_on_zero: wallet.guardrails.auto_pause_on_zero ?? true,
         } as CardGuardrailForm);
       }
     }
@@ -100,7 +98,6 @@ export function useGuardrails<W extends { id: number; bot_name?: string; guardra
               max_per_tx_usdc: cardForm.max_per_tx_usdc * m,
               daily_budget_usdc: cardForm.daily_budget_usdc * m,
               monthly_budget_usdc: cardForm.monthly_budget_usdc * m,
-              auto_pause_on_zero: cardForm.auto_pause_on_zero,
             }),
           }),
           authFetch("/api/v1/procurement-controls", {

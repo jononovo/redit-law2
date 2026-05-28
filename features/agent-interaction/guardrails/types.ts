@@ -3,7 +3,6 @@ export interface GuardrailRules {
   dailyBudgetUsdc: number;
   monthlyBudgetUsdc: number;
   requireApprovalAbove: number | null;
-  autoPauseOnZero: boolean;
 }
 
 export interface CardGuardrailRules {
@@ -11,7 +10,6 @@ export interface CardGuardrailRules {
   dailyBudgetCents: number;
   monthlyBudgetCents: number;
   requireApprovalAbove: number | null;
-  autoPauseOnZero: boolean;
 }
 
 export interface TransactionRequest {

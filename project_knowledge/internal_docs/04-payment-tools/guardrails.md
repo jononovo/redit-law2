@@ -9,7 +9,7 @@ Two separate systems that work together during checkout enforcement. **Guardrail
 Spending limits enforced at two levels:
 
 1. **Master** — owner-wide daily/monthly budget across all rails. Configured in `master_guardrails` table. Also owns approval mode (`approvalMode`, `requireApprovalAbove`).
-2. **Per-rail** — per-wallet (Rails 1/2) or per-card (Rail 5) limits. Configured in `privy_guardrails`, `crossmint_guardrails`, `rail5_guardrails`. These tables contain only spending limits: `maxPerTx`, `dailyBudget`, `monthlyBudget`, `recurringAllowed`, `autoPauseOnZero`, `notes`, `updatedAt`, `updatedBy`.
+2. **Per-rail** — per-wallet (Rails 1/2) or per-card (Rail 5) limits. Configured in `privy_guardrails`, `crossmint_guardrails`, `rail5_guardrails`. These tables contain only spending limits: `maxPerTx`, `dailyBudget`, `monthlyBudget`, `recurringAllowed`, `notes`, `updatedAt`, `updatedBy`.
 
 ### Enforcement Flow
 

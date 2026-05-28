@@ -28,13 +28,13 @@ export async function GET(request: NextRequest) {
           balance_display: formatUsdc(w.balanceUsdc),
           chain: w.chain,
           status: w.status,
+          is_frozen: w.isFrozen,
           guardrails: guardrails ? {
             max_per_tx_usdc: guardrails.maxPerTxUsdc,
             daily_budget_usdc: guardrails.dailyBudgetUsdc,
             monthly_budget_usdc: guardrails.monthlyBudgetUsdc,
             allowlisted_merchants: procControls?.allowlistedMerchants ?? [],
             blocklisted_merchants: procControls?.blocklistedMerchants ?? [],
-            auto_pause_on_zero: guardrails.autoPauseOnZero,
           } : null,
           created_at: w.createdAt,
         };

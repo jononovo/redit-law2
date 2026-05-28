@@ -70,9 +70,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (sourceWallet.isFrozen) {
+      return NextResponse.json(
+        { error: "Source wallet is frozen" },
+        { status: 403 }
+      );
+    }
     if (sourceWallet.status !== "active") {
       return NextResponse.json(
-        { error: "Source wallet is paused" },
+        { error: "Source wallet is not active" },
         { status: 403 }
       );
     }
@@ -162,7 +168,6 @@ export async function POST(request: NextRequest) {
           dailyBudgetUsdc: guardrails.dailyBudgetUsdc,
           monthlyBudgetUsdc: guardrails.monthlyBudgetUsdc,
           requireApprovalAbove: null,
-          autoPauseOnZero: guardrails.autoPauseOnZero,
         },
         { amountUsdc: amount_usdc },
         { dailyUsdc: dailySpend, monthlyUsdc: monthlySpend }

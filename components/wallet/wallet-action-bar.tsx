@@ -25,6 +25,7 @@ export interface MenuItem {
   icon: LucideIcon;
   label: string;
   onClick: () => void;
+  className?: string;
   "data-testid"?: string;
   hidden?: boolean;
 }
@@ -86,7 +87,7 @@ export function WalletActionBar({ actions, badge, menuItems, menuTestId }: Walle
           {visibleMenuItems.map((item, idx) => {
             const MenuIcon = item.icon;
             return (
-              <DropdownMenuItem key={idx} onClick={item.onClick} data-testid={item["data-testid"]}>
+              <DropdownMenuItem key={idx} onClick={item.onClick} className={item.className} data-testid={item["data-testid"]}>
                 <MenuIcon className="w-4 h-4 mr-2" /> {item.label}
               </DropdownMenuItem>
             );

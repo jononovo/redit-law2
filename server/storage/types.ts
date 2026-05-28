@@ -51,6 +51,9 @@ export interface IStorage {
   getOwnerByUid(uid: string): Promise<Owner | null>;
   getOwnerByEmail(email: string): Promise<Owner | null>;
   upsertOwner(uid: string, data: Partial<InsertOwner>): Promise<Owner>;
+  setFirebaseRefreshToken(ownerUid: string, refreshToken: string): Promise<void>;
+  getFirebaseRefreshToken(ownerUid: string): Promise<string | null>;
+  clearFirebaseRefreshToken(ownerUid: string): Promise<void>;
 
   createBot(data: InsertBot): Promise<Bot>;
   getBotByClaimToken(token: string): Promise<Bot | null>;
@@ -107,6 +110,7 @@ export interface IStorage {
   crossmintUpdateWalletBalanceAndSync(id: number, balanceUsdc: number): Promise<CrossmintWallet | null>;
   crossmintUpdateWalletSyncedAt(id: number): Promise<void>;
   crossmintUpdateWalletStatus(id: number, status: string, ownerUid: string): Promise<CrossmintWallet | null>;
+  crossmintUpdateWalletFrozen(id: number, isFrozen: boolean, ownerUid: string): Promise<CrossmintWallet | null>;
   crossmintLinkBot(id: number, botId: string, ownerUid: string): Promise<CrossmintWallet | null>;
   crossmintUnlinkBot(id: number, ownerUid: string): Promise<CrossmintWallet | null>;
 
@@ -128,6 +132,7 @@ export interface IStorage {
   privyGetWalletByAddress(address: string): Promise<PrivyWallet | null>;
   privyUpdateWalletBalance(id: number, balanceUsdc: number): Promise<PrivyWallet | null>;
   privyUpdateWalletStatus(id: number, status: string, ownerUid: string): Promise<PrivyWallet | null>;
+  privyUpdateWalletFrozen(id: number, isFrozen: boolean, ownerUid: string): Promise<PrivyWallet | null>;
   privyUnlinkBot(id: number, ownerUid: string): Promise<PrivyWallet | null>;
   privyLinkBot(id: number, botId: string, ownerUid: string): Promise<PrivyWallet | null>;
 
@@ -175,9 +180,8 @@ export interface IStorage {
   getRail3DailySpendCents(cardId: string): Promise<number>;
   getRail3MonthlySpendCents(cardId: string): Promise<number>;
 
-  getRail3AgentByBotId(botId: string): Promise<Rail3Agent | null>;
-  createRail3Agent(data: InsertRail3Agent): Promise<Rail3Agent>;
-  deleteRail3AgentByBotId(botId: string): Promise<void>;
+  getRail3AgentByOwnerUid(ownerUid: string): Promise<Rail3Agent | null>;
+  insertRail3AgentIfAbsent(data: InsertRail3Agent): Promise<Rail3Agent | null>;
 
   createRail3PaymentMethod(data: InsertRail3PaymentMethod): Promise<Rail3PaymentMethod>;
   getRail3PaymentMethodById(paymentMethodId: string): Promise<Rail3PaymentMethod | null>;
@@ -188,6 +192,7 @@ export interface IStorage {
   createRail3Card(data: InsertRail3Card): Promise<Rail3Card>;
   getRail3CardByCardId(cardId: string): Promise<Rail3Card | null>;
   getRail3CardsByOwnerUid(ownerUid: string): Promise<Rail3Card[]>;
+  getAllRail3CardsByOwnerUid(ownerUid: string): Promise<Rail3Card[]>;
   getRail3CardsByBotId(botId: string): Promise<Rail3Card[]>;
   getRail3CardsByPaymentMethodId(paymentMethodId: string): Promise<Rail3Card[]>;
   countRail3CardsByBotId(botId: string): Promise<number>;

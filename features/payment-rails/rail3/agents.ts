@@ -13,17 +13,18 @@ export interface CrossmintAgent {
 }
 
 /**
- * Create a Crossmint agent for the given owner.
+ * Create a Crossmint agent for the caller (identified by the JWT's `sub`).
  * One-per-owner in our model (Crossmint docs: "typically one agent per user").
+ * JWT-only — server-key + userLocator is rejected with 403.
  */
 export async function createAgent(params: {
-  userLocator: string;
+  jwt: string;
   name: string;
   description?: string;
 }): Promise<CrossmintAgent> {
   const res = await crossmintCardsFetch(`/agents`, {
     method: "POST",
-    userLocator: params.userLocator,
+    jwt: params.jwt,
     body: {
       metadata: {
         name: params.name,

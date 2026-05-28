@@ -5,18 +5,18 @@ import { WalletActionBar, type ActionItem } from "./wallet-action-bar";
 
 export interface CryptoActionBarProps {
   walletId: number;
-  status: string;
+  isFrozen: boolean;
   onFund: () => void;
   onFreeze: () => void;
-  onGuardrails: () => void;
-  onActivity: () => void;
+  onGuardrails?: () => void;
+  onActivity?: () => void;
   fundLabel?: string;
   testIdPrefix?: string;
 }
 
 export function CryptoActionBar({
   walletId,
-  status,
+  isFrozen,
   onFund,
   onFreeze,
   onGuardrails,
@@ -24,8 +24,6 @@ export function CryptoActionBar({
   fundLabel = "Fund",
   testIdPrefix = "stripe",
 }: CryptoActionBarProps) {
-  const isActive = status === "active";
-
   const actions: ActionItem[] = [
     {
       icon: DollarSign,
@@ -35,8 +33,8 @@ export function CryptoActionBar({
       "data-testid": `button-fund-${walletId}`,
     },
     {
-      icon: isActive ? Snowflake : Play,
-      label: isActive ? "Freeze" : "Activate",
+      icon: isFrozen ? Play : Snowflake,
+      label: isFrozen ? "Unfreeze" : "Freeze",
       onClick: onFreeze,
       className: "flex-1 text-xs gap-2 text-neutral-600 cursor-pointer hover:bg-neutral-100 rounded-lg transition-colors",
       "data-testid": `button-freeze-${walletId}`,
@@ -44,16 +42,18 @@ export function CryptoActionBar({
     {
       icon: Settings2,
       label: "Guardrails",
-      onClick: onGuardrails,
+      onClick: onGuardrails ?? (() => {}),
       className: "flex-1 text-xs gap-2 text-neutral-600 cursor-pointer hover:bg-neutral-100 rounded-lg transition-colors",
       "data-testid": `button-guardrails-${walletId}`,
+      hidden: !onGuardrails,
     },
     {
       icon: ArrowUpRight,
       label: "Activity",
-      onClick: onActivity,
+      onClick: onActivity ?? (() => {}),
       className: "flex-1 text-xs gap-2 text-neutral-600 cursor-pointer hover:bg-neutral-100 rounded-lg transition-colors",
       "data-testid": `button-activity-${walletId}`,
+      hidden: !onActivity,
     },
   ];
 

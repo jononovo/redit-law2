@@ -156,7 +156,6 @@ Spending controls per card. Separate from the card record.
 | `monthly_budget_cents` | integer | Monthly aggregate cap |
 | *(approval_mode and require_approval_above are now in master_guardrails)* | | |
 | `recurring_allowed` | boolean | Allow recurring charges |
-| `auto_pause_on_zero` | boolean | Freeze card when budget exhausted |
 | `notes` | text, nullable | Owner notes |
 | `updated_at` | timestamp | |
 | `updated_by` | text, nullable | Who last updated |

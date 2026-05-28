@@ -2,18 +2,21 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSessionUser } from "@/features/platform-management/auth/session";
 import { storage } from "@/server/storage";
 import { fireRailsUpdated } from "@/features/agent-interaction/webhooks";
-import { revokeOrderIntent, ownerUidToUserLocator } from "@/features/payment-rails/rail3";
+import { revokeOrderIntent } from "@/features/payment-rails/rail3";
+import { extractBearerJwt } from "@/features/platform-management/auth/extract-bearer-jwt";
 import { z } from "zod";
+import { lookupIssuer } from "@/features/payment-rails/card/bin-lookup";
 
-// bot_id intentionally NOT patchable: Crossmint OrderIntent.agentId is immutable
-// after creation and the Crossmint agent is bound 1:1 to a bot. Re-linking would
-// strand the card on the wrong agent. Move a card to another bot by deleting and
-// recreating it.
+// bot_id is the only mutable link to a bot. Crossmint OrderIntent.agentId is
+// immutable after creation, but the agent is owner-scoped (one per owner), so
+// re-pointing a card to a different bot of the same owner is just a DB relabel
+// and is safe.
 const patchSchema = z.object({
   card_name: z.string().min(1).max(200).optional(),
-  card_color: z.enum(["purple", "dark", "blue", "primary"]).optional(),
+  card_color: z.enum(["purple", "dark", "blue", "primary", "emerald"]).optional(),
   category: z.string().max(100).nullable().optional(),
-  status: z.enum(["active", "frozen"]).optional(),
+  is_frozen: z.boolean().optional(),
+  bot_id: z.string().nullable().optional(),
 });
 
 async function serializeCard(c: NonNullable<Awaited<ReturnType<typeof storage.getRail3CardByCardId>>>) {
@@ -24,15 +27,16 @@ async function serializeCard(c: NonNullable<Awaited<ReturnType<typeof storage.ge
     card_color: c.cardColor || null,
     category: c.category || null,
     status: c.status,
+    is_frozen: c.isFrozen,
     bot_id: c.botId || null,
     payment_method_id: c.paymentMethodId,
     card_brand: pm?.cardBrand || null,
     card_last4: pm?.cardLast4 || null,
+    issuer_name: pm?.cardFirst6 ? (lookupIssuer(pm.cardFirst6) || null) : null,
     cardholder_name: pm?.cardholderName || null,
     exp_month: pm?.expMonth || null,
     exp_year: pm?.expYear || null,
     intent_mode: c.intentMode,
-    permission_phase: c.permissionPhase,
     order_intent_id: c.orderIntentId,
     mandates: c.mandates,
     limit_amount_cents: c.limitAmountCents,
@@ -94,7 +98,8 @@ export async function PATCH(
   if (parsed.data.card_name !== undefined) updates.cardName = parsed.data.card_name;
   if (parsed.data.card_color !== undefined) updates.cardColor = parsed.data.card_color;
   if (parsed.data.category !== undefined) updates.category = parsed.data.category;
-  if (parsed.data.status !== undefined) updates.status = parsed.data.status;
+  if (parsed.data.is_frozen !== undefined) updates.isFrozen = parsed.data.is_frozen;
+  if (parsed.data.bot_id !== undefined) updates.botId = parsed.data.bot_id;
 
   if (Object.keys(updates).length === 0) {
     return NextResponse.json({ error: "no_updates" }, { status: 400 });
@@ -102,10 +107,10 @@ export async function PATCH(
 
   const updated = await storage.updateRail3Card(cardId, updates);
 
-  if (parsed.data.status !== undefined && updated?.botId) {
+  if (parsed.data.is_frozen !== undefined && updated?.botId) {
     const bot = await storage.getBotByBotId(updated.botId);
     if (bot) {
-      const action = parsed.data.status === "frozen" ? "card_frozen" as const : "card_unfrozen" as const;
+      const action = parsed.data.is_frozen ? "card_frozen" as const : "card_unfrozen" as const;
       fireRailsUpdated(bot, action, "rail3", { card_id: cardId }).catch(() => {});
     }
   }
@@ -127,10 +132,24 @@ export async function DELETE(
   if (!card) return NextResponse.json({ error: "card_not_found" }, { status: 404 });
   if (card.ownerUid !== user.uid) return NextResponse.json({ error: "forbidden" }, { status: 403 });
 
-  await revokeOrderIntent({
-    userLocator: ownerUidToUserLocator(user.uid),
-    orderIntentId: card.orderIntentId,
-  }).catch(() => {});
+  const jwt = extractBearerJwt(request);
+  if (!jwt) {
+    return NextResponse.json(
+      { error: "bearer_required", message: "Firebase ID token required in Authorization header to revoke a Crossmint card." },
+      { status: 401 }
+    );
+  }
+  try {
+    await revokeOrderIntent({
+      jwt,
+      orderIntentId: card.orderIntentId,
+    });
+  } catch (e: any) {
+    return NextResponse.json(
+      { error: "crossmint_revoke_failed", message: e?.message || "Crossmint did not revoke this card. Try again." },
+      { status: 502 }
+    );
+  }
   await storage.deleteRail3Card(cardId);
 
   if (card.botId) {

@@ -76,8 +76,8 @@ export function useBotLinking(config: UseBotLinkingConfig) {
               : { card_id: linkTarget.id, bot_id: linkBotId }
           ),
         });
-      } else if (config.railPrefix === "rail5") {
-        res = await authFetch(`/api/v1/rail5/cards/${linkTarget.id}`, {
+      } else if (config.railPrefix === "rail5" || config.railPrefix === "rail3") {
+        res = await authFetch(`/api/v1/${config.railPrefix}/cards/${linkTarget.id}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ bot_id: linkBotId }),
@@ -126,8 +126,8 @@ export function useBotLinking(config: UseBotLinkingConfig) {
               : { card_id: unlinkTarget.id }
           ),
         });
-      } else if (config.railPrefix === "rail5") {
-        res = await authFetch(`/api/v1/rail5/cards/${unlinkTarget.id}`, {
+      } else if (config.railPrefix === "rail5" || config.railPrefix === "rail3") {
+        res = await authFetch(`/api/v1/${config.railPrefix}/cards/${unlinkTarget.id}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ bot_id: null }),

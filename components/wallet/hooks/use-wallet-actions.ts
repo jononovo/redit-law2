@@ -18,7 +18,7 @@ export interface UseWalletActionsConfig {
 export interface FreezeTarget {
   id: number | string;
   name: string;
-  status: string;
+  is_frozen: boolean;
 }
 
 export function useWalletActions(config: UseWalletActionsConfig) {
@@ -27,18 +27,17 @@ export function useWalletActions(config: UseWalletActionsConfig) {
   const [syncCooldowns, setSyncCooldowns] = useState<Record<number, number>>({});
 
   const handleFreeze = useCallback(async (target: FreezeTarget) => {
-    const isFrozen = target.status === "frozen" || target.status === "paused";
-    const freeze = !isFrozen;
+    const nextIsFrozen = !target.is_frozen;
     const label = config.entityType === "wallet" ? "Wallet" : "Card";
     try {
       const endpoint = config.freezeEndpoint || `/api/v1/${config.railPrefix}/freeze`;
       const res = await authFetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ [config.entityIdField]: target.id, frozen: freeze }),
+        body: JSON.stringify({ [config.entityIdField]: target.id, is_frozen: nextIsFrozen }),
       });
       if (res.ok) {
-        toast({ title: freeze ? `${label} paused` : `${label} activated` });
+        toast({ title: nextIsFrozen ? `${label} frozen` : `${label} unfrozen` });
         config.onUpdate?.();
       } else {
         toast({ title: "Error", description: "Failed to update status.", variant: "destructive" });
@@ -48,46 +47,35 @@ export function useWalletActions(config: UseWalletActionsConfig) {
     }
   }, [config, toast]);
 
+  // Card freeze (rail3 + rail5): PATCH /api/v1/{rail}/cards/{id} with { is_frozen }.
   const handleFreezeCard = useCallback(async (
     cardId: string,
-    currentStatus: string,
+    currentIsFrozen: boolean,
     setCards: React.Dispatch<React.SetStateAction<any[]>>,
     setFreezeLoading: (v: boolean) => void,
     setFreezeTarget: (v: null) => void,
   ) => {
-    const isFrozen = currentStatus === "frozen";
-    const newStatus = isFrozen ? "active" : "frozen";
-
+    const nextIsFrozen = !currentIsFrozen;
     setFreezeLoading(true);
-    setCards((prev: any[]) => prev.map((c: any) => c.card_id === cardId ? { ...c, status: newStatus } : c));
+    setCards((prev: any[]) => prev.map((c: any) => c.card_id === cardId ? { ...c, is_frozen: nextIsFrozen } : c));
 
     try {
-      const endpoint = config.freezeEndpoint || `/api/v1/${config.railPrefix}/freeze`;
-      const body = config.railPrefix === "rail5"
-        ? { status: newStatus }
-        : { card_id: cardId, frozen: !isFrozen };
-
-      const url = config.railPrefix === "rail5"
-        ? `/api/v1/rail5/cards/${cardId}`
-        : endpoint;
-      const method = config.railPrefix === "rail5" ? "PATCH" : "POST";
-
-      const res = await authFetch(url, {
-        method,
+      const res = await authFetch(`/api/v1/${config.railPrefix}/cards/${cardId}`, {
+        method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
+        body: JSON.stringify({ is_frozen: nextIsFrozen }),
       });
       if (!res.ok) {
-        setCards((prev: any[]) => prev.map((c: any) => c.card_id === cardId ? { ...c, status: currentStatus } : c));
+        setCards((prev: any[]) => prev.map((c: any) => c.card_id === cardId ? { ...c, is_frozen: currentIsFrozen } : c));
         toast({ title: "Error", description: "Failed to update card status.", variant: "destructive" });
       } else {
         toast({
-          title: newStatus === "frozen" ? "Card frozen" : "Card unfrozen",
-          description: newStatus === "frozen" ? "All transactions on this card are paused." : "Transactions on this card are resumed.",
+          title: nextIsFrozen ? "Card frozen" : "Card unfrozen",
+          description: nextIsFrozen ? "All transactions on this card are paused." : "Transactions on this card are resumed.",
         });
       }
     } catch {
-      setCards((prev: any[]) => prev.map((c: any) => c.card_id === cardId ? { ...c, status: currentStatus } : c));
+      setCards((prev: any[]) => prev.map((c: any) => c.card_id === cardId ? { ...c, is_frozen: currentIsFrozen } : c));
       toast({ title: "Error", description: "Something went wrong.", variant: "destructive" });
     } finally {
       setFreezeLoading(false);

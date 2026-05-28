@@ -26,6 +26,9 @@ async function handler(request: NextRequest, botId: string) {
       return NextResponse.json({ error: "No Crypto Wallet found for this bot" }, { status: 404 });
     }
 
+    if (wallet.isFrozen) {
+      return NextResponse.json({ error: "Wallet is frozen" }, { status: 403 });
+    }
     if (wallet.status !== "active") {
       return NextResponse.json({ error: "Wallet is not active", status: wallet.status }, { status: 403 });
     }
@@ -105,7 +108,6 @@ async function handler(request: NextRequest, botId: string) {
           dailyBudgetUsdc: guardrails.dailyBudgetUsdc,
           monthlyBudgetUsdc: guardrails.monthlyBudgetUsdc,
           requireApprovalAbove: null,
-          autoPauseOnZero: guardrails.autoPauseOnZero,
         },
         { amountUsdc: amount_usdc },
         { dailyUsdc: dailySpend, monthlyUsdc: monthlySpend }

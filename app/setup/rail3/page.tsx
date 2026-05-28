@@ -17,7 +17,7 @@ import {
   CrossmintPaymentMethodManagement,
   PaymentMethodAgenticEnrollmentVerification,
 } from "@crossmint/client-sdk-react-ui";
-import { Rail3CrossmintProvider, useCrossmintJwt } from "@/components/rail3/crossmint-provider";
+import { Rail3CrossmintProvider, useCrossmintJwt } from "@/components/wallet/rail3/crossmint-provider";
 
 type Step = 1 | 2;
 
@@ -90,10 +90,11 @@ function SetupInner() {
 
   const savePaymentMethodAndEnroll = useCallback(async (pm: {
     paymentMethodId: string;
-    card: { brand: string; last4: string; expiration: { month: string; year: string } };
+    card: { brand: string; last4: string; bin?: string; expiration: { month: string; year: string } };
   }) => {
     setEnrollmentError(null);
     try {
+      const first6 = pm.card.bin?.replace(/\D/g, "").slice(0, 6);
       const saveRes = await authFetch("/api/v1/rail3/payment-methods", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -101,6 +102,7 @@ function SetupInner() {
           payment_method_id: pm.paymentMethodId,
           card_brand: pm.card.brand?.toLowerCase(),
           card_last4: pm.card.last4,
+          card_first6: first6 && first6.length >= 4 ? first6 : undefined,
           exp_month: Number(pm.card.expiration.month),
           exp_year: Number(pm.card.expiration.year),
         }),

@@ -1,9 +1,10 @@
+import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { Snowflake } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface CardVisualProps {
-  color?: "primary" | "dark" | "blue" | "purple";
+  color?: "primary" | "dark" | "blue" | "purple" | "emerald";
   last4?: string;
   expiry?: string;
   holder?: string;
@@ -20,6 +21,7 @@ interface CardVisualProps {
   issuer?: string;
   bottomRightLabel?: string;
   bottomRightValue?: string;
+  numberCaption?: string;
 }
 
 const BRAND_DISPLAY: Record<string, string> = {
@@ -47,23 +49,60 @@ export function CardVisual({
   issuer,
   bottomRightLabel,
   bottomRightValue,
+  numberCaption,
 }: CardVisualProps) {
 
   const gradients = {
-    primary: "bg-gradient-to-br from-primary to-orange-600",
-    dark: "bg-gradient-to-br from-neutral-900 to-neutral-800",
-    blue: "bg-gradient-to-br from-blue-500 to-blue-700",
-    purple: "bg-gradient-to-br from-purple-500 to-purple-700"
+    primary: "bg-[radial-gradient(circle_at_85%_20%,rgba(255,220,180,0.30),transparent_45%),radial-gradient(circle_at_15%_15%,rgba(120,40,10,0.40),transparent_55%),radial-gradient(circle_at_85%_90%,rgba(180,60,20,0.45),transparent_55%),linear-gradient(135deg,#fb923c_0%,#f97316_45%,#c2410c_100%)]",
+    dark: "bg-[radial-gradient(circle_at_85%_20%,rgba(140,140,160,0.22),transparent_45%),radial-gradient(circle_at_15%_15%,rgba(0,0,0,0.50),transparent_55%),radial-gradient(circle_at_85%_90%,rgba(0,0,0,0.55),transparent_55%),linear-gradient(135deg,#262626_0%,#171717_50%,#0a0a0a_100%)]",
+    blue: "bg-[radial-gradient(circle_at_85%_20%,rgba(180,210,255,0.30),transparent_45%),radial-gradient(circle_at_15%_15%,rgba(15,25,80,0.50),transparent_55%),radial-gradient(circle_at_85%_90%,rgba(20,40,120,0.55),transparent_55%),linear-gradient(135deg,#3b82f6_0%,#2563eb_50%,#1e3a8a_100%)]",
+    purple: "bg-[radial-gradient(circle_at_85%_20%,rgba(255,200,235,0.32),transparent_45%),radial-gradient(circle_at_15%_15%,rgba(110,15,80,0.50),transparent_55%),radial-gradient(circle_at_85%_90%,rgba(150,20,110,0.55),transparent_55%),linear-gradient(135deg,#f472b6_0%,#ec4899_45%,#9d174d_100%)]",
+    emerald: "bg-[radial-gradient(circle_at_85%_20%,rgba(180,255,220,0.30),transparent_45%),radial-gradient(circle_at_15%_15%,rgba(4,50,40,0.50),transparent_55%),radial-gradient(circle_at_85%_90%,rgba(6,78,59,0.55),transparent_55%),linear-gradient(135deg,#10b981_0%,#059669_50%,#065f46_100%)]"
+  };
+
+  const patternOverlays: Record<string, ReactNode> = {
+    primary: (
+      <>
+        <div className="absolute inset-0 opacity-[0.07] mix-blend-overlay pointer-events-none bg-[repeating-linear-gradient(45deg,#fff_0px,#fff_1px,transparent_1px,transparent_9px)]" />
+        <div className="absolute -bottom-24 -right-24 w-72 h-72 rounded-full border border-white/10 pointer-events-none" />
+        <div className="absolute -bottom-32 -right-32 w-96 h-96 rounded-full border border-white/[0.06] pointer-events-none" />
+      </>
+    ),
+    dark: (
+      <div className="absolute inset-0 opacity-[0.08] mix-blend-overlay pointer-events-none bg-[radial-gradient(circle,rgba(255,255,255,0.5)_1px,transparent_1.5px)] bg-[length:12px_12px]" />
+    ),
+    blue: (
+      <>
+        <div className="absolute inset-0 opacity-[0.10] mix-blend-overlay pointer-events-none bg-[repeating-radial-gradient(circle_at_100%_0%,transparent_0_38px,rgba(255,255,255,0.7)_38px_39px)]" />
+        <div className="absolute -bottom-40 -left-40 w-[28rem] h-[28rem] rounded-full border border-white/[0.07] pointer-events-none" />
+      </>
+    ),
+    purple: (
+      <>
+        <div className="absolute inset-0 opacity-[0.09] mix-blend-overlay pointer-events-none bg-[repeating-linear-gradient(0deg,#fff_0px,#fff_1px,transparent_1px,transparent_4px),repeating-linear-gradient(90deg,#fff_0px,#fff_1px,transparent_1px,transparent_4px)]" />
+        <div className="absolute -bottom-16 -right-16 w-40 h-40 rotate-45 border border-white/10 pointer-events-none" />
+      </>
+    ),
+    emerald: (
+      <>
+        <div className="absolute inset-0 opacity-[0.07] mix-blend-overlay pointer-events-none bg-[repeating-linear-gradient(45deg,#fff_0px,#fff_1px,transparent_1px,transparent_9px)]" />
+        <div className="absolute top-3 right-3 w-3 h-3 rounded-full border border-white/15 pointer-events-none" />
+        <div className="absolute top-6 right-8 w-2 h-2 rounded-full border border-white/15 pointer-events-none" />
+        <div className="absolute top-2 right-10 w-1.5 h-1.5 rounded-full border border-white/15 pointer-events-none" />
+      </>
+    ),
   };
 
   const statusColors: Record<string, string> = {
     active: "bg-emerald-500/20 text-emerald-100 border-emerald-300/30",
-    pending_setup: "bg-amber-500/20 text-amber-100 border-amber-300/30",
-    pending_delivery: "bg-orange-500/20 text-orange-100 border-orange-300/30",
-    confirmed: "bg-teal-500/20 text-teal-100 border-teal-300/30",
+    pending_setup: "bg-amber-500/20 text-amber-100 border-amber-300/30",      // rail5
+    pending_delivery: "bg-orange-500/20 text-orange-100 border-orange-300/30", // rail5
+    confirmed: "bg-teal-500/20 text-teal-100 border-teal-300/30",             // rail5
     awaiting_bot: "bg-violet-500/20 text-violet-100 border-violet-300/30",
-    frozen: "bg-blue-500/20 text-blue-100 border-blue-300/30",
-    paused: "bg-blue-500/20 text-blue-100 border-blue-300/30",
+    "requires-verification": "bg-amber-500/20 text-amber-100 border-amber-300/30", // rail3
+    expired: "bg-neutral-500/20 text-neutral-100 border-neutral-300/30",            // rail3
+    revoked: "bg-red-500/20 text-red-100 border-red-300/30",                        // rail3
+    frozen: "bg-blue-500/20 text-blue-100 border-blue-300/30",                // synthesized when is_frozen
   };
 
   const statusLabels: Record<string, string> = {
@@ -72,8 +111,10 @@ export function CardVisual({
     pending_delivery: "Ready to Test",
     confirmed: "Confirmed",
     awaiting_bot: "Awaiting Bot",
+    "requires-verification": "Awaiting Authorization",
+    expired: "Expired",
+    revoked: "Revoked",
     frozen: "Frozen",
-    paused: "Paused",
   };
 
   const displayStatus = frozen ? "frozen" : status;
@@ -85,13 +126,14 @@ export function CardVisual({
 
   return (
     <div className={cn(
-      "relative aspect-[1.586/1] rounded-2xl p-6 text-white shadow-xl overflow-hidden flex flex-col justify-between select-none transition-all",
+      "relative aspect-[1.586/1] w-full min-w-[22rem] max-w-[26rem] rounded-2xl p-6 text-white shadow-xl overflow-hidden flex flex-col justify-between select-none transition-all",
       gradients[color],
       frozen && "grayscale opacity-70",
       !frozen && "hover:scale-[1.02]",
       className
     )}>
       <div className="absolute inset-0 opacity-20 bg-[url('/assets/noise.svg')] mix-blend-overlay pointer-events-none" />
+      {patternOverlays[color]}
       <div className="absolute -top-[100%] -left-[100%] w-[300%] h-[300%] bg-gradient-to-br from-white/20 via-transparent to-transparent rotate-45 pointer-events-none" />
 
       {frozen && (
@@ -131,12 +173,19 @@ export function CardVisual({
               <span className="text-2xl font-bold font-mono tracking-tight" data-testid="text-balance-value">{balance}</span>
             </>
           )}
-          <div className="mt-2 w-10 h-6 rounded bg-white/20 backdrop-blur-sm border border-white/30 flex items-center justify-center">
-            <div className="w-6 h-4 border border-white/40 rounded-[2px] relative overflow-hidden">
-              <div className="absolute top-1 left-0 w-full h-[1px] bg-white/40" />
-              <div className="absolute bottom-1 left-0 w-full h-[1px] bg-white/40" />
-              <div className="absolute left-2 top-0 h-full w-[1px] bg-white/40" />
-            </div>
+          <div
+            aria-hidden
+            className="mt-2 ml-2 w-10 h-8 rounded-[15%] border border-slate-500/60 overflow-hidden relative shadow-inner bg-[repeating-linear-gradient(90deg,rgba(255,255,255,0.02)_0px,rgba(255,255,255,0.02)_1px,rgba(71,85,105,0.02)_1px,rgba(71,85,105,0.02)_2px),linear-gradient(120deg,transparent_30%,rgba(255,255,255,0.35)_40%,transparent_50%),radial-gradient(ellipse_at_28%_22%,rgba(255,255,255,0.55),transparent_60%),radial-gradient(ellipse_at_75%_85%,rgba(71,85,105,0.35),transparent_65%),linear-gradient(135deg,#f1f5f9_0%,#e2e8f0_22%,#cbd5e1_48%,#94a3b8_72%,#b6c2d0_100%)]"
+          >
+            <div className="absolute inset-0 rounded-[15%] shadow-[inset_0_0_0_0.5px_rgba(255,255,255,0.35)] pointer-events-none" />
+            <div className="absolute top-[-5%] left-[-5%] w-[51%] h-[30%] border border-slate-600/45" />
+            <div className="absolute top-[-5%] right-[-5%] w-[51%] h-[38.33%] border border-slate-600/45" />
+            <div className="absolute top-[25%] left-[-5%] w-[51%] h-[25%] border border-slate-600/40" />
+            <div className="absolute top-[33.33%] right-[-5%] w-[51%] h-[33.34%] border border-slate-600/40" />
+            <div className="absolute top-[50%] left-[-5%] w-[51%] h-[25%] border border-slate-600/40" />
+            <div className="absolute bottom-[-5%] left-[-5%] w-[51%] h-[30%] border border-slate-600/45" />
+            <div className="absolute bottom-[-5%] right-[-5%] w-[51%] h-[38.33%] border border-slate-600/45" />
+            <div className="absolute top-1/2 left-[47%] right-[47%] h-px -translate-y-px bg-slate-600/55" />
           </div>
         </div>
         {statusLabel && (
@@ -155,11 +204,18 @@ export function CardVisual({
       <div className="relative z-10">
         <div className="flex items-end justify-between">
           <div className="flex flex-col gap-4">
-            <div className="flex gap-3 text-lg font-mono tracking-widest opacity-90" data-testid="text-card-number">
-              <span>····</span>
-              <span>····</span>
-              <span>····</span>
-              <span>{last4}</span>
+            <div className="flex flex-col gap-0.5">
+              {numberCaption && (
+                <span className="text-[10px] font-medium uppercase tracking-wider opacity-70" data-testid="text-card-number-caption">
+                  {numberCaption}
+                </span>
+              )}
+              <div className="flex gap-3 text-lg font-mono tracking-widest opacity-90" data-testid="text-card-number">
+                <span>····</span>
+                <span>····</span>
+                <span>····</span>
+                <span>{last4}</span>
+              </div>
             </div>
             <div className="flex flex-col">
               <span className="text-[10px] uppercase opacity-70 tracking-wider">{holderLabel}</span>

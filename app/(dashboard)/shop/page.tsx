@@ -164,7 +164,7 @@ export default function ShopAdminPage() {
   const shopUrl = slug ? `${typeof window !== "undefined" ? window.location.origin : ""}/s/${slug}` : null;
 
   return (
-    <div className="space-y-6" data-testid="shop-admin-page">
+    <div className="space-y-6 max-w-3xl" data-testid="shop-admin-page">
       <div>
         <h1 className="text-2xl font-bold text-neutral-900" data-testid="text-shop-admin-title">
           Shop

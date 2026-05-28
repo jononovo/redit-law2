@@ -1,0 +1,60 @@
+OK, I just wanna fix something in the UI.
+Just for reference, I've added a screenshot of the virtual card UI versus the sub agent/self-hosted card UI, so that you can compare.
+
+Confirmed:
+We are already kind of showing some stars the last 4 digits of the card number in the primary section lower in the card, but for some reason, the agent applying this UI, felt that we need to add that again at the top.
+Which is unnecessary. At the top, it shows the card number when it shows it towards the bottom again.
+So that should be removed and perhaps be replaced with somethign else.
+
+Does that make sense?
+
+I know we also have:
+A. drop-down with the "category"
+B. And "intent (optional" and
+C. NickName
+
+So perhaps it could be replaced with one of those.
+And obviously, if the designated field is empty, and that field should also just gracefully disappear or not be visible.
+
+Does that make sense?
+
+Don't change anything yet
+
+
+Show less
+5 hours ago
+
+Show less
+
+18 actions
+Found it. The duplicate is hardcoded in components/wallet/types.ts:119:
+
+line1: `${capitalize(brand)} •••• ${last4}`,     // ← the duplicate at top-left
+line2: pendingAuth ? "Awaiting authorization" : (isLimited ? "Active permission" : "Use anywhere"),
+
+So on the card face today:
+
+Top-left line1: VISA •••• 4242 ← duplicate of the bottom rows
+Top-left line2: ACTIVE PERMISSION / AWAITING AUTHORIZATION / USE ANYWHERE
+Bottom row: •••• •••• •••• 4242 (the real card number display)
+Bottom-left CARD NAME: GENERAL •••• 4242 (also redundantly contains last4)
+You're right — last4 shows up three times on the same card. Once is enough.
+
+Where the replacement candidates live (need to confirm by reading the card record, but based on Rail 3 schema):
+
+A. Category — category on the orderIntent (dropdown in Add Card wizard). Always present.
+B. Intent — purchase_intent text field, optional.
+C. Nickname — there isn't a dedicated nickname field today on Rail 3; the card_name (e.g. GENERAL) is the closest thing and it already renders bottom-left.
+My recommendation (not changing anything yet):
+
+Replace line1 with intent if present, else category. Reasons:
+
+Intent is the most informative thing the user wrote ("Office supplies under $50", "Adobe subscription") — it's why this card exists. It deserves prime real estate when set.
+Category is the always-present fallback, so the slot never collapses awkwardly for cards created via the wizard.
+If neither exists (legacy / edge), line1 gracefully omits (the component already does {line1 && (...)}).
+Bottom-left CARD NAME: GENERAL should probably also drop the •••• 4242 suffix — that's a separate small fix, want me to bundle?
+Also worth flagging: line2 ("ACTIVE PERMISSION") duplicates the top-right status pill ("ACTIVE"). Not what you asked about, but if we're polishing this card face, that's the next obvious cleanup.
+
+Confirm the direction (intent → category fallback, drop redundant last4 from CARD NAME, optionally clean up line2 status echo) and I'll make the change.
+
+

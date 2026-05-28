@@ -3,9 +3,10 @@ import { withBotApi } from "@/features/platform-management/agent-management/agen
 import { storage } from "@/server/storage";
 import { rail3BotCheckoutSchema } from "@/shared/schema";
 import {
-  generateRail3TransactionId, fetchOneTimeCredentials, ownerUidToUserLocator, CrossmintApiError,
+  generateRail3TransactionId, fetchOneTimeCredentials, CrossmintApiError,
 } from "@/features/payment-rails/rail3";
 import { evaluateMasterGuardrails } from "@/features/agent-interaction/guardrails/master";
+import { getFreshIdToken, ReauthRequiredError, TokenExchangeTransientError } from "@/features/platform-management/auth/firebase-token-exchange";
 
 export const POST = withBotApi("/api/v1/bot/rail3/checkout", async (request, { bot }) => {
   let body;
@@ -21,18 +22,18 @@ export const POST = withBotApi("/api/v1/bot/rail3/checkout", async (request, { b
 
   const card = await storage.getRail3CardByCardId(card_id);
   if (!card) return NextResponse.json({ error: "card_not_found" }, { status: 404 });
+  // A null card.botId (vault-only card) is forbidden to every bot until the owner links one.
   if (card.botId !== bot.botId) {
     return NextResponse.json({ error: "card_not_linked", message: "This card is not linked to your bot." }, { status: 403 });
   }
-  if (card.status !== "active") {
-    return NextResponse.json({ error: "card_not_active", message: `Card is ${card.status}.` }, { status: 403 });
+  if (card.isFrozen) {
+    return NextResponse.json({ error: "card_frozen", message: "Card is frozen by the owner." }, { status: 403 });
   }
-  // PM enrollment status is enforced upstream: the order intent will not be in `active`
-  // phase unless the PM has completed agentic-enrollment AND the owner has run the
-  // OrderIntentVerification passkey ceremony for this intent. So the phase check is the gate.
-  if (card.permissionPhase !== "active") {
+  // Lifecycle (= Crossmint orderIntent.phase + terminal owner action). Anything other than
+  // "active" means PM enrollment / passkey verification incomplete, or the card is expired/revoked.
+  if (card.status !== "active") {
     return NextResponse.json(
-      { error: "card_not_authorized", message: "Owner must complete the authorization passkey before this card can be used." },
+      { error: "card_not_active", message: `Card status is "${card.status}".` },
       { status: 403 }
     );
   }
@@ -53,9 +54,28 @@ export const POST = withBotApi("/api/v1/bot/rail3/checkout", async (request, { b
 
   const transactionId = generateRail3TransactionId();
 
+  let ownerIdToken: string;
+  try {
+    ownerIdToken = await getFreshIdToken(card.ownerUid);
+  } catch (err) {
+    if (err instanceof ReauthRequiredError) {
+      return NextResponse.json(
+        { error: "reauth_required", message: "Owner must sign in to enable autonomous purchases." },
+        { status: 412 },
+      );
+    }
+    if (err instanceof TokenExchangeTransientError) {
+      return NextResponse.json(
+        { error: "auth_transient", message: "Temporary auth-provider issue; retry shortly." },
+        { status: 503 },
+      );
+    }
+    throw err;
+  }
+
   try {
     const { card: credCard, expiresAt } = await fetchOneTimeCredentials({
-      userLocator: ownerUidToUserLocator(card.ownerUid),
+      jwt: ownerIdToken,
       orderIntentId: card.orderIntentId,
       merchant: { name: merchant.name, url: merchant.url, countryCode: merchant.country_code },
     });

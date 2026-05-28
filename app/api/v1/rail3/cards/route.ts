@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionUser } from "@/features/platform-management/auth/session";
+import { extractBearerJwt } from "@/features/platform-management/auth/extract-bearer-jwt";
 import { storage } from "@/server/storage";
 import {
-  generateRail3CardId, buildMandates, createOrderIntent, createAgent, ownerUidToUserLocator,
+  generateRail3CardId, buildMandates, createOrderIntent,
   CrossmintApiError, type PermissionInput,
 } from "@/features/payment-rails/rail3";
-import { rail3CreateCardSchema } from "@/shared/schema";
+import { provisionAgentForOwner } from "@/features/payment-rails/rail3/per-user-agent";
+import { rail3CreateCardSchema, type Rail3Agent } from "@/shared/schema";
+import { randomCardName } from "@/features/payment-rails/card/card-naming";
+import { lookupIssuer } from "@/features/payment-rails/card/bin-lookup";
 
 export async function GET(request: NextRequest) {
   const user = await getSessionUser(request);
@@ -39,8 +43,9 @@ export async function GET(request: NextRequest) {
       payment_method_id: c.paymentMethodId,
       card_brand: pm?.cardBrand || null,
       card_last4: pm?.cardLast4 || null,
+      issuer_name: pm?.cardFirst6 ? (lookupIssuer(pm.cardFirst6) || null) : null,
       intent_mode: c.intentMode,
-      permission_phase: c.permissionPhase,
+      is_frozen: c.isFrozen,
       limit_amount_cents: c.limitAmountCents,
       limit_period: c.limitPeriod,
       order_intent_id: c.orderIntentId,
@@ -49,6 +54,30 @@ export async function GET(request: NextRequest) {
   });
 
   return NextResponse.json({ cards: result });
+}
+
+// Get-or-create the one Crossmint agent for this owner. Lazy-creates on first
+// virtual card. Concurrency-safe via ON CONFLICT DO NOTHING — on race, the
+// loser's Crossmint agent is orphaned (warn-logged, acceptable cost).
+async function getOrProvisionAgent(
+  ownerUid: string,
+  ownerEmail: string | null,
+  jwt: string,
+): Promise<Rail3Agent> {
+  const existing = await storage.getRail3AgentByOwnerUid(ownerUid);
+  if (existing) return existing;
+
+  const { agentId } = await provisionAgentForOwner({
+    jwt,
+    ownerEmail,
+  });
+  const inserted = await storage.insertRail3AgentIfAbsent({ ownerUid, agentId });
+  if (inserted) return inserted;
+
+  const winner = await storage.getRail3AgentByOwnerUid(ownerUid);
+  if (!winner) throw new Error("rail3_agent_race_unresolved");
+  console.warn("[Rail3] orphaned Crossmint agent", agentId, "lost race for owner", ownerUid);
+  return winner;
 }
 
 // Create a new virtual card on top of an existing payment method.
@@ -75,51 +104,33 @@ export async function POST(request: NextRequest) {
   if (!pm) return NextResponse.json({ error: "payment_method_not_found" }, { status: 404 });
   if (pm.ownerUid !== user.uid) return NextResponse.json({ error: "forbidden" }, { status: 403 });
 
-  // Verify the bot belongs to this owner.
-  const bot = await storage.getBotByBotId(parsed.data.bot_id);
-  if (!bot) return NextResponse.json({ error: "bot_not_found" }, { status: 404 });
-  if (bot.ownerUid !== user.uid) return NextResponse.json({ error: "forbidden" }, { status: 403 });
+  // Optional bot link — validate ownership if supplied.
+  let botId: string | null = null;
+  if (parsed.data.bot_id) {
+    const bot = await storage.getBotByBotId(parsed.data.bot_id);
+    if (!bot) return NextResponse.json({ error: "bot_not_found" }, { status: 404 });
+    if (bot.ownerUid !== user.uid) return NextResponse.json({ error: "forbidden" }, { status: 403 });
+    botId = bot.botId;
+  }
 
-  // Auto-create the Crossmint agent for this bot the first time it gets a card.
-  // One Crossmint agent per bot — name carries the bot's real identity through to
-  // Crossmint dashboards/audit logs. Concurrency-safe: on unique-violation we
-  // re-read the row the other request inserted (orphans one Crossmint agent at
-  // worst, which is acceptable — we'd rather waste a Crossmint agent than 500).
-  let agent = await storage.getRail3AgentByBotId(bot.botId);
-  if (!agent) {
-    let created;
-    try {
-      created = await createAgent({
-        userLocator: ownerUidToUserLocator(user.uid),
-        name: bot.botName,
-        description: bot.description || `${bot.botType || "Bot"} for ${bot.ownerEmail}`,
-      });
-    } catch (err) {
-      const status = err instanceof CrossmintApiError ? err.status : 500;
-      const message = err instanceof Error ? err.message : "create_agent_failed";
-      console.error("[Rail3] createAgent for bot", bot.botId, "failed:", message);
-      return NextResponse.json({ error: "create_agent_failed", message }, { status });
-    }
-    try {
-      agent = await storage.createRail3Agent({
-        botId: bot.botId,
-        ownerUid: user.uid,
-        agentId: created.agentId,
-      });
-    } catch (err: any) {
-      // 23505 = unique_violation on rail3_agents_pkey (bot_id) — another concurrent
-      // request beat us to it. Re-read the winner's row and orphan our Crossmint agent.
-      if (err?.code === "23505") {
-        agent = await storage.getRail3AgentByBotId(bot.botId);
-        if (!agent) {
-          console.error("[Rail3] agent row vanished after PK conflict for bot", bot.botId);
-          return NextResponse.json({ error: "create_agent_failed", message: "agent_race_unresolved" }, { status: 500 });
-        }
-        console.warn("[Rail3] orphaned Crossmint agent", created.agentId, "lost race for bot", bot.botId);
-      } else {
-        throw err;
-      }
-    }
+  // Crossmint requires a user JWT (Bearer) for both /agents and /order-intents.
+  // authFetch on the client always sends it; reject early if absent.
+  const jwt = extractBearerJwt(request);
+  if (!jwt) {
+    return NextResponse.json(
+      { error: "bearer_required", message: "Firebase ID token required in Authorization header for Crossmint card operations." },
+      { status: 401 }
+    );
+  }
+
+  let agent: Rail3Agent;
+  try {
+    agent = await getOrProvisionAgent(user.uid, user.email, jwt);
+  } catch (err) {
+    const status = err instanceof CrossmintApiError ? err.status : 500;
+    const message = err instanceof Error ? err.message : "create_agent_failed";
+    console.error("[Rail3] getOrProvisionAgent failed:", message);
+    return NextResponse.json({ error: "create_agent_failed", message }, { status });
   }
 
   const input: PermissionInput = parsed.data.mode === "open"
@@ -137,7 +148,7 @@ export async function POST(request: NextRequest) {
   let intent;
   try {
     intent = await createOrderIntent({
-      userLocator: ownerUidToUserLocator(user.uid),
+      jwt,
       agentId: agent.agentId,
       paymentMethodId: pm.paymentMethodId,
       mandates,
@@ -154,13 +165,7 @@ export async function POST(request: NextRequest) {
     : null;
   const limitPeriod = parsed.data.mode === "limited" ? (parsed.data.period ?? null) : null;
 
-  const last4 = pm.cardLast4 ? ` •••• ${pm.cardLast4}` : "";
-  const limitLabel = parsed.data.mode === "limited"
-    ? `$${parsed.data.max_amount_usd}/${parsed.data.period}`
-    : "no limit";
-  const defaultName = parsed.data.category
-    ? `${parsed.data.category}${last4}`
-    : `${(pm.cardBrand || "Card").toUpperCase()}${last4} — ${limitLabel}`;
+  const defaultName = randomCardName();
 
   const cardId = generateRail3CardId();
   const card = await storage.createRail3Card({
@@ -173,11 +178,11 @@ export async function POST(request: NextRequest) {
     orderIntentId: intent.orderIntentId,
     intentMode: parsed.data.mode,
     mandates,
-    permissionPhase: intent.phase,
     limitAmountCents,
     limitPeriod,
-    status: "active",
-    botId: bot.botId,
+    status: intent.phase,    // lifecycle = Crossmint orderIntent.phase
+    isFrozen: false,
+    botId,
   });
 
   await storage.updateRail3PaymentMethod(pm.paymentMethodId, { lastUsedAt: new Date() });
@@ -185,7 +190,8 @@ export async function POST(request: NextRequest) {
   return NextResponse.json({
     card_id: card.cardId,
     order_intent_id: intent.orderIntentId,
-    permission_phase: intent.phase,
+    status: card.status,
+    is_frozen: card.isFrozen,
     intent_mode: card.intentMode,
     limit_amount_cents: card.limitAmountCents,
     limit_period: card.limitPeriod,

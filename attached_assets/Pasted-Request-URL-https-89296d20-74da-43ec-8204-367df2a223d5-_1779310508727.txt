@@ -1,0 +1,66 @@
+Request URL
+https://89296d20-74da-43ec-8204-367df2a223d5-00-13onhnckmod4a.kirk.replit.dev/api/v1/notifications/unread-count
+Request Method
+GET
+Status Code
+200 OK
+Remote Address
+35.247.106.28:443
+Referrer Policy
+strict-origin-when-cross-origin
+content-type
+application/json
+date
+Wed, 20 May 2026 20:54:51 GMT
+replit-cluster
+kirk
+replit-cluster
+kirk
+set-cookie
+tenant-id=creditclaw; Path=/; Secure; SameSite=None
+transfer-encoding
+chunked
+vary
+rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch
+x-robots-tag
+none, noindex, noarchive, nofollow, nositelinkssearchbox, noimageindex
+x-robots-tag
+none, noindex, noarchive, nofollow, nositelinkssearchbox, noimageindex
+x-robots-tag
+none, noindex, noarchive, nofollow, nositelinkssearchbox, noimageindex
+accept
+*/*
+accept-encoding
+gzip, deflate, br, zstd
+accept-language
+en-US,en;q=0.9
+authorization
+Bearer eyJhbGciOiJSUzI1NiIsImtpZCI6ImM5YTBjMWRlYWEyN2JjNjMyNTUzYmM4MWEyMmQ4NzY1MWM3MTMyY2IiLCJ0eXAiOiJKV1QifQ.eyJuYW1lIjoiSm9uIEhhbWlsdG9uIiwicGljdHVyZSI6Imh0dHBzOi8vbGgzLmdvb2dsZXVzZXJjb250ZW50LmNvbS9hL0FDZzhvY0tldVJsb2N6ZjRjSl9wM1VxMkhuN1dyRklwZ3Y5Nm5vaWdQU1ZpOEtuMnR4UXpLZz1zOTYtYyIsImlzcyI6Imh0dHBzOi8vc2VjdXJldG9rZW4uZ29vZ2xlLmNvbS9kdWNrLWVtYWlsd3JpdGUiLCJhdWQiOiJkdWNrLWVtYWlsd3JpdGUiLCJhdXRoX3RpbWUiOjE3NzkxMTg4NjAsInVzZXJfaWQiOiJnV1h0VHY0ZFlWVEhrbHlBTDJDekRrSDhqTVAyIiwic3ViIjoiZ1dYdFR2NGRZVlRIa2x5QUwyQ3pEa0g4ak1QMiIsImlhdCI6MTc3OTMwODU1MywiZXhwIjoxNzc5MzEyMTUzLCJlbWFpbCI6ImpvbkA1ZHVja3MuYWkiLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwiZmlyZWJhc2UiOnsiaWRlbnRpdGllcyI6eyJnb29nbGUuY29tIjpbIjEwMjc1ODA0ODE2OTA2MTQ3NDkzNyJdLCJlbWFpbCI6WyJqb25ANWR1Y2tzLmFpIl19LCJzaWduX2luX3Byb3ZpZGVyIjoiZ29vZ2xlLmNvbSJ9fQ.-RkElnz7837trLIWdpqSww3dxYvFD431aMzS5lrXcl2DQX0lvRIvoIxgiaiWTtOUpVyqlGBKvsTc_za_G8bd5JBBVY9poDSJE-ZzBxtXn8UP1nivrFcZ9VAmsokb1L4Yofp_q7HeN0Bv2QvrVgNo4H0PJ3QZW2Iu_7sTa8w3O3ik1Is-ksOo-okEh6c1f1YYJYA4yCSFgf8Aro7QSha343oJy-x-Rmd1DN4YkVmAh47pmOFTurXJyNGkZI57qhSfSw0bndjG7Q_7qyKzjXftAcoEAVafCaSaBUQU-qbsX4KsX5PpGDhQyDnhlB46UhjvJ3ZkCbRiBb7GoLKVt33bEw
+cache-control
+no-cache
+connection
+keep-alive
+cookie
+__stripe_mid=1604a2b1-d9b8-4aa9-898c-1a5280e559d062d894; _ga=GA1.1.2031307203.1774461350; tenant-id=creditclaw; __next_hmr_refresh_hash__=422; __session=eyJhbGciOiJSUzI1NiIsImtpZCI6IjNYZEltUSJ9.eyJpc3MiOiJodHRwczovL3Nlc3Npb24uZmlyZWJhc2UuZ29vZ2xlLmNvbS9kdWNrLWVtYWlsd3JpdGUiLCJuYW1lIjoiSm9uIEhhbWlsdG9uIiwicGljdHVyZSI6Imh0dHBzOi8vbGgzLmdvb2dsZXVzZXJjb250ZW50LmNvbS9hL0FDZzhvY0tldVJsb2N6ZjRjSl9wM1VxMkhuN1dyRklwZ3Y5Nm5vaWdQU1ZpOEtuMnR4UXpLZ1x1MDAzZHM5Ni1jIiwiYXVkIjoiZHVjay1lbWFpbHdyaXRlIiwiYXV0aF90aW1lIjoxNzc5MTE4ODYwLCJ1c2VyX2lkIjoiZ1dYdFR2NGRZVlRIa2x5QUwyQ3pEa0g4ak1QMiIsInN1YiI6ImdXWHRUdjRkWVZUSGtseUFMMkN6RGtIOGpNUDIiLCJpYXQiOjE3NzkzMDk3OTYsImV4cCI6MTc3OTc0MTc5NiwiZW1haWwiOiJqb25ANWR1Y2tzLmFpIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsImZpcmViYXNlIjp7ImlkZW50aXRpZXMiOnsiZ29vZ2xlLmNvbSI6WyIxMDI3NTgwNDgxNjkwNjE0NzQ5MzciXSwiZW1haWwiOlsiam9uQDVkdWNrcy5haSJdfSwic2lnbl9pbl9wcm92aWRlciI6Imdvb2dsZS5jb20ifX0.keBobHBj6d7_EgmmhGKtp8vuxRxvAXvi6yNjOfmO2FYznwc6DT5dSCtVS6wpqQjij8v7buGMUtYhdbpa4bBONdZNlEbd0OlntdnBgAx44efQzQQSIndvIRub67nrG1p3LO8X9QXJQHlMSBnBgCK6XWCzcRrPTXoNq1ARH6uGUycGZYtHpDh5U45BgiXmdLihokc6bilwacjgwUYfQrlmGOpODiqACv5bzRZXCU7v3QGWPxOmApgpRmHnlG3IVSChQ_lLcJXnQn26Zijdgy8IEWgxByUb3-Cqud1rfLwE_itybfATZC4pT2a8Gqo8TaYVEjpeVdkO7sxc82Yrb6sAig; _ga_EGT42NKHLB=GS2.1.s1779307942$o12$g1$t1779310460$j59$l0$h0
+dnt
+1
+host
+89296d20-74da-43ec-8204-367df2a223d5-00-13onhnckmod4a.kirk.replit.dev
+pragma
+no-cache
+referer
+https://89296d20-74da-43ec-8204-367df2a223d5-00-13onhnckmod4a.kirk.replit.dev/virtual-cards
+sec-ch-ua
+"Chromium";v="148", "Google Chrome";v="148", "Not/A)Brand";v="99"
+sec-ch-ua-mobile
+?0
+sec-ch-ua-platform
+"macOS"
+sec-fetch-dest
+empty
+sec-fetch-mode
+cors
+sec-fetch-site
+same-origin
+user-agent
+Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36

@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 
 interface CryptoGuardrailForm {
   max_per_tx_usdc: number;
@@ -16,7 +15,6 @@ interface CryptoGuardrailForm {
 interface CardGuardrailForm extends CryptoGuardrailForm {
   allowlisted_merchants: string;
   blocklisted_merchants: string;
-  auto_pause_on_zero: boolean;
 }
 
 type GuardrailForm = CryptoGuardrailForm | CardGuardrailForm;
@@ -150,15 +148,6 @@ export function GuardrailDialog({
                   onChange={(e) => onFormChange({ ...form, blocklisted_merchants: e.target.value })}
                   placeholder="ebay"
                   data-testid="input-blocklisted-merchants"
-                />
-              </div>
-
-              <div className="flex items-center justify-between">
-                <Label className="text-xs">Auto-pause wallet when balance reaches $0</Label>
-                <Switch
-                  checked={form.auto_pause_on_zero}
-                  onCheckedChange={(checked) => onFormChange({ ...form, auto_pause_on_zero: checked })}
-                  data-testid="switch-auto-pause"
                 />
               </div>
 

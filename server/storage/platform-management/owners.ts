@@ -6,7 +6,15 @@ import {
 import { eq } from "drizzle-orm";
 import type { IStorage } from "../types";
 
-type OwnerMethods = Pick<IStorage, "getOwnerByUid" | "getOwnerByEmail" | "upsertOwner">;
+type OwnerMethods = Pick<
+  IStorage,
+  | "getOwnerByUid"
+  | "getOwnerByEmail"
+  | "upsertOwner"
+  | "setFirebaseRefreshToken"
+  | "getFirebaseRefreshToken"
+  | "clearFirebaseRefreshToken"
+>;
 
 export const ownerMethods: OwnerMethods = {
   async getOwnerByUid(uid: string): Promise<Owner | null> {
@@ -35,5 +43,40 @@ export const ownerMethods: OwnerMethods = {
       .values({ uid, email: data.email || "", ...data })
       .returning();
     return created;
+  },
+
+  async setFirebaseRefreshToken(ownerUid: string, refreshToken: string): Promise<void> {
+    const updated = await db
+      .update(owners)
+      .set({
+        firebaseRefreshToken: refreshToken,
+        firebaseRefreshTokenUpdatedAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .where(eq(owners.uid, ownerUid))
+      .returning({ uid: owners.uid });
+    if (updated.length === 0) {
+      throw new Error(`setFirebaseRefreshToken: no owner row for uid=${ownerUid}`);
+    }
+  },
+
+  async getFirebaseRefreshToken(ownerUid: string): Promise<string | null> {
+    const [row] = await db
+      .select({ token: owners.firebaseRefreshToken })
+      .from(owners)
+      .where(eq(owners.uid, ownerUid))
+      .limit(1);
+    return row?.token ?? null;
+  },
+
+  async clearFirebaseRefreshToken(ownerUid: string): Promise<void> {
+    await db
+      .update(owners)
+      .set({
+        firebaseRefreshToken: null,
+        firebaseRefreshTokenUpdatedAt: null,
+        updatedAt: new Date(),
+      })
+      .where(eq(owners.uid, ownerUid));
   },
 };

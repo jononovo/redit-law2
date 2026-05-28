@@ -63,7 +63,6 @@ export function CryptoCardVisual({
     confirmed: "bg-white/15 text-teal-200 border-teal-300/30",
     awaiting_bot: "bg-white/15 text-violet-200 border-violet-300/30",
     frozen: "bg-white/15 text-blue-200 border-blue-300/30",
-    paused: "bg-white/15 text-blue-200 border-blue-300/30",
   };
 
   const statusLabels: Record<string, string> = {
@@ -73,7 +72,6 @@ export function CryptoCardVisual({
     confirmed: "confirmed",
     awaiting_bot: "awaiting bot",
     frozen: "frozen",
-    paused: "paused",
   };
 
   const displayStatus = frozen ? "frozen" : status;

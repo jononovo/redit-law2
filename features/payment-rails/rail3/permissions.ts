@@ -20,10 +20,14 @@ export function buildMandates(input: PermissionInput): CrossmintMandate[] {
       { type: "description", value: "General-purpose card permission — no merchant restriction" },
     ];
   }
+  // Crossmint requires at least one `description` mandate. If the caller didn't
+  // supply one, derive it from the limit so we always send something meaningful.
+  const description = input.description
+    ?? `Spending limit $${input.maxAmountUsd}/${input.period}`;
   const mandates: CrossmintMandate[] = [
     { type: "maxAmount", value: input.maxAmountUsd.toFixed(2), details: { currency: "usd", period: input.period } },
+    { type: "description", value: description },
   ];
-  if (input.description) mandates.push({ type: "description", value: input.description });
   if (input.prompt) mandates.push({ type: "prompt", value: input.prompt });
   return mandates;
 }
@@ -44,15 +48,17 @@ export interface OrderIntent {
   verificationConfig?: VerificationConfig & { agentId?: string; instructionId?: string };
 }
 
+// JWT-only on Crossmint's side — server-key + userLocator returns 403
+// ("requires a 'client'-side API key"). See features/payment-rails/rail3/client.ts.
 export async function createOrderIntent(params: {
-  userLocator: string;
+  jwt: string;
   agentId: string;
   paymentMethodId: string;
   mandates: CrossmintMandate[];
 }): Promise<OrderIntent> {
   const res = await crossmintCardsFetch(`/order-intents`, {
     method: "POST",
-    userLocator: params.userLocator,
+    jwt: params.jwt,
     body: {
       agentId: params.agentId,
       payment: { paymentMethodId: params.paymentMethodId },
@@ -62,13 +68,37 @@ export async function createOrderIntent(params: {
   return unwrapCrossmint<OrderIntent>(res, "createOrderIntent");
 }
 
+// Read a single order intent. JWT-only (server-key returns 403 in practice,
+// matching the other agentic-commerce read paths).
+export async function getOrderIntent(params: {
+  jwt: string;
+  orderIntentId: string;
+}): Promise<OrderIntent> {
+  const res = await crossmintCardsFetch(`/order-intents/${params.orderIntentId}`, {
+    method: "GET",
+    jwt: params.jwt,
+  });
+  return unwrapCrossmint<OrderIntent>(res, "getOrderIntent");
+}
+
+// List ALL order intents for the JWT's user. JWT-only — server key returns 403.
+// Crossmint scopes the result by the Bearer identity; no userLocator needed.
+// Returns the same per-intent shape as `getOrderIntent` (verified live against staging).
+export async function listOrderIntents(params: { jwt: string }): Promise<OrderIntent[]> {
+  const res = await crossmintCardsFetch(`/order-intents`, {
+    method: "GET",
+    jwt: params.jwt,
+  });
+  return unwrapCrossmint<OrderIntent[]>(res, "listOrderIntents");
+}
+
 export async function revokeOrderIntent(params: {
-  userLocator: string;
+  jwt: string;
   orderIntentId: string;
 }): Promise<void> {
   const res = await crossmintCardsFetch(`/order-intents/${params.orderIntentId}`, {
     method: "DELETE",
-    userLocator: params.userLocator,
+    jwt: params.jwt,
   });
   if (!res.ok && res.status !== 404) {
     const body = await res.json().catch(() => ({}));

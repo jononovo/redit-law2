@@ -191,6 +191,7 @@ export const privyWallets = pgTable("privy_wallets", {
   address: text("address").notNull(),
   balanceUsdc: bigint("balance_usdc", { mode: "number" }).notNull().default(0),
   status: text("status").notNull().default("active"),
+  isFrozen: boolean("is_frozen").notNull().default(false),
   lastSyncedAt: timestamp("last_synced_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
@@ -207,7 +208,6 @@ export const privyGuardrails = pgTable("privy_guardrails", {
   dailyBudgetUsdc: integer("daily_budget_usdc").notNull().default(GUARDRAIL_DEFAULTS.rail1.dailyBudgetUsdc),
   monthlyBudgetUsdc: integer("monthly_budget_usdc").notNull().default(GUARDRAIL_DEFAULTS.rail1.monthlyBudgetUsdc),
   recurringAllowed: boolean("recurring_allowed").notNull().default(GUARDRAIL_DEFAULTS.rail1.recurringAllowed),
-  autoPauseOnZero: boolean("auto_pause_on_zero").notNull().default(GUARDRAIL_DEFAULTS.rail1.autoPauseOnZero),
   notes: text("notes"),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
   updatedBy: text("updated_by"),
@@ -252,7 +252,6 @@ export const setPrivyGuardrailsSchema = z.object({
   daily_budget_usdc: z.number().int().min(0).optional(),
   monthly_budget_usdc: z.number().int().min(0).optional(),
   recurring_allowed: z.boolean().optional(),
-  auto_pause_on_zero: z.boolean().optional(),
   notes: z.string().max(2000).nullable().optional(),
 });
 
@@ -280,6 +279,7 @@ export const crossmintWallets = pgTable("crossmint_wallets", {
   balanceUsdc: bigint("balance_usdc", { mode: "number" }).notNull().default(0),
   chain: text("chain").notNull().default("base"),
   status: text("status").notNull().default("active"),
+  isFrozen: boolean("is_frozen").notNull().default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
   lastSyncedAt: timestamp("last_synced_at"),
@@ -296,7 +296,6 @@ export const crossmintGuardrails = pgTable("crossmint_guardrails", {
   dailyBudgetUsdc: integer("daily_budget_usdc").notNull().default(GUARDRAIL_DEFAULTS.rail2.dailyBudgetUsdc),
   monthlyBudgetUsdc: integer("monthly_budget_usdc").notNull().default(GUARDRAIL_DEFAULTS.rail2.monthlyBudgetUsdc),
   recurringAllowed: boolean("recurring_allowed").notNull().default(GUARDRAIL_DEFAULTS.rail2.recurringAllowed),
-  autoPauseOnZero: boolean("auto_pause_on_zero").notNull().default(GUARDRAIL_DEFAULTS.rail2.autoPauseOnZero),
   notes: text("notes"),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
   updatedBy: text("updated_by"),
@@ -358,7 +357,6 @@ export const setCrossmintGuardrailsSchema = z.object({
   daily_budget_usdc: z.number().int().min(0).optional(),
   monthly_budget_usdc: z.number().int().min(0).optional(),
   recurring_allowed: z.boolean().optional(),
-  auto_pause_on_zero: z.boolean().optional(),
   notes: z.string().max(2000).nullable().optional(),
 });
 
@@ -395,6 +393,11 @@ export const owners = pgTable("owners", {
   flags: text("flags").array().notNull().default([]),
   signupTenant: text("signup_tenant"),
   onboardedAt: timestamp("onboarded_at"),
+  // Long-lived Firebase refresh token captured on every sign-in. Used by the BFF
+  // to mint fresh ID tokens for headless bot calls into Crossmint (rail3).
+  // TODO: encrypt at rest (AES-256-GCM) before SOC2 / GA at scale.
+  firebaseRefreshToken: text("firebase_refresh_token"),
+  firebaseRefreshTokenUpdatedAt: timestamp("firebase_refresh_token_updated_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 }, (table) => [
@@ -442,7 +445,6 @@ export const rail5Guardrails = pgTable("rail5_guardrails", {
   dailyBudgetCents: integer("daily_budget_cents").notNull().default(GUARDRAIL_DEFAULTS.rail5.dailyBudgetCents),
   monthlyBudgetCents: integer("monthly_budget_cents").notNull().default(GUARDRAIL_DEFAULTS.rail5.monthlyBudgetCents),
   recurringAllowed: boolean("recurring_allowed").notNull().default(GUARDRAIL_DEFAULTS.rail5.recurringAllowed),
-  autoPauseOnZero: boolean("auto_pause_on_zero").notNull().default(GUARDRAIL_DEFAULTS.rail5.autoPauseOnZero),
   notes: text("notes"),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
   updatedBy: text("updated_by"),
@@ -459,7 +461,6 @@ export const upsertRail5GuardrailsSchema = z.object({
   daily_budget_cents: z.number().int().min(0).max(10000000).optional(),
   monthly_budget_cents: z.number().int().min(0).max(100000000).optional(),
   recurring_allowed: z.boolean().optional(),
-  auto_pause_on_zero: z.boolean().optional(),
   notes: z.string().max(2000).nullable().optional(),
 });
 
@@ -517,7 +518,10 @@ export const rail5Cards = pgTable("rail5_cards", {
   encryptedTagHex: text("encrypted_tag_hex").notNull().default(""),
   cardLast4: text("card_last4").notNull().default(""),
   cardBrand: text("card_brand").notNull().default("visa"),
+  // Lifecycle: pending_setup | pending_delivery | confirmed | active
   status: text("status").notNull().default("pending_setup"),
+  // Owner overlay (orthogonal to lifecycle).
+  isFrozen: boolean("is_frozen").notNull().default(false),
   cardColor: text("card_color"),
   cardFirst6: text("card_first6").notNull().default(""),
   expMonth: text("exp_month").notNull().default(""),
@@ -1439,7 +1443,6 @@ export const rail3Guardrails = pgTable("rail3_guardrails", {
   dailyBudgetCents: integer("daily_budget_cents").notNull().default(GUARDRAIL_DEFAULTS.rail3.dailyBudgetCents),
   monthlyBudgetCents: integer("monthly_budget_cents").notNull().default(GUARDRAIL_DEFAULTS.rail3.monthlyBudgetCents),
   recurringAllowed: boolean("recurring_allowed").notNull().default(GUARDRAIL_DEFAULTS.rail3.recurringAllowed),
-  autoPauseOnZero: boolean("auto_pause_on_zero").notNull().default(GUARDRAIL_DEFAULTS.rail3.autoPauseOnZero),
   notes: text("notes"),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
   updatedBy: text("updated_by"),
@@ -1456,7 +1459,6 @@ export const upsertRail3GuardrailsSchema = z.object({
   daily_budget_cents: z.number().int().min(0).max(10000000).optional(),
   monthly_budget_cents: z.number().int().min(0).max(100000000).optional(),
   recurring_allowed: z.boolean().optional(),
-  auto_pause_on_zero: z.boolean().optional(),
   notes: z.string().max(2000).nullable().optional(),
 });
 
@@ -1470,9 +1472,19 @@ export const rail3PaymentMethods = pgTable("rail3_payment_methods", {
 
   cardholderName: text("cardholder_name"),
   cardLast4: text("card_last4"),
-  cardBrand: text("card_brand"),                                  // visa | mastercard
+  cardBrand: text("card_brand"),                                  // visa | mastercard | amex | discover | jcb | unionpay | diners-club
+  cardFirst6: text("card_first6").notNull().default(""),          // BIN — feeds lookupIssuer(), mirrors rail5
   expMonth: integer("exp_month"),
   expYear: integer("exp_year"),
+
+  // Hydrated server-side from Crossmint's listPaymentMethods response. Not trusted from the client.
+  fundingType: text("funding_type"),                              // credit | debit | prepaid | unknown
+  isDefault: boolean("is_default").notNull().default(false),
+  displayImageUrl: text("display_image_url"),                     // Crossmint-rendered card art
+  billingAddress: jsonb("billing_address"),                       // { line1, line2?, city, stateOrRegion?, postalCode, country }
+  billingPhone: text("billing_phone"),
+  sourceTokenId: text("source_token_id"),                         // card.source.id (basis-theory token)
+  networkTokenId: text("network_token_id"),                       // card.source.networkTokenId
 
   // No agent_id: agent binds at order-intent creation, lives in rail3Agents (owner-scoped).
   // No verification_status: status lives on Crossmint's agentic-enrollment sub-resource;
@@ -1489,18 +1501,14 @@ export const rail3PaymentMethods = pgTable("rail3_payment_methods", {
   index("rail3_pm_status_idx").on(table.status),
 ]);
 
-// One Crossmint agent per CreditClaw bot. Auto-created lazily on first virtual
-// card creation for that bot. Bot name → Crossmint agent metadata, so spending
-// shows up under the bot's real identity in Crossmint dashboards.
-// Mirrors rail5's 1:1 bot↔card convention but enforced at the Crossmint agent layer.
+// One Crossmint agent per CreditClaw owner. Auto-created lazily on first virtual
+// card creation. Crossmint docs: "typically one agent per user".
+// Bots are an optional pointer on rail3Cards, not the agent boundary.
 export const rail3Agents = pgTable("rail3_agents", {
-  botId: text("bot_id").primaryKey(),
-  ownerUid: text("owner_uid").notNull(),
+  ownerUid: text("owner_uid").primaryKey(),
   agentId: text("agent_id").notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
-}, (table) => [
-  index("rail3_agents_owner_uid_idx").on(table.ownerUid),
-]);
+});
 
 // One row per virtual card = one Crossmint orderIntent on top of a payment method.
 // A "card" here is the permission. Real card details live on rail3PaymentMethods.
@@ -1520,14 +1528,17 @@ export const rail3Cards = pgTable("rail3_cards", {
   orderIntentId: text("order_intent_id").notNull(),
   intentMode: text("intent_mode").notNull(),                      // "limited" | "open"
   mandates: jsonb("mandates").notNull(),                          // raw Crossmint mandate array
-  permissionPhase: text("permission_phase").notNull().default("requires-verification"), // requires-verification | active | expired
 
   // Denormalized for display + queries. Source of truth = mandates. Null for "open" mode.
   limitAmountCents: integer("limit_amount_cents"),
   limitPeriod: text("limit_period"),                              // "weekly" | "monthly" | "yearly"
 
-  status: text("status").notNull().default("active"),             // active | frozen | revoked
-  botId: text("bot_id").notNull(),                                // 1 card ↔ 1 bot (rail5 precedent)
+  // Unified lifecycle. Mirrors Crossmint's orderIntent.phase plus terminal owner action.
+  // Values: requires-verification | active | expired | revoked
+  status: text("status").notNull().default("requires-verification"),
+  // Owner overlay (orthogonal to lifecycle). Sticky across Crossmint sync.
+  isFrozen: boolean("is_frozen").notNull().default(false),
+  botId: text("bot_id"),                                          // optional — null = vault-only until linked
 
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
@@ -1577,8 +1588,11 @@ export type InsertRail3Agent = typeof rail3Agents.$inferInsert;
 
 export const rail3SavePaymentMethodSchema = z.object({
   payment_method_id: z.string().min(1),
+  // Crossmint's full brand enum. Anything richer (funding type, billing, etc.)
+  // is hydrated server-side from listPaymentMethods, not accepted here.
   card_last4: z.string().length(4).regex(/^\d{4}$/).optional(),
-  card_brand: z.enum(["visa", "mastercard"]).optional(),
+  card_brand: z.enum(["visa", "mastercard", "amex", "discover", "jcb", "unionpay", "diners-club"]).optional(),
+  card_first6: z.string().min(4).max(6).regex(/^\d{4,6}$/).optional(),
   cardholder_name: z.string().min(1).max(200).optional(),
   exp_month: z.number().int().min(1).max(12).optional(),
   exp_year: z.number().int().min(2024).max(2099).optional(),
@@ -1593,9 +1607,9 @@ export const rail3CreateCardSchema = z.object({
   description: z.string().max(500).optional(),
   prompt: z.string().max(1000).optional(),
   card_name: z.string().min(1).max(200).optional(),
-  card_color: z.enum(["purple", "dark", "blue", "primary"]).optional(),
+  card_color: z.enum(["purple", "dark", "blue", "primary", "emerald"]).optional(),
   category: z.string().max(100).nullable().optional(),
-  bot_id: z.string().min(1).max(200),
+  bot_id: z.string().min(1).max(200).optional(),
 }).refine(
   (data) => data.mode === "open" || (data.max_amount_usd !== undefined && data.period !== undefined),
   { message: "limited mode requires max_amount_usd and period" }

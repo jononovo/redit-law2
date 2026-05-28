@@ -62,7 +62,8 @@ Four tables, all prefixed `privy_` for rail segmentation.
 | privy_wallet_id | text | Privy's internal wallet ID |
 | address | text | 0x address on Base (Ethereum-format) |
 | balance_usdc | bigint | Micro-USDC (6 decimals). 1000000 = $1.00 |
-| status | text | `active` / `paused` |
+| status | text | Lifecycle state. Currently always `active` (no other lifecycle states defined for rail1). |
+| is_frozen | boolean | Owner-controlled freeze overlay. When true, all signing requests are rejected regardless of `status`. Toggled via `/freeze`. |
 | created_at | timestamp | |
 | updated_at | timestamp | |
 
@@ -77,7 +78,6 @@ Four tables, all prefixed `privy_` for rail segmentation.
 | *(approval thresholds are now in master_guardrails)* | | |
 | allowlisted_domains | jsonb | Array of allowed domains |
 | blocklisted_domains | jsonb | Array of blocked domains |
-| auto_pause_on_zero | boolean | Pause wallet when balance hits zero (default: true) |
 
 ### privy_transactions
 | Column | Type | Description |
@@ -109,7 +109,7 @@ All routes under `/api/v1/stripe-wallet/`. Owner endpoints use Firebase session 
 | POST | `/create` | Create a Privy server wallet for a bot. Calls `privy.walletsService.create({ chain_type: "ethereum" })`. Stores wallet record, creates default guardrails. |
 | GET | `/list` | List owner's wallets with balances, guardrails, and linked bot info. |
 | GET | `/balance` | Single wallet balance lookup. |
-| POST | `/freeze` | Toggle wallet status between `active` and `paused`. Paused wallets reject all signing requests. |
+| POST | `/freeze` | Body `{wallet_id, is_frozen: boolean}`. Sets `is_frozen` on the wallet. Frozen wallets reject all signing requests. Lifecycle `status` is unaffected. |
 | POST | `/onramp/session` | Create Stripe Crypto Onramp session. Returns `client_secret` for embedded widget and `redirect_url` for hosted fallback. |
 | GET/POST | `/guardrails` | View or update spending controls for a wallet. |
 | GET | `/transactions` | List transactions for a wallet. Filterable by type. |
@@ -176,13 +176,14 @@ Bot encounters 402 Payment Required response
    { resource_url, amount_usdc, recipient_address, valid_before? }
 
 Backend guardrail checks (in order):
-  1. Wallet active? (status == "active")
-  2. Amount ≤ max_per_tx_usdc?
-  3. Daily cumulative + amount ≤ daily_budget_usdc?
-  4. Monthly cumulative + amount ≤ monthly_budget_usdc?
-  5. Domain on allowlist? (if set)
-  6. Domain not on blocklist?
-  7. Amount within master guardrails approval threshold? (if set)
+  1. Wallet not frozen? (is_frozen == false)
+  2. Wallet active? (status == "active")
+  3. Amount ≤ max_per_tx_usdc?
+  4. Daily cumulative + amount ≤ daily_budget_usdc?
+  5. Monthly cumulative + amount ≤ monthly_budget_usdc?
+  6. Domain on allowlist? (if set)
+  7. Domain not on blocklist?
+  8. Amount within master guardrails approval threshold? (if set)
 
 If approval required → create pending approval (5-min TTL), return 202
 If hard block → return 403 with reason

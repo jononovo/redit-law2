@@ -11,15 +11,13 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { wallet_id, frozen } = body;
+    const { wallet_id, is_frozen } = body;
 
-    if (!wallet_id || typeof frozen !== "boolean") {
-      return NextResponse.json({ error: "wallet_id and frozen are required" }, { status: 400 });
+    if (!wallet_id || typeof is_frozen !== "boolean") {
+      return NextResponse.json({ error: "wallet_id and is_frozen are required" }, { status: 400 });
     }
 
-    const newStatus = frozen ? "paused" : "active";
-    const updated = await storage.privyUpdateWalletStatus(Number(wallet_id), newStatus, user.uid);
-
+    const updated = await storage.privyUpdateWalletFrozen(Number(wallet_id), is_frozen, user.uid);
     if (!updated) {
       return NextResponse.json({ error: "Wallet not found or not owned by you" }, { status: 404 });
     }
@@ -27,15 +25,14 @@ export async function POST(request: NextRequest) {
     if (updated.botId) {
       const bot = await storage.getBotByBotId(updated.botId);
       if (bot) {
-        const action = frozen ? "wallet_frozen" as const : "wallet_unfrozen" as const;
+        const action = is_frozen ? "wallet_frozen" as const : "wallet_unfrozen" as const;
         fireRailsUpdated(bot, action, "rail1", { wallet_id: updated.id }).catch(() => {});
       }
     }
 
     return NextResponse.json({
       wallet_id: updated.id,
-      status: updated.status,
-      message: frozen ? "Wallet paused" : "Wallet activated",
+      is_frozen: updated.isFrozen,
     });
   } catch (error) {
     console.error("POST /api/v1/stripe-wallet/freeze error:", error);

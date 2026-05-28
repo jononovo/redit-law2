@@ -1,6 +1,12 @@
 export type RailType = "rail1" | "rail2" | "rail3" | "rail5";
 
-export type WalletStatus = "active" | "paused" | "frozen" | "pending" | "pending_setup" | "awaiting_bot";
+// Crypto wallet lifecycle (rail1/rail2). Owner-controlled freeze is a separate boolean (is_frozen), not a lifecycle state.
+export type WalletStatus = "active" | "pending" | "pending_setup" | "awaiting_bot";
+
+// Card lifecycle. Owner-controlled freeze is a separate boolean (is_frozen), not a lifecycle state.
+// rail5: pending_setup | pending_delivery | confirmed | active
+// rail3: requires-verification | active | expired | revoked
+export type CardLifecycleStatus = string;
 
 export interface BotInfo {
   bot_id: string;
@@ -16,7 +22,6 @@ export interface CryptoWalletGuardrails {
 export interface CardWalletGuardrails extends CryptoWalletGuardrails {
   allowlisted_merchants: string[] | null;
   blocklisted_merchants: string[] | null;
-  auto_pause_on_zero: boolean;
 }
 
 export interface Rail1WalletInfo {
@@ -27,6 +32,7 @@ export interface Rail1WalletInfo {
   balance_usdc: number;
   balance_display: string;
   status: string;
+  is_frozen: boolean;
   guardrails: CryptoWalletGuardrails | null;
   created_at: string;
 }
@@ -40,6 +46,7 @@ export interface Rail2WalletInfo {
   balance_display: string;
   chain: string;
   status: string;
+  is_frozen: boolean;
   guardrails: CardWalletGuardrails | null;
   created_at: string;
 }
@@ -51,7 +58,8 @@ export interface Rail5CardInfo {
   card_name: string;
   card_brand: string;
   card_last4: string;
-  status: string;
+  status: CardLifecycleStatus;
+  is_frozen: boolean;
   bot_id: string | null;
   bot_name: string | null;
   card_color: string | null;
@@ -67,27 +75,51 @@ export interface Rail3CardInfo {
   card_name: string;
   card_color: string | null;
   category: string | null;
-  status: string;
+  status: CardLifecycleStatus;
+  is_frozen: boolean;
   bot_id: string | null;
   bot_name: string | null;
   payment_method_id: string;
   card_brand: string | null;
   card_last4: string | null;
+  issuer_name: string | null;
   intent_mode: "limited" | "open";
-  permission_phase: string;
   limit_amount_cents: number | null;
   limit_period: "weekly" | "monthly" | "yearly" | null;
   order_intent_id: string;
   created_at: string;
 }
 
+export const RAIL3_FUNDING_TYPE_LABEL: Record<string, string> = {
+  credit: "Credit",
+  debit: "Debit",
+  prepaid: "Prepaid",
+  unknown: "Card",
+};
+
+export interface Rail3BillingAddress {
+  line1: string;
+  line2?: string;
+  city: string;
+  stateOrRegion?: string;
+  postalCode: string;
+  country: string;
+}
+
 export interface Rail3PaymentMethodInfo {
   payment_method_id: string;
   card_brand: string | null;
   card_last4: string | null;
+  card_first6: string | null;
+  issuer_name: string | null;
   cardholder_name: string | null;
   exp_month: number | null;
   exp_year: number | null;
+  funding_type: "credit" | "debit" | "prepaid" | "unknown" | null;
+  is_default: boolean;
+  display_image_url: string | null;
+  billing_address: Rail3BillingAddress | null;
+  billing_phone: string | null;
   virtual_card_count: number;
   created_at: string;
   last_used_at: string | null;
@@ -100,11 +132,11 @@ export function normalizeRail3Card(card: Rail3CardInfo, basePath: string): Norma
   const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
   const brand = card.card_brand || "card";
   const last4 = card.card_last4 || "••••";
-  const pendingAuth = card.permission_phase !== "active";
   return {
     card_id: card.card_id,
     card_name: card.card_name,
     status: card.status,
+    is_frozen: card.is_frozen,
     bot_id: card.bot_id,
     bot_name: card.bot_name,
     card_color: resolveCardColor(card.card_color, card.card_id),
@@ -113,11 +145,14 @@ export function normalizeRail3Card(card: Rail3CardInfo, basePath: string): Norma
     balanceTooltip: isLimited
       ? `Crossmint enforces this limit per ${card.limit_period}.`
       : "Agent can use this card at any merchant. Each charge still uses a one-time merchant-scoped number.",
-    last4,
+    last4: card.order_intent_id.slice(-4),
     brand,
-    issuer: card.category || null,
-    line1: `${capitalize(brand)} •••• ${last4}`,
-    line2: pendingAuth ? "Awaiting authorization" : (isLimited ? "Active permission" : "Use anywhere"),
+    issuer: card.issuer_name || null,
+    line1: card.category || null,
+    line2: null,
+    numberCaption: card.card_last4
+      ? `Funded by: ${(card.card_brand || "card").toUpperCase()} ····${card.card_last4}`
+      : null,
     detailPath: `${basePath}/${card.card_id}`,
   };
 }
@@ -125,10 +160,11 @@ export function normalizeRail3Card(card: Rail3CardInfo, basePath: string): Norma
 export interface NormalizedCard {
   card_id: string;
   card_name: string;
-  status: string;
+  status: CardLifecycleStatus;
+  is_frozen: boolean;
   bot_id: string | null;
   bot_name: string | null;
-  card_color: "primary" | "blue" | "purple" | "dark";
+  card_color: CardColor;
   balance: string;
   balanceLabel: string;
   balanceTooltip?: string | null;
@@ -137,6 +173,7 @@ export interface NormalizedCard {
   issuer: string | null;
   line1: string | null;
   line2: string | null;
+  numberCaption: string | null;
   detailPath: string;
 }
 
@@ -145,6 +182,7 @@ export function normalizeRail5Card(card: Rail5CardInfo, basePath: string): Norma
     card_id: card.card_id,
     card_name: card.card_name,
     status: card.status,
+    is_frozen: card.is_frozen,
     bot_id: card.bot_id,
     bot_name: card.bot_name,
     card_color: resolveCardColor(card.card_color, card.card_id),
@@ -155,6 +193,7 @@ export function normalizeRail5Card(card: Rail5CardInfo, basePath: string): Norma
     issuer: card.issuer_name || null,
     line1: `Daily: ${formatCentsToUsd(card.daily_limit_cents)}`,
     line2: `Monthly: ${formatCentsToUsd(card.monthly_limit_cents)}`,
+    numberCaption: null,
     detailPath: `${basePath}/${card.card_id}`,
   };
 }
@@ -251,9 +290,11 @@ export function formatCentsToUsd(cents: number): string {
   return `$${(cents / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
-export const CARD_COLORS: ("primary" | "blue" | "purple" | "dark")[] = ["purple", "dark", "blue", "primary"];
+export type CardColor = "primary" | "blue" | "purple" | "dark" | "emerald";
 
-export function stableCardColor(cardId: string): "primary" | "blue" | "purple" | "dark" {
+export const CARD_COLORS: CardColor[] = ["purple", "dark", "blue", "emerald", "primary"];
+
+export function stableCardColor(cardId: string): CardColor {
   let hash = 0;
   for (let i = 0; i < cardId.length; i++) {
     hash = ((hash << 5) - hash + cardId.charCodeAt(i)) | 0;
@@ -261,8 +302,8 @@ export function stableCardColor(cardId: string): "primary" | "blue" | "purple" |
   return CARD_COLORS[Math.abs(hash) % CARD_COLORS.length];
 }
 
-export function resolveCardColor(color: string | null | undefined, cardId: string): "primary" | "blue" | "purple" | "dark" {
-  if (color && CARD_COLORS.includes(color as any)) return color as "primary" | "blue" | "purple" | "dark";
+export function resolveCardColor(color: string | null | undefined, cardId: string): CardColor {
+  if (color && CARD_COLORS.includes(color as CardColor)) return color as CardColor;
   return stableCardColor(cardId);
 }
 

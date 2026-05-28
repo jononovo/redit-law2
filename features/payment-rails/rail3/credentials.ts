@@ -17,7 +17,7 @@ export interface OneTimeCardCredentials {
 }
 
 export async function fetchOneTimeCredentials(params: {
-  userLocator: string;
+  jwt: string;
   orderIntentId: string;
   merchant: { name: string; url: string; countryCode: string };
 }): Promise<OneTimeCardCredentials> {
@@ -25,7 +25,7 @@ export async function fetchOneTimeCredentials(params: {
     `/order-intents/${params.orderIntentId}/credentials`,
     {
       method: "POST",
-      userLocator: params.userLocator,
+      jwt: params.jwt,
       body: {
         merchant: {
           name: params.merchant.name,

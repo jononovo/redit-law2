@@ -39,6 +39,9 @@ export interface CreditCardListPageConfig {
   railId?: string;
   approvalsEndpoint?: string;
   approvalsDecideEndpoint?: string;
+  // Bump to force a re-fetch of cards/transactions/orders from the parent
+  // (e.g. after an external sync completes). Optional.
+  refreshKey?: number;
 }
 
 export function CreditCardListPage({ config }: { config: CreditCardListPageConfig }) {
@@ -146,41 +149,31 @@ export function CreditCardListPage({ config }: { config: CreditCardListPageConfi
     } else {
       setLoading(false);
     }
-  }, [user, fetchCards, botLinking.fetchBots, config.supportsBotLinking, fetchTransactions, fetchOrders, fetchPendingApprovalCount]);
+  }, [user, fetchCards, botLinking.fetchBots, config.supportsBotLinking, fetchTransactions, fetchOrders, fetchPendingApprovalCount, config.refreshKey]);
 
   async function handleFreezeConfirm() {
     if (!freezeTarget) return;
     setFreezeLoading(true);
-    const isFrozen = freezeTarget.status === "frozen";
-    const newStatus = isFrozen ? "active" : "frozen";
+    const nextIsFrozen = !freezeTarget.is_frozen;
 
-    setCards((prev) => prev.map((c) => c.card_id === freezeTarget.card_id ? { ...c, status: newStatus } : c));
+    setCards((prev) => prev.map((c) => c.card_id === freezeTarget.card_id ? { ...c, is_frozen: nextIsFrozen } : c));
 
     try {
-      const isCardRail = config.railPrefix === "rail5" || config.railPrefix === "rail3";
-      const body = isCardRail
-        ? { status: newStatus }
-        : { card_id: freezeTarget.card_id, frozen: !isFrozen };
-      const url = isCardRail
-        ? `/api/v1/${config.railPrefix}/cards/${freezeTarget.card_id}`
-        : `/api/v1/${config.railPrefix}/freeze`;
-      const method = isCardRail ? "PATCH" : "POST";
-
-      const res = await authFetch(url, {
-        method,
+      const res = await authFetch(`/api/v1/${config.railPrefix}/cards/${freezeTarget.card_id}`, {
+        method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
+        body: JSON.stringify({ is_frozen: nextIsFrozen }),
       });
       if (res.ok) {
         const updated = await res.json().catch(() => null);
-        if (updated?.status) {
-          setCards((prev) => prev.map((c) => c.card_id === freezeTarget.card_id ? { ...c, status: updated.status } : c));
+        if (typeof updated?.is_frozen === "boolean") {
+          setCards((prev) => prev.map((c) => c.card_id === freezeTarget.card_id ? { ...c, is_frozen: updated.is_frozen } : c));
         }
       } else {
-        setCards((prev) => prev.map((c) => c.card_id === freezeTarget.card_id ? { ...c, status: freezeTarget.status } : c));
+        setCards((prev) => prev.map((c) => c.card_id === freezeTarget.card_id ? { ...c, is_frozen: freezeTarget.is_frozen } : c));
       }
     } catch {
-      setCards((prev) => prev.map((c) => c.card_id === freezeTarget.card_id ? { ...c, status: freezeTarget.status } : c));
+      setCards((prev) => prev.map((c) => c.card_id === freezeTarget.card_id ? { ...c, is_frozen: freezeTarget.is_frozen } : c));
     } finally {
       setFreezeLoading(false);
       setFreezeTarget(null);
@@ -218,7 +211,7 @@ export function CreditCardListPage({ config }: { config: CreditCardListPageConfi
       <p className="text-sm text-neutral-400 mt-2">{config.emptySubtitle}</p>
     </div>
   ) : (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-8" data-testid="grid-cards">
+    <div className="grid grid-cols-[repeat(auto-fill,26rem)] gap-6 justify-items-center" data-testid="grid-cards">
       {cards.map((card) => (
         <CreditCardItem
           key={card.card_id}
@@ -293,7 +286,7 @@ export function CreditCardListPage({ config }: { config: CreditCardListPageConfi
         open={!!freezeTarget}
         onOpenChange={(open) => !open && setFreezeTarget(null)}
         itemName={freezeTarget?.card_name || ""}
-        isFrozen={freezeTarget?.status === "frozen"}
+        isFrozen={!!freezeTarget?.is_frozen}
         loading={freezeLoading}
         onConfirm={handleFreezeConfirm}
         itemType="card"
