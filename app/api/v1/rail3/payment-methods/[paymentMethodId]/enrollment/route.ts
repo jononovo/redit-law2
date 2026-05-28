@@ -54,8 +54,10 @@ export async function GET(
   }
 }
 
-// Start an agentic-enrollment ceremony. Returns the pending enrollment whose
-// `verificationConfig` the browser SDK uses to run the passkey ceremony.
+// Ensure an agentic-enrollment exists for this payment method and return it.
+// Idempotent: if Crossmint already has one (active or pending), return that
+// instead of trying to create a duplicate (which 400s). Only creates when
+// Crossmint reports no enrollment yet.
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ paymentMethodId: string }> }
@@ -73,12 +75,15 @@ export async function POST(
   }
 
   try {
-    const enrollment = await createEnrollment({ jwt: jwt!, paymentMethodId, email });
+    let enrollment = await getEnrollment({ jwt: jwt!, paymentMethodId });
+    if (enrollment.status === "not_started") {
+      enrollment = await createEnrollment({ jwt: jwt!, paymentMethodId, email });
+    }
     return NextResponse.json({ payment_method_id: paymentMethodId, enrollment });
   } catch (err) {
     const status = err instanceof CrossmintApiError ? err.status : 500;
-    const message = err instanceof Error ? err.message : "create_enrollment_failed";
-    console.error("[Rail3] createEnrollment failed:", message);
-    return NextResponse.json({ error: "create_enrollment_failed", message }, { status });
+    const message = err instanceof Error ? err.message : "ensure_enrollment_failed";
+    console.error("[Rail3] ensure enrollment failed:", message);
+    return NextResponse.json({ error: "ensure_enrollment_failed", message }, { status });
   }
 }
