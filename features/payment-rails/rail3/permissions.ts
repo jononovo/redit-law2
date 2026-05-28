@@ -81,6 +81,17 @@ export async function getOrderIntent(params: {
   return unwrapCrossmint<OrderIntent>(res, "getOrderIntent");
 }
 
+// List ALL order intents for the JWT's user. JWT-only — server key returns 403.
+// Crossmint scopes the result by the Bearer identity; no userLocator needed.
+// Returns the same per-intent shape as `getOrderIntent` (verified live against staging).
+export async function listOrderIntents(params: { jwt: string }): Promise<OrderIntent[]> {
+  const res = await crossmintCardsFetch(`/order-intents`, {
+    method: "GET",
+    jwt: params.jwt,
+  });
+  return unwrapCrossmint<OrderIntent[]>(res, "listOrderIntents");
+}
+
 export async function revokeOrderIntent(params: {
   jwt: string;
   orderIntentId: string;

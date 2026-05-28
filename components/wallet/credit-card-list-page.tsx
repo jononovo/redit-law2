@@ -39,6 +39,9 @@ export interface CreditCardListPageConfig {
   railId?: string;
   approvalsEndpoint?: string;
   approvalsDecideEndpoint?: string;
+  // Bump to force a re-fetch of cards/transactions/orders from the parent
+  // (e.g. after an external sync completes). Optional.
+  refreshKey?: number;
 }
 
 export function CreditCardListPage({ config }: { config: CreditCardListPageConfig }) {
@@ -146,7 +149,7 @@ export function CreditCardListPage({ config }: { config: CreditCardListPageConfi
     } else {
       setLoading(false);
     }
-  }, [user, fetchCards, botLinking.fetchBots, config.supportsBotLinking, fetchTransactions, fetchOrders, fetchPendingApprovalCount]);
+  }, [user, fetchCards, botLinking.fetchBots, config.supportsBotLinking, fetchTransactions, fetchOrders, fetchPendingApprovalCount, config.refreshKey]);
 
   async function handleFreezeConfirm() {
     if (!freezeTarget) return;

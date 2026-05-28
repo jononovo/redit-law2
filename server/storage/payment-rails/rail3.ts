@@ -8,7 +8,7 @@ import { eq, desc, and, ne } from "drizzle-orm";
 import type { IStorage } from "../types";
 
 type Rail3Methods = Pick<IStorage,
-  | "createRail3Card" | "getRail3CardByCardId" | "getRail3CardsByOwnerUid"
+  | "createRail3Card" | "getRail3CardByCardId" | "getRail3CardsByOwnerUid" | "getAllRail3CardsByOwnerUid"
   | "getRail3CardsByBotId" | "getRail3CardsByPaymentMethodId" | "countRail3CardsByBotId"
   | "updateRail3Card" | "deleteRail3Card"
   | "createRail3Transaction" | "getRail3TransactionById" | "updateRail3Transaction" | "getRail3TransactionsByCardId"
@@ -30,6 +30,14 @@ export const rail3Methods: Rail3Methods = {
       .select()
       .from(rail3Cards)
       .where(and(eq(rail3Cards.ownerUid, ownerUid), ne(rail3Cards.status, "revoked")))
+      .orderBy(desc(rail3Cards.createdAt));
+  },
+
+  async getAllRail3CardsByOwnerUid(ownerUid: string): Promise<Rail3Card[]> {
+    return db
+      .select()
+      .from(rail3Cards)
+      .where(eq(rail3Cards.ownerUid, ownerUid))
       .orderBy(desc(rail3Cards.createdAt));
   },
 

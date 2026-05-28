@@ -192,6 +192,7 @@ export interface IStorage {
   createRail3Card(data: InsertRail3Card): Promise<Rail3Card>;
   getRail3CardByCardId(cardId: string): Promise<Rail3Card | null>;
   getRail3CardsByOwnerUid(ownerUid: string): Promise<Rail3Card[]>;
+  getAllRail3CardsByOwnerUid(ownerUid: string): Promise<Rail3Card[]>;
   getRail3CardsByBotId(botId: string): Promise<Rail3Card[]>;
   getRail3CardsByPaymentMethodId(paymentMethodId: string): Promise<Rail3Card[]>;
   countRail3CardsByBotId(botId: string): Promise<number>;
