@@ -44,6 +44,22 @@ async function exchangeTokenForSession(idToken: string): Promise<User | null> {
   return res.json();
 }
 
+// Persist the long-lived Firebase refresh token to the BFF so the server can
+// mint fresh ID tokens for headless bot calls into Crossmint. Non-blocking:
+// sign-in still succeeds if this fails (purely a rail3 enabler).
+async function captureRefreshToken(refreshToken: string | undefined): Promise<void> {
+  if (!refreshToken) return;
+  try {
+    await fetch("/api/v1/auth/firebase-refresh-token", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ refresh_token: refreshToken }),
+    });
+  } catch {
+    // ignore — bot purchases will return 412 until a successful capture
+  }
+}
+
 async function fetchSessionUser(): Promise<User | null> {
   try {
     const res = await fetch("/api/auth/session");
@@ -72,6 +88,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const idToken = await firebaseUser.getIdToken();
         const sessionUser = await exchangeTokenForSession(idToken);
         if (sessionUser) setUser(sessionUser);
+        captureRefreshToken(firebaseUser.refreshToken);
       }
     });
     return () => unsubscribe();
@@ -83,6 +100,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const idToken = await result.user.getIdToken();
     const sessionUser = await exchangeTokenForSession(idToken);
     if (sessionUser) setUser(sessionUser);
+    captureRefreshToken(result.user.refreshToken);
   }, []);
 
   const signInWithGithub = useCallback(async () => {
@@ -91,6 +109,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const idToken = await result.user.getIdToken();
     const sessionUser = await exchangeTokenForSession(idToken);
     if (sessionUser) setUser(sessionUser);
+    captureRefreshToken(result.user.refreshToken);
   }, []);
 
   const sendMagicLink = useCallback(async (email: string, redirectTo?: string, name?: string) => {
@@ -132,6 +151,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const idToken = await result.user.getIdToken();
     const sessionUser = await exchangeTokenForSession(idToken);
     if (sessionUser) setUser(sessionUser);
+    captureRefreshToken(result.user.refreshToken);
   }, []);
 
   const logout = useCallback(async () => {

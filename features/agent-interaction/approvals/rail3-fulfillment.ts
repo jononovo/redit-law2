@@ -1,7 +1,8 @@
 import { registerRailCallbacks } from "@/features/agent-interaction/approvals/service";
 import { storage } from "@/server/storage";
 import type { UnifiedApproval } from "@/shared/schema";
-import { fetchOneTimeCredentials, ownerUidToUserLocator } from "@/features/payment-rails/rail3";
+import { fetchOneTimeCredentials } from "@/features/payment-rails/rail3";
+import { getFreshIdToken, ReauthRequiredError } from "@/features/platform-management/auth/firebase-token-exchange";
 
 async function fulfillRail3Approval(approval: UnifiedApproval): Promise<void> {
   const transactionId = approval.railRef;
@@ -31,9 +32,22 @@ async function fulfillRail3Approval(approval: UnifiedApproval): Promise<void> {
     return;
   }
 
+  let ownerIdToken: string;
+  try {
+    ownerIdToken = await getFreshIdToken(tx.ownerUid);
+  } catch (err) {
+    const reason = err instanceof ReauthRequiredError ? `reauth_required:${err.reason}` : String(err);
+    await storage.updateRail3Transaction(transactionId, {
+      status: "failed",
+      metadata: { ...(tx.metadata as object || {}), failureReason: reason },
+    });
+    console.error(`[Rail3] Cannot fetch credentials for ${transactionId}: ${reason}`);
+    return;
+  }
+
   try {
     const { expiresAt } = await fetchOneTimeCredentials({
-      userLocator: ownerUidToUserLocator(tx.ownerUid),
+      jwt: ownerIdToken,
       orderIntentId: card.orderIntentId,
       merchant: {
         name: tx.merchantName,

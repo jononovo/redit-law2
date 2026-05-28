@@ -51,6 +51,9 @@ export interface IStorage {
   getOwnerByUid(uid: string): Promise<Owner | null>;
   getOwnerByEmail(email: string): Promise<Owner | null>;
   upsertOwner(uid: string, data: Partial<InsertOwner>): Promise<Owner>;
+  setFirebaseRefreshToken(ownerUid: string, refreshToken: string): Promise<void>;
+  getFirebaseRefreshToken(ownerUid: string): Promise<string | null>;
+  clearFirebaseRefreshToken(ownerUid: string): Promise<void>;
 
   createBot(data: InsertBot): Promise<Bot>;
   getBotByClaimToken(token: string): Promise<Bot | null>;

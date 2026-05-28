@@ -393,6 +393,11 @@ export const owners = pgTable("owners", {
   flags: text("flags").array().notNull().default([]),
   signupTenant: text("signup_tenant"),
   onboardedAt: timestamp("onboarded_at"),
+  // Long-lived Firebase refresh token captured on every sign-in. Used by the BFF
+  // to mint fresh ID tokens for headless bot calls into Crossmint (rail3).
+  // TODO: encrypt at rest (AES-256-GCM) before SOC2 / GA at scale.
+  firebaseRefreshToken: text("firebase_refresh_token"),
+  firebaseRefreshTokenUpdatedAt: timestamp("firebase_refresh_token_updated_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 }, (table) => [
