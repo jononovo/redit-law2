@@ -267,12 +267,12 @@ export function CreditCardListPage({ config }: { config: CreditCardListPageConfi
   return (
     <div className="flex flex-col gap-8 animate-fade-in-up">
       <div className="flex justify-between items-center">
-        <div className="flex items-center gap-3">
-          {config.titleAdornment}
-          <div>
+        <div>
+          <div className="flex items-center gap-3">
             <h1 className="text-2xl font-bold text-neutral-900 mb-1" data-testid="text-page-title">{config.title}</h1>
-            <p className="text-neutral-500">{config.subtitle}</p>
+            {config.titleAdornment}
           </div>
+          <p className="text-neutral-500">{config.subtitle}</p>
         </div>
         <Button
           onClick={() => config.setupWizardHref ? router.push(config.setupWizardHref) : setWizardOpen(true)}
