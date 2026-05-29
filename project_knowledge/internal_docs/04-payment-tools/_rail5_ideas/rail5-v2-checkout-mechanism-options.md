@@ -1,9 +1,9 @@
 ---
 name: Rail 5 v2 — Checkout Mechanism Options
-description: Direction-setting doc for the Rail 5 rebuild. The sub-agent model is being retired because spawn_payload only works for Claude-Code-class hosts; this doc evaluates the three viable replacements (agent-platform plugins, a CreditClaw browser extension, browser-use sensitive_data) against the broader 2026 agentic-payments landscape (Visa ICC / Mastercard Agent Pay / Stripe SPT / OpenAI ACP / Google UCP / AP2), with a wild-ideas section at the end.
+description: Direction-setting doc for the Rail 5 rebuild. The sub-agent model is being retired because spawn_payload only works for Claude-Code-class hosts; this doc evaluates the three viable replacements (agent-platform plugins, a CreditClaw browser extension, browser-use sensitive_data) against the broader 2026 agentic-payments landscape (Visa ICC / Mastercard Agent Pay / Stripe SPT / OpenAI ACP / Google UCP / AP2), with a wild-ideas section at the end. §8 adds the browser-agent runtime stack (execution + framework layers, CF Browser Run vs Browserbase vs browser-use Cloud, self-host shape, anti-bot reality).
 status: idea — frames the Rail 5 v2 plan; no code yet
 created: 2026-05-28
-last_updated: 2026-05-28
+last_updated: 2026-05-29
 ---
 
 # Rail 5 v2 — Checkout Mechanism Options
@@ -280,7 +280,82 @@ Watch Amazon vs. Perplexity carefully. If the 9th Circuit upholds the injunction
 
 ---
 
-## 8. Out of scope for this doc
+## 8. Browser-agent runtime stack — where the agent and browser actually run
+
+Options A/B/C answer *how the PAN is handed off*. This section answers the orthogonal question: *what stack actually drives the browser*, and which parts we run vs rent. Decided after evaluating Cloudflare Browser Run + Stagehand (the proposed starting point) against the alternatives, May 2026.
+
+### 8.1 The three layers (don't conflate them)
+
+| Layer | Owns | Players |
+|---|---|---|
+| 1. Orchestration / brain | rail routing, budgets, approvals, secret handoff, audit | our Next.js app on Replit |
+| 2. Browser execution | the actual Chromium + CDP endpoint | Cloudflare Browser Run, Browserbase, browser-use Cloud, self-hosted Playwright |
+| 3. Reasoning framework | decides what to click/type | browser-use, Stagehand, Skyvern, Claude/OpenAI Computer Use |
+
+Stagehand and browser-use are layer 3; CF Browser Run and Browserbase are layer 2 — you compose one from each. The brain (layer 1) always stays on Replit; nothing about agents forces it off-platform.
+
+### 8.2 Where the framework runs decides whether Python-vs-TS matters
+
+- **Self-run framework** → the agent loop runs on *our* compute. Language matters: browser-use (Python) = a second runtime/service next to the Next.js/TS app; Stagehand (TS) lives natively in-app or in a CF Worker.
+- **Hosted framework API** (browser-use Cloud, Skyvern) → runs on *their* infra, we make HTTP calls. **Language is irrelevant** — we never import the library. CF Browser Run hands you a remote *browser* only, not a place to run browser-use; the framework still needs a host.
+- Even colocating the loop "on Cloudflare" (Workers + Browser Run) is TS-first — Python Workers (Pyodide) won't run browser-use's dep tree.
+
+### 8.3 Anti-bot is two axes — we control one
+
+- **Axis 1 — flow design (ours, fully):** session warming (don't teleport to checkout), human pacing, session/cookie persistence (returning-user beats fresh fingerprint), determinism over erratic autonomy, geo/proxy↔card-locale alignment, retry/backoff discipline. Matters *more* in 2026 because reCAPTCHA v3 / Turnstile are silent risk-scoring — you mostly *avoid* CAPTCHA by looking legit, not solve it.
+- **Axis 2 — fingerprint / TLS-JA4 / IP reputation / residential proxies / CAPTCHA solve (execution layer's):** can't be coded around from orchestration; set by which browser infra we rent. Plain stealth plugins (puppeteer-stealth, deprecated Feb 2025) are dead; 2026 WAFs (Cloudflare, DataDome 85k+ per-customer models, Akamai) check JA4 + canvas/Picasso subpixel + media-device enumeration + behavioral ML simultaneously.
+
+Best outcomes need *both*. Flow realism can't rescue a flagged datacenter IP with a headless fingerprint.
+
+### 8.4 Cloudflare Browser Run — narrow fit (the key finding)
+
+Per CF's own docs: **Browser Run requests are always identified as bot traffic.** They originate from CF datacenter IP ranges with **no per-request IP rotation**, and carry self-identifying headers (`cf-biso-request-id`, `cf-biso-devtools`). So:
+
+| Flow type | CF Browser Run fit |
+|---|---|
+| **Our own CF zones** (agent testing / Module 9, our storefronts) | **Good** — allowlist via WAF Skip rule on Bot Detection ID (requires **Enterprise**; `cf.bot_management.*` fields are Enterprise-only). Turnstile Pre-clearance available. |
+| Non-critical / non-authenticated / friendly third-party sites | OK — flow realism carries it |
+| **Critical / authenticated / protected third-party checkout** | **Poor** — tagged bot, datacenter IP, no rotation → blocked by any well-configured CF/DataDome/Akamai merchant. Docs state plainly it "cannot bypass anti-bot protections." |
+
+**Bottom line: CF Browser Run has little potential for critical payment flows; reserve it for non-critical / non-authenticated work and for driving our own zones.** This kills the earlier "start on CF, escalate later" idea *for payments*.
+
+### 8.5 Execution-layer cost + capability (May 2026)
+
+| | CF Browser Run | Browserbase | browser-use Cloud |
+|---|---|---|---|
+| Session | $0.09/browser-hr (10 hr + 10 concurrent free on Workers Paid) | $0.10–0.12/hr (Dev $20 / Startup $99) | **$0.06/hr** (free to start) |
+| Proxy | none (CF IPs only, no rotation) | $10–12/GB | **$5/GB**, residential 195+ countries |
+| Stealth | none turnkey | Basic ($20/$99); Advanced only on custom Scale | built-in, claims #1 on 71-site benchmark |
+| CAPTCHA | none | auto | auto |
+| Framework | bring your own (Stagehand via CDP) | Playwright/Stagehand native | browser-use native |
+| Secret handling | none | none built-in | **`secrets`/`sensitive_data` native + 1Password `opVaultId`** |
+
+browser-use Cloud is cheaper on session + proxy, stronger on stealth, and the only one with native payment-secret handling. Browserbase's sole edge is "runs Stagehand code unchanged" — so "Stagehand primary + browser-use escalation" is a trap (two frameworks = two codebases). Since we go hosted anyway, the TS-vs-Python argument for Stagehand evaporates (§8.2).
+
+### 8.6 `sensitive_data` survives the move to hosted
+
+On browser-use Cloud the field is `secrets` (self-hosted: `sensitive_data`), passed straight into `POST /api/v1/run-task`. Same placeholder split as Option C: the task prompt references only `card_number`, the real value is injected into the DOM post-LLM. Five enforced layers: text filtering, DOM injection, domain scoping, log masking, hard `allowedDomains` gate (`InsecureSensitiveDataError` without it). Hosted adds **encryption at rest** and **`opVaultId`** (1Password injection, raw PAN never on the wire). Non-negotiables for the card spike: **`vision:false`** (screenshots leak the PAN) and a **capable model** (Claude / GPT-4o — weaker models type the placeholder name instead of resolving it, GH #1062).
+
+### 8.7 If we self-host browser-use — standalone Python service
+
+Self-host only when a concrete reason forces it: **compliance** (don't send PAN to browser-use's servers — actor-of-record fork), **cost at scale** (>~100 browser-hr/mo), or **customization**. If so:
+
+- **Standalone FastAPI service, single job: run browser-use tasks.** No business logic — that stays in the Next.js brain. One real endpoint.
+- **Mirror the Cloud `run-task` contract** (`task`, `secrets`, `allowed_domains`, `vision`, `session_id`) so the brain is agnostic to hosted vs self-hosted — swapping is a URL change, and we can graduate per-flow (e.g. payments → self-host for compliance) without a rewrite.
+- **Persistent host with Chromium** — Replit Reserved VM (~$20–30/mo, 2vCPU/4GB) to start, not Autoscale (cold starts kill the warm browser); dedicated VPS if it grows to a fleet. Flags: `--no-sandbox --disable-dev-shm-usage --disable-gpu`, headless.
+- Self-host means **we own Axis 2** (residential proxies, fingerprint patches like Camoufox/Patchright, CAPTCHA, memory-leak babysitting) — the highest-toil path.
+
+### 8.8 Recommended runtime direction
+
+1. **Start on hosted browser-use Cloud** as the single backend for outbound payments + form-fill + registrations — cheapest, bundles the stealth we'd otherwise escalate to Browserbase for, native `secrets`/`opVaultId` covers the Option C secret-handoff with zero self-hosting. BYO Claude key.
+2. **CF Browser Run only for non-critical / non-authenticated flows and our own CF zones** (agent testing, Module 9) — never for critical third-party checkout.
+3. **Browserbase** is the deterministic-control fallback (Stagehand atomic `act()`) if browser-use's autonomy proves too loose on the money step.
+4. **Self-hosted standalone Python service** only when compliance/cost/customization forces it — built contract-compatible with Cloud from day one so it's a drop-in per-flow.
+5. **Validate first** (extends §6): one spike — browser-use Cloud + BYO Claude + `secrets` + `vision:false` filling a Stripe **test** checkout — to settle whether hosted autonomy gives tight-enough control on the PAN step before wiring it into the brain.
+
+---
+
+## 9. Out of scope for this doc
 
 - **Concrete v2 build plan.** Once a direction is locked, that lives in its own doc under `currently_building/rail5-v2/` (not in `_rail5_ideas/`).
 - **Migration of existing Rail 5 v1 cards.** The encryption format doesn't change; only the checkout-time delivery does. Migration is a deployment concern, not a design one.
@@ -289,7 +364,7 @@ Watch Amazon vs. Perplexity carefully. If the 9th Circuit upholds the injunction
 
 ---
 
-## 9. References
+## 10. References
 
 - Rail 5 v1 operational doc: `rail5-overview_260309.md` (sibling folder).
 - OpenClaw plugin source: `Plugins/OpenClaw/` (the canonical reference for A).
@@ -303,3 +378,7 @@ Watch Amazon vs. Perplexity carefully. If the 9th Circuit upholds the injunction
 - Skyvern: <https://www.skyvern.com/>
 - Stagehand: <https://www.browserbase.com/stagehand>
 - Amazon vs. Perplexity: <https://www.pymnts.com/legal/2026/perplexity-asks-federal-court-to-lift-amazon-shopping-agent-ban/>
+- Cloudflare Browser Run (pricing / limits / FAQ / Stagehand): <https://developers.cloudflare.com/browser-run/> · <https://developers.cloudflare.com/browser-run/stagehand/>
+- browser-use Cloud pricing: <https://browser-use.com/pricing>
+- browser-use Cloud `run-task` / `secrets` / `opVaultId`: <https://docs.cloud.browser-use.com/concepts/task>
+- Browserbase plans & pricing: <https://docs.browserbase.com/guides/plans-and-pricing>
