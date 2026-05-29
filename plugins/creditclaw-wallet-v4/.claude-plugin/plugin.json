@@ -1,0 +1,10 @@
+{
+  "name": "creditclaw-wallet",
+  "version": "0.4.0",
+  "description": "Give your agent spending power. Secure wallet management with true credential isolation via Chrome extension, platform-optimized checkout (Shopify, Stripe, generic), vendor discovery, and storefront capabilities powered by CreditClaw.",
+  "author": {
+    "name": "CreditClaw"
+  },
+  "homepage": "https://creditclaw.com",
+  "keywords": ["payments", "wallet", "checkout", "commerce", "spending", "financial", "credential-isolation"]
+}
