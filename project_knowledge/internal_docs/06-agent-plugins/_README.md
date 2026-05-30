@@ -12,6 +12,11 @@ Docs for Module 6. Each agent platform (OpenClaw, future Claude/GPT integrations
 | Plugin | Location | Purpose |
 |--------|----------|---------|
 | OpenClaw | `public/Plugins/OpenClaw/` | Plugin for OpenClaw bots — card fill, API integration, field detection |
+| CreditClaw Wallet v4 (Claude/Cowork) | `plugins/creditclaw-wallet-v4/` | Skills + hooks for Claude. Drives an external secure-fill extension via postMessage. **Does not work end-to-end** — the extension it depends on was never delivered. See the plan doc below. |
+
+## Plans
+
+- [`secure-fill-extension-plan.md`](secure-fill-extension-plan.md) — full build brief for the missing Chrome extension (the context-safe data injector that closes the v4 gap). Self-contained onboarding for a fresh agent: what CreditClaw is, how the rails work, why credential isolation matters, how OpenClaw solves it, why v4 doesn't, and the design + Chrome-review constraints.
 
 ## Key code (OpenClaw)
 
