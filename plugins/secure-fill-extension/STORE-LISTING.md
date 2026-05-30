@@ -29,12 +29,14 @@ Internal checklist for publishing. Not shipped to users.
 - No remotely-hosted code: all JS is bundled; no `eval`, no external script
   loads. The extension fetches data only, never code. ✅
 - No code obfuscation; source is readable. ✅
-- Privacy policy published and linked (`PRIVACY.md` content, hosted at a public
-  URL). ⛳ host before submitting.
+- Privacy policy published and linked. ✅ hosted at
+  `https://creditclaw.com/securefill/privacy` (docs at
+  `https://creditclaw.com/securefill`).
 - Data-use disclosures completed in the dashboard (handles user-provided data;
   not sold/shared). ⛳
-- Icons (16/48/128 px) added to `manifest.json` and the listing. ⛳ add before
-  submitting.
+- Icons (16/48/128 px) added to `manifest.json` and the listing. ✅ icons in
+  `icons/`, wired in `manifest.json`. Store assets in `store-assets/`
+  (`icon-128.png`, `screenshot-1280x800.png`, `promo-tile-440x280.png`).
 
 ## Open decisions
 

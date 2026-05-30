@@ -24,6 +24,24 @@ uri = "file://public/assets/images/agents-converge-diagram.png"
 type = "image"
 title = "agents converging diagram"
 
+[[generated]]
+id = "5FaGDL1FHOW9uyZST6f1p"
+uri = "file://attached_assets/generated_images/securefill_icon_raw.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "Jxs_jTeLtRlw5K1cYQsUj"
+uri = "file://attached_assets/generated_images/securefill_explainer_raw.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "Mpc1VO_v9KRuVab8gK6x7"
+uri = "file://attached_assets/generated_images/securefill_tile_raw.png"
+type = "image"
+title = "generated_image"
+
 [[outputs]]
 id = "cnAOWU3Q_duY2HbMEVzf9"
 uri = "file://docs/axs-technical-plan.md"

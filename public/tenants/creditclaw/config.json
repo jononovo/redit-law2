@@ -69,6 +69,7 @@
           "links": [
             { "label": "Documentation", "href": "/docs" },
             { "label": "Developer", "href": "/docs/getting-started/api-introduction" },
+            { "label": "SecureFill Extension", "href": "/securefill" },
             { "label": "Newsroom", "href": "/newsroom" }
           ]
         }
