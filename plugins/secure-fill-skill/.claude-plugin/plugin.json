@@ -1,0 +1,6 @@
+{
+  "name": "secure-fill",
+  "version": "1.0.0",
+  "description": "Securely fill sensitive form fields via the SecureFill browser extension, keeping the values out of the assistant's context.",
+  "author": { "name": "CreditClaw" }
+}

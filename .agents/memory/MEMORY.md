@@ -1,0 +1,1 @@
+- [SecureFill extension](securefill-extension.md) — context-safe field filler closing the v4 Cowork gap; isolation strong only for cross-origin iframes, weaker same-origin; no bridge trust model (fills are server-ref-gated); generic-naming rule.

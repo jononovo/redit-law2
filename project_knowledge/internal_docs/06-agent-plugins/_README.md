@@ -13,6 +13,8 @@ Docs for Module 6. Each agent platform (OpenClaw, future Claude/GPT integrations
 |--------|----------|---------|
 | OpenClaw | `public/Plugins/OpenClaw/` | Plugin for OpenClaw bots — card fill, API integration, field detection |
 | CreditClaw Wallet v4 (Claude/Cowork) | `plugins/creditclaw-wallet-v4/` | Skills + hooks for Claude. Drives an external secure-fill extension via postMessage. **Does not work end-to-end** — the extension it depends on was never delivered. See the plan doc below. |
+| SecureFill extension | `plugins/secure-fill-extension/` | MV3 Chrome extension — context-safe field filler that closes the v4 gap. Generic (no payment vocabulary). Zip this folder for the Web Store. |
+| secure-fill skill | `plugins/secure-fill-skill/` | Companion Claude skill — teaches the assistant to hand an opaque reference to the extension. The brain to the extension's hands. |
 
 ## Plans
 

@@ -3,8 +3,10 @@ name: "Plan: Secure-Fill Browser Extension"
 description: Full build brief for a new Chrome extension that fills sensitive form fields in the live browser without the data ever entering the agent's context. Read this before building the extension or touching the Cowork plugin. Explains CreditClaw, the payment rails, why credential isolation matters, how OpenClaw solves it, why the existing Cowork plugin does NOT, and the design + Chrome-review constraints for the new extension.
 created: 2026-05-30
 last_updated: 2026-05-30
-status: plan
+status: built (MVP)
 ---
+
+> **Built 2026-05-30.** The extension lives at `plugins/secure-fill-extension/` and the companion skill at `plugins/secure-fill-skill/`. One divergence from §7.4: `content-iframe.js` was **not** created — `content.js` runs in all frames (`all_frames: true`) and self-branches (top frame = page↔worker bridge; every frame = detect/apply), so a separate iframe script was dead weight. Mode A points at `POST /bot/securefill/values`, which the backend does not yet implement; it fails explicitly until added. Mode B is wired to the real `POST /bot/rail5/key`.
 
 # Plan: Secure-Fill Browser Extension
 
@@ -124,6 +126,13 @@ secure-fill-extension/                  ← shippable; generic; zip this for the
 ```
 - **Decryption (Mode B) lives in `background.js`** (service worker), reusing OpenClaw's `decrypt.ts` logic via WebCrypto (`crypto.subtle`, AES-GCM). Mirror the memory-wipe.
 - **Cross-origin iframes** (e.g. Stripe Elements, `*://checkout.pci.shopifyinc.com/*`) need `content-iframe.js` matched in the manifest; the worker routes fill commands to the correct frame.
+
+### 7.4a Security boundary (what holds, what doesn't) — confirmed in review
+
+- **Cross-origin iframe fields (the payment case): isolated.** SOP stops page JS (where the agent runs) from reading values filled into Stripe/Shopify/Adyen/Braintree iframes. This is the real card-fill path and it holds.
+- **Same-origin top-page fields: not confidential from the page.** Page JS can read `input.value` after a same-origin fill. The isolated world hides the credential/key/logic, not a value already typed into a same-origin input. Don't over-claim isolation for plain logins.
+- **Fill trigger is server-ref-gated.** A `fill` carries only an opaque `ref`; Mode B needs a single-use, bot-scoped, approval-gated key (409 on reuse). A hostile page can't exfiltrate via `securefill-fill` (no valid ref) — worst case it disrupts local config via setup/clear (nuisance). So a heavyweight bridge trust model (signed challenge / per-origin allowlist) was deliberately **not** built — unrequested scope for the actual threat.
+- **Memory wipe is best-effort** (JS/WebCrypto give no hard zeroization). Accepted.
 
 ### 7.5 Security properties to preserve
 - Agent never receives values — only `ref` in, status out.

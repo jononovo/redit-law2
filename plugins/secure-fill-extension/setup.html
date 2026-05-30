@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>SecureFill</title>
+    <style>
+      body { font-family: system-ui, -apple-system, sans-serif; max-width: 34rem; margin: 2rem auto; padding: 0 1rem; color: #111; }
+      h1 { font-size: 1.25rem; margin-bottom: .25rem; }
+      p { color: #444; }
+      .row { display: flex; justify-content: space-between; padding: .55rem 0; border-bottom: 1px solid #eee; }
+      code { background: #f4f4f5; padding: .1rem .35rem; border-radius: .25rem; }
+      .id { margin-top: 1.25rem; font-size: .9rem; color: #444; }
+      button { margin-top: 1.25rem; padding: .5rem .9rem; border: 1px solid #ccc; border-radius: .45rem; background: #fff; cursor: pointer; }
+      button:hover { background: #f9f9f9; }
+      small { color: #777; }
+    </style>
+  </head>
+  <body>
+    <h1>SecureFill</h1>
+    <p>Fills form fields from a referenced source, keeping the values out of the assistant's context.</p>
+    <div class="row"><span>Status</span><strong id="status">…</strong></div>
+    <div class="row"><span>Version</span><span id="version">…</span></div>
+    <div class="id">
+      Connection id: <code id="connid">…</code><br />
+      <small>Paste this into your assistant chat to confirm the connection.</small>
+    </div>
+    <button id="disconnect" data-testid="button-disconnect">Disconnect</button>
+    <script src="setup.js"></script>
+  </body>
+</html>
