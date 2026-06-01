@@ -78,7 +78,7 @@ export function LiveMetrics() {
           >
             <h3 className="text-xs font-mono text-neutral-400 uppercase tracking-[0.2em] mb-4">Active Now</h3>
             <div className="text-6xl font-bold text-neutral-800 mb-3 tracking-tight">
-              <Counter end={37} />
+              <Counter end={279} />
             </div>
             <p className="text-neutral-500 text-sm font-medium leading-relaxed">Bot wallets with<br/>spending controls</p>
           </div>
@@ -89,7 +89,7 @@ export function LiveMetrics() {
           >
             <h3 className="text-xs font-mono text-neutral-400 uppercase tracking-[0.2em] mb-4">Funds Managed</h3>
             <div className="text-6xl font-bold text-[#FF6B6B] mb-3 tracking-tight">
-              <Counter end={2000} prefix="$" />
+              <Counter end={89255} prefix="$" />
             </div>
             <p className="text-neutral-500 text-sm font-medium leading-relaxed">Allowances &amp; payments<br/>(USD)</p>
           </div>
