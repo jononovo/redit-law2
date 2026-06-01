@@ -71,3 +71,9 @@ id = "6qdZ6elNet-KYkJiYFtiL"
 uri = "file://project_knowledge/internal_docs/07-platform-management/agent-shopping-test.md"
 type = "text"
 title = "Agent Shopping Test — Internal Technical Doc"
+
+[[outputs]]
+id = "XKQzsQHNXJVI3vJFQWyci"
+uri = "file://plugins/secure-fill-extension/securefill-extension-v1.0.0.zip"
+type = "unspecified"
+title = "SecureFill Extension — Chrome Web Store upload package (v1.0.0)"
