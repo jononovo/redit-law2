@@ -7,6 +7,8 @@ description: Split-knowledge encrypted card system. Bot holds ciphertext, Credit
 
 **v4 • March 10, 2026 • Internal**
 
+> **Correction (2026-06-04):** The "CreditClaw holds zero card data" / "Not PCI-scoped" claims below are now stale. The live `rail5_cards` schema also stores `cardFirst6`, `cardLast4`, `expMonth/expYear`, `cardholderName`, and billing fields. The **full PAN and CVV are still never stored** (the middle digits stay encrypted, CVV is never persisted), so the split-knowledge property still holds — but "zero card data" is no longer literally true. Treat the storage claims here as out of date pending a refresh.
+
 ---
 
 ## What Rail 5 Is

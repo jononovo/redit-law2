@@ -79,7 +79,7 @@ The Master Agent is **one of several** ways an agent can transact via CreditClaw
 For the Master Agent's own runtime, use the **browser-use framework** (curated `Tools`), **not** the minimal "Browser Harness" (raw-CDP, agent-writes-its-own-tools mid-task) — the harness is too open-ended for something transacting on real cards.
 
 - This is the **server-side, CreditClaw-controlled** surface, so the `activeTab` / extension-permission constraints are irrelevant — we own the browser launch.
-- `sensitive_data` keeps card credentials (`fetchOneTimeCredentials`) out of the LLM; set `use_vision=False` so screenshots never capture a PAN. The "operator shouldn't hold plaintext" caveat is **moot** — CreditClaw is the operator of record (Q#6).
+- `sensitive_data` keeps card credentials (`fetchOneTimeCredentials`) out of the LLM's *text* context. **Vision stays optional and on by default** — it's needed to succeed on sites we don't control, so don't make turning it off a requirement. The narrower rule: secret values (PAN/CVV) must never land in a screenshot sent to the model — handle that at the secret-entry step only (skip or mask the shot there), not by blinding the agent for the whole run. Sites we know well can run deterministic + vision-off; unknown sites keep vision on. The "operator shouldn't hold plaintext" caveat is **moot** — CreditClaw is the operator of record (Q#6).
 - Cloud (stealth / managed / persistent profiles) vs self-host (data-residency for card data) — decide against Q#6.
 - Runtime choice is **orthogonal** to the Path A/B auth fork.
 
@@ -104,7 +104,7 @@ The Master Agent must spend across **multiple rails, selected per mandate**:
 
 - **Rail 1** (Privy stablecoin wallet + x402) — **in scope for v1.**
 - **Rail 3** (Crossmint Card Permissions — virtual cards via orderIntents) — **in scope for v1.**
-- **Rail 5** (self-hosted encrypted real cards) — **deferred.** We can't hold PCI card data, so Rail 5 is out until that's resolved.
+- **Rail 5** (split-knowledge "Sub-Agent Cards") — **deferred.** Rail 5 is BYO-agent *by design*: CreditClaw holds only the decryption key, the bot holds the ciphertext, and an external sub-agent decrypts at checkout — so CreditClaw never assembles the full PAN and stays out of PCI scope. The Master Agent **is** CreditClaw, so it would hold the key *and* receive the ciphertext, decrypt in-house, and pull the plaintext PAN (and PCI scope) inside our perimeter. That's the blocker — not "we'd store the PAN," but that the *decryption moves in-house*. Rail 3 and Rail 1 don't have this problem: Crossmint carries PCI for Rail 3, and Rail 1 has no PAN at all.
 
 **v1 = Rail 1 + Rail 3**, rail chosen per the spend mandate. Rail-selection logic (which rail for which mandate — currency, merchant acceptance, limits) is a new concern to design at build time; not specified here.
 
