@@ -42,3 +42,18 @@ still needs the owner's passkey ceremony in a browser. Re-issue on expiry = new 
 `crossmint-env.ts` hardcodes host+keys to **staging**, so BOTH dev and the deployed prod app
 hit Crossmint staging. "Production cards" are staging orderIntents created by prod users; the
 non-staging `CROSSMINT_*` secrets exist but are not wired up.
+
+## The expiry IS settable at the provider layer (Basis Theory) — 7d is a Crossmint default
+Crossmint sits on Basis Theory's agentic stack: **Enrollment → Instruction → Credentials**.
+Basis Theory's "Instruction" == Crossmint's "orderIntent", and its docs document a
+caller-set **`expires_at`** ("Instructions control how much the agent can spend AND when the
+authorization expires"; create example carries `expires_at`; status flips to `expired` past it).
+So expiry is **NOT a hardcoded protocol limit** — it's a per-instruction field.
+**Conclusion:** the 7-day TTL is almost certainly **Crossmint's default**, applied because
+`createOrderIntent` only forwards `agentId/payment/mandates` and doesn't expose the `expires_at`
+passthrough. Other BT TTLs rule out alternatives: Token Intent default 1 day (max 48h via quota),
+CVC retention 1 hour — neither is 7d.
+**How to apply:** a user-facing expiry picker is viable *only once Crossmint forwards `expires_at`*
+on order-intent creation — the blocker is the Crossmint wrapper, not the protocol. Ask Crossmint
+to expose it (or check their gated Agentic Cards ref). Visa Intelligent Commerce public docs
+publish no numeric TTL (API is partner-gated); the concrete settable expiry lives at the BT instruction.
