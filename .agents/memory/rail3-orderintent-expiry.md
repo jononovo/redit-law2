@@ -19,6 +19,8 @@ empirically across 6 prod (=staging) intents minted via `POST /order-intents/:id
 - two intents created same-day → credential `expiresAt` = creation **+ 7.00 days to the second**; one was `$500 monthly`, the other `$100k YEARLY` — both 7d. (period has zero effect on lifetime.)
 - four older intents (ages 8.0/8.0/10.0/12.9 days, all monthly) → `400 "Order intent … has expired. Create a new order intent to continue."`
 - The credential `expiresAt` IS the intent lifetime, not a short-lived credential TTL (the 400 explicitly says the *order intent* expired).
+- PROOF it's anchored to CREATION not mint time: card 10 created 18:54:55, minted ~45min later at 19:40, yet `expiresAt` = 18:54:55 + 7d (the creation second), not mint+7d. So `expiresAt` is Crossmint's own declared intent-lifetime value, not invented.
+- HONEST LIMITS: only *observed expiry events* were monthly cards (the yearly card's 7d is its declared `expiresAt`, not a witnessed expiry — it was hours old). Exact cutoff never bracketed (no day-6-alive vs day-8-dead test); 7.00d is taken from Crossmint's `expiresAt`.
 
 **Why it matters:** the mandate `maxAmount.period` (weekly/monthly/yearly) does NOT set
 lifetime — a monthly card still dies in 7 days. Don't conflate spend window with intent life.
