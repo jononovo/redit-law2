@@ -13,10 +13,12 @@ observation against Crossmint STAGING only** — we have zero real-Crossmint-pro
 **Treat 7 days as a heuristic, not a contract: persist the real `expiresAt` from a
 successful credentials response instead of hardcoding `created_at + 7d`.**
 
-A Crossmint orderIntent expires a flat **7 days after creation** (staging), decoupled from the
-mandate period. Observed empirically (staging, 2 data points):
-- open-mode intent created `2026-06-05 18:54:55` → credential `expiresAt` = `2026-06-12 18:54:55` (creation + 7d to the second).
-- limited/monthly intent created `2026-05-28 18:25` expired by `2026-06-05` (past its +7d = 06-04).
+A Crossmint orderIntent expires a flat **7 days after creation** (staging), **fully independent
+of the mandate period** — proven by a `yearly` intent also getting exactly 7 days. Observed
+empirically across 6 prod (=staging) intents minted via `POST /order-intents/:id/credentials`:
+- two intents created same-day → credential `expiresAt` = creation **+ 7.00 days to the second**; one was `$500 monthly`, the other `$100k YEARLY` — both 7d. (period has zero effect on lifetime.)
+- four older intents (ages 8.0/8.0/10.0/12.9 days, all monthly) → `400 "Order intent … has expired. Create a new order intent to continue."`
+- The credential `expiresAt` IS the intent lifetime, not a short-lived credential TTL (the 400 explicitly says the *order intent* expired).
 
 **Why it matters:** the mandate `maxAmount.period` (weekly/monthly/yearly) does NOT set
 lifetime — a monthly card still dies in 7 days. Don't conflate spend window with intent life.
