@@ -2,7 +2,7 @@
 name: Rail 3 — Master Agent Plan
 description: Holding doc for the in-house "Master Agent" capability. Today, each CreditClaw user gets their own real Crossmint agent (one-per-owner, see Rail 3 per-user agent refactor). The Master Agent thesis is to add a CreditClaw-operated agent runtime that can actually execute work (browser control, transactions) on behalf of users. Open question whether the Crossmint side is one shared agentId or a backend orchestration layer over each user's own agent.
 created: 2026-05-20
-last_updated: 2026-05-23
+last_updated: 2026-06-04
 status: idea — not started, blocked on the auth-model question below
 ---
 
@@ -61,12 +61,59 @@ If Path B wins, the refresh-token plan stays as the only viable way to do headle
 
 **Decision dependency:** do not start the refresh-token implementation if Path A has a realistic chance and the auth-model test hasn't been run. ~30 minutes of testing can avoid ~3 days of work building a feature we may not need. The test goes first.
 
+## Design direction (converged 2026-06-04)
+
+Captured from a design pass. Still **gated by the auth-model test above** — this is the shape we'll build *once that's resolved*, not a green light to start.
+
+### Where the Master Agent sits among the payment mechanisms
+
+The Master Agent is **one of several** ways an agent can transact via CreditClaw — not the only one. The main skill stays **runtime-agnostic**; we never force a runtime on BYO agents:
+
+- **A. Browser extension** (`plugins/secure-fill-extension`) — any agent driving Chrome, secure fill in the user's own browser.
+- **B. OpenClaw plugin** (`public/Plugins/OpenClaw`) — secure form filling for that platform.
+- **C. browser-use** — an *optional secondary* skill ("Agents using browser-use") for external agents who want it. Never baked into the main skill.
+- **Master Agent** — CreditClaw-operated runtime that uses browser-use internally (surface C's engine, but operated by us).
+
+### Browser runtime: browser-use (framework, not harness)
+
+For the Master Agent's own runtime, use the **browser-use framework** (curated `Tools`), **not** the minimal "Browser Harness" (raw-CDP, agent-writes-its-own-tools mid-task) — the harness is too open-ended for something transacting on real cards.
+
+- This is the **server-side, CreditClaw-controlled** surface, so the `activeTab` / extension-permission constraints are irrelevant — we own the browser launch.
+- `sensitive_data` keeps card credentials (`fetchOneTimeCredentials`) out of the LLM; set `use_vision=False` so screenshots never capture a PAN. The "operator shouldn't hold plaintext" caveat is **moot** — CreditClaw is the operator of record (Q#6).
+- Cloud (stealth / managed / persistent profiles) vs self-host (data-residency for card data) — decide against Q#6.
+- Runtime choice is **orthogonal** to the Path A/B auth fork.
+
+### Module + tenant shape
+
+Two layers, kept distinct:
+
+- **Engine (logic + data):** `features/master-agent/` — browser-use orchestration, its own `storage/` fragment, its own `schema/master-agent-tables.ts`, plus thin `app/api/v1/master-agent/*` route shells. **Embedded** in the app: imports shared auth / Crossmint client / guardrails **directly** (no duplication, no adapter layer — we are *not* extracting it).
+- **Presentation (its own tenant + domain):** a new tenant `master-agent` on its own hostname, `components/tenants/master-agent/` + `public/tenants/master-agent/config.json`. The new domain stays in the **same Next.js app/deployment** (middleware hostname routing), so shared auth/DB/Crossmint come for free — domain isolation *without* a separate app.
+
+**Cohesion goal:** all Master Agent logic lives in `features/master-agent/` (server) + `components/tenants/master-agent/` (client), so an agent pointed at those two folders sees the whole feature. Enforce **one-way imports** — master-agent imports shared; nothing else imports master-agent internals. Drop a `features/master-agent/README.md` as the map.
+
+This respects the tenant invariant (*tenants are presentation only*): the new tenant **renders** the master-agent engine, same as shopy/brands render the scan pipeline. The engine is a new shared engine, not a per-tenant branch.
+
+**Tenant registration touchpoints** (the existing pattern's cost — tenant id maps are hardcoded, no single registry): `middleware.ts` (hostname→id), `app/layout.tsx` (`ids` array + `TENANT_THEMES`), `app/page.tsx`, `app/how-it-works/page.tsx`, `app/docs/layout.tsx`, plus new `public/tenants/master-agent/config.json` + `components/tenants/master-agent/`.
+
+**Reuse check before building:** `app/managed-agents/page.tsx` and `app/action/page.tsx` already exist — build on whatever managed-agents surface is partly scaffolded rather than starting fresh.
+
+### Rail coverage — mandate-driven
+
+The Master Agent must spend across **multiple rails, selected per mandate**:
+
+- **Rail 1** (Privy stablecoin wallet + x402) — **in scope for v1.**
+- **Rail 3** (Crossmint Card Permissions — virtual cards via orderIntents) — **in scope for v1.**
+- **Rail 5** (self-hosted encrypted real cards) — **deferred.** We can't hold PCI card data, so Rail 5 is out until that's resolved.
+
+**v1 = Rail 1 + Rail 3**, rail chosen per the spend mandate. Rail-selection logic (which rail for which mandate — currency, merchant acceptance, limits) is a new concern to design at build time; not specified here.
+
 ## Open questions (do not answer in this doc — these are tracked here so we don't lose them)
 
 1. **Auth model** — above. Single most important question.
 2. **One agent or a pool** (if Path A) — concentrates per-agent rate limits. Pool keyed by region or load balances at the cost of complexity.
-3. **Browser runtime** — Browserbase vs self-hosted Playwright cluster vs Anthropic Computer Use API. Cost, latency, observability all differ.
-4. **Tool/instruction surface** — free-form natural language vs curated toolset. Probably starts curated (checkout-only).
+3. **Browser runtime** — leading candidate now **browser-use** (framework — see Design direction) vs Browserbase / self-hosted Playwright / Anthropic Computer Use. Remaining sub-decision: browser-use Cloud vs self-host (data residency). Cost, latency, observability all differ.
+4. **Tool/instruction surface** — free-form natural language vs curated toolset. Probably starts curated (checkout-only) — aligns with browser-use's curated `Tools`, not the free-form harness.
 5. **Per-user budget / quota.** Master Agent runs cost real money. Caps per user, possibly tier-gated.
 6. **Liability and compliance.** When the Master Agent executes on a user's card, CreditClaw is the actor of record. AML/KYC, dispute handling, fraud monitoring scale up. Needs a real conversation with whoever owns compliance before launch. **Gating non-technical concern.**
 7. **Disclosure** — surface that the runtime is shared vs. keep the alias illusion. Probably alias in UI, technical truth in docs/terms.
