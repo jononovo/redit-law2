@@ -2,7 +2,7 @@
 name: Rail 3 — Virtual Cards (Crossmint Card Permissions)
 description: Canonical operational doc for Rail 3 — vaulted real card → N virtual cards (Crossmint orderIntents) → merchant-scoped one-time PAN/CVC at bot checkout. Read this first when touching anything in features/payment-rails/rail3/, app/api/v1/rail3/, or components/wallet/rail3/.
 created: 2026-05-21
-last_updated: 2026-05-28
+last_updated: 2026-06-05
 ---
 
 # Rail 3 — Virtual Cards
@@ -85,6 +85,45 @@ Owner (Firebase user)
 ```
 
 The Crossmint agent is **not** stored on the PM — it's bound when the orderIntent is created. That's why deleting an agent doesn't cascade-delete PMs and vice versa.
+
+---
+
+## Lifecycle & expiry: three separate clocks (the #1 source of confusion)
+
+An orderIntent's "how long / how much" behavior is governed by **three independent clocks**. Collapsing them into one is what makes expiry look broken ("I set it to monthly, why did it die in a week?"). Keep them separate:
+
+| Clock | What it controls | Typical value | Who sets it | Where it lives |
+|---|---|---|---|---|
+| **Credential TTL** | The minted one-time PAN/CVC itself — single-use, short-lived. | Minutes to ~1h (Basis Theory CVC retention default 1h). | PCI / vault rules. **Not us.** | The bot-checkout response; never stored. |
+| **Intent expiry** (`expires_at`) | How long the **orderIntent (= the virtual card / authorization)** stays alive and able to mint credentials *at all*. | **~7 days from creation (staging, observed).** | **Crossmint default today** — we send no value. Settable one layer down (Basis Theory Instruction `expires_at`). | The orderIntent. Surfaces only in the credentials response's `expiresAt`; **not** on `getOrderIntent`. |
+| **Mandate period** | The **spend-cap refresh cadence** — when the budget resets. | `weekly` / `monthly` / `yearly`. | **Us**, via the create form → `mandates[].details.period`. | `rail3_cards.limit_period` + the Crossmint mandate. |
+
+**The key insight:** the mandate period (e.g. `monthly`) is the *budget* clock, **not** the *lifetime* clock. The intent's ~7-day expiry fires first, so a `monthly` card never survives to its 30-day budget refresh — and a `yearly` card dies in 7 days too. Budget cadence and authorization lifetime are orthogonal.
+
+### Where the ~7-day expiry comes from (and what we don't know)
+
+Crossmint sits on Basis Theory's agentic stack: **Enrollment → Instruction → Credentials**. The **Instruction is our orderIntent** — it defines spending rules tied to an enrollment, carries `amount`, `description`, and a settable **`expires_at`**, and the consumer must verify it before credentials can be retrieved. So **expiry is adjustable one layer down**; the flat ~7 days is almost certainly a **Crossmint default** applied because our `createOrderIntent` body only sends `agentId / payment / mandates` and Crossmint exposes no `expires_at` passthrough to us today.
+
+**Proven empirically (staging):**
+
+- Two fresh intents (one `$500 monthly`, one `$100k yearly`) → credentials `expiresAt` = **creation + 7.00 days, to the second.** Period had zero effect on lifetime.
+- It's anchored to **creation, not mint time**: an intent minted ~45 min after creation still expired at `creation + 7d` — so `expiresAt` is the *intent lifetime*, not a short credential TTL.
+- Four older intents (ages 8–13 days, all `monthly`) → `400 "Order intent '<id>' has expired. Create a new order intent to continue."` (The wording names the *order intent* as what expired.)
+
+**NOT settled — treat the cause as open:**
+
+- **Possibly staging-only.** Crossmint has **not enabled production for us yet**, so 100% of these observations are Crossmint *staging*. Prod may relax the TTL or expose a passthrough. We don't know *why* the 7-day limit exists; don't assume it holds in prod.
+- The exact cutoff was never bracketed (no day-6-alive vs day-8-dead test); `7.00d` is taken from Crossmint's own `expiresAt`.
+- Only `monthly` intents were observed *actually* throwing "has expired"; the `yearly` card's 7-day end is its declared `expiresAt`, not a witnessed expiry (it was hours old).
+
+### "active" ≠ spendable — the detection gap
+
+Neither layer reliably reflects expiry:
+
+- `rail3_cards.status` is *meant* to mirror Crossmint's `phase`, but stays `active` for expired intents — nothing flips it to `expired` (observed: all prod card rows `active` while most were actually expired).
+- Crossmint's own `getOrderIntent` **also** returns `phase: "active"` for an already-expired intent.
+
+So a card showing `active` — in our DB **or** in Crossmint's `phase` — is **not** proof it can spend. The only reliable expiry signals are: **attempt a credential mint** (it 400s with "has expired"), or **compute `created_at + 7d`**. If/when we surface expiry in the UI, **persist the real `expiresAt` from a successful credentials response** rather than hardcoding `+7d`.
 
 ---
 
