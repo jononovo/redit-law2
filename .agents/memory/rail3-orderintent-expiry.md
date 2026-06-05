@@ -5,7 +5,12 @@ description: Crossmint Card Permissions orderIntent lifetime, where the expiry i
 
 # Rail 3 (Crossmint Card Permissions) orderIntent expiry
 
-## Flat 7-day TTL — UNDOCUMENTED, STAGING-ONLY
+## ~7-day expiry — OBSERVED ON STAGING, CAUSE UNKNOWN
+**We do not know WHY this happens or whether it is only a staging limitation.** Crossmint has
+**not enabled production for us yet**, so every observation is against Crossmint STAGING via their
+API — zero real-prod data. It may be a staging-only short TTL, a Crossmint default, or something
+else; treat the cause as OPEN until prod is enabled and we re-test (and/or Crossmint responds).
+
 The 7-day figure is **not in Crossmint's docs** (public AI-agents/order-lifecycle pages
 state no orderIntent TTL; the Agentic Cards API ref is gated). It is **our empirical
 observation against Crossmint STAGING only** — we have zero real-Crossmint-production data
