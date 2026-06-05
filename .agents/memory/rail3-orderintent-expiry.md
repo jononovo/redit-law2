@@ -5,9 +5,16 @@ description: Crossmint Card Permissions orderIntent lifetime, where the expiry i
 
 # Rail 3 (Crossmint Card Permissions) orderIntent expiry
 
-## Flat 7-day TTL
-A Crossmint orderIntent expires a flat **7 days after creation**, decoupled from the
-mandate period. Proven empirically (staging, 2 data points):
+## Flat 7-day TTL — UNDOCUMENTED, STAGING-ONLY
+The 7-day figure is **not in Crossmint's docs** (public AI-agents/order-lifecycle pages
+state no orderIntent TTL; the Agentic Cards API ref is gated). It is **our empirical
+observation against Crossmint STAGING only** — we have zero real-Crossmint-production data
+(see env note: app is hardcoded to staging). Prod Crossmint may differ or expose options.
+**Treat 7 days as a heuristic, not a contract: persist the real `expiresAt` from a
+successful credentials response instead of hardcoding `created_at + 7d`.**
+
+A Crossmint orderIntent expires a flat **7 days after creation** (staging), decoupled from the
+mandate period. Observed empirically (staging, 2 data points):
 - open-mode intent created `2026-06-05 18:54:55` → credential `expiresAt` = `2026-06-12 18:54:55` (creation + 7d to the second).
 - limited/monthly intent created `2026-05-28 18:25` expired by `2026-06-05` (past its +7d = 06-04).
 
