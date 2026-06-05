@@ -108,6 +108,10 @@ The Master Agent must spend across **multiple rails, selected per mandate**:
 
 **v1 = Rail 1 + Rail 3**, rail chosen per the spend mandate. Rail-selection logic (which rail for which mandate — currency, merchant acceptance, limits) is a new concern to design at build time; not specified here.
 
+### Agent granularity — decided (2026-06-05)
+
+**One Crossmint agent per owner, never per virtual card.** Matches the current `per-user-agent.ts` (one-per-owner, lazily created) and Crossmint's own "typically one agent per user" guidance. Virtual cards are orderIntents layered on the owner's single agent — they do **not** each get their own agent. The provider `agentId` stays an opaque stored handle; our own agent + assignment model is the authority for which bots may use which cards.
+
 ## Open questions (do not answer in this doc — these are tracked here so we don't lose them)
 
 1. **Auth model** — above. Single most important question.
