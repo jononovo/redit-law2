@@ -39,6 +39,17 @@ empirically across 6 prod (=staging) intents minted via `POST /order-intents/:id
   `expiresAt` = the intent's creation timestamp + 7 days (see anchoring proof above). The card's own
   `expirationMonth/Year` (e.g. 12/2027) is the *underlying card's* expiry, unrelated to the 7-day intent life.
 
+## Data model: the "virtual card" IS the orderIntent (status is stale on expiry)
+A `rail3_cards` row == **one Crossmint orderIntent** (1:1) — it's the spending *permission*, what the UI
+shows as "active". It is NOT the PAN/CVC: those are one-time credentials minted per-transaction from the
+intent; the real backing card lives in `rail3PaymentMethods`. So when the intent hits ~7d, the whole
+virtual card (permission) dies, not just a credential.
+**Detection gap — "active" ≠ spendable at BOTH layers:**
+- Our `rail3_cards.status` is *meant* to mirror Crossmint `phase` (values incl. `expired`) but in practice
+  stays `active` for expired intents — nothing flips it (all 9 prod rows = `active`, 7 actually expired).
+- Crossmint's own `getOrderIntent` also returns `phase: "active"` for an already-expired intent.
+- Only reliable expiry signals: attempt a credential mint (400 "has expired") OR compute `created_at + 7d`.
+
 **Why it matters:** the mandate `maxAmount.period` (weekly/monthly/yearly) does NOT set
 lifetime — a monthly card still dies in 7 days. Don't conflate spend window with intent life.
 **How to apply:** to show/anticipate expiry, compute `created_at + 7 days`. Don't build a
