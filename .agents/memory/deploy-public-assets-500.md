@@ -50,6 +50,16 @@ runtime in production and they work. A new top-level `static/` behaves identical
 working ones in public" (per-file flakiness makes that unreliable). Serve anything that must be reliable
 through `next start` (the route handler) or `_next/static`.
 
+**Build-time gotcha from the move:** the plugin source `Plugins/OpenClaw/src/*.ts` was hidden
+from the type-checker via a `tsconfig.json` `exclude` entry `public/Plugins/**/*` (those files
+import the uninstalled `openclaw/plugin-sdk`). Moving the tree to `static/` broke that match, so
+`next build` (which has `typescript.ignoreBuildErrors: false`) type-checked them and failed with
+`Cannot find module 'openclaw/plugin-sdk/plugin-entry'`. Fix: update the exclude to
+`static/Plugins/**/*`. **Lesson:** when relocating a folder, grep `tsconfig.json` `exclude`
+(and any other path-glob config) for the old prefix — `next dev` won't catch it, only a full build will.
+(Note: `next build` stops at the FIRST type error, and reproduces fine in a throwaway dir via a
+`distDir: process.env.NEXT_BUILD_DISTDIR || ".next"` shim so it won't fight the dev server's `.next/lock`.)
+
 **Loose end (pre-existing, unrelated):** `app/docs/layout.tsx` points the brands logo at
 `/tenants/brands/images/logo.png`, but no `images/` dir exists under any tenant (tenant folders only hold
 `config.json`) — a dangling ref that 404s, not caused by this move.
