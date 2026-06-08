@@ -24,16 +24,19 @@ guessed from the URL extension.** Every `/assets/*` path resolves to the same er
 - Asset 500s never appear in `fetchDeploymentLogs` (they're edge-generated). Build is `hasSuccessfulBuild: true`.
 - Files are all committed (`git ls-files public/assets`) and present on disk. Not a missing-file / not-tracked issue.
 
+**Key mechanism (decisive for the fix):** the edge only 500s on files that **physically exist in `public/`** and are of certain types. A **non-existent** `/assets/...` path returns **404 via Next** (`x-powered-by: Next.js`) — i.e. it falls through to `next start`. So it's NOT a path-pattern intercept. By type: `/assets/*` images (svg/png/jpg) and `public/*.md` (e.g. `/SKILL.md`) → 500; `.json`/`.txt`/Next-generated routes (robots) and `_next/static/*` → 200. So removing a file from `public/` makes its URL reach `next start` instead of the broken edge.
+
 **Why patches never stick:** nothing in the repo controls the edge's `public/` sync. Cache-header tweaks
 (e.g. commit "Improve asset loading reliability by configuring cache headers" adding
 `Cache-Control: public, max-age=3600, stale-if-error=86400` on `/assets/:path*`) don't even reach these
 responses, so they can't fix it. Each redeploy re-runs the flaky edge ingest → recurrence.
 
-**Durable fix direction (ranked):**
-1. **Serve images through the bundler** — import assets as modules so Next emits them into
-   `_next/static/media/` (content-hashed, immutable). That pipeline provably serves 200 in prod.
-   Permanent, in our control; cost = rewrite every raw `/assets/...` reference to an import. (next.config has `images.unoptimized: true`.)
-2. Switch deploy target `vm` → `autoscale` *if* no always-on worker requires VM (scan-queue/bots likely do — verify first). Different static handling; not guaranteed.
-3. Report as a Replit platform bug (VM deploy 500s on `public/` while `_next/static` works). Parallel track, not self-serve.
+**Durable fix direction (ranked — simplest first):**
+1. **Route handler (recommended, lowest churn):** move `public/assets/` out of `public/` (e.g. to `static-assets/`) and serve the same `/assets/*` URLs via one catch-all `app/assets/[...path]/route.ts` that `fs`-reads from the new dir (reuse the `config.ts` `process.cwd()` pattern) with a path-traversal guard, content-type map, and long `Cache-Control`. Works because missing public files fall through to `next start` (proven). **Zero changes to the ~21 component refs, Tailwind `bg-[url]`, or tenant `config.json` strings** — all keep working. Tradeoff: assets flow through Node not the CDN edge (mitigate with cache headers; files aren't content-hashed so avoid `immutable`).
+2. **Bundle imports** — import assets as modules → `_next/static/media/` (content-hashed, immutable, CDN). Best perf but rewrites every `/assets/...` ref + needs a code map for JSON-config assets (logo/og/mascot) + Tailwind transforms. More churn/risk; touches tenant-theming surface.
+3. Switch deploy target `vm` → `autoscale` *if* no always-on worker requires VM (scan-queue/bots likely do). Not guaranteed.
+4. Report as a Replit platform bug.
 
-**Why (the principle):** trust the `_next/static` pipeline for production assets; the raw `public/` edge path is unreliable on `vm` deploys. The `headers()` rule on `/assets/:path*` is dead weight in prod and can be removed when fixing.
+**Scope note:** `public/*.md` (`/SKILL.md`, CHECKOUT-GUIDE.md, …) share the same root cause and stay broken unless also moved/served via a route. Out of scope when the ask is "images."
+
+**Why (the principle):** the raw `public/` edge path is unreliable on `vm` deploys for image/`.md` types; route everything that must be reliable through `next start` (or `_next/static`). The `headers()` rule on `/assets/:path*` is dead weight in prod and can be removed when fixing.
