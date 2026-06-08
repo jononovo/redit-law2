@@ -7,7 +7,7 @@ status: idea — not started, blocked on the auth-model question below
 ---
 
 > **Where this lives.** Parked under `internal_docs/04-payment-tools/rail3/` because the single blocking question is a Rail 3 auth question. Once the runtime decision is made and this has more than one sibling doc, graduate to its own `currently_building/master-agent/` folder.
-> **Open-points tracker:** `_open-points.md` (sibling) lists this plan alongside the refresh-token plan.
+> **Open-points tracker:** `260528_rail3_open-points.md` (sibling) lists this plan.
 
 ## What it is
 
@@ -55,11 +55,11 @@ This is a 30-minute test once both Firebase users exist. Do it before scoping an
 
 - The Master Agent can be operated with our **server API key** (no per-user JWT) for both `createOrderIntent` *and* `fetchOneTimeCredentials`, since the agent is org-owned.
 - Per-user agentic-enrollment of PMs still happens with each user's JWT (the PM ceremony is per-card, not per-agent), so the Phase A flow in the canonical doc is unchanged.
-- `rail3-firebase-refresh-token-plan.md` becomes **only** needed for the "user brought their own bot" flow — i.e. when a user's own per-user agent is doing the spending, not the Master Agent. If we decide to drop BYO-bot in favor of Master-Agent-only, the refresh-token plan is fully obviated and can be archived.
+- The **per-owner refresh-token exchange** (now shipped) becomes **only** needed for the "user brought their own bot" flow — i.e. when a user's own per-user agent is doing the spending, not the Master Agent. If we drop BYO-bot in favor of Master-Agent-only, that exchange is fully obviated for the spend path.
 
-If Path B wins, the refresh-token plan stays as the only viable way to do headless spend, full stop.
+If Path B wins, the per-owner refresh-token exchange stays as the only viable way to do headless spend, full stop.
 
-**Decision dependency:** do not start the refresh-token implementation if Path A has a realistic chance and the auth-model test hasn't been run. ~30 minutes of testing can avoid ~3 days of work building a feature we may not need. The test goes first.
+**Historical:** this "test before building" guidance predates the refresh-token exchange, which has since shipped (plaintext store). The auth-model test above still matters for Master Agent design, but no longer gates refresh-token work.
 
 ## Design direction (converged 2026-06-04)
 

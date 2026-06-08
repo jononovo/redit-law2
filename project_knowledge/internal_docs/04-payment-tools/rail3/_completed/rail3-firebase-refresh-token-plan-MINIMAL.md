@@ -1,9 +1,8 @@
 ---
-status: planned
+status: shipped
 owner: agent
 scope: rail3
-last_updated: 2026-05-28
-supersedes: rail3-firebase-refresh-token-plan.md (full version — kept for reference)
+last_updated: 2026-06-05
 files_touched:
   - shared/schema.ts (add 2 columns to `owners` table)
   - server/storage (owners storage fragment — add 3 helpers)
@@ -33,7 +32,7 @@ A Firebase **refresh token** is essentially permanent (until password change / a
 - The app-layer encryption value (partial-leak hardening: vendor backup shares, SQL-injection-read, mis-placed dumps) is real but not day-one critical at this stage.
 - Loss of an encryption key would force every owner to re-sign-in to repopulate. Avoidable failure mode by simply not adding the key.
 
-**TODO before SOC2 / GA at scale:** encrypt this column at rest (AES-256-GCM, one env-var key).
+**Decision: plaintext is the final posture.** App-layer encryption was evaluated and intentionally declined — no `OWNER_REFRESH_TOKEN_ENCRYPTION_KEY` is used. Do not re-introduce it without an explicit ask.
 
 What we are **not** doing in this pass, with rationale:
 - **No dedicated table.** A column on `owners` is fine.
@@ -63,7 +62,6 @@ bot  ──(bot-token)──▶  our BFF  ──(client-key + fresh JWT)──�
 
 Add to the existing `owners` table (line 387, keyed by `uid`):
 ```ts
-// TODO: encrypt at rest (AES-256-GCM) before SOC2 / GA at scale.
 firebaseRefreshToken: text("firebase_refresh_token"),
 firebaseRefreshTokenUpdatedAt: timestamp("firebase_refresh_token_updated_at"),
 ```
@@ -207,5 +205,5 @@ Before merging:
 ## Risks acknowledged
 
 - We hold permanent-ish credentials per user in plain text. Provider disk encryption + tight DB access (`DATABASE_URL` secret) is the only protection. Never log the token. Never include it in error responses.
-- A full DB leak = every owner's Firebase session compromised. Mitigation deferred to the SOC2 / GA hardening pass (encrypt-at-rest column).
+- A full DB leak = every owner's Firebase session compromised. Accepted risk — provider disk encryption + tight DB access (`DATABASE_URL` secret) is the mitigation; app-layer encryption was intentionally declined.
 - Google token-exchange rate limits: generous; the cache keeps us well under.

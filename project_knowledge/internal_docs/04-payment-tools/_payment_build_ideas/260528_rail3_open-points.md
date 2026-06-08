@@ -2,7 +2,7 @@
 name: Rail 3 — Open Points
 description: Flat checklist of everything outstanding on Rail 3. One line per item. Deep dives live in their own files (linked at the bottom). Read this first whenever picking up Rail 3 work.
 created: 2026-05-23
-last_updated: 2026-05-23
+last_updated: 2026-06-05
 status: living
 ---
 
@@ -15,13 +15,12 @@ status: living
 
 ## Blocking — must land before production
 
-- [ ] **Encrypted Firebase refresh-token store for headless bot checkout.** Without it, `/order-intents/:id/credentials` 403s for every bot purchase. Deep dive: `rail3-firebase-refresh-token-plan.md`.
-- [ ] **Resolve Crossmint auth model question** (shared `agentId` vs JWT-bound). Gates Master Agent design and may obviate the refresh-token plan if Path A wins. Action: email Crossmint support, or test in staging with two Firebase users sharing one agentId. Deep dive: `rail3-master-agent-plan.md`.
+- [ ] **Resolve Crossmint auth model question** (shared `agentId` vs JWT-bound). Gates Master Agent design; a Path-A outcome would let the Master Agent spend with the org server key, reducing reliance on the per-owner refresh-token exchange for that flow. Action: email Crossmint support, or test in staging with two Firebase users sharing one agentId. Deep dive: `260528_rail3-master-agent-plan.md`.
 
 ## Production readiness
 
 - [ ] **Live prod smoke test, two devices.** PM enrollment → orderIntent ceremony → bot checkout at a real low-risk merchant. Repeat from a second device to exercise the cross-device-passkey path that staging's Visa mock hides. Procedure: see "How to flip to production" in the canonical doc.
-- [ ] **Flip `crossmint-env.ts` from staging to production** (three-line edit; see canonical doc "Staging vs production"). Don't do this until the refresh-token plan is shipped.
+- [ ] **Flip `crossmint-env.ts` from staging to production** (three-line edit; see canonical doc "Staging vs production"). The refresh-token exchange is already shipped; just confirm owners' tokens are being captured in prod first.
 - [ ] **Bump `@crossmint/client-sdk-react-ui`** `^4.2.1` → `4.2.2` (and to whatever's latest at flip time). Crossmint absorbs prod-vs-staging overlay differences inside the SDK.
 
 ## Code cleanup
@@ -39,11 +38,11 @@ status: living
 
 ## Deep-dive plans
 
-- **`rail3-firebase-refresh-token-plan.md`** — concrete impl plan for the encrypted refresh-token store. Narrow scope, ships in days.
-- **`rail3-master-agent-plan.md`** — holding doc for the in-house Master Agent capability. Coupled to Rail 3 only via the auth-model question; will graduate to its own `currently_building/master-agent/` folder once a runtime is chosen.
+- **`260528_rail3-master-agent-plan.md`** — holding doc for the in-house Master Agent capability. Coupled to Rail 3 only via the auth-model question; will graduate to its own `currently_building/master-agent/` folder once a runtime is chosen.
 
 ## Recently closed (kept for one cycle, then prune)
 
+- ✅ Headless bot-checkout auth — Firebase refresh-token exchange shipped (`getFreshIdToken`; token captured at sign-in, `credentials.ts` sends Bearer). Refresh token stored **plaintext by decision** — app-layer encryption intentionally declined, no `OWNER_REFRESH_TOKEN_ENCRYPTION_KEY`. Remaining: live in-app prod E2E (tracked under Production readiness).
 - ✅ Dialog → inline panel refactor on `AddCardDialog` (2026-05-23) — passkey ceremony was un-clickable inside Radix Dialog.
 - ✅ End-to-end verified on Crossmint staging (2026-05-23) — orderIntent reached `status: "active"`.
 - ✅ Per-owner agent provisioning, race-safe via `ON CONFLICT DO NOTHING` (see `_completed/rail3-per-user-agent-plan.md`).

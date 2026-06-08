@@ -62,7 +62,7 @@ What the quickstart does, that matters:
 We diverge in two ways:
 
 1. We mirror Crossmint state into our DB (`rail3_payment_methods`, `rail3_cards`, `rail3_agents`) so the bot side has authoritative truth without needing a live user JWT to make routing decisions.
-2. We do bot-initiated checkout (the quickstart doesn't). That needs a Bearer JWT for `/order-intents/:id/credentials`, which is the open work in `rail3-firebase-refresh-token-plan.md`.
+2. We do bot-initiated checkout (the quickstart doesn't). That needs a Bearer JWT for `/order-intents/:id/credentials`, which the BFF mints headless via the Firebase refresh-token exchange (`getFreshIdToken`).
 
 ---
 
@@ -369,7 +369,7 @@ Body: { card_id, merchant: { name, url, countryCode } }
    Body: { merchant: { name, url, countryCode } }
    → { card: { number, expirationMonth, expirationYear, cvc }, expiresAt }
    ```
-   **Auth here is the open problem.** Crossmint requires a Bearer JWT on this endpoint too. Our current `credentials.ts` uses `userLocator` + server key, which Crossmint rejects with 403 in headless contexts. The fix is the refresh-token store in `rail3-firebase-refresh-token-plan.md` — mint a fresh Firebase ID token server-side from a stored refresh token. **Until that ships, bot checkout against live Crossmint will 403.**
+   **Auth (shipped).** Crossmint requires a Bearer JWT on this endpoint too. `credentials.ts` takes a `jwt`, and the bot route mints a fresh Firebase ID token server-side via `getFreshIdToken(card.ownerUid)` (exchanges the owner's stored refresh token with Google). The failure mode is no longer 403 — it's `ReauthRequiredError` (no/stale refresh token on file), surfaced as `412 reauth_required`, meaning the owner must sign in again to repopulate the token. Verified: Crossmint accepts a refresh-token-minted Bearer and returns credentials.
 4. Reshape the response into the Rail-5 fill-card format so OpenClaw fills the checkout form unchanged.
 5. Bot calls `POST /api/v1/bot/rail3/confirm` after the charge clears → recorded in central orders with `rail: "rail3"`.
 
@@ -439,7 +439,7 @@ Available env secrets today: `CROSSMINT_SERVER_API_KEY` (prod), `CROSSMINT_SERVE
    export const CROSSMINT_CLIENT_API_KEY = process.env.NEXT_PUBLIC_CROSSMINT_CLIENT_API_KEY;
    ```
 4. **Bump `@crossmint/client-sdk-react-ui`** to the latest minor (currently 4.2.2) before testing prod — Crossmint absorbs the prod-vs-staging overlay differences inside the SDK; running the latest minimizes drift from their reference quickstart.
-5. **Verify the refresh-token plan is shipped** (`project_knowledge/internal_docs/04-payment-tools/rail3/rail3-firebase-refresh-token-plan.md`) **before** turning on bot checkout in prod. Without it, `/order-intents/:id/credentials` will 403 for every headless bot purchase.
+5. **Confirm owners' refresh tokens are being captured in prod.** The refresh-token exchange that powers headless bot checkout is already shipped (`getFreshIdToken`); each owner's token is captured at sign-in. Verify a prod owner has a populated `owners.firebase_refresh_token` before relying on bot checkout — a missing token surfaces as `412 reauth_required`, not a silent failure.
 6. **Smoke test the full ceremony in prod (real card, real money in trivial amount):**
    - PM save → agentic-enrollment → email OTP → real passkey on the test device → status `active`.
    - Create one virtual card → `<OrderIntentVerification>` → real passkey tap → `phase: active`.
@@ -471,7 +471,7 @@ All paths under `https://staging.crossmint.com/api/` (staging) or `https://www.c
 | `/unstable/order-intents` | POST | **JWT** | `permissions.createOrderIntent` | Body: `{ agentId, payment: { paymentMethodId }, mandates }`. Returns `{ orderIntentId, phase, verificationConfig, … }`. |
 | `/unstable/order-intents/:id` | GET | **JWT** | `permissions.getOrderIntent` | Phase enum: `requires-verification` \| `active` \| `expired`. |
 | `/unstable/order-intents/:id` | DELETE | **JWT** | `permissions.revokeOrderIntent` | 404 treated as success. |
-| `/unstable/order-intents/:id/credentials` | POST | **JWT** (currently uses userLocator, gets 403 — TODO refresh-token plan) | `credentials.fetchOneTimeCredentials` | Body: `{ merchant: { name, url, countryCode } }`. Returns `{ card: { number, expirationMonth, expirationYear, cvc }, expiresAt }`. `expiration*` are STRINGS. |
+| `/unstable/order-intents/:id/credentials` | POST | **JWT** (headless: minted via `getFreshIdToken` refresh-token exchange) | `credentials.fetchOneTimeCredentials` | Body: `{ merchant: { name, url, countryCode } }`. Returns `{ card: { number, expirationMonth, expirationYear, cvc }, expiresAt }`. `expiration*` are STRINGS. `expiresAt` = intent expiry (~7d), not a credential TTL — see the Lifecycle & expiry section. |
 
 **No webhooks.** Crossmint supports webhooks but we don't use any — same as the quickstart. State sync is pull-based: `/refresh-phase` after the orderIntent ceremony, polling during PM enrollment. If reaching for a webhook, first check whether a pull at the same point would work.
 
@@ -543,7 +543,7 @@ For local diagnostics, mint a Firebase ID token via firebase-admin → identityt
 |---|---|---|---|
 | `requires-verification` | `requires-verification` | Ceremony never finished on Crossmint's side. SDK didn't complete. | Look at the SDK-mount path. Common: popup blocked, StrictMode dev double-mount, dialog wrapping the SDK, cross-device passkey mismatch. |
 | `active` | `requires-verification` | Ceremony succeeded on Crossmint; our writeback didn't run. | Call `POST /api/v1/rail3/cards/:cardId/refresh-phase` manually. If that works, investigate why the SDK's `onVerificationComplete` never fired (or wasn't wired to the refresh call). |
-| `expired` | anything | Ceremony abandoned. | User must re-create the card. Don't try to rescue. |
+| `expired` | anything | Rarely seen — Crossmint usually keeps `phase: active` even after the intent's ~7-day expiry (see Lifecycle & expiry). If you do see `expired`, the intent is dead. | User must re-create the card. Note: an intent can be expired-but-look-active (`phase: active` past `created_at + 7d`) — confirm by attempting a credential mint. |
 
 Same shape for PM enrollment via `GET /api/unstable/payment-methods/:id/agentic-enrollment`.
 
@@ -563,15 +563,15 @@ Same shape for PM enrollment via `GET /api/unstable/payment-methods/:id/agentic-
 - Per-card guardrails (`rail3_guardrails`) enforced in `rail3-fulfillment.ts`.
 - Verified end-to-end on Crossmint staging (2026-05-23): create card → passkey ceremony → `status='active'` written back to DB.
 - **Owner-triggered sync from Crossmint** (`POST /api/v1/rail3/sync` + `Rail3SyncButton` compact icon next to the `/virtual-cards` page title). Single-pass converging diff against Crossmint's truth: cards-removed before PMs-removed (tracked via `deletedCardIds: Set`), update path recomputes `intentMode` / `limitAmountCents` / `limitPeriod` from the latest mandates, recursive canonical-JSON compare on mandates (Crossmint reorders `details` keys e.g. `{period,currency}` ↔ `{currency,period}`). Helper: `listOrderIntents` in `features/payment-rails/rail3/permissions.ts` — JWT-only, client-key + Bearer. Storage: `getAllRail3CardsByOwnerUid`. Live test (2026-05-27) confirmed convergence in one pass and surfaced a Crossmint orphan-intent (PM deleted but orderIntent still exists) which the sync correctly skips + reports in `errors[]`. **Owner-facing branding:** the button label, hover label, and modal copy say "**Refresh from Visa**" / "in sync with **Visa**" — Crossmint is hidden behind Visa in this surface only (backend/code/internal docs still say Crossmint).
+- **Headless bot-checkout auth via Firebase refresh-token exchange.** `credentials.ts` sends a Bearer JWT minted server-side by `getFreshIdToken(ownerUid)` (exchanges the owner's stored refresh token with Google); the token is captured at every sign-in. Refresh token stored **plaintext by decision** — app-layer encryption intentionally declined (no `OWNER_REFRESH_TOKEN_ENCRYPTION_KEY`). Crossmint accepts the minted Bearer and returns credentials (proven via prod=staging probes). Absent/stale token → `412 reauth_required`. Remaining: live in-app prod E2E.
 
 ### Outstanding ❌
 
 | # | Item | Blocking? | Notes |
 |---|---|---|---|
-| 1 | **Firebase refresh-token store for headless bot checkout** | Yes for bot flow | `/order-intents/:id/credentials` requires Bearer JWT. No live user = 403. Plan: `project_knowledge/internal_docs/04-payment-tools/rail3/rail3-firebase-refresh-token-plan.md`. |
-| 2 | **`/api/v1/rail3/transactions/` route audit** | Unknown | Route exists, never validated against current schema. |
-| 3 | **Mobile prod verification ceremony unmounting mid-flow** | Unverified post-refactor | Was observed pre-dialog-removal. May or may not still reproduce — needs re-test. |
-| 4 | **Stale comment in `app/setup/rail3/page.tsx`** | Cosmetic | "Crossmint agents are created lazily per-bot" — should say per-owner. |
+| 1 | **`/api/v1/rail3/transactions/` route audit** | Unknown | Route exists, never validated against current schema. |
+| 2 | **Mobile prod verification ceremony unmounting mid-flow** | Unverified post-refactor | Was observed pre-dialog-removal. May or may not still reproduce — needs re-test. |
+| 3 | **Stale comment in `app/setup/rail3/page.tsx`** | Cosmetic | "Crossmint agents are created lazily per-bot" — should say per-owner. |
 
 ---
 
@@ -617,8 +617,7 @@ Owner dashboard after the wizard: vaulted real card at the top, virtual cards (=
 
 - **Open-points tracker (start here):** `project_knowledge/internal_docs/04-payment-tools/rail3/_open-points.md` — flat checklist of everything outstanding on Rail 3.
 - **Open plans (deep dives):**
-  - `project_knowledge/internal_docs/04-payment-tools/rail3/rail3-firebase-refresh-token-plan.md` — encrypted refresh-token store so headless bot checkout can mint JWTs for `/order-intents/:id/credentials`.
-  - `project_knowledge/internal_docs/04-payment-tools/rail3/rail3-master-agent-plan.md` — holding doc for the in-house Master Agent capability. Coupled to Rail 3 via the auth-model question (one shared `agentId` vs JWT-bound). Path-A outcome partially obviates the refresh-token plan.
+  - `project_knowledge/internal_docs/04-payment-tools/_payment_build_ideas/260528_rail3-master-agent-plan.md` — holding doc for the in-house Master Agent capability. Coupled to Rail 3 via the auth-model question (one shared `agentId` vs JWT-bound). A Path-A outcome would let the Master Agent spend with the org server key, reducing reliance on the per-owner refresh-token exchange for that flow.
 - Archived plans + superseded docs: `project_knowledge/internal_docs/04-payment-tools/rail3/_completed/` — per-user agent rework, env single-source, verification writeback, staging migration, frontend rewire, add-card preview, prior open-points tracker, prior operational docs.
 
 ### External
