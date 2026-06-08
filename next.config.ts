@@ -28,18 +28,25 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  async headers() {
-    return [
-      {
-        source: "/assets/:path*",
-        headers: [
-          {
-            key: "Cache-Control",
-            value: "public, max-age=3600, stale-if-error=86400",
-          },
-        ],
-      },
+  async rewrites() {
+    const STATIC_EXTENSIONS = [
+      "md",
+      "json",
+      "png",
+      "jpg",
+      "jpeg",
+      "svg",
+      "gif",
+      "webp",
+      "ico",
+      "ts",
     ];
+    return {
+      fallback: STATIC_EXTENSIONS.map((ext) => ({
+        source: `/:path*.${ext}`,
+        destination: `/static-files/:path*.${ext}`,
+      })),
+    };
   },
 };
 
