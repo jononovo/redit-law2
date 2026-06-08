@@ -1,4 +1,5 @@
 - [SecureFill extension](securefill-extension.md) — context-safe field filler closing the v4 Cowork gap; isolation strong only for cross-origin iframes, weaker same-origin; no bridge trust model (fills are server-ref-gated); generic-naming rule.
 - [Image generation side effects](image-gen-side-effects.md) — generateImage can silently modify unrelated tracked assets (e.g. client/public/opengraph.jpg); git status + revert after generating.
+- [Recurring /assets 500 on VM deploy](deploy-public-assets-500.md) — raw public/ assets 500 in prod (edge static layer, not next start); _next/static works; durable fix = bundle imports. No code patch sticks.
 - [Rail 3 orderIntent expiry](rail3-orderintent-expiry.md) — intents die ~7d after creation, independent of mandate period; CAUSE UNKNOWN, possibly a Crossmint STAGING-only limit (prod not yet enabled for us); expiry only in credentials response, not getOrderIntent.
 - [Rail 3 refresh-token store](rail3-refresh-token-store.md) — Firebase refresh tokens stored plaintext BY DECISION; encryption + OWNER_REFRESH_TOKEN_ENCRYPTION_KEY intentionally declined, don't re-add.
