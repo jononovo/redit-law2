@@ -63,3 +63,20 @@ import the uninstalled `openclaw/plugin-sdk`). Moving the tree to `static/` brok
 **Loose end (pre-existing, unrelated):** `app/docs/layout.tsx` points the brands logo at
 `/tenants/brands/images/logo.png`, but no `images/` dir exists under any tenant (tenant folders only hold
 `config.json`) — a dangling ref that 404s, not caused by this move.
+
+## Follow-up: `static/` is ALSO a Next.js reserved dir — renamed to `static-assets/`
+The first fix used a top-level **`static/`** folder. That name collides with Next.js's deprecated
+built-in static dir, so prod served it unreliably: every `/static-files/*` and `/assets/*` path 404'd
+(the route handler ran but `fs` couldn't read the files), `next start` logged
+`⚠ The static directory has been deprecated in favor of the public directory`, and the legacy
+`/static/*` path returned **500** (Next's deprecated static handler intercepting). Locally it worked,
+so it only showed up on deploy — intermittent across redeploys.
+**Fix:** rename the on-disk folder `static/` → **`static-assets/`** (non-reserved name), point
+`STATIC_ROOT` in `app/static-files/[...path]/route.ts` at it, and add `outputFileTracingIncludes`
+in `next.config.ts` (`"/static-files/[...path]": ["./static-assets/**/*"]`) so the VM build bundles
+the tree. Public `/assets/*` URLs and the `/static-files/*` route are unchanged → zero ref churn.
+**Why:** `static` (like `public`) is special-cased by Next; serving a custom asset tree must use a
+NON-reserved directory name.
+**How to apply:** never name a runtime-`fs`-served asset dir `static` or `public`. When renaming it,
+also update the `tsconfig.json` `exclude` glob (was `static/Plugins/**/*` → `static-assets/Plugins/**/*`)
+or `next build` type-checks the OpenClaw plugin source and fails on `openclaw/plugin-sdk`.

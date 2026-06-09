@@ -11,6 +11,9 @@ const nextConfig: NextConfig = {
   },
   turbopack: {},
   env: {},
+  outputFileTracingIncludes: {
+    "/static-files/[...path]": ["./static-assets/**/*"],
+  },
   images: {
     unoptimized: true,
     remotePatterns: [

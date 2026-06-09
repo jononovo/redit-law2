@@ -43,6 +43,6 @@
     "dist",
     "skill-variants/**/dist/**",
     "docs/tests/**/*",
-    "static/Plugins/**/*"
+    "static-assets/Plugins/**/*"
   ]
 }

@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import { readFile, stat } from "fs/promises";
 import path from "path";
 
-const STATIC_ROOT = path.join(process.cwd(), "static");
+const STATIC_ROOT = path.join(process.cwd(), "static-assets");
 
 const CONTENT_TYPES: Record<string, string> = {
   ".md": "text/markdown; charset=utf-8",
