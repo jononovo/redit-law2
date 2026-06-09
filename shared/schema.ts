@@ -1540,6 +1540,10 @@ export const rail3Cards = pgTable("rail3_cards", {
   isFrozen: boolean("is_frozen").notNull().default(false),
   botId: text("bot_id"),                                          // optional — null = vault-only until linked
 
+  // Owner-set orderIntent lifetime. Always sent to Crossmint (default +1y); persisted
+  // here so the UI doesn't depend on Crossmint echoing it back. Nullable for legacy rows.
+  expiresAt: timestamp("expires_at"),
+
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
   lastUsedAt: timestamp("last_used_at"),
@@ -1610,6 +1614,8 @@ export const rail3CreateCardSchema = z.object({
   card_color: z.enum(["purple", "dark", "blue", "primary", "emerald"]).optional(),
   category: z.string().max(100).nullable().optional(),
   bot_id: z.string().min(1).max(200).optional(),
+  // ISO 8601 orderIntent expiry. Optional; server defaults to +1y when omitted.
+  expires_at: z.string().datetime().optional(),
 }).refine(
   (data) => data.mode === "open" || (data.max_amount_usd !== undefined && data.period !== undefined),
   { message: "limited mode requires max_amount_usd and period" }

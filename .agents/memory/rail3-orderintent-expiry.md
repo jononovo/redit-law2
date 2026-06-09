@@ -5,7 +5,21 @@ description: Crossmint Card Permissions orderIntent lifetime, where the expiry i
 
 # Rail 3 (Crossmint Card Permissions) orderIntent expiry
 
-## ~7-day expiry — OBSERVED ON STAGING, CAUSE UNKNOWN
+## RESOLVED (2026-06-09): flat 7d was a Crossmint STAGING BUG; we now always send `expiresAt`
+Crossmint support confirmed the flat ~7-day expiry was a **staging bug, not prod behavior**, and said
+they'd update their docs. We no longer rely on Crossmint's default: `createOrderIntent` now **always
+sends an explicit `expiresAt`** (ISO 8601, camelCase) in the order-intent POST body — owner-chosen via
+an "Expires" dropdown (1y default / 1m / 1w / custom date), server defaults to +1y when omitted. The
+chosen value is persisted in the new nullable `rail3_cards.expires_at` column (don't depend on Crossmint
+echoing it back). `expiresAt` field name is **unverified against a live staging mint** — Basis Theory (the
+layer under Crossmint) documents `expires_at` on its Instruction; Crossmint's order-intents endpoint is
+undocumented (`unstable`) so camelCase `expiresAt` is the assumption. If staging shows the sent value
+isn't honored, try `expires_at` snake_case before assuming the passthrough is broken.
+**Supersedes the "don't build an expiry picker" / "blocker is the Crossmint wrapper" conclusions below
+— those were written before support confirmed the bug.** The historical 7d observations below remain
+accurate as STAGING-BUG data, kept for context.
+
+## ~7-day expiry — OBSERVED ON STAGING, was the staging bug (see RESOLVED above)
 **We do not know WHY this happens or whether it is only a staging limitation.** Crossmint has
 **not enabled production for us yet**, so every observation is against Crossmint STAGING via their
 API — zero real-prod data. It may be a staging-only short TTL, a Crossmint default, or something

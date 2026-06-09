@@ -55,6 +55,7 @@ export async function createOrderIntent(params: {
   agentId: string;
   paymentMethodId: string;
   mandates: CrossmintMandate[];
+  expiresAt: string;            // ISO 8601 orderIntent lifetime, always sent.
 }): Promise<OrderIntent> {
   const res = await crossmintCardsFetch(`/order-intents`, {
     method: "POST",
@@ -63,6 +64,7 @@ export async function createOrderIntent(params: {
       agentId: params.agentId,
       payment: { paymentMethodId: params.paymentMethodId },
       mandates: params.mandates,
+      expiresAt: params.expiresAt,
     },
   });
   return unwrapCrossmint<OrderIntent>(res, "createOrderIntent");

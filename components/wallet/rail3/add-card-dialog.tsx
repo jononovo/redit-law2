@@ -39,6 +39,21 @@ interface BotOption {
 const NO_BOT_VALUE = "__none__";
 const CATEGORY_SUGGESTIONS = ["Food", "Office", "Travel", "Marketing", "Subscriptions", "General"];
 
+// Convert the expiry dropdown choice into an absolute ISO timestamp.
+// Returns undefined only when "custom" is picked with no date — the server then
+// applies its +1y default rather than us silently inventing one here.
+function computeExpiresAt(
+  expiry: "1y" | "1m" | "1w" | "custom",
+  customExpiry: string,
+): string | undefined {
+  const d = new Date();
+  if (expiry === "1w") { d.setDate(d.getDate() + 7); return d.toISOString(); }
+  if (expiry === "1m") { d.setMonth(d.getMonth() + 1); return d.toISOString(); }
+  if (expiry === "1y") { d.setFullYear(d.getFullYear() + 1); return d.toISOString(); }
+  if (!customExpiry) return undefined;
+  return new Date(`${customExpiry}T23:59:59Z`).toISOString();   // end-of-day UTC
+}
+
 interface CreatedCard {
   cardId: string;
   orderIntentId: string;
@@ -100,6 +115,8 @@ function AddCardPanel({ open, onOpenChange, paymentMethods, onComplete }: Props)
   const [mode, setMode] = useState<"limited" | "open">("limited");
   const [maxAmount, setMaxAmount] = useState("500");
   const [period, setPeriod] = useState<"weekly" | "monthly" | "yearly">("monthly");
+  const [expiry, setExpiry] = useState<"1y" | "1m" | "1w" | "custom">("1y");
+  const [customExpiry, setCustomExpiry] = useState<string>("");
   const [category, setCategory] = useState<string>("General");
   const [cardName, setCardName] = useState<string>("");
   const [intent, setIntent] = useState<string>("");
@@ -178,6 +195,8 @@ function AddCardPanel({ open, onOpenChange, paymentMethods, onComplete }: Props)
       setMode("limited");
       setMaxAmount("500");
       setPeriod("monthly");
+      setExpiry("1y");
+      setCustomExpiry("");
       setCategory("General");
       setCardName("");
       setIntent("");
@@ -205,6 +224,13 @@ function AddCardPanel({ open, onOpenChange, paymentMethods, onComplete }: Props)
         body.period = period;
       }
       if (intent.trim()) body.prompt = intent.trim();
+      if (expiry === "custom" && !customExpiry) {
+        setError("Pick a custom expiry date.");
+        setSubmitting(false);
+        return;
+      }
+      const expiresAt = computeExpiresAt(expiry, customExpiry);
+      if (expiresAt) body.expires_at = expiresAt;
       const res = await authFetch("/api/v1/rail3/cards", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -357,6 +383,34 @@ function AddCardPanel({ open, onOpenChange, paymentMethods, onComplete }: Props)
             </div>
           </div>
         )}
+
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <Label htmlFor="expiry">Expires</Label>
+            <Select value={expiry} onValueChange={(v) => setExpiry(v as any)}>
+              <SelectTrigger id="expiry" data-testid="select-expiry"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="1y">1 year</SelectItem>
+                <SelectItem value="1m">1 month</SelectItem>
+                <SelectItem value="1w">1 week</SelectItem>
+                <SelectItem value="custom">Custom…</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          {expiry === "custom" && (
+            <div>
+              <Label htmlFor="expiry-date">Expiry date</Label>
+              <Input
+                id="expiry-date"
+                type="date"
+                min={new Date(Date.now() + 86400000).toISOString().slice(0, 10)}
+                value={customExpiry}
+                onChange={(e) => setCustomExpiry(e.target.value)}
+                data-testid="input-expiry-date"
+              />
+            </div>
+          )}
+        </div>
 
         <div className="grid grid-cols-2 gap-3">
           <div>

@@ -145,6 +145,10 @@ export async function POST(request: NextRequest) {
 
   const mandates = buildMandates(input);
 
+  // Always send an explicit orderIntent lifetime. Owner choice wins; default +1y.
+  const expiresAt = parsed.data.expires_at
+    ?? new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString();
+
   let intent;
   try {
     intent = await createOrderIntent({
@@ -152,6 +156,7 @@ export async function POST(request: NextRequest) {
       agentId: agent.agentId,
       paymentMethodId: pm.paymentMethodId,
       mandates,
+      expiresAt,
     });
   } catch (err) {
     const status = err instanceof CrossmintApiError ? err.status : 500;
@@ -183,6 +188,7 @@ export async function POST(request: NextRequest) {
     status: intent.phase,    // lifecycle = Crossmint orderIntent.phase
     isFrozen: false,
     botId,
+    expiresAt: new Date(expiresAt),
   });
 
   await storage.updateRail3PaymentMethod(pm.paymentMethodId, { lastUsedAt: new Date() });
