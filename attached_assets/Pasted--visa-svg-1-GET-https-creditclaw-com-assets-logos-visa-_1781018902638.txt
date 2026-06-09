@@ -1,0 +1,45 @@
+ visa.svg:1  GET https://creditclaw.com/assets/logos/visa.svg 404 (Not Found)
+fun-lobster-black-card.png:1  GET https://creditclaw.com/assets/images/fun-lobster-black-card.png 404 (Not Found)
+mastercard.svg:1  GET https://creditclaw.com/assets/logos/mastercard.svg 404 (Not Found)
+stripe.svg:1  GET https://creditclaw.com/assets/logos/stripe.svg 404 (Not Found)
+amex.svg:1  GET https://creditclaw.com/assets/logos/amex.svg 404 (Not Found)
+(index):1  GET https://creditclaw.com/assets/images/logo-claw-chip.png 404 (Not Found)
+(index):1  GET https://creditclaw.com/assets/images/avatar_2.jpg 404 (Not Found)
+(index):1  GET https://creditclaw.com/assets/images/avatar_3.jpg 404 (Not Found)
+(index):1  GET https://creditclaw.com/assets/images/avatar_1.jpg 404 (Not Found)
+favicon-32x32.png:1  GET https://creditclaw.com/assets/images/favicon-32x32.png 404 (Not Found)
+4fa395d360c87cc3.js:1  GET https://creditclaw.com/assets/images/fun-lobster-black-card.png 404 (Not Found)
+L @ 4fa395d360c87cc3.js:1
+r.preload @ e0273408c44ca707.js:1
+v @ 6d90edcaa356f053.js:3
+av @ 4fa395d360c87cc3.js:1
+oX @ 4fa395d360c87cc3.js:1
+io @ 4fa395d360c87cc3.js:1
+sc @ 4fa395d360c87cc3.js:1
+(anonymous) @ 4fa395d360c87cc3.js:1
+u9 @ 4fa395d360c87cc3.js:1
+s$ @ 4fa395d360c87cc3.js:1
+_ @ 4fa395d360c87cc3.js:1
+postMessage
+i @ 4fa395d360c87cc3.js:1
+_ @ 4fa395d360c87cc3.js:1
+postMessage
+i @ 4fa395d360c87cc3.js:1
+_ @ 4fa395d360c87cc3.js:1
+postMessage
+i @ 4fa395d360c87cc3.js:1
+_ @ 4fa395d360c87cc3.js:1
+postMessage
+i @ 4fa395d360c87cc3.js:1
+_ @ 4fa395d360c87cc3.js:1
+postMessage
+i @ 4fa395d360c87cc3.js:1
+t.unstable_scheduleCallback @ 4fa395d360c87cc3.js:1
+sB @ 4fa395d360c87cc3.js:1
+sV @ 4fa395d360c87cc3.js:1
+(anonymous) @ 4fa395d360c87cc3.js:1
+favicon.ico:1  GET https://creditclaw.com/favicon.ico 404 (Not Found)
+/assets/images/favicon-16x16.png:1  GET https://creditclaw.com/assets/images/favicon-16x16.png 404 (Not Found)
+(index):1 The resource https://creditclaw.com/assets/images/fun-lobster-black-card.png was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+(index):1 The resource https://creditclaw.com/assets/images/fun-lobster-black-card.png was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+ 
