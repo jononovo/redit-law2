@@ -90,6 +90,8 @@ The Crossmint agent is **not** stored on the PM — it's bound when the orderInt
 
 ## Lifecycle & expiry: three separate clocks (the #1 source of confusion)
 
+> **NOTE (2026-06-09):** Crossmint support confirmed the flat ~7-day expiry was a **staging bug, not prod behavior**, and said they'd update their docs. We now **always send an explicit `expiresAt`** on `createOrderIntent` (owner-chosen via the "Expires" dropdown — 1y default / 1m / 1w / custom date; server defaults to +1y), persisted in the new `rail3_cards.expires_at` column. The field name `expiresAt` (camelCase) is our assumption — Basis Theory documents `expires_at` one layer down; Crossmint's order-intents endpoint is still undocumented. **TODO: revisit the expiry option once Crossmint updates their docs — check ~within a week of 2026-06-09.** If staging shows the sent value isn't honored, try `expires_at` (snake_case) before assuming the passthrough is broken. The ~7-day content below predates this fix; kept as staging-bug context.
+
 An orderIntent's "how long / how much" behavior is governed by **three independent clocks**. Collapsing them into one is what makes expiry look broken ("I set it to monthly, why did it die in a week?"). Keep them separate:
 
 | Clock | What it controls | Typical value | Who sets it | Where it lives |
