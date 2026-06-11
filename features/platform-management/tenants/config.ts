@@ -9,7 +9,7 @@ export function getTenantConfig(tenantId: string): TenantConfig {
 
   const configPath = path.join(
     process.cwd(),
-    "static",
+    "static-assets",
     "tenants",
     tenantId,
     "config.json"

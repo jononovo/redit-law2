@@ -80,3 +80,15 @@ NON-reserved directory name.
 **How to apply:** never name a runtime-`fs`-served asset dir `static` or `public`. When renaming it,
 also update the `tsconfig.json` `exclude` glob (was `static/Plugins/**/*` → `static-assets/Plugins/**/*`)
 or `next build` type-checks the OpenClaw plugin source and fails on `openclaw/plugin-sdk`.
+
+**Second gotcha from the same rename — the tenant config disk-read:** `getTenantConfig` in
+`features/platform-management/tenants/config.ts` `fs`-reads `process.cwd()/<assetdir>/tenants/{id}/config.json`.
+This is a SEPARATE hardcoded path from `STATIC_ROOT` in the route handler; renaming the asset dir must
+update BOTH. Missing it made `next build` fail in page-data collection with
+`Failed to load tenant config for "creditclaw"` (every page calls `getTenantConfig`). **`next dev` did
+NOT catch it** — the loader caches configs in a module-level `Map`, so a dev server started before the
+rename keeps serving the stale path; only a fresh build process hits the missing dir. **Lesson:** when
+renaming the asset dir, grep ALL of source for the OLD literal (note: it may be a standalone string on its
+own line inside a multi-line `path.join`, so `rg '"<olddir>"'` not just `join(...,"<olddir>"`), not just
+config files — at minimum `tsconfig` exclude + the tenant-config loader. Verify with a full `next build`,
+never just `next dev`.
