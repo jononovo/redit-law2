@@ -81,6 +81,30 @@ NON-reserved directory name.
 also update the `tsconfig.json` `exclude` glob (was `static/Plugins/**/*` → `static-assets/Plugins/**/*`)
 or `next build` type-checks the OpenClaw plugin source and fails on `openclaw/plugin-sdk`.
 
+## CRITICAL platform fact — Replit `vm` deploy IGNORES `outputFileTracingIncludes`
+After the `static-assets/` rename finally built+deployed, prod STILL 404'd every image/`.md`/`.svg`
+(but NOT tenant `config.json`). Root cause is NOT our route handler (it works in prod: a file that IS
+on disk serves 200) and NOT the rename — it's how Replit bundles a `vm` Next deploy:
+**Replit ships ONLY the files Next traces as genuine build dependencies** (real `import`s, or files
+`fs`-read during build-time prerender — e.g. tenant `config.json` is read by `getTenantConfig` during
+page prerender, so it lands in many `app/**/page.js.nft.json` and DOES ship). Files referenced **only**
+via `next.config.ts` `outputFileTracingIncludes` land **only** in that route's `route.js.nft.json` and
+are **silently dropped** — Replit's `vm` bundling does not honor the include. Net: ~84 of 89
+`static-assets/*` files (all images/`.md`/`.svg`/most `.json`) never reach the runtime VM, so the
+`/static-files` route `fs`-reads a path that doesn't exist → 404. **This means the entire
+"serve a runtime-`fs` asset tree from a top-level dir" strategy can never work on `vm` as long as it
+depends on `outputFileTracingIncludes`.** It's NOT a full-repo ship (config.json ships, sibling
+favicon.png in the same repo does not — proves pruning to traced deps).
+**Diagnosis recipe (read-only):** curl `/static-files/<file>` for a build-read file (tenant config → 200)
+vs an image (→ 404 body "Not Found"); then `grep static-assets .next/server/**/*.nft.json` — the missing
+files appear ONLY in `route.js.nft.json`, the shipping ones appear in `page.js.nft.json` too.
+**Fix that actually honors the include:** `output: "standalone"` (standalone build PHYSICALLY COPIES
+`outputFileTracingIncludes` files into `.next/standalone/`) + run `node .next/standalone/server.js`
+(change `.replit` run cmd) + copy `.next/static` and `public` next to it. Standalone ships the include;
+plain `next build` + Replit `vm` does not.
+**Why dev never shows it:** `next dev` reads straight from the repo tree, so every asset 200s locally;
+only a real deploy (or inspecting `.nft.json`) exposes the missing files.
+
 **Second gotcha from the same rename — the tenant config disk-read:** `getTenantConfig` in
 `features/platform-management/tenants/config.ts` `fs`-reads `process.cwd()/<assetdir>/tenants/{id}/config.json`.
 This is a SEPARATE hardcoded path from `STATIC_ROOT` in the route handler; renaming the asset dir must
