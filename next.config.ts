@@ -11,6 +11,7 @@ const nextConfig: NextConfig = {
   },
   turbopack: {},
   env: {},
+  output: "standalone",
   outputFileTracingIncludes: {
     "/static-files/[...path]": ["./static-assets/**/*"],
   },

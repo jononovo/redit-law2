@@ -105,6 +105,29 @@ plain `next build` + Replit `vm` does not.
 **Why dev never shows it:** `next dev` reads straight from the repo tree, so every asset 200s locally;
 only a real deploy (or inspecting `.nft.json`) exposes the missing files.
 
+### RESOLUTION (applied) — `output: "standalone"` + run from inside the bundle
+The fix has 3 coupled parts; all are required:
+1. `next.config.ts`: `output: "standalone"` — makes `next build` PHYSICALLY COPY every nft-traced file
+   AND every `outputFileTracingIncludes` glob into `.next/standalone/<mirrored repo path>/`. Verified: a
+   clean standalone build placed all 89 `static-assets/*` (incl. the previously-404ing favicon.png /
+   visa.svg / SKILL.md / _meta.json) into `.next/standalone/static-assets/`.
+2. `.replit` build: `next build && cp -r public .next/standalone/ && cp -r .next/static .next/standalone/.next/`
+   — standalone does NOT auto-copy `public/` or `.next/static`; without the `.next/static` copy the app's
+   JS/CSS 404 and the site is broken.
+3. `.replit` run: `cd .next/standalone && PORT=5000 HOSTNAME=0.0.0.0 node server.js` — MUST `cd` into the
+   bundle so `process.cwd()` = `.next/standalone`, because every runtime asset read is
+   `path.join(process.cwd(), <dir>)`. The standalone `server.js` reads PORT/HOSTNAME from env (no `-p` flag).
+**Parity is preserved, nothing regresses:** the OTHER runtime `process.cwd()` reads — `content/`,
+`data/bin-lookup.json`, `app/docs/content/*.md`, `static-assets/tenants/*/config.json` — use literal/dir
+paths that nft traces as real deps (the same mechanism that already shipped tenant config to prod), so
+standalone copies them into the bundle too; `cd .next/standalone` finds them all.
+**Why standalone works where plain `next build` didn't:** with standalone the FILES ARE IN THE SHIPPED
+BUNDLE regardless of whether Replit honors `outputFileTracingIncludes` — `next build` itself does the copy.
+**Local verification is hostile** (don't waste time): `next dev` holds the `.next` lock (`lockDistDir:true`)
+so a parallel `next build` blocks/half-completes; cold-cache builds exceed the 120s tool cap; `/tmp` logs
+get wiped on workflow restart. Verify the COPY mechanism (inspect `.next/standalone/`), not a live server,
+locally — trust the real deploy for runtime.
+
 **Second gotcha from the same rename — the tenant config disk-read:** `getTenantConfig` in
 `features/platform-management/tenants/config.ts` `fs`-reads `process.cwd()/<assetdir>/tenants/{id}/config.json`.
 This is a SEPARATE hardcoded path from `STATIC_ROOT` in the route handler; renaming the asset dir must

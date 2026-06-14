@@ -19,8 +19,8 @@ PORT = "5000"
 
 [deployment]
 deploymentTarget = "vm"
-build = ["npm", "run", "build"]
-run = ["npm", "run", "start"]
+build = ["bash", "-c", "npm run build && cp -r public .next/standalone/ && cp -r .next/static .next/standalone/.next/"]
+run = ["bash", "-c", "cd .next/standalone && PORT=5000 HOSTNAME=0.0.0.0 node server.js"]
 
 [workflows]
 runButton = "Project"
