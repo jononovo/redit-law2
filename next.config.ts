@@ -12,9 +12,6 @@ const nextConfig: NextConfig = {
   turbopack: {},
   env: {},
   output: "standalone",
-  outputFileTracingIncludes: {
-    "/static-files/[...path]": ["./static-assets/**/*"],
-  },
   images: {
     unoptimized: true,
     remotePatterns: [
@@ -31,26 +28,6 @@ const nextConfig: NextConfig = {
         hostname: "github.com",
       },
     ],
-  },
-  async rewrites() {
-    const STATIC_EXTENSIONS = [
-      "md",
-      "json",
-      "png",
-      "jpg",
-      "jpeg",
-      "svg",
-      "gif",
-      "webp",
-      "ico",
-      "ts",
-    ];
-    return {
-      fallback: STATIC_EXTENSIONS.map((ext) => ({
-        source: `/:path*.${ext}`,
-        destination: `/static-files/:path*.${ext}`,
-      })),
-    };
   },
 };
 

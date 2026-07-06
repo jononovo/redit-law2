@@ -542,3 +542,12 @@ Full documentation: `project_knowledge/internal_docs/07-platform-management/agen
 
 ## Testing (`tests/`)
 Vitest-based automated test suite. Run with `npx vitest run`. Config in `vitest.config.ts` with `@/` path alias. See `tests/_README.md` for coverage map, guidelines on when/how to add tests, and known gaps. Manual curl-based integration tests are in `tests/manual-api-suite.md`.
+
+## Static Assets & Deployment
+All static assets — images (`/assets/**`), tenant `config.json`s (`/tenants/{id}/`), and skill docs (`/SKILL.md`, `/amazon/AMAZON.md`, `_meta.json`, …) — live in the root **`public/`** folder and are served natively by Next. No custom route handler, no rewrites. `getTenantConfig` (`features/platform-management/tenants/config.ts`) `fs`-reads `process.cwd()/public/tenants/{id}/config.json` server-side.
+
+Deploy uses `output: "standalone"` (in `next.config.ts`). This is load-bearing, keep it:
+- **Build** (`.replit`): `next build && cp -r public .next/standalone/ && cp -r .next/static .next/standalone/.next/` — standalone does not auto-copy `public/` or `.next/static`.
+- **Run** (`.replit`): `cd .next/standalone && … node server.js` — must `cd` in so `process.cwd()` = `.next/standalone`, because tenant config and other runtime reads (`content/`, `data/*.json`, `app/docs/content/*.md`) use `path.join(process.cwd(), …)`.
+
+An earlier design served assets from a separate `static-assets/` dir via a custom `app/static-files` route handler + per-extension rewrites, to work around intermittent prod `500`s on `public/` files. That was over-engineered and has been removed in favor of native `public/` serving. If native `public/` serving proves unreliable in production again, **migrate the asset tree to Replit Object Storage** rather than reintroducing the route handler. Background: `.agents/memory/deploy-public-assets-500.md`.
