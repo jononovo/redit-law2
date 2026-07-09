@@ -81,11 +81,15 @@ new Promise((resolve) => {
 
 Read the result:
 
-- `{ status: "filled", fields_filled: [...] }` — proceed (e.g. submit / pay).
-- `{ status: "fill_failed" }` — fields not found; re-check the page, then retry
-  with a **new** reference (a one-time reference may be consumed on use).
-- `{ status: "error", reason }` — surface the reason; if `not_configured`, pair
-  the extension first.
+- `{ status: "filled", fields_filled: <count>, filled_tokens: [...] }` —
+  everything requested was filled; proceed (e.g. submit / pay).
+- `{ status: "partial", filled_tokens: [...], errors: [...] }` — some fields
+  filled, some not. Check `errors` (entries like `"cvv: field_not_found"`),
+  re-check the page for the missing fields, then retry with a **new**
+  reference (a one-time reference is consumed on use) — or report to the user.
+- `{ status: "error", reason?, errors? }` — nothing filled; surface the reason.
+  If `not_configured`, pair the extension first. If the reason mentions a
+  consumed/denied key (e.g. `key_fetch_failed_409`), get a new reference.
 
 ## Typical purchase flow
 
