@@ -1,31 +1,56 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>SecureFill</title>
-    <style>
-      body { font-family: system-ui, -apple-system, sans-serif; max-width: 34rem; margin: 2rem auto; padding: 0 1rem; color: #111; }
-      h1 { font-size: 1.25rem; margin-bottom: .25rem; }
-      p { color: #444; }
-      .row { display: flex; justify-content: space-between; padding: .55rem 0; border-bottom: 1px solid #eee; }
-      code { background: #f4f4f5; padding: .1rem .35rem; border-radius: .25rem; }
-      .id { margin-top: 1.25rem; font-size: .9rem; color: #444; }
-      button { margin-top: 1.25rem; padding: .5rem .9rem; border: 1px solid #ccc; border-radius: .45rem; background: #fff; cursor: pointer; }
-      button:hover { background: #f9f9f9; }
-      small { color: #777; }
-    </style>
-  </head>
-  <body>
-    <h1>SecureFill</h1>
-    <p>Fills form fields from a referenced source, keeping the values out of the assistant's context.</p>
-    <div class="row"><span>Status</span><strong id="status">…</strong></div>
-    <div class="row"><span>Version</span><span id="version">…</span></div>
-    <div class="id">
-      Connection id: <code id="connid">…</code><br />
-      <small>Paste this into your assistant chat to confirm the connection.</small>
-    </div>
-    <button id="disconnect" data-testid="button-disconnect">Disconnect</button>
-    <script src="setup.js"></script>
-  </body>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SecureFill — setup</title>
+  <style>
+    :root { color-scheme: light dark; }
+    body { font: 13px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; width: 340px; margin: 0; padding: 16px; }
+    h1 { font-size: 15px; margin: 0 0 2px; }
+    p.sub { margin: 0 0 14px; opacity: .7; }
+    label { display: block; font-weight: 600; margin: 10px 0 4px; }
+    input, textarea { width: 100%; box-sizing: border-box; padding: 7px 8px; border: 1px solid rgba(128,128,128,.4); border-radius: 6px; font: inherit; background: transparent; color: inherit; }
+    textarea { resize: vertical; min-height: 60px; font-family: ui-monospace, monospace; }
+    button { margin-top: 12px; width: 100%; padding: 9px; border: 0; border-radius: 6px; font: inherit; font-weight: 600; cursor: pointer; background: #0a8060; color: #fff; }
+    button.secondary { background: transparent; color: #0a8060; border: 1px solid #0a8060; }
+    .status { margin: 4px 0 10px; padding: 8px 10px; border-radius: 6px; background: rgba(128,128,128,.12); }
+    .dot { display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:6px; vertical-align:middle; }
+    .dot.on{ background:#0a8060 } .dot.off{ background:#b00 }
+    .note { font-size: 11px; opacity: .65; margin-top: 10px; }
+    .hide { display:none; }
+  </style>
+</head>
+<body>
+  <h1>SecureFill</h1>
+  <p class="sub">Fills referenced values into pages without exposing them to the assistant.</p>
+
+  <div class="status"><span id="dot" class="dot off"></span><span id="statusText">Not connected</span> · <span id="version">—</span></div>
+
+  <div id="form">
+    <label for="credential">Connection credential</label>
+    <input id="credential" type="password" placeholder="cck_live_… / cck_test_…" autocomplete="off">
+
+    <label for="profile">Source profile</label>
+    <select id="profile" style="width:100%;box-sizing:border-box;padding:7px 8px;border:1px solid rgba(128,128,128,.4);border-radius:6px;font:inherit;background:transparent;color:inherit;">
+      <option value="card">card</option>
+      <option value="address">address</option>
+      <option value="login">login</option>
+    </select>
+
+    <label for="source">Encrypted source (optional)</label>
+    <textarea id="source" placeholder="base64 blob, or paste the whole delivery file (markers are stripped)"></textarea>
+
+    <label for="apiBase">Backend base URL (optional)</label>
+    <input id="apiBase" type="text" placeholder="https://creditclaw.com/api/v1" autocomplete="off">
+
+    <button id="save">Connect</button>
+    <p class="note">Stored locally in this browser only, sent solely to the configured backend.
+      Decrypted values are never written to disk, shown to the page, or seen by the assistant.</p>
+  </div>
+
+  <button id="disconnect" class="secondary hide">Disconnect / clear</button>
+
+  <script src="setup.js"></script>
+</body>
 </html>

@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "SecureFill",
-  "version": "1.0.0",
-  "description": "Securely fill form fields from a referenced source, keeping the values out of the assistant's context.",
+  "version": "2.0.0",
+  "description": "Fill form fields from a referenced source, keeping the values out of the calling assistant's context.",
   "minimum_chrome_version": "116",
   "permissions": ["storage", "webNavigation"],
   "host_permissions": ["https://creditclaw.com/*"],
@@ -10,8 +10,15 @@
   "content_scripts": [
     {
       "matches": ["https://*/*"],
+      "js": ["page-bridge.js"],
+      "run_at": "document_start",
+      "all_frames": false,
+      "world": "MAIN"
+    },
+    {
+      "matches": ["https://*/*"],
       "js": ["lib/field-detect.js", "lib/fill-engine.js", "content.js"],
-      "run_at": "document_idle",
+      "run_at": "document_start",
       "all_frames": true
     }
   ],

@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>SecureFill — offline test harness</title>
+  <style>
+    body { font: 14px/1.5 -apple-system, system-ui, sans-serif; max-width: 760px; margin: 24px auto; padding: 0 16px; }
+    fieldset { margin: 0 0 18px; }
+    label { display:block; font-size:12px; font-weight:600; margin:8px 0 2px; }
+    input, select { padding:6px 8px; min-width: 260px; }
+    pre { background:#111; color:#0f0; padding:12px; border-radius:6px; overflow:auto; }
+    .ok { color:#0a8060; font-weight:600; } .bad { color:#b00; font-weight:600; }
+    button { padding:8px 14px; font-weight:600; }
+  </style>
+</head>
+<body>
+  <h1>SecureFill — offline harness</h1>
+  <p>Exercises detection + fill (no extension, no network, no real data). Loads the
+     real <code>lib/</code> and <code>profiles.js</code>. Also verifies the
+     <code>verification_value → cvv</code> alias and AES-256-GCM decryption of a
+     baked-in test vector in the exact backend wire format
+     (base64(ciphertext‖tag), hex key/IV).</p>
+
+  <!-- A form with deliberately messy field names. -->
+  <fieldset>
+    <legend>Simulated form</legend>
+    <label>Field 1 (autocomplete cc-number)</label>
+    <input id="f1" autocomplete="cc-number">
+    <label>Field 2 (name=verification_value)</label>
+    <input name="verification_value">
+    <label>Field 3 (name=ccname)</label>
+    <input name="ccname">
+    <label>Field 4 (select, autocomplete cc-exp-month)</label>
+    <select autocomplete="cc-exp-month"><option value="">--</option><option>01</option><option>02</option></select>
+    <label>Field 5 (autocomplete address-line1)</label>
+    <input autocomplete="address-line1">
+  </fieldset>
+
+  <button id="run">Run tests</button>
+  <h3>Result</h3>
+  <pre id="out">click "Run tests"…</pre>
+
+  <script src="../lib/field-detect.js"></script>
+  <script src="../lib/fill-engine.js"></script>
+  <script type="module">
+    import { canonicalize, detectAliases } from "../profiles.js";
+
+    // A stand-in for the decrypted record (never real data).
+    const record = { number: "4242424242424242", cvv: "123", name: "Test User",
+                     exp_month: "02", exp_year: "2030", address: "1 Test St" };
+
+    // --- Wire-format test vector -------------------------------------------
+    // Generated offline with AES-256-GCM against a synthetic record. Format is
+    // exactly what the backend produces: blob = base64(ciphertext || 16-byte
+    // tag), key/IV as lowercase hex. Decrypting the decoded blob directly (tag
+    // inline) must succeed with no tag manipulation.
+    const VECTOR = {
+      key_hex: "6074cc207de90c309816032e1304b4fa18c9849023c8e3f164016865ae4d62c8",
+      iv_hex: "7d2bc30e52cf2580cf3a0f0d",
+      blob_b64: "XDjnmTgS2VpDolUjQBDIEng0zTS7/gL0e3Si0bCbqrx+9pIlU3s+nEj7ofc++HucggzuXQvbOJ/fntBjv7A73bw3oU8N9alFHXFT582zbPq0AVyXLJ0xbd3v8gO4IhEP3DNETE01Zf4UPG7lLwodXFGomWuadnweq9Gx1CZFCJwDRxTzfyLyQ9NIV+2kMx4UxejDhgEYLPrege7mMAj8MDFbQlp+U56Ys8p46rYG1706rIfTiOpmk1LhYOCy",
+      expect: { number: "4242424242424242", cvv: "123", exp_month: 2, exp_year: 2030, name: "Test User" },
+    };
+
+    function hexToBytes(hex) {
+      const out = new Uint8Array(hex.length / 2);
+      for (let i = 0; i < out.length; i++) out[i] = parseInt(hex.substr(i * 2, 2), 16);
+      return out;
+    }
+    function b64ToBytes(b64) {
+      const bin = atob(b64);
+      const out = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+      return out;
+    }
+
+    async function decryptVector() {
+      const key = await crypto.subtle.importKey("raw", hexToBytes(VECTOR.key_hex), { name: "AES-GCM" }, false, ["decrypt"]);
+      const plainBuf = await crypto.subtle.decrypt(
+        { name: "AES-GCM", iv: hexToBytes(VECTOR.iv_hex), tagLength: 128 },
+        key,
+        b64ToBytes(VECTOR.blob_b64)
+      );
+      const parsed = JSON.parse(new TextDecoder().decode(plainBuf));
+      for (const [k, v] of Object.entries(VECTOR.expect)) {
+        if (parsed[k] !== v) throw new Error(`vector mismatch: ${k}`);
+      }
+      return true;
+    }
+
+    // Mirror background.buildFields() for a skill-style request.
+    function buildFields(record, request) {
+      const out = [];
+      const wanted = request?.fields?.length ? request.fields : null;
+      if (wanted) {
+        for (const name of wanted) {
+          const key = canonicalize(name);
+          if (record[key] == null) continue;
+          out.push({ token: name, value: String(record[key]), dropdown: false, selector: null, aliases: detectAliases(key) });
+        }
+      } else {
+        for (const [k, v] of Object.entries(record)) out.push({ token: k, value: String(v), dropdown: false, selector: null, aliases: detectAliases(k) });
+      }
+      return out;
+    }
+
+    document.getElementById("run").addEventListener("click", async () => {
+      let decryptOk = false, decryptErr = "";
+      try { decryptOk = await decryptVector(); } catch (e) { decryptErr = e.message; }
+
+      const request = { fields: ["number", "verification_value", "name", "exp_month", "address"] };
+      const fields = buildFields(record, request);
+      const log = [];
+      let filled = 0;
+      for (const f of fields) {
+        const el = window.SecureFillDetect.findInput({ token: f.token, selector: f.selector, aliases: f.aliases });
+        const ok = el ? window.SecureFillEngine.fill(el, f.value, f.dropdown) : false;
+        if (ok) filled++;
+        log.push(`${ok ? "OK " : "MISS"}  ${f.token.padEnd(20)} -> ${el ? (el.getAttribute("autocomplete") || el.name || el.tagName) : "(not found)"}`);
+      }
+      const aliasOk = canonicalize("verification_value") === "cvv";
+      const out = [
+        `wire-format decrypt (inline tag) : ${decryptOk ? "PASS" : "FAIL " + decryptErr}`,
+        `alias verification_value -> cvv : ${aliasOk ? "PASS" : "FAIL"}`,
+        `fields filled : ${filled}/${fields.length}`,
+        "",
+        ...log,
+      ].join("\n");
+      const pre = document.getElementById("out");
+      pre.textContent = out;
+      pre.className = (decryptOk && aliasOk && filled === fields.length) ? "ok" : "bad";
+    });
+  </script>
+</body>
+</html>

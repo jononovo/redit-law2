@@ -166,4 +166,15 @@ That pair (extension + skill.md) is sufficient: agent never holds card data, wor
 
 ## Status
 
-Plan only. Nothing built yet. Audit of v4 + OpenClaw complete; endpoints, auth, and crypto requirements verified against the live codebase as of 2026-05-30.
+Built. v1.0.0 shipped 2026-05-30 per this plan. v2.0.0 (2026-07-09) merged improvements from a parallel external build and closed the v4-skill compatibility gaps — see the v2 delta below.
+
+## v2 delta (2026-07-09)
+
+v2 keeps the v1 architecture (worker resolution, isolated-world fills, frame routing) and changes:
+
+- **Drop-in for the v4 Cowork skills.** The bridge now accepts both `creditclaw-*` and `securefill-*` namespaces and replies on both. A MAIN-world `page-bridge.js` (top frame) exposes `window.__creditclawExtensionReady` and `window.__creditclawFillResult` (reset to `null` at fill start so pollers never read stale results). Setup accepts both field-name conventions: `api_key`/`encrypted_blob` (v4 pairing skill) and `credential`/`encrypted_source` (neutral); status echoes `has_api_key`/`has_blob` aliases.
+- **Fill requests honor `fields` + `targets`.** v1 ignored them and filled every record key. v2 canonicalizes requested names to record keys via `profiles.js` (e.g. `verification_value` → `cvv`) and passes per-token explicit selectors through. Curated per-key DOM aliases are tried as exact attribute matches only. Result shape now matches the skill: `fields_filled` (count), `filled_tokens`, `partial` status, per-token `errors`, non-secret `exp_month`/`exp_year` echo.
+- **Decrypt simplified.** The blob is `base64(ciphertext‖tag)` with the tag inline, which is exactly what WebCrypto expects — the strip-16-and-reattach-`tag_hex` dance in v1 was redundant (`tag_hex` is the same bytes). Verified against a baked-in test vector in `test/harness.html`.
+- **Mode A removed.** The `/bot/securefill/values` endpoint never existed; dead path deleted.
+- **Page-bridged setup/clear kept deliberately** (the pairing flow is agent-driven from page JS; no bridge trust model — a fill still needs a server-approved single-use ref). This intentionally rejects the external build's page-sender hardening, which would have broken pairing.
+- New: `…-schema` query returns the token names of the configured profile (no values, no decrypt), so the driving agent knows what it is mapping.

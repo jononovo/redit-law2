@@ -1,42 +1,53 @@
 # SecureFill — Privacy Policy
 
-SecureFill helps an AI assistant fill form fields without exposing the field
-values to the assistant.
+SecureFill fills form fields on the user's behalf from a source the user
+configures, while keeping the field values out of the AI assistant that requests
+the fill.
 
 ## What it stores
 
-On the user's device only (via the browser's extension storage):
+On the user's device only (browser extension storage):
 
-- A connection credential, set during pairing.
-- An optional encrypted source, set during pairing.
-- A local connection id and configuration.
+- A **connection credential**, entered during setup.
+- An optional **encrypted source** (opaque; not readable without a key fetched
+  at fill time).
+- A backend base URL and local configuration.
 
-Nothing is stored on any SecureFill-operated server. The extension has no
-analytics and no third-party trackers.
+Nothing is stored on any SecureFill-operated server. No analytics, no trackers.
 
 ## What it transmits
 
-When asked to fill, the extension sends the supplied reference and its stored
-credential to the user's own configured backend over HTTPS, and receives the
-field values (or a one-time key to decrypt the locally stored source). Values
-are written into the current page and then cleared from memory.
+When asked to fill, the extension sends the supplied **reference** and its stored
+credential to the user's configured backend over HTTPS, and receives a one-time
+key used to decrypt the local source. The decrypted values are written into the
+current page and then cleared from memory. Data is transmitted only to the
+configured backend, never to any other destination, and never to the assistant.
 
-The extension transmits data only to the user's configured backend. It never
-sends data to any other destination.
+## Data it may handle
 
-## What it does NOT do
+The values filled are whatever the user configures. Depending on use, these can
+include **authentication information** (usernames, passwords, tokens),
+**personal information** (names, addresses, phone numbers), and **financial /
+payment information** (card details). When you publish this extension, declare in
+the store's data-use form whichever of these categories match your actual
+configuration — do not under-declare. All handling is solely to fill the user's
+own forms; data is never sold or shared.
 
-- It does not sell or share user data.
-- It does not transmit field values to the assistant or to any third party.
-- It does not collect browsing history or analytics.
+## What it does not do
+
+- Does not sell or share user data.
+- Does not transmit field values to the assistant or any third party.
+- Does not collect browsing history or analytics.
+- Does not accept credential setup/clear commands from web pages.
 
 ## Permissions
 
-- **storage** — keep the pairing credential and configuration on the device.
-- **webNavigation** — find the active tab's frames so values reach the correct
-  field, including inside iframes.
-- **host access to the configured backend** — fetch referenced values / keys.
-- **content scripts on web pages** — fill fields on the page in use.
+- `storage` — keep the credential and configuration on the device.
+- `webNavigation` — enumerate the active tab's frames to route a value into the
+  correct field, including inside cross-origin iframes.
+- host access to the configured backend — fetch the one-time key.
+- content scripts on web pages — fill fields on the page in use (the broad-host
+  model established password managers use).
 
 ## Contact
 

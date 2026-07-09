@@ -1,19 +1,23 @@
-// SecureFill — field detection. Maps a field descriptor to an input element in
-// the current document. Detection is driven entirely by the descriptor (its
-// token / selector come from the resolved data), not by any hardcoded field
-// semantics.
+// SecureFill — field detection.
+//
+// Maps a field descriptor to an input/select element in the current document.
+// Detection is driven ENTIRELY by the descriptor (its token / selector, which
+// come from the resolved data). No field semantics are hardcoded — a token may
+// be "username", "shipping-address", "one-time-code", "cc-number", anything.
 (() => {
   function isFillable(el) {
-    return el && (el.tagName === "INPUT" || el.tagName === "SELECT");
+    return el && (el.tagName === "INPUT" || el.tagName === "SELECT" || el.tagName === "TEXTAREA");
   }
   function isVisible(el) {
     const r = el.getBoundingClientRect();
-    return r.width > 0 && r.height > 0;
+    if (r.width <= 0 || r.height <= 0) return false;
+    const s = getComputedStyle(el);
+    return s.visibility !== "hidden" && s.display !== "none";
   }
   function fillableInputs() {
     return Array.from(
       document.querySelectorAll(
-        "input:not([type=hidden]):not([type=checkbox]):not([type=radio]):not([type=button]):not([type=submit]), select"
+        "input:not([type=hidden]):not([type=checkbox]):not([type=radio]):not([type=button]):not([type=submit]):not([type=image]), select, textarea"
       )
     );
   }
@@ -29,25 +33,16 @@
     return parts.join(" ");
   }
 
-  function findInput(descriptor) {
-    if (descriptor.selector) {
-      try {
-        const el = document.querySelector(descriptor.selector);
-        if (el && isVisible(el)) return el;
-      } catch (_) {
-        /* invalid selector — fall through */
-      }
-    }
-    const token = (descriptor.token || "").toLowerCase().trim();
+  // Try one token: exact autocomplete, then exact name/id, then substring.
+  function matchToken(rawToken, allowSubstring) {
+    const token = (rawToken || "").toLowerCase().trim();
     if (!token) return null;
 
-    // 1) exact autocomplete attribute
     let el = document.querySelector(
-      `input[autocomplete="${CSS.escape(token)}"], select[autocomplete="${CSS.escape(token)}"]`
+      `input[autocomplete="${CSS.escape(token)}"], select[autocomplete="${CSS.escape(token)}"], textarea[autocomplete="${CSS.escape(token)}"]`
     );
     if (el && isVisible(el)) return el;
 
-    // 2) exact name / id
     try {
       el = document.querySelector(`[name="${CSS.escape(token)}"], #${CSS.escape(token)}`);
       if (el && isFillable(el) && isVisible(el)) return el;
@@ -55,12 +50,39 @@
       /* ignore */
     }
 
-    // 3) normalized substring across context attributes
-    const needle = token.replace(/[^a-z0-9]/g, "");
-    if (needle) {
-      for (const cand of fillableInputs()) {
-        if (!isVisible(cand)) continue;
-        if (contextString(cand).replace(/[^a-z0-9]/g, "").includes(needle)) return cand;
+    if (allowSubstring) {
+      const needle = token.replace(/[^a-z0-9]/g, "");
+      if (needle) {
+        for (const cand of fillableInputs()) {
+          if (!isVisible(cand)) continue;
+          if (contextString(cand).replace(/[^a-z0-9]/g, "").includes(needle)) return cand;
+        }
+      }
+    }
+    return null;
+  }
+
+  function findInput(descriptor) {
+    // 1) Explicit selector always wins.
+    if (descriptor.selector) {
+      try {
+        const el = document.querySelector(descriptor.selector);
+        if (el && isFillable(el) && isVisible(el)) return el;
+      } catch (_) {
+        /* invalid selector — fall through */
+      }
+    }
+
+    // 2) Primary token, including a broad substring pass.
+    const primary = matchToken(descriptor.token, true);
+    if (primary) return primary;
+
+    // 3) Curated aliases — EXACT attribute matches only (no broad substring),
+    // so they add coverage without wrong-field risk.
+    if (Array.isArray(descriptor.aliases)) {
+      for (const a of descriptor.aliases) {
+        const el = matchToken(a, false);
+        if (el) return el;
       }
     }
     return null;
