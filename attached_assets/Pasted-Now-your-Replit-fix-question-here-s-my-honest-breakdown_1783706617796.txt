@@ -1,0 +1,26 @@
+Now, your Replit-fix question — here's my honest breakdown of the quirks by who can actually fix them:
+
+Quirk	Fixable on Replit?	Verdict
+npm lockfile → package-firewall.replit.local URLs	Maybe	The only one worth asking a Replit agent about
+Port 5000 / macOS AirPlay	❌ No	Pure local macOS issue — Replit can't touch it. One-time toggle.
+helium DB unreachable locally	❌ No	Inherent to Replit's current DB networking. Only "fix" is switching to an external DB (Neon/Supabase) — a big decision, not a quirk.
+npm 11 blocks esbuild postinstall	❌ No	Local npm behavior. One command (npm rebuild esbuild).
+So only the package-firewall lockfile thing is a candidate. And even there, temper expectations: Replit's package firewall is likely a deliberate security feature (it proxies/scans packages), so it may not be disable-able — or you may not want to. The local workaround is one line and documented. So: worth a quick ask, not worth blocking on.
+
+My recommendation: leave the rest as-is. The setup is genuinely close to normal now. Only chase the lockfile one if the "move it aside" step annoys you in practice.
+
+Here's a note you can hand to the Replit agent:
+
+Question about the npm package firewall and package-lock.json
+
+We now develop this repo locally (VS Code + Claude Code) and deploy via Replit as usual. One snag: the committed package-lock.json has resolved URLs pointing at package-firewall.replit.local, which isn't reachable outside the Repl. So a plain npm install on a local machine fails with ENOTFOUND package-firewall.replit.local. We currently work around it by moving the lockfile aside, installing from the public npm registry, and restoring the Replit lockfile.
+
+Is there a supported way to make this cleaner without breaking Replit builds? Specifically:
+
+Can the Repl be configured so the committed package-lock.json uses canonical registry.npmjs.org URLs instead of the internal firewall host?
+Or can the npm package firewall be disabled for this Repl (if that's safe/desirable)?
+If neither is advisable, just confirm that and we'll keep the local workaround.
+Please don't change anything that affects how the app builds or runs on Replit — this is only about lockfile portability for local installs.
+
+The remaining open item is still GitHub push auth (no gh, HTTPS password auth disabled) so I can push local-dev-setup and open the PR. Want me to brew install gh and run gh auth login — or will you push via VS Code's Git UI?
+
