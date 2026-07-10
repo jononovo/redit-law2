@@ -11,10 +11,16 @@ they'd update their docs. We no longer rely on Crossmint's default: `createOrder
 sends an explicit `expiresAt`** (ISO 8601, camelCase) in the order-intent POST body — owner-chosen via
 an "Expires" dropdown (1y default / 1m / 1w / custom date), server defaults to +1y when omitted. The
 chosen value is persisted in the new nullable `rail3_cards.expires_at` column (don't depend on Crossmint
-echoing it back). `expiresAt` field name is **unverified against a live staging mint** — Basis Theory (the
-layer under Crossmint) documents `expires_at` on its Instruction; Crossmint's order-intents endpoint is
-undocumented (`unstable`) so camelCase `expiresAt` is the assumption. If staging shows the sent value
-isn't honored, try `expires_at` snake_case before assuming the passthrough is broken.
+echoing it back). **camelCase `expiresAt` CONFIRMED accepted by staging (2026-07-10): a live create with
+`expiresAt`=+30d returned HTTP 201, no rejection — field name is correct; snake_case fallback NOT needed.**
+Docs now document `expiresAt` (camelCase, ISO 8601, default 7d if omitted, independent of mandate period).
+BUT staging does **not** echo `expiresAt` on the create response or on `GET /order-intents/:id` (both omit it),
+even though the docs *example* shows it echoed — so you cannot read the honored value from create/GET. The
+honored value only surfaces in a successful `POST /credentials`, which needs phase=`active` (passkey ceremony,
+browser-only). **So "Crossmint accepts our value" is PROVEN; "the 30d is actually HONORED (intent lives 30d not
+7d)" is still UNCONFIRMED** — needs one manual passkey activation then a credentials mint showing expiresAt≈30d.
+Baseline attempt on the one legacy active card (no expiresAt, ~43d old) returned a Crossmint-side `500`, not a
+clean "has expired", so even the 7d baseline wasn't re-observed this round.
 **Supersedes the "don't build an expiry picker" / "blocker is the Crossmint wrapper" conclusions below
 — those were written before support confirmed the bug.** The historical 7d observations below remain
 accurate as STAGING-BUG data, kept for context.
