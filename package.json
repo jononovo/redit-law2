@@ -4,7 +4,9 @@
   "scripts": {
     "dev": "next dev -p 5000 -H 0.0.0.0",
     "build": "next build",
-    "start": "next start -p 5000 -H 0.0.0.0"
+    "start": "next start -p 5000 -H 0.0.0.0",
+    "db:push": "drizzle-kit push",
+    "db:push:force": "drizzle-kit push --force"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.82.0",

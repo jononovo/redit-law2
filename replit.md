@@ -78,7 +78,7 @@ Shopy emphasizes the score (leaderboard at `/`, scanner at `/agentic-shopping-sc
 - Restart via the `workflows` skill if the port is stuck.
 - Tests: `npx vitest run`.
 - Skill variants build: `npx tsx skill-variants/build-variants.ts`.
-- Database changes go through Drizzle migrations. Use the `database` skill for prod queries or schema sync questions.
+- Database changes go through Drizzle **push** (`npm run db:push`, or `db:push:force` when a destructive change is intended). No migration files — schema in `shared/schema.ts` is pushed directly. Use the `database` skill for prod queries or schema sync questions.
 
 ## How to extend `project_knowledge/`
 
