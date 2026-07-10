@@ -26,10 +26,18 @@ clean "has expired", so even the 7d baseline wasn't re-observed this round.
 accurate as STAGING-BUG data, kept for context.
 
 ## ~7-day expiry — OBSERVED ON STAGING, was the staging bug (see RESOLVED above)
-**We do not know WHY this happens or whether it is only a staging limitation.** Crossmint has
-**not enabled production for us yet**, so every observation is against Crossmint STAGING via their
-API — zero real-prod data. It may be a staging-only short TTL, a Crossmint default, or something
-else; treat the cause as OPEN until prod is enabled and we re-test (and/or Crossmint responds).
+**UPDATE 2026-07-10: Crossmint PRODUCTION is now enabled for us.** We have real prod keys
+(`sk_production` / `ck_production` in `CROSSMINT_SERVER_API_KEY` / `NEXT_PUBLIC_CROSSMINT_CLIENT_API_KEY`,
+no suffix) and a live read-only probe (`GET /order-intents/<random>` on `https://www.crossmint.com`
+with the prod client key + `Origin: https://creditclaw.com`) returned 404 → prod project reachable,
+order-intents enabled, prod client key valid and origin-scoped to creditclaw.com. BUT the app still
+**hardcodes STAGING** in `crossmint-env.ts`, so Rail 3 does NOT touch prod today — the prod keys are
+unused by the Rail 3 code path. Every expiry observation below is still STAGING-only.
+Empirical prod re-test is NOT feasible headlessly: all our Crossmint agents + payment methods live in
+the STAGING project (they don't exist under prod keys), so a prod create fails at agent/PM lookup; a real
+prod test needs onboarding an agent + enrolling a real card on prod + a browser passkey activation. The
+fix is env-agnostic (no staging branch — `createOrderIntent` always sends `expiresAt`), so prod will
+behave per Crossmint's documented contract (camelCase `expiresAt`, 7d default, honored when set).
 
 The 7-day figure is **not in Crossmint's docs** (public AI-agents/order-lifecycle pages
 state no orderIntent TTL; the Agentic Cards API ref is gated). It is **our empirical
