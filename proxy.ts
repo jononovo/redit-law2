@@ -26,7 +26,7 @@ function resolveTenantId(hostname: string): string {
   return DEFAULT_TENANT;
 }
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const hostname =
     request.headers.get("x-forwarded-host") ||
     request.headers.get("host") ||
