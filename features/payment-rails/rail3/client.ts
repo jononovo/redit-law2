@@ -1,8 +1,9 @@
 import "server-only";
 import {
-  CROSSMINT_HOST,
-  CROSSMINT_SERVER_API_KEY,
-  CROSSMINT_CLIENT_API_KEY,
+  RAIL3_CROSSMINT_HOST as CROSSMINT_HOST,
+  RAIL3_CROSSMINT_SERVER_API_KEY as CROSSMINT_SERVER_API_KEY,
+  RAIL3_CROSSMINT_CLIENT_API_KEY as CROSSMINT_CLIENT_API_KEY,
+  RAIL3_CROSSMINT_CLIENT_ORIGIN,
 } from "@/features/payment-rails/crossmint-env";
 
 export function getRail3BaseUrl(): string {
@@ -59,6 +60,8 @@ export async function crossmintCardsFetch(
     }
     apiKey = CROSSMINT_CLIENT_API_KEY;
     authHeaders["Authorization"] = `Bearer ${jwt}`;
+    // Prod client key is origin-locked; server-side fetch must set it explicitly.
+    if (RAIL3_CROSSMINT_CLIENT_ORIGIN) authHeaders["Origin"] = RAIL3_CROSSMINT_CLIENT_ORIGIN;
   } else {
     apiKey = getRail3ServerApiKey();
     if (userLocator) {

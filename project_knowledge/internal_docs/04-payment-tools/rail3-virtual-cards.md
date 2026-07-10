@@ -398,7 +398,7 @@ Three auth modes against Crossmint. **Picking the wrong one is the most common R
 
 **Server side.** `authFetch` on the browser always sends `Authorization: Bearer <id-token>`; routes use `extractBearerJwt(request)` to forward it to Crossmint. Routes that need it (`/cards` POST, `/refresh-phase` POST, `/payment-methods/:id/enrollment`, deletes) 401 with `bearer_required` when it's missing.
 
-**`crossmint-env.ts` is the single source of truth** for `CROSSMINT_HOST`, `CROSSMINT_SERVER_API_KEY`, `CROSSMINT_CLIENT_API_KEY`. Currently hardcoded to staging. Switching to prod = edit those three lines. Don't read `CROSSMINT_ENV` directly anywhere else.
+**`crossmint-env.ts` is the single source of truth** for Crossmint host/keys. It is split on purpose: Rail 2 + Worldstore stay on **staging** (`CROSSMINT_HOST` / `CROSSMINT_SERVER_API_KEY` / `CROSSMINT_CLIENT_API_KEY`), while Rail 3 runs on **production** via the `RAIL3_*` exports (`RAIL3_CROSSMINT_HOST` / `RAIL3_CROSSMINT_SERVER_API_KEY` / `RAIL3_CROSSMINT_CLIENT_API_KEY` / `RAIL3_CROSSMINT_CLIENT_ORIGIN`). The split exists because there is a single `CROSSMINT_WEBHOOK_SECRET` used by the Worldstore card-wallet webhook, and Rail 3 has no webhook dependency — so Rail 3 moving to prod must not drag Worldstore/Rail 2 along. Rail 3 files import the `RAIL3_*` names (aliased locally to the old identifiers); don't read `process.env` Crossmint vars directly anywhere else.
 
 ---
 
@@ -406,15 +406,22 @@ Three auth modes against Crossmint. **Picking the wrong one is the most common R
 
 ### Where we are today
 
-**Pinned to staging.** `features/payment-rails/crossmint-env.ts` hardcodes:
+**Rail 3 runs on production; Rail 2 + Worldstore stay on staging.** `features/payment-rails/crossmint-env.ts`:
 
 ```ts
+// Rail 2 + Worldstore (staging)
 export const CROSSMINT_HOST = "https://staging.crossmint.com";
 export const CROSSMINT_SERVER_API_KEY = process.env.CROSSMINT_SERVER_API_KEY_STAGING;
 export const CROSSMINT_CLIENT_API_KEY = process.env.NEXT_PUBLIC_CROSSMINT_CLIENT_API_KEY_STAGING;
+
+// Rail 3 virtual cards (production) — client key is origin-locked to creditclaw.com
+export const RAIL3_CROSSMINT_HOST = "https://www.crossmint.com";
+export const RAIL3_CROSSMINT_SERVER_API_KEY = process.env.CROSSMINT_SERVER_API_KEY;
+export const RAIL3_CROSSMINT_CLIENT_API_KEY = process.env.NEXT_PUBLIC_CROSSMINT_CLIENT_API_KEY;
+export const RAIL3_CROSSMINT_CLIENT_ORIGIN = "https://creditclaw.com";
 ```
 
-Available env secrets today: `CROSSMINT_SERVER_API_KEY` (prod), `CROSSMINT_SERVER_API_KEY_STAGING`, `NEXT_PUBLIC_CROSSMINT_CLIENT_API_KEY` (prod), `NEXT_PUBLIC_CROSSMINT_CLIENT_API_KEY_STAGING`. Prod keys exist but are not wired up.
+Available env secrets: `CROSSMINT_SERVER_API_KEY` (prod) + `CROSSMINT_SERVER_API_KEY_STAGING`, `NEXT_PUBLIC_CROSSMINT_CLIENT_API_KEY` (prod) + `NEXT_PUBLIC_CROSSMINT_CLIENT_API_KEY_STAGING`. The prod **client** key is origin-locked, so every Rail 3 client-key call (server helper + browser SDK) must present `Origin: https://creditclaw.com`; the server-side helpers set it explicitly, and the browser passkey ceremony only works when served from the deployed `creditclaw.com` domain (not the workspace preview). A redeploy is required for the prod client key to be baked into the client bundle.
 
 ### What's different in production
 

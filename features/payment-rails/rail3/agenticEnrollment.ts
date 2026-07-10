@@ -1,7 +1,8 @@
 import "server-only";
 import {
-  CROSSMINT_HOST,
-  CROSSMINT_CLIENT_API_KEY,
+  RAIL3_CROSSMINT_HOST as CROSSMINT_HOST,
+  RAIL3_CROSSMINT_CLIENT_API_KEY as CROSSMINT_CLIENT_API_KEY,
+  RAIL3_CROSSMINT_CLIENT_ORIGIN,
 } from "@/features/payment-rails/crossmint-env";
 import { unwrapCrossmint, CrossmintApiError } from "./client";
 
@@ -28,11 +29,14 @@ function enrollmentHeaders(jwt: string): Record<string, string> {
   if (!CROSSMINT_CLIENT_API_KEY) {
     throw new Error("Crossmint client API key is missing — set the env var referenced in features/payment-rails/crossmint-env.ts");
   }
-  return {
+  const headers: Record<string, string> = {
     "X-API-KEY": CROSSMINT_CLIENT_API_KEY,
     "Authorization": `Bearer ${jwt}`,
     "Content-Type": "application/json",
   };
+  // Prod client key is origin-locked; server-side fetch must set it explicitly.
+  if (RAIL3_CROSSMINT_CLIENT_ORIGIN) headers["Origin"] = RAIL3_CROSSMINT_CLIENT_ORIGIN;
+  return headers;
 }
 
 /**

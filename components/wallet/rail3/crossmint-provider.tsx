@@ -8,7 +8,7 @@
 import { useEffect, type ReactNode } from "react";
 import { CrossmintProvider, useCrossmint } from "@crossmint/client-sdk-react-ui";
 import { auth } from "@/features/platform-management/firebase/client";
-import { CROSSMINT_CLIENT_API_KEY } from "@/features/payment-rails/crossmint-env";
+import { RAIL3_CROSSMINT_CLIENT_API_KEY as CROSSMINT_CLIENT_API_KEY } from "@/features/payment-rails/crossmint-env";
 
 function FirebaseJwtBridge() {
   const { setJwt } = useCrossmint();

@@ -26,26 +26,31 @@ clean "has expired", so even the 7d baseline wasn't re-observed this round.
 accurate as STAGING-BUG data, kept for context.
 
 ## ~7-day expiry — OBSERVED ON STAGING, was the staging bug (see RESOLVED above)
-**UPDATE 2026-07-10: Crossmint PRODUCTION is now enabled for us.** We have real prod keys
-(`sk_production` / `ck_production` in `CROSSMINT_SERVER_API_KEY` / `NEXT_PUBLIC_CROSSMINT_CLIENT_API_KEY`,
-no suffix) and a live read-only probe (`GET /order-intents/<random>` on `https://www.crossmint.com`
-with the prod client key + `Origin: https://creditclaw.com`) returned 404 → prod project reachable,
-order-intents enabled, prod client key valid and origin-scoped to creditclaw.com. BUT the app still
-**hardcodes STAGING** in `crossmint-env.ts`, so Rail 3 does NOT touch prod today — the prod keys are
-unused by the Rail 3 code path. Every expiry observation below is still STAGING-only.
-Empirical prod re-test is NOT feasible headlessly: all our Crossmint agents + payment methods live in
-the STAGING project (they don't exist under prod keys), so a prod create fails at agent/PM lookup
-(CONFIRMED 2026-07-10: PROD `POST /order-intents` with jon's staging agent+PM → HTTP 404 "Payment method
-... not found"; crucially auth PASSED — prod trusts our Firebase JWT, prod `ck_production` key + `Origin:
-https://creditclaw.com` are valid, it only failed at the entity lookup). A real prod test needs onboarding
-an agent + enrolling a real card on prod + a browser passkey activation. The
-fix is env-agnostic (no staging branch — `createOrderIntent` always sends `expiresAt`), so prod will
-behave per Crossmint's documented contract (camelCase `expiresAt`, 7d default, honored when set).
+### Rail 3 runs on Crossmint PRODUCTION; Rail 2 + Worldstore stay on STAGING (deliberate split)
+This is a per-rail split, NOT a global env flip.
+**Why:** there is a single `CROSSMINT_WEBHOOK_SECRET`, and it belongs to the Worldstore card-wallet
+webhook. Rail 3 has no webhook dependency, so flipping the shared Crossmint env globally would have
+desynced that webhook and pointed staging wallets/orders at prod. Keep Crossmint config scoped per-rail.
+**Prod client key is ORIGIN-LOCKED (staging's is not)** — only `https://creditclaw.com` is whitelisted.
+Consequences that bite:
+- server-side client-key calls must set the `Origin` header explicitly (a server fetch sends none);
+- the browser passkey/verification ceremony only works when served from the deployed creditclaw.com
+  domain — the workspace-preview origin is rejected;
+- the client key is `NEXT_PUBLIC_` (baked at build), so a redeploy is required for prod to take effect.
+**Entities are per-project:** staging agents/payment-methods don't exist under prod keys, so a prod
+`POST /order-intents` with a staging agent/PM → HTTP 404 "Payment method not found" — auth still PASSES
+(prod trusts our Firebase JWT), only the entity lookup fails. A real prod test needs a fresh prod card
+enrollment + browser passkey. The prod **server** key has not yet been exercised against prod (only the
+client key was probed) — the first list/sync on prod may surface a scope 403.
+**Cutover gotcha:** Rail 3 "Sync" deletes local `rail3_cards`/PM rows absent from the remote list; prod
+lists start empty, so the first Sync after cutover wipes all staging-era rows (manual button only).
+All expiry observations below predate the cutover and are STAGING-only. The expiry fix is env-agnostic
+(`createOrderIntent` always sends camelCase `expiresAt`), so prod follows Crossmint's documented contract.
 
 The 7-day figure is **not in Crossmint's docs** (public AI-agents/order-lifecycle pages
 state no orderIntent TTL; the Agentic Cards API ref is gated). It is **our empirical
 observation against Crossmint STAGING only** — we have zero real-Crossmint-production data
-(see env note: app is hardcoded to staging). Prod Crossmint may differ or expose options.
+(these observations predate the 2026-07-10 prod cutover; they are STAGING-only). Prod Crossmint may differ or expose options.
 **Treat 7 days as a heuristic, not a contract: persist the real `expiresAt` from a
 successful credentials response instead of hardcoding `created_at + 7d`.**
 
@@ -102,9 +107,8 @@ owner `firebase_refresh_token` → `securetoken.googleapis.com` ID token → Cro
 still needs the owner's passkey ceremony in a browser. Re-issue on expiry = new intent + ceremony.
 
 ## Env note
-`crossmint-env.ts` hardcodes host+keys to **staging**, so BOTH dev and the deployed prod app
-hit Crossmint staging. "Production cards" are staging orderIntents created by prod users; the
-non-staging `CROSSMINT_*` secrets exist but are not wired up.
+`crossmint-env.ts` splits Crossmint config: Rail 3 → prod (`RAIL3_*` exports), Rail 2 + Worldstore →
+staging (see "Rail 3 runs on Crossmint PRODUCTION" above for the origin-lock + redeploy implications).
 
 ## The expiry IS settable at the provider layer (Basis Theory) — 7d is a Crossmint default
 Crossmint sits on Basis Theory's agentic stack: **Enrollment → Instruction → Credentials**.
