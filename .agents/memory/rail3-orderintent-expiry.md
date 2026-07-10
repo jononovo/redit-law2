@@ -34,8 +34,11 @@ order-intents enabled, prod client key valid and origin-scoped to creditclaw.com
 **hardcodes STAGING** in `crossmint-env.ts`, so Rail 3 does NOT touch prod today — the prod keys are
 unused by the Rail 3 code path. Every expiry observation below is still STAGING-only.
 Empirical prod re-test is NOT feasible headlessly: all our Crossmint agents + payment methods live in
-the STAGING project (they don't exist under prod keys), so a prod create fails at agent/PM lookup; a real
-prod test needs onboarding an agent + enrolling a real card on prod + a browser passkey activation. The
+the STAGING project (they don't exist under prod keys), so a prod create fails at agent/PM lookup
+(CONFIRMED 2026-07-10: PROD `POST /order-intents` with jon's staging agent+PM → HTTP 404 "Payment method
+... not found"; crucially auth PASSED — prod trusts our Firebase JWT, prod `ck_production` key + `Origin:
+https://creditclaw.com` are valid, it only failed at the entity lookup). A real prod test needs onboarding
+an agent + enrolling a real card on prod + a browser passkey activation. The
 fix is env-agnostic (no staging branch — `createOrderIntent` always sends `expiresAt`), so prod will
 behave per Crossmint's documented contract (camelCase `expiresAt`, 7d default, honored when set).
 
