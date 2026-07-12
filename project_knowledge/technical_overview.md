@@ -443,7 +443,7 @@ CreditClaw uses a lightweight, database-backed feature flag system for controlli
 
 ## Onboarding & Setup Wizards
 
-Onboarding wizard (`/onboarding`, 5 steps), Rail 5 setup wizard (`/setup/rail5`, 8+1 steps), and shared wizard typography system (`lib/wizard-typography.ts`). → Full detail: `project_knowledge/internal_docs/07-platform-management/onboarding-wizards.md`
+Onboarding wizard (`/onboarding`, 5 steps), Rail 5 setup wizard (`/setup/rail5`, 8+1 steps), and shared wizard typography system (`lib/wizard-typography.ts`). → Full detail: `project_knowledge/internal_docs/07-platform-management/wizard-architecture.md`
 
 ## Feedback / Support Widget
 

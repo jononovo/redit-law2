@@ -1,16 +1,40 @@
 # Wizard Architecture
 
-> A practical guide for building chainable, reusable multi-step wizards in a Next.js + React + Tailwind codebase. Written for a developer who has not seen our code.
+> Current state of every production wizard, plus a practical guide for building chainable, reusable multi-step wizards in a Next.js + React + Tailwind codebase.
 
-We ship two production wizards today — the 5-step **Onboarding Wizard** (V2, pairing-code flow, live at `/onboarding`; V1 frozen at `/onboarding2` — see `onboarding-wizards.md`) and an 8-step **Rail5 Card Setup Wizard** — and the Onboarding Wizard hands off seamlessly to the Rail5 Wizard mid-flow. Both share a single typography system, a single step-shell component, and the same patterns for state, transitions, and exit handling. Code examples below use V1 step names; V2 follows the identical patterns, with its pairing-code concern (sessionStorage persistence, claim effect, toasts) extracted into a hook (`use-onboarding-pairing.ts`) per the pattern in §3a.
+We ship two production wizards today — the 5-step **Onboarding Wizard** (V2, pairing-code flow, live at `/onboarding`; V1 frozen at `/onboarding2`) and an 8-step **Rail5 Card Setup Wizard** — and the Onboarding Wizard hands off seamlessly to the Rail5 Wizard mid-flow. Both share a single typography system, a single step-shell component, and the same patterns for state, transitions, and exit handling.
 
-This document focuses on the **three patterns** that make this maintainable:
+The first half of this doc is the **current wizard inventory** (what exists, where it lives). The second half is the **pattern guide** — the three patterns that make this maintainable:
 
 1. The shared visual contract (one shell, one typography file)
 2. The orchestrator pattern (linear array of step IDs, hoisted state, animated transitions)
 3. The chaining pattern (one wizard embedding another with zero duplication)
 
-If you replicate just these three, you get the whole system.
+Code examples in the pattern guide use V1 step names; V2 follows the identical patterns, with its pairing-code concern extracted into a hook (`use-onboarding-pairing.ts`) per the pattern in §3a.
+
+---
+
+## Current wizard inventory
+
+### Onboarding Wizard V2 (live at `/onboarding`)
+
+`components/onboarding/onboarding-wizard-v2.tsx`. Flow: choose-agent-type → register-agent → sign-in → claim-token (fallback only) → add-card-bridge.
+
+- **register-agent** (`steps/register-agent-with-code.tsx`): creates an anonymous pairing code (`POST /api/v1/pairing-codes`, no auth, IP rate-limited), shows it in `BotInstructionBlock` ("Register at creditclaw.com/SKILL.md" + "Use code: xxx-xxx"), and polls `GET /pairing-codes/status` every 5s — auto-advances when the agent registers. Skippable.
+- **Pairing hook** (`components/onboarding/use-onboarding-pairing.ts`): owns all pairing-code state and handlers per the wizard hook convention — sessionStorage persistence (`creditclaw_onboarding_pairing_code`), the one-shot claim effect (fires once the user is signed in and `claimEligible` is true), toasts, and outcome callbacks (`onAgentLinked` / `onCodeAdopted` / `onClaimFallback`). The orchestrator only wires callbacks to step navigation.
+- **Claim (both orders work):** `POST /api/v1/pairing-codes/claim` after sign-in. A `registered` code links + activates the waiting bot; a still-`pending` code is **adopted** (ownerUid set) so the agent activates the moment it registers later.
+- **Fallback:** claim failure or skipping register drops the user onto the manual claim-token step. Agents registering with a code still receive a claim_token.
+- **Code lifecycle:** `pending` → `registered` (bot exists but inert: walletStatus pending, no owner) → `claimed`. These three are the only statuses (the legacy `paired` status and its writer/readers were removed). Owner-created codes (ownerUid at creation) skip the inert stage — registering with one activates immediately (V1 behavior).
+
+### Onboarding Wizard V1 (frozen at `/onboarding2`)
+
+A linear 5-step wizard for new bot owner setup. Flow: choose-agent-type → register-bot → sign-in → claim-token → add-card-bridge. The bridge slide only appears if the user claimed a bot (sets `botConnected`). If "Yes, let's add a card" is chosen, the full `Rail5SetupWizardContent` renders inline (not as a modal) with `preselectedBotId` to auto-link the bot and skip the bot selection step. If the user skips at claim-token or add-card-bridge, they go directly to `/overview`. The onboarding page has no auth gate — authentication happens within the wizard flow.
+
+### Rail 5 Setup Wizard
+
+Full-page route at `/setup/rail5` (outside dashboard layout, no sidebar/header). Uses `Rail5SetupWizardContent` with `inline` mode. On complete/close navigates to `/overview`. Entry points: NewCardModal "My Card - Encrypted" option, overview page "Add Your Card" overlay, sub-agent-cards "Add New Card" button — all navigate to `/setup/rail5` instead of opening a Dialog modal. The onboarding wizard (`/onboarding`) still embeds `Rail5SetupWizardContent` inline directly. The old `Rail5SetupWizard` Dialog wrapper has been removed.
+
+Modularized under `components/onboarding/rail5-wizard/` — see §3a for the folder layout. Step specifics: `steps/` holds 9 step files: `name-card.tsx` (step 0), `how-it-works.tsx` (step 1), `spending-limits.tsx` (step 2), `card-entry.tsx` (step 3), `billing-address.tsx` (step 4), `link-bot.tsx` (step 5), `encrypt-deliver.tsx` (step 6), `delivery-result.tsx` (step 7), `test-verification.tsx` (step 8 — optional, beyond visible step dots). The step indicator shows 8 dots (steps 0–7). Step 8 (test verification) has a prompt gate: checks test status on mount — if bot already started/completed, shows verification UI directly; otherwise shows "Do you want to test?" prompt with Skip/Yes. Skip is always available during verification. `wizard-shell.tsx` hides the indicator when `step >= TOTAL_STEPS`.
 
 ---
 
@@ -35,7 +59,7 @@ export const wt = {
 } as const;
 ```
 
-**Rule:** every navigation `Button` in any wizard uses `wt.primaryButton` or `wt.secondaryButton`. To resize buttons or change type scale across all wizards, you edit this one file. No step component owns its own button height.
+**Rule:** every navigation `Button` in any wizard uses `wt.primaryButton` or `wt.secondaryButton` (these include full button sizing: height `h-12 md:h-14`, rounding `rounded-xl`, and font size). To resize buttons or change type scale across all wizards, you edit this one file. No step component owns its own button height. For plain text-link buttons (back/skip as `<button>` without borders), use `wt.body` instead. Small utility buttons (Copy/Telegram/Discord, Retry, Re-download) and exit confirmation buttons are intentionally excluded from `wt` sizing.
 
 ### 1b. Step shell component
 
