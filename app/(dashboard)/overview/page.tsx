@@ -243,7 +243,7 @@ export default function DashboardOverview() {
     <div className="flex flex-col gap-8 animate-fade-in-up">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="bg-white p-6 rounded-xl border border-neutral-100 shadow-sm" data-testid="stat-total-bots">
-          <span className="text-sm font-medium text-neutral-500">Total Bots</span>
+          <span className="text-sm font-medium text-neutral-500">Total Agents</span>
           <h3 className="text-2xl font-bold text-neutral-900 tracking-tight mt-2">
             {loading ? "—" : bots.length}
           </h3>
