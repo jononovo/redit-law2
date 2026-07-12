@@ -275,7 +275,7 @@ export default function DashboardOverview() {
               <Link href="/onboarding">
                 <Button className="rounded-xl gap-2" data-testid="button-start-onboarding">
                   <Plus className="w-4 h-4" />
-                  Get Started
+                  Add Agent
                 </Button>
               </Link>
               <Link href="/claim">
