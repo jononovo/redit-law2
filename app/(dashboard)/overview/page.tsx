@@ -270,7 +270,7 @@ export default function DashboardOverview() {
             <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
               <BotIcon className="w-8 h-8 text-primary" />
             </div>
-            <h3 className="font-bold text-neutral-900 text-lg mb-2">Set up your first bot</h3>
+            <h3 className="font-bold text-neutral-900 text-lg mb-2">Set up your first agent</h3>
             <div className="flex items-center justify-center gap-3">
               <Link href="/onboarding">
                 <Button className="rounded-xl gap-2" data-testid="button-start-onboarding">
