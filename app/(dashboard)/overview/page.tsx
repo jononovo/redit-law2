@@ -280,7 +280,7 @@ export default function DashboardOverview() {
               </Link>
               <Link href="/claim">
                 <Button variant="outline" className="rounded-xl gap-2" data-testid="button-claim-bot-empty">
-                  Claim a Bot
+                  Claim an Agent
                 </Button>
               </Link>
             </div>
