@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { CreditCard, Bot, User, Copy, Check, Shield, ArrowRight } from "lucide-react";
+import { CreditCard, Bot, User, Copy, Check, Shield, ArrowRight, Loader2, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { formatPairingCodeForDisplay } from "@/features/platform-management/agent-management/pairing-code-format";
 
 const SKILL_URL = "https://creditclaw.com/SKILL.md";
 
@@ -20,11 +21,36 @@ export function BotSignup() {
   const { toast } = useToast();
   const [copied, setCopied] = useState(false);
   const [claimToken, setClaimToken] = useState("");
+  const [pairingCode, setPairingCode] = useState<string | null>(null);
+  const [generatingCode, setGeneratingCode] = useState(false);
+  const [codeError, setCodeError] = useState<string | null>(null);
+
+  const generateJoinCode = useCallback(async () => {
+    setGeneratingCode(true);
+    setCodeError(null);
+    try {
+      const res = await fetch("/api/v1/pairing-codes", { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) {
+        setCodeError(data.error || "Couldn't generate a join-code.");
+        return;
+      }
+      setPairingCode(data.code);
+    } catch {
+      setCodeError("Couldn't generate a join-code.");
+    } finally {
+      setGeneratingCode(false);
+    }
+  }, []);
+
+  const instructionLines = pairingCode
+    ? [`Register at ${SKILL_URL}`, `Use code: ${formatPairingCodeForDisplay(pairingCode)}`]
+    : [`Register at ${SKILL_URL}`];
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(SKILL_URL);
+    navigator.clipboard.writeText(instructionLines.join("\n"));
     setCopied(true);
-    toast({ title: "Copied!", description: "Skill URL copied to clipboard." });
+    toast({ title: "Copied!", description: "Instructions copied to clipboard." });
     setTimeout(() => setCopied(false), 2000);
   };
 
@@ -56,7 +82,15 @@ export function BotSignup() {
         </div>
 
         <div className="max-w-xl mx-auto">
-          <Tabs defaultValue="human" className="w-full">
+          <Tabs
+            defaultValue="human"
+            className="w-full"
+            onValueChange={(value) => {
+              if (value === "bot" && !pairingCode && !generatingCode) {
+                generateJoinCode();
+              }
+            }}
+          >
             <TabsList className="grid w-full grid-cols-2 h-14 rounded-2xl bg-neutral-100 p-1.5 mb-8">
               <TabsTrigger
                 value="human"
@@ -83,32 +117,63 @@ export function BotSignup() {
                     Give Your AI Agent a Wallet <span className="text-2xl">💳</span>
                   </h3>
                   <p className="text-neutral-500 font-medium text-sm">
-                    Send the skill file URL to your agent. They&apos;ll handle the rest.
+                    Send these instructions to your agent. They&apos;ll handle the rest.
                   </p>
                 </div>
 
-                <div
-                  className="flex items-center gap-2 bg-neutral-50 border border-neutral-200 rounded-2xl p-2 mb-8 group hover:border-primary/30 transition-colors cursor-pointer"
-                  onClick={handleCopy}
-                  data-testid="button-copy-skill-url"
-                >
-                  <div className="flex-1 px-4 py-2">
-                    <code className="text-sm font-mono text-neutral-700 select-all">
-                      {SKILL_URL}
-                    </code>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="rounded-xl h-10 w-10 shrink-0 text-neutral-400 group-hover:text-primary transition-colors"
+                {generatingCode ? (
+                  <div
+                    className="flex items-center justify-center gap-3 bg-neutral-50 border border-neutral-200 rounded-2xl px-4 py-6 mb-8"
+                    data-testid="status-generating-join-code"
                   >
-                    {copied ? (
-                      <Check className="w-4 h-4 text-green-600" />
-                    ) : (
-                      <Copy className="w-4 h-4" />
-                    )}
-                  </Button>
-                </div>
+                    <Loader2 className="w-4 h-4 animate-spin text-neutral-400" />
+                    <span className="text-sm font-medium text-neutral-500">
+                      Generating unique join-code...
+                    </span>
+                  </div>
+                ) : codeError ? (
+                  <div
+                    className="flex items-center justify-between gap-3 bg-neutral-50 border border-neutral-200 rounded-2xl px-4 py-4 mb-8"
+                    data-testid="status-join-code-error"
+                  >
+                    <span className="text-sm font-medium text-red-600">{codeError}</span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={generateJoinCode}
+                      className="rounded-xl gap-2 shrink-0"
+                      data-testid="button-retry-join-code"
+                    >
+                      <RefreshCw className="w-3.5 h-3.5" />
+                      Retry
+                    </Button>
+                  </div>
+                ) : (
+                  <div
+                    className="flex items-center gap-2 bg-neutral-50 border border-neutral-200 rounded-2xl p-2 mb-8 group hover:border-primary/30 transition-colors cursor-pointer"
+                    onClick={handleCopy}
+                    data-testid="button-copy-skill-url"
+                  >
+                    <div className="flex-1 px-4 py-2">
+                      <code className="text-sm font-mono text-neutral-700 select-all">
+                        {instructionLines.map((line) => (
+                          <span key={line} className="block">{line}</span>
+                        ))}
+                      </code>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="rounded-xl h-10 w-10 shrink-0 text-neutral-400 group-hover:text-primary transition-colors"
+                    >
+                      {copied ? (
+                        <Check className="w-4 h-4 text-green-600" />
+                      ) : (
+                        <Copy className="w-4 h-4" />
+                      )}
+                    </Button>
+                  </div>
+                )}
 
                 <div className="space-y-4">
                   {steps.map((step) => (
