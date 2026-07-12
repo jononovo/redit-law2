@@ -12,9 +12,13 @@ const SKILL_URL = "https://creditclaw.com/SKILL.md";
 
 const steps = [
   { num: "1", text: "Send this URL to your agent" },
-  { num: "2", text: "They register & give you a claim token" },
-  { num: "3", text: "Claim your bot and add a payment method" },
-  { num: "4", text: "Bot gets guardrails & encrypted version of your credit card." },
+  { num: "2", text: "They register & get a Stable-coin wallet immediately." },
+  {
+    num: "3",
+    text: "Add any Visa/Mastercard and issue secure Virtual Cards from them.",
+    link: { label: "See how here.", href: "#features" },
+  },
+  { num: "4", text: "Your agent gets multiple payment methods. You get reports & permission requests. Everyone's happy." },
 ];
 
 export function BotSignup() {
@@ -183,6 +187,18 @@ export function BotSignup() {
                       </div>
                       <p className="text-neutral-700 font-medium text-[15px] pt-1">
                         {step.text}
+                        {"link" in step && step.link && (
+                          <>
+                            {" "}
+                            <a
+                              href={step.link.href}
+                              className="text-primary underline underline-offset-2 hover:no-underline"
+                              data-testid={`link-step-${step.num}`}
+                            >
+                              {step.link.label}
+                            </a>
+                          </>
+                        )}
                       </p>
                     </div>
                   ))}
