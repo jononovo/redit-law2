@@ -18,7 +18,7 @@ export function RegisterBot({ currentStep, totalSteps, onBack, onNext }: Registe
 
   return (
     <WizardStep
-      title="Register your bot"
+      title="Register your agent"
       subtitle="Give these instructions to your bot."
       currentStep={currentStep}
       totalSteps={totalSteps}
