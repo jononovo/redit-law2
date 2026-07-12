@@ -258,7 +258,7 @@ export default function DashboardOverview() {
 
       <div>
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-lg font-bold text-neutral-900">My Bots</h2>
+          <h2 className="text-lg font-bold text-neutral-900">My Agents</h2>
         </div>
 
         {loading ? (
