@@ -8,13 +8,16 @@ const BOT_INSTRUCTIONS = "Register at creditclaw.com/SKILL.md";
 
 interface BotInstructionBlockProps {
   onCopied?: () => void;
+  code?: string;
 }
 
-export function BotInstructionBlock({ onCopied }: BotInstructionBlockProps) {
+export function BotInstructionBlock({ onCopied, code }: BotInstructionBlockProps) {
   const [copied, setCopied] = useState(false);
 
+  const lines = code ? [BOT_INSTRUCTIONS, `Use code: ${code}`] : [BOT_INSTRUCTIONS];
+
   function handleCopy() {
-    navigator.clipboard.writeText(BOT_INSTRUCTIONS);
+    navigator.clipboard.writeText(lines.join("\n"));
     setCopied(true);
     onCopied?.();
   }
@@ -23,7 +26,9 @@ export function BotInstructionBlock({ onCopied }: BotInstructionBlockProps) {
     <div className="space-y-4">
       <div className={`bg-neutral-900 rounded-xl p-4 transition-opacity duration-300 ${copied ? "opacity-40" : ""}`}>
         <code className="text-sm text-neutral-100 leading-relaxed block text-center" data-testid="text-bot-instructions">
-          {BOT_INSTRUCTIONS}
+          {lines.map((line) => (
+            <span key={line} className="block">{line}</span>
+          ))}
         </code>
       </div>
       <Button

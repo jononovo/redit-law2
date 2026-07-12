@@ -98,6 +98,8 @@ export interface IStorage {
   getPairingCodeByCode(code: string): Promise<PairingCode | null>;
   claimPairingCode(code: string, botId: string): Promise<PairingCode | null>;
   getRecentPairingCodeCount(ownerUid: string): Promise<number>;
+  adoptPairingCode(code: string, ownerUid: string): Promise<PairingCode | null>;
+  claimRegisteredPairingCode(code: string, ownerUid: string): Promise<Bot | null>;
 
   addWaitlistEntry(data: InsertWaitlistEntry): Promise<WaitlistEntry>;
   getWaitlistEntryByEmail(email: string): Promise<WaitlistEntry | null>;

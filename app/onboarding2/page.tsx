@@ -2,14 +2,14 @@
 
 import { useEffect } from "react";
 import { useAuth } from "@/features/platform-management/auth/auth-context";
-import { OnboardingWizardV2 } from "@/components/onboarding/onboarding-wizard-v2";
+import { OnboardingWizard } from "@/components/onboarding/onboarding-wizard";
 
-export default function OnboardingPage() {
+export default function OnboardingV1Page() {
   const { completeMagicLink } = useAuth();
 
   useEffect(() => {
     completeMagicLink();
   }, [completeMagicLink]);
 
-  return <OnboardingWizardV2 />;
+  return <OnboardingWizard />;
 }

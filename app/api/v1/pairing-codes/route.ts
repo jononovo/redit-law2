@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/features/platform-management/auth/session";
 import { storage } from "@/server/storage";
 
@@ -6,19 +6,47 @@ function generatePairingCode(): string {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
-export async function POST() {
+const anonRateLimitMap = new Map<string, { count: number; resetAt: number }>();
+const ANON_RATE_LIMIT = 5;
+const ANON_RATE_WINDOW = 60 * 60 * 1000;
+
+function checkAnonRateLimit(ip: string): boolean {
+  const now = Date.now();
+  const entry = anonRateLimitMap.get(ip);
+
+  if (!entry || now > entry.resetAt) {
+    anonRateLimitMap.set(ip, { count: 1, resetAt: now + ANON_RATE_WINDOW });
+    return true;
+  }
+
+  if (entry.count >= ANON_RATE_LIMIT) {
+    return false;
+  }
+
+  entry.count++;
+  return true;
+}
+
+export async function POST(request: NextRequest) {
   try {
     const user = await getCurrentUser();
-    if (!user) {
-      return NextResponse.json({ error: "Authentication required" }, { status: 401 });
-    }
 
-    const recentCount = await storage.getRecentPairingCodeCount(user.uid);
-    if (recentCount >= 5) {
-      return NextResponse.json(
-        { error: "Too many pairing codes generated. Try again later." },
-        { status: 429 }
-      );
+    if (user) {
+      const recentCount = await storage.getRecentPairingCodeCount(user.uid);
+      if (recentCount >= 5) {
+        return NextResponse.json(
+          { error: "Too many pairing codes generated. Try again later." },
+          { status: 429 }
+        );
+      }
+    } else {
+      const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+      if (!checkAnonRateLimit(ip)) {
+        return NextResponse.json(
+          { error: "Too many pairing codes generated. Try again later." },
+          { status: 429 }
+        );
+      }
     }
 
     const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
@@ -29,7 +57,7 @@ export async function POST() {
       try {
         const pairingCode = await storage.createPairingCode({
           code,
-          ownerUid: user.uid,
+          ownerUid: user?.uid ?? null,
           expiresAt,
         });
         return NextResponse.json({

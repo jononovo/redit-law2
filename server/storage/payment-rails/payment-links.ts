@@ -1,14 +1,16 @@
 import { db } from "@/server/db";
 import {
-  pairingCodes, waitlistEntries,
+  pairingCodes, waitlistEntries, bots,
   type PairingCode, type InsertPairingCode,
   type WaitlistEntry, type InsertWaitlistEntry,
+  type Bot,
 } from "@/shared/schema";
-import { eq, and, sql, gte } from "drizzle-orm";
+import { eq, and, sql, gte, isNull } from "drizzle-orm";
 import type { IStorage } from "../types";
 
 type PairingWaitlistMethods = Pick<IStorage,
   | "createPairingCode" | "getPairingCodeByCode" | "claimPairingCode" | "getRecentPairingCodeCount"
+  | "adoptPairingCode" | "claimRegisteredPairingCode"
   | "addWaitlistEntry" | "getWaitlistEntryByEmail"
 >;
 
@@ -35,6 +37,48 @@ export const pairingWaitlistMethods: PairingWaitlistMethods = {
       ))
       .returning();
     return updated || null;
+  },
+
+  async adoptPairingCode(code: string, ownerUid: string): Promise<PairingCode | null> {
+    const now = new Date();
+    const [updated] = await db
+      .update(pairingCodes)
+      .set({ ownerUid })
+      .where(and(
+        eq(pairingCodes.code, code),
+        eq(pairingCodes.status, "pending"),
+        isNull(pairingCodes.ownerUid),
+        gte(pairingCodes.expiresAt, now),
+      ))
+      .returning();
+    return updated || null;
+  },
+
+  async claimRegisteredPairingCode(code: string, ownerUid: string): Promise<Bot | null> {
+    return db.transaction(async (tx) => {
+      const [claimedCode] = await tx
+        .update(pairingCodes)
+        .set({ ownerUid, status: "claimed", claimedAt: new Date() })
+        .where(and(
+          eq(pairingCodes.code, code),
+          eq(pairingCodes.status, "registered"),
+          isNull(pairingCodes.ownerUid),
+        ))
+        .returning();
+
+      if (!claimedCode || !claimedCode.botId) return null;
+
+      const [bot] = await tx
+        .update(bots)
+        .set({ ownerUid, walletStatus: "active", claimedAt: new Date() })
+        .where(and(
+          eq(bots.botId, claimedCode.botId),
+          isNull(bots.ownerUid),
+        ))
+        .returning();
+
+      return bot || null;
+    });
   },
 
   async getRecentPairingCodeCount(ownerUid: string): Promise<number> {

@@ -107,7 +107,7 @@ export const notifications = pgTable("notifications", {
 export const pairingCodes = pgTable("pairing_codes", {
   id: serial("id").primaryKey(),
   code: text("code").notNull().unique(),
-  ownerUid: text("owner_uid").notNull(),
+  ownerUid: text("owner_uid"),
   botId: text("bot_id"),
   status: text("status").notNull().default("pending"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -123,7 +123,7 @@ export const registerBotRequestSchema = z.object({
   owner_email: z.string().email(),
   description: z.string().max(500).optional(),
   callback_url: z.string().url().optional(),
-  pairing_code: z.string().length(6).regex(/^\d{6}$/).optional(),
+  pairing_code: z.string().max(20).transform((v) => v.replace(/[^0-9]/g, "")).pipe(z.string().regex(/^\d{6}$/)).optional(),
   bot_type: z.string().max(50).optional(),
   local_port: z.number().int().min(1).max(65535).optional(),
   webhook_path: z.string().max(200).startsWith("/").optional(),

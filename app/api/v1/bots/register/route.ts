@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { registerBotRequestSchema, bots, pairingCodes } from "@/shared/schema";
 import { storage } from "@/server/storage";
 import { db } from "@/server/db";
-import { eq, and } from "drizzle-orm";
+import { eq, and, isNull } from "drizzle-orm";
 import { generateBotId, generateApiKey, generateClaimToken, hashApiKey, getApiKeyPrefix, generateWebhookSecret } from "@/features/platform-management/agent-management/crypto";
+import { normalizePairingCode } from "@/features/platform-management/agent-management/pairing-code-format";
 import { sendOwnerRegistrationEmail } from "@/features/platform-management/email";
 import { fireWebhook } from "@/features/agent-interaction/webhooks";
 import { notifyWalletActivated } from "@/features/platform-management/notifications";
@@ -72,7 +73,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { bot_name, owner_email, description, callback_url, pairing_code, bot_type, local_port, webhook_path } = parsed.data;
+    const { bot_name, owner_email, description, callback_url, bot_type, local_port, webhook_path } = parsed.data;
+    const pairing_code = parsed.data.pairing_code ? normalizePairingCode(parsed.data.pairing_code) : undefined;
     const tenantId = request.headers.get("x-tenant-id") || "creditclaw";
 
     const isDuplicate = await storage.checkDuplicateRegistration(bot_name, owner_email);
@@ -94,9 +96,11 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    const codeHasOwner = !!pairingCodeRecord?.ownerUid;
+
     botId = generateBotId();
     const apiKey = generateApiKey();
-    const claimToken = pairing_code ? null : generateClaimToken();
+    const claimToken = pairing_code && codeHasOwner ? null : generateClaimToken();
     const apiKeyHash = await hashApiKey(apiKey);
     const apiKeyPrefix = getApiKeyPrefix(apiKey);
 
@@ -113,30 +117,35 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    if (pairingCodeRecord && pairing_code) {
+    const botBaseValues = {
+      botId,
+      botName: bot_name,
+      description: description || null,
+      ownerEmail: owner_email,
+      apiKeyHash,
+      apiKeyPrefix,
+      callbackUrl: effectiveCallbackUrl,
+      webhookSecret,
+      webhookStatus: tunnel ? "pending" : (effectiveCallbackUrl ? "active" : "none"),
+      webhookFailCount: 0,
+      signupTenant: tenantId,
+      botType: effectiveBotType,
+      tunnelId: tunnel?.dbFields.tunnelId || null,
+      tunnelToken: tunnel?.dbFields.tunnelToken || null,
+      tunnelStatus: tunnel ? "provisioned" : "none",
+      tunnelLocalPort: tunnel?.dbFields.tunnelLocalPort || null,
+      openclawHooksToken: tunnel?.dbFields.openclawHooksToken || null,
+    };
+
+    if (pairingCodeRecord && pairing_code && pairingCodeRecord.ownerUid) {
+      const codeOwnerUid = pairingCodeRecord.ownerUid;
       const result = await db.transaction(async (tx) => {
         const [bot] = await tx.insert(bots).values({
-          botId,
-          botName: bot_name,
-          description: description || null,
-          ownerEmail: owner_email,
-          apiKeyHash,
-          apiKeyPrefix,
+          ...botBaseValues,
           claimToken: null,
           walletStatus: "active",
-          callbackUrl: effectiveCallbackUrl,
-          webhookSecret,
-          webhookStatus: tunnel ? "pending" : (effectiveCallbackUrl ? "active" : "none"),
-          webhookFailCount: 0,
-          ownerUid: pairingCodeRecord.ownerUid,
+          ownerUid: codeOwnerUid,
           claimedAt: new Date(),
-          signupTenant: tenantId,
-          botType: effectiveBotType,
-          tunnelId: tunnel?.dbFields.tunnelId || null,
-          tunnelToken: tunnel?.dbFields.tunnelToken || null,
-          tunnelStatus: tunnel ? "provisioned" : "none",
-          tunnelLocalPort: tunnel?.dbFields.tunnelLocalPort || null,
-          openclawHooksToken: tunnel?.dbFields.openclawHooksToken || null,
         }).returning();
 
         const [claimed] = await tx
@@ -158,12 +167,12 @@ export async function POST(request: NextRequest) {
       });
 
       fireWebhook(result, "wallet.activated", {
-        owner_uid: pairingCodeRecord.ownerUid,
+        owner_uid: codeOwnerUid,
         wallet_status: "active",
         message: "Owner paired bot via pairing code and wallet is now live.",
       }).catch((err) => console.error("Webhook fire failed:", err));
 
-      notifyWalletActivated(pairingCodeRecord.ownerUid, result.botName, result.botId).catch(() => {});
+      notifyWalletActivated(codeOwnerUid, result.botName, result.botId).catch(() => {});
 
       const response: Record<string, unknown> = {
         bot_id: botId,
@@ -171,7 +180,7 @@ export async function POST(request: NextRequest) {
         claim_token: null,
         status: "active",
         paired: true,
-        owner_uid: pairingCodeRecord.ownerUid,
+        owner_uid: codeOwnerUid,
         important: "Save your api_key now — it cannot be retrieved later. Your wallet is already active via pairing code.",
       };
 
@@ -187,28 +196,107 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(response, { status: 201 });
     }
 
+    if (pairingCodeRecord && pairing_code) {
+      const anonResult = await db.transaction(async (tx) => {
+        const [registered] = await tx
+          .update(pairingCodes)
+          .set({ botId, status: "registered" })
+          .where(and(
+            eq(pairingCodes.code, pairing_code),
+            eq(pairingCodes.status, "pending"),
+            isNull(pairingCodes.ownerUid),
+          ))
+          .returning();
+
+        if (registered) {
+          const [bot] = await tx.insert(bots).values({
+            ...botBaseValues,
+            claimToken,
+            walletStatus: "pending",
+            ownerUid: null,
+            claimedAt: null,
+          }).returning();
+          return { bot, activatedOwnerUid: null as string | null };
+        }
+
+        const [current] = await tx
+          .select()
+          .from(pairingCodes)
+          .where(eq(pairingCodes.code, pairing_code))
+          .limit(1);
+
+        if (current && current.status === "pending" && current.ownerUid) {
+          const [claimed] = await tx
+            .update(pairingCodes)
+            .set({ status: "claimed", botId, claimedAt: new Date() })
+            .where(and(
+              eq(pairingCodes.code, pairing_code),
+              eq(pairingCodes.status, "pending"),
+            ))
+            .returning();
+          if (!claimed) throw new Error("PAIRING_RACE");
+
+          const [bot] = await tx.insert(bots).values({
+            ...botBaseValues,
+            claimToken: null,
+            walletStatus: "active",
+            ownerUid: current.ownerUid,
+            claimedAt: new Date(),
+          }).returning();
+          return { bot, activatedOwnerUid: current.ownerUid };
+        }
+
+        throw new Error("PAIRING_RACE");
+      });
+
+      if (anonResult.activatedOwnerUid) {
+        fireWebhook(anonResult.bot, "wallet.activated", {
+          owner_uid: anonResult.activatedOwnerUid,
+          wallet_status: "active",
+          message: "Owner paired bot via pairing code and wallet is now live.",
+        }).catch((err) => console.error("Webhook fire failed:", err));
+
+        notifyWalletActivated(anonResult.activatedOwnerUid, anonResult.bot.botName, anonResult.bot.botId).catch(() => {});
+      }
+
+      const response: Record<string, unknown> = anonResult.activatedOwnerUid
+        ? {
+            bot_id: botId,
+            api_key: apiKey,
+            claim_token: null,
+            status: "active",
+            paired: true,
+            owner_uid: anonResult.activatedOwnerUid,
+            important: "Save your api_key now — it cannot be retrieved later. Your wallet is already active via pairing code.",
+          }
+        : {
+            bot_id: botId,
+            api_key: apiKey,
+            claim_token: claimToken,
+            status: "pending_owner_verification",
+            paired: false,
+            pairing_code_status: "registered",
+            important: "Save your api_key now — it cannot be retrieved later. Your human's pairing code links you automatically once they finish signing in — no further action needed.",
+          };
+
+      if (webhookSecret) {
+        response.webhook_secret = webhookSecret;
+        response.webhook_note = "Save your webhook_secret now — it cannot be retrieved later. Use it to verify HMAC signatures on incoming webhook payloads.";
+      }
+
+      if (tunnel) {
+        attachTunnelResponse(response, tunnel);
+      }
+
+      return NextResponse.json(response, { status: 201 });
+    }
+
     const bot = await storage.createBot({
-      botId,
-      botName: bot_name,
-      description: description || null,
-      ownerEmail: owner_email,
-      apiKeyHash,
-      apiKeyPrefix,
+      ...botBaseValues,
       claimToken,
       walletStatus: "pending",
-      callbackUrl: effectiveCallbackUrl,
-      webhookSecret,
-      webhookStatus: tunnel ? "pending" : (effectiveCallbackUrl ? "active" : "none"),
-      webhookFailCount: 0,
       ownerUid: null,
       claimedAt: null,
-      signupTenant: tenantId,
-      botType: effectiveBotType,
-      tunnelId: tunnel?.dbFields.tunnelId || null,
-      tunnelToken: tunnel?.dbFields.tunnelToken || null,
-      tunnelStatus: tunnel ? "provisioned" : "none",
-      tunnelLocalPort: tunnel?.dbFields.tunnelLocalPort || null,
-      openclawHooksToken: tunnel?.dbFields.openclawHooksToken || null,
     });
 
     sendOwnerRegistrationEmail({

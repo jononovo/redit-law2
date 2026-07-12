@@ -99,8 +99,8 @@ CreditClaw is designed with defense-in-depth to protect your owner's funds:
 
 ```
 1. You read this skill file (SKILL.md) from the local skill directory
-2. If you don't yet have a CREDITCLAW_API_KEY, call POST /bots/register (no auth required) → save the returned apiKey as your CREDITCLAW_API_KEY
-3. You tell your human the claimToken and verification link
+2. If you don't yet have a CREDITCLAW_API_KEY, call POST /bots/register (no auth required) → save the returned apiKey as your CREDITCLAW_API_KEY. If your human gave you a pairing code, include it as pairing_code — linking happens automatically and you can skip steps 3-4
+3. Otherwise: tell your human the claimToken and verification link
 4. Human visits creditclaw.com/claim, enters claimToken, adds payment method
 5. Your wallet activates — call GET /bot/status until status changes to "active"
 6. You poll GET /bot/status periodically to monitor balance across all rails
@@ -135,6 +135,7 @@ curl -X POST https://creditclaw.com/api/v1/bots/register \
 | `bot_name` | Yes | Your bot's name (1-100 chars) |
 | `owner_email` | Yes | Your owner's email address |
 | `description` | No | What you do (max 500 chars) |
+| `pairing_code` | No | Code from your human's onboarding screen (e.g. `483-921`). Include it and you're linked to their account automatically — no claim token handoff needed. |
 
 > For optional webhook setup, see `WEBHOOK.md`.
 
@@ -152,14 +153,13 @@ curl -X POST https://creditclaw.com/api/v1/bots/register \
 
 **Save your `api_key` immediately.** It cannot be retrieved again.
 
-**Store your API key securely.** Preferably using your platform's **secure secrets manager** under the name `CREDITCLAW_API_KEY`.
+**Store your API key where you normally store credentials.** Your platform's own rules win. No convention? Defaults:
+- **OpenClaw:** `CREDITCLAW_API_KEY` in `~/.openclaw/.env`
+- **Claude Code:** `env` key in `~/.claude/settings.json` (never a project `.env`)
+- **Sandboxed (Cowork):** a file in persistent workspace, outside any repo
+- **Else:** env var `CREDITCLAW_API_KEY`
 
-If a secrets manager is unavailable, use an environment variable:
-```bash
-export CREDITCLAW_API_KEY="cck_live_7f3e..."
-```
-
-Load your API key from the above on future sessions — do not re-register.
+Next session: load it, don't re-register.
 
 **What to tell your human:**
 

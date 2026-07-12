@@ -3,3 +3,4 @@
 - [Static asset serving + public/ 500 history](deploy-public-assets-500.md) — assets in root public/, served natively; KEEP output:standalone. If public/ 500s recur in prod use Object Storage, not a custom route handler.
 - [Rail 3 expiry & prod cutover](rail3-orderintent-expiry.md) — send explicit camelCase `expiresAt` (7d was a staging bug); Rail 3 on Crossmint PROD, Rail 2/Worldstore stay staging (single shared webhook secret); prod client key origin-locked to creditclaw.com.
 - [Rail 3 refresh-token store](rail3-refresh-token-store.md) — Firebase refresh tokens stored plaintext BY DECISION; encryption + OWNER_REFRESH_TOKEN_ENCRYPTION_KEY intentionally declined, don't re-add.
+- [db:push blocker + test baseline](db-push-and-test-baseline.md) — db:push hangs on rail5_transactions constraint prompt (use direct SQL); 3 vitest suites fail on clean HEAD, don't chase them.
