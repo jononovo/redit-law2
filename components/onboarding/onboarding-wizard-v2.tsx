@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useMemo, useCallback, useEffect, useRef } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { X } from "lucide-react";
-import { useAuth } from "@/features/platform-management/auth/auth-context";
 import { useToast } from "@/hooks/use-toast";
+import { useOnboardingPairing } from "./use-onboarding-pairing";
 import { ChoosePath } from "./steps/choose-path";
 import { RegisterAgentWithCode } from "./steps/register-agent-with-code";
 import { SignInStep } from "./steps/sign-in";
@@ -38,22 +38,13 @@ const initialState: WizardState = {
 
 const STEPS: StepId[] = ["choose-agent-type", "register-agent", "sign-in", "claim-token", "add-card-bridge"];
 
-const PAIRING_CODE_STORAGE_KEY = "creditclaw_onboarding_pairing_code";
-
 export function OnboardingWizardV2() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const stepParam = searchParams.get("step") as StepId | null;
-  const { user } = useAuth();
   const { toast } = useToast();
 
   const [state, setState] = useState<WizardState>(initialState);
-  const [pairingCode, setPairingCode] = useState<string | null>(() => {
-    if (typeof window === "undefined") return null;
-    return sessionStorage.getItem(PAIRING_CODE_STORAGE_KEY);
-  });
-  const [claiming, setClaiming] = useState(false);
-  const claimAttemptedRef = useRef(false);
 
   const [currentStepIndex, setCurrentStepIndex] = useState(() => {
     if (stepParam) {
@@ -106,66 +97,19 @@ export function OnboardingWizardV2() {
   const currentStep = activeSteps[currentStepIndex];
   const totalSteps = activeSteps.length;
 
-  const handleCodeGenerated = useCallback((code: string) => {
-    sessionStorage.setItem(PAIRING_CODE_STORAGE_KEY, code);
-    setPairingCode(code);
-  }, []);
-
-  const clearPairingCode = useCallback(() => {
-    sessionStorage.removeItem(PAIRING_CODE_STORAGE_KEY);
-    setPairingCode(null);
-  }, []);
-
-  const runClaim = useCallback(async (code: string) => {
-    setClaiming(true);
-    try {
-      const { authFetch } = await import("@/features/platform-management/auth-fetch");
-      const res = await authFetch("/api/v1/pairing-codes/claim", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code }),
-      });
-      const data = await res.json();
-
-      if (res.ok && data.status === "claimed") {
-        sessionStorage.removeItem(PAIRING_CODE_STORAGE_KEY);
-        setState((s) => ({ ...s, botId: data.bot_id, botName: data.bot_name, botConnected: true }));
-        toast({ title: `${data.bot_name} connected`, description: "Your agent is linked to your account." });
-        goToStep("add-card-bridge");
-        return;
-      }
-
-      if (res.ok && data.status === "adopted") {
-        sessionStorage.removeItem(PAIRING_CODE_STORAGE_KEY);
-        toast({ title: "Code linked", description: "Your agent will connect automatically when it registers." });
-        goToStep("add-card-bridge");
-        return;
-      }
-
-      toast({
-        title: "Couldn't link your agent",
-        description: data.error || "Enter your agent's claim token instead.",
-        variant: "destructive",
-      });
+  const { pairingCode, claiming, handleCodeGenerated, clearPairingCode } = useOnboardingPairing({
+    claimEligible: currentStep === "sign-in" || currentStep === "claim-token",
+    onAgentLinked: useCallback((botId: string, botName: string) => {
+      setState((s) => ({ ...s, botId, botName, botConnected: true }));
+      goToStep("add-card-bridge");
+    }, [goToStep]),
+    onCodeAdopted: useCallback(() => {
+      goToStep("add-card-bridge");
+    }, [goToStep]),
+    onClaimFallback: useCallback(() => {
       goToStep("claim-token");
-    } catch {
-      toast({
-        title: "Couldn't link your agent",
-        description: "Enter your agent's claim token instead.",
-        variant: "destructive",
-      });
-      goToStep("claim-token");
-    } finally {
-      setClaiming(false);
-    }
-  }, [toast, goToStep]);
-
-  useEffect(() => {
-    if (!user || !pairingCode || claimAttemptedRef.current) return;
-    if (currentStep !== "sign-in" && currentStep !== "claim-token") return;
-    claimAttemptedRef.current = true;
-    runClaim(pairingCode);
-  }, [user, pairingCode, currentStep, runClaim]);
+    }, [goToStep]),
+  });
 
   function renderStep() {
     switch (currentStep) {

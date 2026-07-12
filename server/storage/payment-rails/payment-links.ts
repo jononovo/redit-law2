@@ -9,7 +9,7 @@ import { eq, and, sql, gte, isNull } from "drizzle-orm";
 import type { IStorage } from "../types";
 
 type PairingWaitlistMethods = Pick<IStorage,
-  | "createPairingCode" | "getPairingCodeByCode" | "claimPairingCode" | "getRecentPairingCodeCount"
+  | "createPairingCode" | "getPairingCodeByCode" | "getRecentPairingCodeCount"
   | "adoptPairingCode" | "claimRegisteredPairingCode"
   | "addWaitlistEntry" | "getWaitlistEntryByEmail"
 >;
@@ -23,20 +23,6 @@ export const pairingWaitlistMethods: PairingWaitlistMethods = {
   async getPairingCodeByCode(code: string): Promise<PairingCode | null> {
     const [pc] = await db.select().from(pairingCodes).where(eq(pairingCodes.code, code)).limit(1);
     return pc || null;
-  },
-
-  async claimPairingCode(code: string, botId: string): Promise<PairingCode | null> {
-    const now = new Date();
-    const [updated] = await db
-      .update(pairingCodes)
-      .set({ botId, status: "paired" })
-      .where(and(
-        eq(pairingCodes.code, code),
-        eq(pairingCodes.status, "pending"),
-        gte(pairingCodes.expiresAt, now),
-      ))
-      .returning();
-    return updated || null;
   },
 
   async adoptPairingCode(code: string, ownerUid: string): Promise<PairingCode | null> {

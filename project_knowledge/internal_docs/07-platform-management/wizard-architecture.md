@@ -2,7 +2,7 @@
 
 > A practical guide for building chainable, reusable multi-step wizards in a Next.js + React + Tailwind codebase. Written for a developer who has not seen our code.
 
-We ship two production wizards today — the 5-step **Onboarding Wizard** (V2, pairing-code flow, live at `/onboarding`; V1 frozen at `/onboarding2` — see `onboarding-wizards.md`) and an 8-step **Rail5 Card Setup Wizard** — and the Onboarding Wizard hands off seamlessly to the Rail5 Wizard mid-flow. Both share a single typography system, a single step-shell component, and the same patterns for state, transitions, and exit handling. Code examples below use V1 step names; V2 follows the identical patterns (its `register-agent` step just adds polling + a sessionStorage-persisted pairing code).
+We ship two production wizards today — the 5-step **Onboarding Wizard** (V2, pairing-code flow, live at `/onboarding`; V1 frozen at `/onboarding2` — see `onboarding-wizards.md`) and an 8-step **Rail5 Card Setup Wizard** — and the Onboarding Wizard hands off seamlessly to the Rail5 Wizard mid-flow. Both share a single typography system, a single step-shell component, and the same patterns for state, transitions, and exit handling. Code examples below use V1 step names; V2 follows the identical patterns, with its pairing-code concern (sessionStorage persistence, claim effect, toasts) extracted into a hook (`use-onboarding-pairing.ts`) per the pattern in §3a.
 
 This document focuses on the **three patterns** that make this maintainable:
 

@@ -96,7 +96,6 @@ export interface IStorage {
 
   createPairingCode(data: InsertPairingCode): Promise<PairingCode>;
   getPairingCodeByCode(code: string): Promise<PairingCode | null>;
-  claimPairingCode(code: string, botId: string): Promise<PairingCode | null>;
   getRecentPairingCodeCount(ownerUid: string): Promise<number>;
   adoptPairingCode(code: string, ownerUid: string): Promise<PairingCode | null>;
   claimRegisteredPairingCode(code: string, ownerUid: string): Promise<Bot | null>;

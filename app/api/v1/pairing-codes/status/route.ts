@@ -30,10 +30,10 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    if ((pairingCode.status === "paired" || pairingCode.status === "claimed") && pairingCode.botId) {
+    if (pairingCode.status === "claimed" && pairingCode.botId) {
       const bot = await storage.getBotByBotId(pairingCode.botId);
       return NextResponse.json({
-        status: "paired",
+        status: "claimed",
         bot_id: pairingCode.botId,
         bot_name: bot?.botName || null,
       });

@@ -4,10 +4,11 @@
 
 `components/onboarding/onboarding-wizard-v2.tsx`. Flow: choose-agent-type → register-agent → sign-in → claim-token (fallback only) → add-card-bridge.
 
-- **register-agent** (`steps/register-agent-with-code.tsx`): creates an anonymous pairing code (`POST /api/v1/pairing-codes`, no auth, IP rate-limited), stores it in sessionStorage (`creditclaw_onboarding_pairing_code`), shows it in `BotInstructionBlock` ("Register at creditclaw.com/SKILL.md" + "Use code: xxx-xxx"), and polls `GET /pairing-codes/status` every 5s — auto-advances when the agent registers. Skippable.
-- **After sign-in** the orchestrator calls `POST /api/v1/pairing-codes/claim`. Both orders work: a `registered` code links + activates the waiting bot; a still-`pending` code is **adopted** (ownerUid set) so the agent activates the moment it registers later.
+- **register-agent** (`steps/register-agent-with-code.tsx`): creates an anonymous pairing code (`POST /api/v1/pairing-codes`, no auth, IP rate-limited), shows it in `BotInstructionBlock` ("Register at creditclaw.com/SKILL.md" + "Use code: xxx-xxx"), and polls `GET /pairing-codes/status` every 5s — auto-advances when the agent registers. Skippable.
+- **Pairing hook** (`components/onboarding/use-onboarding-pairing.ts`): owns all pairing-code state and handlers per the wizard hook convention — sessionStorage persistence (`creditclaw_onboarding_pairing_code`), the one-shot claim effect (fires once the user is signed in and `claimEligible` is true), toasts, and outcome callbacks (`onAgentLinked` / `onCodeAdopted` / `onClaimFallback`). The orchestrator only wires callbacks to step navigation.
+- **Claim (both orders work):** `POST /api/v1/pairing-codes/claim` after sign-in. A `registered` code links + activates the waiting bot; a still-`pending` code is **adopted** (ownerUid set) so the agent activates the moment it registers later.
 - **Fallback:** claim failure or skipping register drops the user onto the manual claim-token step. Agents registering with a code still receive a claim_token.
-- **Code lifecycle:** `pending` → `registered` (bot exists but inert: walletStatus pending, no owner) → `claimed`. Owner-created codes (ownerUid at creation) skip the inert stage — registering with one activates immediately (V1 behavior).
+- **Code lifecycle:** `pending` → `registered` (bot exists but inert: walletStatus pending, no owner) → `claimed`. These three are the only statuses (the legacy `paired` status and its writer/readers were removed). Owner-created codes (ownerUid at creation) skip the inert stage — registering with one activates immediately (V1 behavior).
 
 ## Onboarding Wizard V1 (frozen at `/onboarding2`)
 

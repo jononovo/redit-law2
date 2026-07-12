@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Pairing code not found." }, { status: 404 });
     }
 
-    if (pairingCode.status === "claimed" || pairingCode.status === "paired") {
+    if (pairingCode.status === "claimed") {
       return NextResponse.json(
         { error: "This pairing code has already been used." },
         { status: 409 }
