@@ -210,7 +210,7 @@ export function BotSignup() {
               <div className="bg-white rounded-3xl border border-neutral-100 shadow-xl shadow-neutral-900/5 p-8">
                 <div className="text-center mb-8">
                   <h3 className="text-2xl font-extrabold text-neutral-900 mb-2">
-                    Claim Your Agent&apos;s Wallet
+                    Claim your agent&apos;s wallet
                   </h3>
                   <p className="text-neutral-500 font-medium text-sm max-w-sm mx-auto">
                     Enter the claim token your agent gave you. You&apos;ll add a payment method and set spending limits.
