@@ -99,7 +99,7 @@ export function LiveMetrics() {
           style={{ animationDelay: '0.4s' }}
           className="pt-8 border-t border-neutral-200/60 flex flex-col md:flex-row items-start md:items-center gap-6 md:gap-12 animate-fade-in-up"
         >
-          <span className="text-xs font-mono text-neutral-400 uppercase tracking-[0.2em]">Accepted Cards</span>
+          <span className="text-sm font-mono text-neutral-400 uppercase tracking-[0.2em]">Accepted Cards</span>
           
           <div className="flex flex-wrap items-center gap-8 md:gap-12">
             <div className="flex items-center gap-2 group cursor-default">
