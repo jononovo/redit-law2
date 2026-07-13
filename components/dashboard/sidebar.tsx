@@ -30,6 +30,8 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { useAuth } from "@/features/platform-management/auth/auth-context";
+import { FeedbackDialog } from "@/components/dashboard/feedback-dialog";
+import type { FeedbackRequestType } from "@/lib/support-request-types";
 import type { Tier } from "@/features/platform-management/feature-flags/tiers";
 import {
   Sidebar as SidebarShell,
@@ -67,10 +69,13 @@ const toolsNavItems: NavItem[] = [
   { icon: FlaskConical, label: "Agent Shopping Test", href: "/agent-shopping-test", external: true },
 ];
 
+const supportDialogItems: { icon: React.ComponentType<{ className?: string }>; label: string; feedbackType: FeedbackRequestType }[] = [
+  { icon: MessageSquare, label: "Feedback", feedbackType: "general" },
+  { icon: LifeBuoy, label: "Support", feedbackType: "technical" },
+  { icon: Bug, label: "Bug", feedbackType: "bug" },
+];
+
 const supportNavItems: NavItem[] = [
-  { icon: MessageSquare, label: "Feedback", href: "#feedback" },
-  { icon: LifeBuoy, label: "Support", href: "#support" },
-  { icon: Bug, label: "Bug", href: "#bug" },
   { icon: Users, label: "Community", href: "#community" },
 ];
 
@@ -102,8 +107,16 @@ export function AppSidebar({ onNewCard }: AppSidebarProps) {
   const [salesOpen, setSalesOpen] = useState(() => matchesSectionItem(salesNavItems));
   const [toolsOpen, setToolsOpen] = useState(() => matchesSectionItem(toolsNavItems));
   const [supportOpen, setSupportOpen] = useState(false);
+  const [feedbackDialogOpen, setFeedbackDialogOpen] = useState(false);
+  const [feedbackInitialType, setFeedbackInitialType] = useState<FeedbackRequestType>("general");
 
   const handleNavClick = () => {
+    setOpenMobile(false);
+  };
+
+  const openFeedbackDialog = (feedbackType: FeedbackRequestType) => {
+    setFeedbackInitialType(feedbackType);
+    setFeedbackDialogOpen(true);
     setOpenMobile(false);
   };
 
@@ -281,6 +294,18 @@ export function AppSidebar({ onNewCard }: AppSidebarProps) {
             </button>
           </CollapsibleTrigger>
           <CollapsibleContent className="space-y-1">
+            {supportDialogItems.map((item) => (
+              <button
+                key={item.label}
+                type="button"
+                onClick={() => openFeedbackDialog(item.feedbackType)}
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all cursor-pointer text-neutral-500 hover:bg-neutral-50 hover:text-neutral-900"
+                data-testid={`button-support-${item.label.toLowerCase()}`}
+              >
+                <item.icon className="w-5 h-5 flex-shrink-0 text-neutral-400" />
+                {item.label}
+              </button>
+            ))}
             {supportNavItems.map((item) => (
               <Link key={item.href} href={item.href} onClick={handleNavClick}>
                 <div className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all cursor-pointer text-neutral-500 hover:bg-neutral-50 hover:text-neutral-900">
@@ -292,6 +317,12 @@ export function AppSidebar({ onNewCard }: AppSidebarProps) {
           </CollapsibleContent>
         </Collapsible>
       </SidebarContent>
+
+      <FeedbackDialog
+        open={feedbackDialogOpen}
+        onOpenChange={setFeedbackDialogOpen}
+        initialType={feedbackInitialType}
+      />
     </SidebarShell>
   );
 }

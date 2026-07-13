@@ -1631,3 +1631,19 @@ export const rail3BotCheckoutSchema = z.object({
     country_code: z.string().length(2),
   }),
 });
+
+export const supportRequests = pgTable("support_requests", {
+  id: serial("id").primaryKey(),
+  ownerUid: text("owner_uid").notNull(),
+  ownerEmail: text("owner_email"),
+  requestType: text("request_type").notNull(),
+  supportRequestType: text("support_request_type"),
+  message: text("message").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (table) => [
+  index("support_requests_owner_idx").on(table.ownerUid),
+  index("support_requests_created_idx").on(table.createdAt),
+]);
+
+export type SupportRequest = typeof supportRequests.$inferSelect;
+export type InsertSupportRequest = typeof supportRequests.$inferInsert;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { LifeBuoy, Send, Loader2 } from "lucide-react";
 import {
   Dialog,
@@ -20,27 +20,44 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import {
+  feedbackRequestTypeLabels,
+  supportRequestTypesByFeedbackType,
+  type FeedbackRequestType,
+} from "@/lib/support-request-types";
 
-type FeedbackType = "bug" | "feature" | "billing" | "technical" | "general";
-
-const feedbackTypes: { value: FeedbackType; label: string }[] = [
-  { value: "bug", label: "Bug Report" },
-  { value: "feature", label: "Feature Request" },
-  { value: "billing", label: "Billing Question" },
-  { value: "technical", label: "Technical Support" },
-  { value: "general", label: "General Feedback" },
-];
+const feedbackTypes = (
+  Object.keys(feedbackRequestTypeLabels) as FeedbackRequestType[]
+).map((value) => ({ value, label: feedbackRequestTypeLabels[value] }));
 
 interface FeedbackDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  initialType?: FeedbackRequestType;
 }
 
-export function FeedbackDialog({ open, onOpenChange }: FeedbackDialogProps) {
-  const [feedbackType, setFeedbackType] = useState<string>("");
+export function FeedbackDialog({ open, onOpenChange, initialType }: FeedbackDialogProps) {
+  const [feedbackType, setFeedbackType] = useState<string>(initialType ?? "");
+  const [supportRequestType, setSupportRequestType] = useState<string>("");
   const [message, setMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (open) {
+      setFeedbackType(initialType ?? "");
+      setSupportRequestType("");
+    }
+  }, [open, initialType]);
+
+  const subcategories = feedbackType
+    ? supportRequestTypesByFeedbackType[feedbackType as FeedbackRequestType]
+    : null;
+
+  const handleTypeChange = (value: string) => {
+    setFeedbackType(value);
+    setSupportRequestType("");
+  };
 
   const handleSubmit = async () => {
     if (!feedbackType || !message.trim()) {
@@ -57,7 +74,11 @@ export function FeedbackDialog({ open, onOpenChange }: FeedbackDialogProps) {
       const res = await fetch("/api/v1/feedback", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type: feedbackType, message: message.trim() }),
+        body: JSON.stringify({
+          type: feedbackType,
+          support_request_type: supportRequestType || undefined,
+          message: message.trim(),
+        }),
       });
 
       if (!res.ok) {
@@ -70,6 +91,7 @@ export function FeedbackDialog({ open, onOpenChange }: FeedbackDialogProps) {
         description: "Thank you for your feedback! We'll get back to you soon.",
       });
       setFeedbackType("");
+      setSupportRequestType("");
       setMessage("");
       onOpenChange(false);
     } catch (error: any) {
@@ -101,7 +123,7 @@ export function FeedbackDialog({ open, onOpenChange }: FeedbackDialogProps) {
             <label htmlFor="feedback-type" className="text-sm font-medium">
               Type
             </label>
-            <Select value={feedbackType} onValueChange={setFeedbackType}>
+            <Select value={feedbackType} onValueChange={handleTypeChange}>
               <SelectTrigger id="feedback-type" data-testid="select-feedback-type">
                 <SelectValue placeholder="Select feedback type" />
               </SelectTrigger>
@@ -118,6 +140,30 @@ export function FeedbackDialog({ open, onOpenChange }: FeedbackDialogProps) {
               </SelectContent>
             </Select>
           </div>
+
+          {subcategories && (
+            <div className="grid gap-2">
+              <label htmlFor="support-request-type" className="text-sm font-medium">
+                What's this about?
+              </label>
+              <Select value={supportRequestType} onValueChange={setSupportRequestType}>
+                <SelectTrigger id="support-request-type" data-testid="select-support-request-type">
+                  <SelectValue placeholder="Select a topic (optional)" />
+                </SelectTrigger>
+                <SelectContent>
+                  {subcategories.map((entry) => (
+                    <SelectItem
+                      key={entry.id}
+                      value={entry.id}
+                      data-testid={`select-item-support-request-type-${entry.id}`}
+                    >
+                      {entry.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           <div className="grid gap-2">
             <label htmlFor="feedback-message" className="text-sm font-medium">

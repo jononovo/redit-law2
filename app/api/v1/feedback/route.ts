@@ -2,6 +2,11 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import sgMail from "@sendgrid/mail";
 import { getSessionUser } from "@/features/platform-management/auth/session";
+import { storage } from "@/server/storage";
+import {
+  supportRequestTypeLabel,
+  type FeedbackRequestType,
+} from "@/lib/support-request-types";
 
 const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY;
 const SUPPORT_EMAIL = process.env.SUPPORT_EMAIL || "support@creditclaw.com";
@@ -12,6 +17,7 @@ if (SENDGRID_API_KEY) {
 
 const feedbackSchema = z.object({
   type: z.enum(["bug", "feature", "billing", "technical", "general"]),
+  support_request_type: z.string().max(100).optional(),
   message: z.string().min(1, "Message is required").max(5000, "Message is too long"),
 });
 
@@ -53,17 +59,44 @@ export async function POST(request: Request) {
     );
   }
 
-  const { type, message } = parsed.data;
+  const { type, message, support_request_type } = parsed.data;
   const typeLabel = typeLabels[type] || type;
+  const subcategoryLabel = support_request_type
+    ? supportRequestTypeLabel(type as FeedbackRequestType, support_request_type)
+    : null;
+  if (support_request_type && !subcategoryLabel) {
+    return NextResponse.json(
+      { error: "Invalid support request type" },
+      { status: 400 }
+    );
+  }
   const userName = user.displayName || "Unknown User";
   const userEmail = user.email || "No email";
+
+  try {
+    await storage.createSupportRequest({
+      ownerUid: user.uid,
+      ownerEmail: user.email || null,
+      requestType: type,
+      supportRequestType: support_request_type || null,
+      message,
+    });
+  } catch (error: any) {
+    console.error("Failed to save support request:", error?.message);
+    return NextResponse.json(
+      { error: "Failed to save your request. Please try again later." },
+      { status: 500 }
+    );
+  }
 
   const safeUserName = escapeHtml(userName);
   const safeUserEmail = escapeHtml(userEmail);
   const safeMessage = escapeHtml(message);
   const safeUid = escapeHtml(user.uid);
 
-  const subject = `[${typeLabel}] Feedback from ${userName}`;
+  const subject = subcategoryLabel
+    ? `[${typeLabel} · ${subcategoryLabel}] Feedback from ${userName}`
+    : `[${typeLabel}] Feedback from ${userName}`;
 
   const htmlContent = `
 <div style="font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif; max-width: 560px; margin: 0 auto; padding: 40px 20px;">
@@ -120,13 +153,10 @@ Reply directly to this email to respond to ${userName}.`;
       text: textContent,
       html: htmlContent,
     });
-
-    return NextResponse.json({ success: true });
   } catch (error: any) {
+    // Row is already saved — email is best-effort notification only.
     console.error("SendGrid feedback email failed:", error?.response?.body || error?.message);
-    return NextResponse.json(
-      { error: "Failed to send feedback. Please try again later." },
-      { status: 500 }
-    );
   }
+
+  return NextResponse.json({ success: true });
 }

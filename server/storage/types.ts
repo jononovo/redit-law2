@@ -38,6 +38,7 @@ import {
   type BrandIndex, type InsertBrandIndex,
   type BrandClaim, type InsertBrandClaim,
   type BrandFeedback, type InsertBrandFeedback,
+  type SupportRequest, type InsertSupportRequest,
   type AgentTestSession, type InsertAgentTestSession,
   type AgentTestFieldEvent, type InsertAgentTestFieldEvent,
 } from "@/shared/schema";
@@ -300,6 +301,8 @@ export interface IStorage {
   getBrandFeedback(brandSlug: string, limit?: number): Promise<BrandFeedback[]>;
   getBrandFeedbackCount(brandSlug: string): Promise<number>;
   getRecentFeedbackByBot(brandSlug: string, botId: string, windowHours?: number): Promise<BrandFeedback | null>;
+
+  createSupportRequest(data: InsertSupportRequest): Promise<SupportRequest>;
 
   createBrandClaim(data: InsertBrandClaim): Promise<BrandClaim>;
   getBrandClaimById(id: number): Promise<BrandClaim | null>;
