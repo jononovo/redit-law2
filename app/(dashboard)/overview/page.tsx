@@ -348,7 +348,7 @@ export default function DashboardOverview() {
               ) : (
                 <div className="flex flex-col items-center justify-center py-12 bg-white rounded-2xl border border-neutral-100 shadow-sm">
                   <Wallet className="w-10 h-10 text-neutral-300 mb-3" />
-                  <p className="text-sm text-neutral-400 font-medium">No Privy wallet yet</p>
+                  <p className="text-sm text-neutral-400 font-medium">No USDC wallet yet</p>
                   <p className="text-xs text-neutral-400 mt-1">A wallet will be created when you set up a bot.</p>
                 </div>
               )}
