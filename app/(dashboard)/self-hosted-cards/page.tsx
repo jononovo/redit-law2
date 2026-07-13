@@ -5,18 +5,18 @@ import { CreditCardListPage, type CreditCardListPageConfig } from "@/components/
 import { normalizeRail5Card } from "@/components/wallet/types";
 
 const config: CreditCardListPageConfig = {
-  title: "Sub-Agent Cards",
+  title: "Self-hosted Cards",
   subtitle: "Encrypted cards for autonomous bot purchases. CreditClaw never sees your card — only the decryption key.",
   addButtonLabel: "Add New Card",
-  emptyTitle: "No sub-agent cards yet.",
+  emptyTitle: "No self-hosted cards yet.",
   emptySubtitle: "Click \"Add New Card\" above to get started.",
   apiEndpoint: "/api/v1/rail5/cards",
   railPrefix: "rail5",
   railId: "rail5",
-  basePath: "/sub-agent-cards",
+  basePath: "/self-hosted-cards",
   approvalsEndpoint: "/api/v1/approvals?rail=rail5",
   approvalsDecideEndpoint: "/api/v1/approvals/decide",
-  normalizeCards: (data: any) => (data.cards || []).map((c: any) => normalizeRail5Card(c, "/sub-agent-cards")),
+  normalizeCards: (data: any) => (data.cards || []).map((c: any) => normalizeRail5Card(c, "/self-hosted-cards")),
   explainer: (
     <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-2xl border border-purple-100 p-6" data-testid="card-rail5-explainer">
       <div className="flex items-start gap-4">
@@ -24,7 +24,7 @@ const config: CreditCardListPageConfig = {
           <Lock className="w-5 h-5 text-purple-600" />
         </div>
         <div>
-          <h3 className="font-bold text-neutral-900 mb-1">How Sub-Agent Cards Work</h3>
+          <h3 className="font-bold text-neutral-900 mb-1">How Self-hosted Cards Work</h3>
           <p className="text-sm text-neutral-600 leading-relaxed">
             Your card details are encrypted in your browser and saved as a file. CreditClaw only stores the decryption key.
             At checkout, a disposable sub-agent gets the key, decrypts the file, completes the purchase, and is immediately deleted —

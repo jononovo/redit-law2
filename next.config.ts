@@ -14,6 +14,8 @@ const nextConfig: NextConfig = {
     return [
       { source: "/stripe-wallet", destination: "/usdc-wallet", permanent: true },
       { source: "/solutions/stripe-wallet", destination: "/solutions/usdc-wallet", permanent: true },
+      { source: "/sub-agent-cards", destination: "/self-hosted-cards", permanent: true },
+      { source: "/sub-agent-cards/:cardId", destination: "/self-hosted-cards/:cardId", permanent: true },
     ];
   },
   env: {},

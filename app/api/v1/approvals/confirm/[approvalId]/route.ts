@@ -6,7 +6,7 @@ import "@/features/agent-interaction/approvals/callbacks";
 const RAIL_LABELS: Record<string, string> = {
   rail1: "USDC Wallet",
   rail2: "Commerce Wallet",
-  rail5: "Sub-Agent Card",
+  rail5: "Self-hosted Card",
 };
 
 const RAIL_DESCRIPTIONS: Record<string, string> = {

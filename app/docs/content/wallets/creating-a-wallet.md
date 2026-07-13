@@ -22,9 +22,9 @@ Like USDC Wallets, Card Wallets are created instantly. The wallet gets its own a
 
 ## Setting Up a Sub-Agent Encrypted Card (Rail 5)
 
-Sub-Agent Cards use a guided wizard:
+Self-hosted Cards use a guided wizard:
 
-1. **Navigate** to <a href="/sub-agent-cards" target="_blank">**Sub-Agent Cards**</a> from the sidebar and click **Add Card**
+1. **Navigate** to <a href="/self-hosted-cards" target="_blank">**Self-hosted Cards**</a> from the sidebar and click **Add Card**
 2. **Name your card** — give it a recognizable name
 3. **Enter card details** — provide the card number, expiry, CVV, and billing info
    - All details are encrypted in your browser before being sent to CreditClaw

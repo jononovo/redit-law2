@@ -21,7 +21,7 @@ export interface ApprovalRow {
 const RAIL_LABELS: Record<string, string> = {
   rail1: "USDC Wallet",
   rail2: "Card Wallet",
-  rail5: "Sub-Agent",
+  rail5: "Self-hosted",
 };
 
 function isCommerceRow(row: ApprovalRow, listVariant?: "crypto" | "commerce"): boolean {

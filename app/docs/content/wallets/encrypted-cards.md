@@ -1,6 +1,6 @@
 # Encrypted Cards
 
-CreditClaw lets you use your own credit or debit cards with AI agents through **Sub-Agent Encrypted Cards** (Rail 5). End-to-end encryption ensures your card details are protected — CreditClaw never has access to the decrypted data.
+CreditClaw lets you use your own credit or debit cards with AI agents through **Self-hosted Encrypted Cards** (Rail 5). End-to-end encryption ensures your card details are protected — CreditClaw never has access to the decrypted data.
 
 ## Why Encrypted Cards?
 
@@ -13,7 +13,7 @@ Giving an AI agent direct access to your full credit card number is risky. Encry
 
 ## How It Works
 
-<a href="/sub-agent-cards" target="_blank">Sub-Agent Encrypted Cards</a> use **end-to-end encryption** with a key that only you and your bot share. CreditClaw acts as a secure intermediary but never has access to the decrypted card details.
+<a href="/self-hosted-cards" target="_blank">Self-hosted Encrypted Cards</a> use **end-to-end encryption** with a key that only you and your bot share. CreditClaw acts as a secure intermediary but never has access to the decrypted card details.
 
 ### Encryption Flow
 

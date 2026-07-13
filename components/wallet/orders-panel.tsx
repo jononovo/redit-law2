@@ -80,7 +80,7 @@ export function OrdersPanel({ onConfigureGuardrails }: OrdersPanelProps) {
     const labels: Record<string, string> = {
       rail1: "USDC Wallet",
       rail2: "Card Wallet",
-      rail5: "My Card (Encrypted)",
+      rail5: "Self-hosted Card (Encrypted)",
     };
     return labels[rail] || rail;
   };
@@ -138,7 +138,7 @@ export function OrdersPanel({ onConfigureGuardrails }: OrdersPanelProps) {
                 <SelectItem value="all">All Rails</SelectItem>
                 <SelectItem value="rail1">USDC Wallet</SelectItem>
                 <SelectItem value="rail2">Card Wallet</SelectItem>
-                <SelectItem value="rail5">My Card (Encrypted)</SelectItem>
+                <SelectItem value="rail5">Self-hosted Card (Encrypted)</SelectItem>
               </SelectContent>
             </Select>
           </div>

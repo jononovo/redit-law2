@@ -10,7 +10,7 @@ if (SENDGRID_API_KEY) {
 const RAIL_LABELS: Record<string, string> = {
   rail1: "USDC Wallet",
   rail2: "Commerce Wallet",
-  rail5: "Sub-Agent Card",
+  rail5: "Self-hosted Card",
 };
 
 export async function sendApprovalEmail({

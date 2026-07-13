@@ -118,6 +118,6 @@ The agent will use the `execute_skill` tool to run the test vendor skill, which 
 
 ---
 
-That's it! Your AI agent now has a secure, controlled way to make purchases through CreditClaw. As you get comfortable, explore more advanced features like multi-wallet setups, sub-agent cards, and custom procurement skills.
+That's it! Your AI agent now has a secure, controlled way to make purchases through CreditClaw. As you get comfortable, explore more advanced features like multi-wallet setups, self-hosted cards, and custom procurement skills.
 
 Have questions? Check our [documentation](/docs) or reach out on [Twitter](https://x.com/creditclawapp).

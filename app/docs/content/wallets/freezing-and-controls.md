@@ -48,9 +48,9 @@ To configure these limits:
 
 Approval thresholds are configured at the account level through **Master Guardrails** in Settings, and apply across all wallets and rails.
 
-### Sub-Agent Cards (Rail 5)
+### Self-hosted Cards (Rail 5)
 
-Sub-Agent Cards have granular spending controls:
+Self-hosted Cards have granular spending controls:
 
 - Per-transaction spending limit
 - Daily spending limit

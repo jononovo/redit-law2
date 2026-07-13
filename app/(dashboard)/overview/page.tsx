@@ -120,7 +120,7 @@ export default function DashboardOverview() {
       const res = await authFetch("/api/v1/rail5/cards");
       if (res.ok) {
         const data = await res.json();
-        setRail5Cards((data.cards || []).map((c: any) => normalizeRail5Card(c, "/sub-agent-cards")));
+        setRail5Cards((data.cards || []).map((c: any) => normalizeRail5Card(c, "/self-hosted-cards")));
       }
     } catch {} finally {
       setCardsLoading(false);
@@ -356,7 +356,7 @@ export default function DashboardOverview() {
 
             <div data-testid="card-rail5">
               <div className="flex items-center gap-2 mb-3">
-                <h3 className="text-sm font-semibold text-neutral-700">My Card</h3>
+                <h3 className="text-sm font-semibold text-neutral-700">Self-hosted Cards</h3>
                 <InfoTooltip text="Self-hosted: Agent uses your card. Secured with: Encryption & Ephemeral Sub-Agent." />
               </div>
               {firstCard ? (

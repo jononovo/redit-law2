@@ -22,7 +22,7 @@ CreditClaw ships with conservative defaults so your bot is protected from the mo
 |-------------|----------------|--------------|----------------|
 | Stripe/USDC Wallet | $5.00 | $10.00 | $50.00 |
 | Card Wallet | $5.00 | $10.00 | $50.00 |
-| Sub-Agent Card | $50.00 | $100.00 | $500.00 |
+| Self-hosted Card | $50.00 | $100.00 | $500.00 |
 
 These defaults are intentionally low. You can raise them at any time once you are comfortable with your bot's behavior.
 
@@ -42,7 +42,7 @@ You can adjust the master budget from **Settings** in the dashboard.
 
 To change spending limits on a wallet:
 
-1. Navigate to the wallet page for the wallet type you want to configure (e.g., **USDC Wallet**, **Card Wallet**, or **Sub-Agent Cards**)
+1. Navigate to the wallet page for the wallet type you want to configure (e.g., **USDC Wallet**, **Card Wallet**, or **Self-hosted Cards**)
 2. Select the wallet you want to edit
 3. Click the **Guardrails** button in the action bar
 4. Adjust the per-transaction, daily, and monthly limits

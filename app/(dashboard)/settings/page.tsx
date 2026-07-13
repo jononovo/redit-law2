@@ -63,7 +63,7 @@ function RailBreakdown({ daily, monthly }: MasterGuardrailsData["spend"]) {
   const rails = [
     { name: "USDC Wallet", icon: Zap, daily: daily.rail1_usd, monthly: monthly.rail1_usd, color: "text-blue-600" },
     { name: "Card Wallet", icon: CreditCard, daily: daily.rail2_usd, monthly: monthly.rail2_usd, color: "text-violet-600" },
-    { name: "Sub-Agent Cards", icon: Smartphone, daily: daily.rail5_usd, monthly: monthly.rail5_usd, color: "text-orange-600" },
+    { name: "Self-hosted Cards", icon: Smartphone, daily: daily.rail5_usd, monthly: monthly.rail5_usd, color: "text-orange-600" },
   ];
 
   const hasAnySpend = rails.some(r => r.daily > 0 || r.monthly > 0);
@@ -280,7 +280,7 @@ interface BotWithRails {
 const RAIL_META: Record<string, { label: string; shortLabel: string; icon: typeof CreditCard; bg: string; text: string; border: string }> = {
   stripe_wallet: { label: "USDC Wallet", shortLabel: "USDC", icon: Zap, bg: "bg-blue-50", text: "text-blue-700", border: "border-blue-200" },
   shopping_wallet: { label: "Shopping Wallet", shortLabel: "Shopping", icon: CreditCard, bg: "bg-violet-50", text: "text-violet-700", border: "border-violet-200" },
-  sub_agent_cards: { label: "Sub-Agent Cards", shortLabel: "Sub-Agent", icon: Shield, bg: "bg-pink-50", text: "text-pink-700", border: "border-pink-200" },
+  sub_agent_cards: { label: "Self-hosted Cards", shortLabel: "Self-hosted", icon: Shield, bg: "bg-pink-50", text: "text-pink-700", border: "border-pink-200" },
 };
 
 function RailBadge({ railKey, rail }: { railKey: string; rail: RailInfo }) {

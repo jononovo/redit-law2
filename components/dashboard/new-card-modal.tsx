@@ -20,7 +20,7 @@ interface CardTypeOption {
 const cardTypes: CardTypeOption[] = [
   {
     icon: Shield,
-    label: "My Card - Encrypted",
+    label: "Self-hosted Card - Encrypted",
     description: "Bring your own card. Encrypted and split between you and CreditClaw.",
     href: "/setup/rail5",
     color: "text-emerald-600",

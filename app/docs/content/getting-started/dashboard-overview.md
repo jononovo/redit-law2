@@ -21,7 +21,7 @@ The left sidebar organizes the dashboard into three main groups:
 | **<a href="/overview" target="_blank">Overview</a>** | The main dashboard with stats, bot cards, activity, and health |
 | **<a href="/usdc-wallet" target="_blank">USDC Wallet</a>** | Manage your USDC wallet for x402 purchases. Fund with Stripe or Link |
 | **<a href="/card-wallet" target="_blank">Shop Wallet</a>** | USDC wallet for shopping at Amazon, Shopify, and other merchants |
-| **<a href="/sub-agent-cards" target="_blank">My Card (Encrypted)</a>** | Encrypted card setup with end-to-end encryption and ephemeral sub-agents |
+| **<a href="/self-hosted-cards" target="_blank">Self-hosted Cards (Encrypted)</a>** | Encrypted card setup with end-to-end encryption and ephemeral sub-agents |
 | **<a href="/transactions?tab=orders" target="_blank">Orders</a>** | Track physical goods orders and shipping status |
 | **<a href="/transactions" target="_blank">Transactions</a>** | Unified transaction ledger across all wallets |
 

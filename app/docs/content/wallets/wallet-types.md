@@ -28,9 +28,9 @@ The <a href="/card-wallet" target="_blank">**Card Wallet**</a> is a custodial wa
   - Merchant category controls (allowlist/blocklist)
   - Auto-pause when balance reaches zero
 
-## Sub-Agent Encrypted Cards (Rail 5)
+## Self-hosted Encrypted Cards (Rail 5)
 
-<a href="/sub-agent-cards" target="_blank">**Sub-Agent Encrypted Cards**</a> use end-to-end encryption with a key that only you and your bot share. CreditClaw never has access to the decrypted card details.
+<a href="/self-hosted-cards" target="_blank">**Self-hosted Encrypted Cards**</a> use end-to-end encryption with a key that only you and your bot share. CreditClaw never has access to the decrypted card details.
 
 - **Currency**: Your card's native currency
 - **Funding**: Your existing credit/debit card
@@ -44,7 +44,7 @@ The <a href="/card-wallet" target="_blank">**Card Wallet**</a> is a custodial wa
 
 ## Choosing the Right Wallet Type
 
-| Feature | USDC Wallet | Card Wallet | Sub-Agent Card |
+| Feature | USDC Wallet | Card Wallet | Self-hosted Card |
 |---------|--------------|-------------|----------------|
 | Setup speed | Instant | Instant | ~5 minutes |
 | Bring your own card | No | No | Yes |
@@ -53,7 +53,7 @@ The <a href="/card-wallet" target="_blank">**Card Wallet**</a> is a custodial wa
 | Encryption model | Custodial | Custodial | End-to-end |
 | Funding required | Yes | Yes | No |
 
-Most users start with a **USDC Wallet** for digital purchases and add a **Card Wallet** if they need physical goods. **Sub-Agent Cards** are for advanced users who want to use their own payment cards with their bots.
+Most users start with a **USDC Wallet** for digital purchases and add a **Card Wallet** if they need physical goods. **Self-hosted Cards** are for advanced users who want to use their own payment cards with their bots.
 
 
 ## Next Steps

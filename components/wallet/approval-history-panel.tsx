@@ -15,7 +15,7 @@ import type { UnifiedApproval } from "@/shared/schema";
 const RAIL_LABELS: Record<string, string> = {
   rail1: "USDC Wallet",
   rail2: "Card Wallet",
-  rail5: "Sub-Agent",
+  rail5: "Self-hosted",
 };
 
 const RAIL_COLORS: Record<string, string> = {
@@ -131,7 +131,7 @@ export function ApprovalHistoryPanel({ defaultRail, onPendingCount, onDecisionCo
                   <SelectItem value="all">All Rails</SelectItem>
                   <SelectItem value="rail1">USDC Wallet</SelectItem>
                   <SelectItem value="rail2">Card Wallet</SelectItem>
-                  <SelectItem value="rail5">Sub-Agent</SelectItem>
+                  <SelectItem value="rail5">Self-hosted</SelectItem>
                 </SelectContent>
               </Select>
             </div>
