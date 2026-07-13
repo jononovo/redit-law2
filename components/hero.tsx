@@ -89,7 +89,7 @@ export function Hero() {
               <div className="flex flex-col items-center lg:items-start gap-3 w-full max-w-sm">
                   <Link href="/onboarding" className="w-full sm:w-auto">
                     <Button className="h-14 px-8 rounded-full text-lg font-bold w-full gap-2" data-testid="button-get-started">
-                      Get Started
+                      What&apos;s Your Agent?
                       <ArrowRight className="w-5 h-5" />
                     </Button>
                   </Link>
