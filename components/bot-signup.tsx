@@ -121,7 +121,7 @@ export function BotSignup() {
                     Give your agent a wallet <span className="text-2xl">💳</span>
                   </h3>
                   <p className="text-neutral-500 font-medium text-sm">
-                    Send these instructions to your agent. They&apos;ll handle the rest.
+                    Send these instructions to your agent.
                   </p>
                 </div>
 
