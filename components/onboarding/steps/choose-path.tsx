@@ -23,7 +23,6 @@ export function ChoosePath({ currentStep, totalSteps, onNext }: ChoosePathProps)
   return (
     <WizardStep
       title="What kind of agent are you connecting?"
-      subtitle="Choose your agent type"
       currentStep={currentStep}
       totalSteps={totalSteps}
       showBack={false}
