@@ -4,10 +4,11 @@ import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { BotCard } from "@/components/dashboard/bot-card";
 import { PendingPairingCard } from "@/components/dashboard/pending-pairing-card";
+import { OverviewSectionHeader } from "@/components/dashboard/overview-section-header";
 import { ActivityLog } from "@/components/dashboard/activity-log";
 import { WebhookLog } from "@/components/dashboard/webhook-log";
 import { OpsHealth } from "@/components/dashboard/ops-health";
-import { Bot as BotIcon, Plus, Loader2, Wallet, CreditCard, ExternalLink, Trash2 } from "lucide-react";
+import { Bot as BotIcon, Plus, Loader2, Wallet, CreditCard, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useAuth } from "@/features/platform-management/auth/auth-context";
@@ -27,7 +28,6 @@ import { FundWalletSheet } from "@/features/agent-shops/payments/components/fund
 import { FreezeDialog } from "@/components/wallet/dialogs/freeze-dialog";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { ApprovalList, type ApprovalRow } from "@/components/wallet/approval-list";
-import { InfoTooltip } from "@/components/ui/info-tooltip";
 import type { Rail1WalletInfo, NormalizedCard } from "@/components/wallet/types";
 import { normalizeRail5Card, normalizeRail3Card } from "@/components/wallet/types";
 import type { CryptoGuardrailForm } from "@/components/wallet/dialogs/guardrail-dialog";
@@ -311,24 +311,21 @@ export default function DashboardOverview() {
   return (
     <div className="flex flex-col gap-8 animate-fade-in-up">
       <div>
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-baseline gap-3">
-            <h2 className="text-lg font-bold text-neutral-900">My Agents</h2>
-            {!loading && (
-              <span className="text-sm text-neutral-400" data-testid="text-agent-counts">
-                {activeBots.length} Active
-                {pendingBots.length > 0 && (
-                  <> <span className="text-neutral-300">|</span> {pendingBots.length} Pending</>
-                )}
-              </span>
-            )}
-          </div>
-          {!loading && (bots.length > 0 || pendingPairings.length > 0) && (
-            <Link href="/agents" className="flex items-center gap-1.5 text-sm text-neutral-500 hover:text-neutral-700 transition-colors" data-testid="link-see-all-agents">
-              See all <ExternalLink className="w-3.5 h-3.5" />
-            </Link>
+        <OverviewSectionHeader
+          title="My Agents"
+          seeAllHref="/agents"
+          seeAllTestId="link-see-all-agents"
+          showSeeAll={!loading && (bots.length > 0 || pendingPairings.length > 0)}
+          className="mb-6"
+          meta={!loading && (
+            <span className="text-sm text-neutral-400" data-testid="text-agent-counts">
+              {activeBots.length} Active
+              {pendingBots.length > 0 && (
+                <> <span className="text-neutral-300">|</span> {pendingBots.length} Pending</>
+              )}
+            </span>
           )}
-        </div>
+        />
 
         {loading ? (
           <div className="flex items-center justify-center py-16">
@@ -381,12 +378,11 @@ export default function DashboardOverview() {
 
       {overviewApprovals.length > 0 && (
         <div data-testid="section-approvals">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-bold text-neutral-900">Approvals</h2>
-            <Link href="/transactions" className="flex items-center gap-1.5 text-sm text-neutral-500 hover:text-neutral-700 transition-colors" data-testid="link-see-all-approvals">
-              See all <ExternalLink className="w-3.5 h-3.5" />
-            </Link>
-          </div>
+          <OverviewSectionHeader
+            title="Approvals"
+            seeAllHref="/transactions"
+            seeAllTestId="link-see-all-approvals"
+          />
           <ApprovalList
             approvals={overviewApprovals.slice(0, 5)}
             onDecide={handleApprovalDecide}
@@ -404,17 +400,13 @@ export default function DashboardOverview() {
         ) : (
           <div className="flex flex-col gap-10">
             <div data-testid="row-virtual-cards" className="w-full max-w-[26rem]">
-              <div className="flex items-center gap-2 mb-3">
-                <h3 className="text-sm font-semibold text-neutral-700">Virtual Cards</h3>
-                <InfoTooltip text="Virtual cards issued from your vaulted real card. Each has its own spending limit and agent link." />
-                <Link
-                  href="/virtual-cards"
-                  className="ml-auto text-xs text-neutral-400 hover:text-neutral-700 transition-colors"
-                  data-testid="link-see-all-virtual-cards"
-                >
-                  See all →
-                </Link>
-              </div>
+              <OverviewSectionHeader
+                title="Virtual Cards"
+                tooltip="Virtual cards issued from your vaulted real card. Each has its own spending limit and agent link."
+                seeAllHref="/virtual-cards"
+                seeAllTestId="link-see-all-virtual-cards"
+                className="mb-3"
+              />
               {firstVirtualCard ? (
                 <CreditCardItem
                   card={firstVirtualCard}
@@ -446,17 +438,13 @@ export default function DashboardOverview() {
             </div>
 
             <div data-testid="card-privy-wallet" className="w-full max-w-[26rem]">
-              <div className="flex items-center gap-2 mb-3">
-                <h3 className="text-sm font-semibold text-neutral-700">USDC Wallet</h3>
-                <InfoTooltip text="USDC wallet x402 purchases. Fund with Stripe/Link." />
-                <Link
-                  href="/usdc-wallet"
-                  className="ml-auto text-xs text-neutral-400 hover:text-neutral-700 transition-colors"
-                  data-testid="link-see-all-usdc-wallet"
-                >
-                  See all →
-                </Link>
-              </div>
+              <OverviewSectionHeader
+                title="USDC Wallet"
+                tooltip="USDC wallet x402 purchases. Fund with Stripe/Link."
+                seeAllHref="/usdc-wallet"
+                seeAllTestId="link-see-all-usdc-wallet"
+                className="mb-3"
+              />
               {firstWallet ? (
                 <CryptoWalletItem
                   wallet={firstWallet}
@@ -486,17 +474,13 @@ export default function DashboardOverview() {
 
             {firstCard && (
               <div data-testid="card-rail5" className="w-full max-w-[26rem]">
-                <div className="flex items-center gap-2 mb-3">
-                  <h3 className="text-sm font-semibold text-neutral-700">Self-hosted Cards</h3>
-                  <InfoTooltip text="Self-hosted: Agent uses your card. Secured with: Encryption & Ephemeral Sub-Agent." />
-                  <Link
-                    href="/self-hosted"
-                    className="ml-auto text-xs text-neutral-400 hover:text-neutral-700 transition-colors"
-                    data-testid="link-see-all-self-hosted"
-                  >
-                    See all →
-                  </Link>
-                </div>
+                <OverviewSectionHeader
+                  title="Self-hosted Cards"
+                  tooltip="Self-hosted: Agent uses your card. Secured with: Encryption & Ephemeral Sub-Agent."
+                  seeAllHref="/self-hosted"
+                  seeAllTestId="link-see-all-self-hosted"
+                  className="mb-3"
+                />
                 <CreditCardItem
                   card={firstCard}
                   onFreeze={() => setRail5FreezeTarget(firstCard)}
