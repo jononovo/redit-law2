@@ -352,25 +352,28 @@ export default function DashboardOverview() {
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="flex flex-wrap gap-4">
             {pendingPairings.slice(0, 2).map((pairing) => (
-              <PendingPairingCard key={pairing.code} code={pairing.code} expiresAt={pairing.expires_at} />
+              <div key={pairing.code} className="w-full max-w-[26rem]">
+                <PendingPairingCard code={pairing.code} expiresAt={pairing.expires_at} />
+              </div>
             ))}
             {bots.slice(0, Math.max(0, 2 - pendingPairings.length)).map((bot) => (
-              <BotCard
-                key={bot.bot_id}
-                botName={bot.bot_name}
-                botId={bot.bot_id}
-                agentPlatform={bot.agent_platform}
-                description={bot.description}
-                walletStatus={bot.wallet_status}
-                webhookStatus={bot.webhook_status}
-                tunnelStatus={bot.tunnel_status}
-                callbackUrl={bot.callback_url}
-                createdAt={bot.created_at}
-                claimedAt={bot.claimed_at}
-                onUpdated={() => fetchData()}
-              />
+              <div key={bot.bot_id} className="w-full max-w-[26rem]">
+                <BotCard
+                  botName={bot.bot_name}
+                  botId={bot.bot_id}
+                  agentPlatform={bot.agent_platform}
+                  description={bot.description}
+                  walletStatus={bot.wallet_status}
+                  webhookStatus={bot.webhook_status}
+                  tunnelStatus={bot.tunnel_status}
+                  callbackUrl={bot.callback_url}
+                  createdAt={bot.created_at}
+                  claimedAt={bot.claimed_at}
+                  onUpdated={() => fetchData()}
+                />
+              </div>
             ))}
           </div>
         )}
