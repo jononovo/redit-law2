@@ -44,6 +44,7 @@ export async function GET(request: NextRequest) {
         webhook_fail_count: bot.webhookFailCount || 0,
         callback_url: bot.callbackUrl || null,
         bot_type: bot.botType || "openclaw",
+        agent_platform: bot.agentPlatform || null,
         tunnel_status: bot.tunnelStatus || "none",
         created_at: bot.createdAt,
         claimed_at: bot.claimedAt,

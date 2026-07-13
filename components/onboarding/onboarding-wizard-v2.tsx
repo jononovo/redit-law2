@@ -94,6 +94,21 @@ export function OnboardingWizardV2() {
     router.push("/overview");
   }, [router]);
 
+  const saveAgentPlatform = useCallback(async (botId: string) => {
+    const agentType = state.agentType;
+    if (!agentType) return;
+    try {
+      const { authFetch } = await import("@/features/platform-management/auth-fetch");
+      await authFetch(`/api/v1/bots/${botId}/settings`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ agent_platform: agentType }),
+      });
+    } catch {
+      // Non-blocking: the platform label can be set later from Bot Settings.
+    }
+  }, [state.agentType]);
+
   const currentStep = activeSteps[currentStepIndex];
   const totalSteps = activeSteps.length;
 
@@ -101,8 +116,9 @@ export function OnboardingWizardV2() {
     claimEligible: currentStep === "sign-in" || currentStep === "claim-token",
     onAgentLinked: useCallback((botId: string, botName: string) => {
       setState((s) => ({ ...s, botId, botName, botConnected: true }));
+      saveAgentPlatform(botId);
       goToStep("add-card-bridge");
-    }, [goToStep]),
+    }, [goToStep, saveAgentPlatform]),
     onCodeAdopted: useCallback(() => {
       goToStep("add-card-bridge");
     }, [goToStep]),
@@ -177,6 +193,7 @@ export function OnboardingWizardV2() {
             onBack={goBack}
             onNext={(botId, botName) => {
               setState((s) => ({ ...s, botId, botName, botConnected: true }));
+              saveAgentPlatform(botId);
               goForward();
             }}
             onSkip={goForward}

@@ -26,6 +26,7 @@ const updateBotSettingsSchema = z.object({
   callback_url: z.string().url("Must be a valid URL").optional(),
   bot_name: z.string().min(1, "Bot name is required").max(100, "Bot name must be 100 characters or less").optional(),
   description: z.string().max(2000, "Description must be 2000 characters or less").optional().nullable(),
+  agent_platform: z.string().max(100, "Agent platform must be 100 characters or less").optional().nullable(),
 });
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ botId: string }> }) {
@@ -60,12 +61,14 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
         callbackUrl: parsed.data.callback_url,
         botName: parsed.data.bot_name,
         ...(parsed.data.description !== undefined ? { description: parsed.data.description } : {}),
+        ...(parsed.data.agent_platform !== undefined ? { agentPlatform: parsed.data.agent_platform } : {}),
       });
 
       const response: Record<string, unknown> = {
         bot_id: bot.botId,
         bot_name: bot.botName,
         description: bot.description,
+        agent_platform: bot.agentPlatform,
         callback_url: bot.callbackUrl,
         webhook_status: bot.webhookStatus,
       };

@@ -35,6 +35,7 @@ import type { CryptoGuardrailForm } from "@/components/wallet/dialogs/guardrail-
 interface BotData {
   bot_id: string;
   bot_name: string;
+  agent_platform: string | null;
   description: string | null;
   wallet_status: string;
   webhook_status: string;
@@ -284,6 +285,7 @@ export default function DashboardOverview() {
                 key={bot.bot_id}
                 botName={bot.bot_name}
                 botId={bot.bot_id}
+                agentPlatform={bot.agent_platform}
                 description={bot.description}
                 walletStatus={bot.wallet_status}
                 webhookStatus={bot.webhook_status}

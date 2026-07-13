@@ -11,9 +11,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
+import { agentPlatformLabel } from "@/lib/agent-platforms";
+
 interface BotCardProps {
   botName: string;
   botId: string;
+  agentPlatform?: string | null;
   description?: string | null;
   walletStatus: string;
   webhookStatus?: string;
@@ -24,9 +27,10 @@ interface BotCardProps {
   onUpdated?: () => void;
 }
 
-export function BotCard({ botName, botId, description, walletStatus, webhookStatus, tunnelStatus, callbackUrl, createdAt, claimedAt, onUpdated }: BotCardProps) {
+export function BotCard({ botName, botId, agentPlatform, description, walletStatus, webhookStatus, tunnelStatus, callbackUrl, createdAt, claimedAt, onUpdated }: BotCardProps) {
   const isActive = walletStatus === "active";
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const platformLabel = agentPlatformLabel(agentPlatform);
 
   return (
     <div
@@ -40,7 +44,17 @@ export function BotCard({ botName, botId, description, walletStatus, webhookStat
               <Bot className={`w-5 h-5 ${isActive ? "text-green-600" : "text-neutral-400"}`} />
             </div>
             <div>
-              <h3 className="font-bold text-neutral-900">{botName}</h3>
+              <div className="flex items-center gap-2">
+                <h3 className="font-bold text-neutral-900">{botName}</h3>
+                {platformLabel && (
+                  <span
+                    className="text-[10px] font-semibold uppercase tracking-wide bg-neutral-100 text-neutral-500 px-2 py-0.5 rounded-full"
+                    data-testid={`badge-platform-${botId}`}
+                  >
+                    {platformLabel}
+                  </span>
+                )}
+              </div>
               <p className="text-xs text-neutral-400 font-mono">{botId}</p>
             </div>
           </div>
@@ -95,6 +109,7 @@ export function BotCard({ botName, botId, description, walletStatus, webhookStat
         onOpenChange={setSettingsOpen}
         botId={botId}
         botName={botName}
+        agentPlatform={agentPlatform}
         callbackUrl={callbackUrl}
         webhookStatus={webhookStatus}
         tunnelStatus={tunnelStatus}

@@ -73,17 +73,18 @@ export const coreMethods: CoreMethods = {
     return updated || null;
   },
 
-  async updateBotProfile(botId: string, ownerUid: string, data: { callbackUrl?: string; botName?: string; description?: string | null }): Promise<{ bot: Bot; newWebhookSecret: string | null }> {
+  async updateBotProfile(botId: string, ownerUid: string, data: { callbackUrl?: string; botName?: string; description?: string | null; agentPlatform?: string | null }): Promise<{ bot: Bot; newWebhookSecret: string | null }> {
     const existing = await db.select().from(bots).where(and(eq(bots.botId, botId), eq(bots.ownerUid, ownerUid))).then(r => r[0]);
     if (!existing) {
       throw new Error("BOT_NOT_FOUND");
     }
 
-    const updates: Partial<Pick<typeof bots.$inferInsert, "botName" | "description" | "callbackUrl" | "webhookStatus" | "webhookFailCount" | "webhookSecret">> = {};
+    const updates: Partial<Pick<typeof bots.$inferInsert, "botName" | "description" | "callbackUrl" | "webhookStatus" | "webhookFailCount" | "webhookSecret" | "agentPlatform">> = {};
     let newWebhookSecret: string | null = null;
 
     if (data.botName !== undefined) updates.botName = data.botName;
     if (data.description !== undefined) updates.description = data.description;
+    if (data.agentPlatform !== undefined) updates.agentPlatform = data.agentPlatform;
 
     if (data.callbackUrl !== undefined) {
       updates.callbackUrl = data.callbackUrl;

@@ -2,7 +2,8 @@
 
 import { WizardStep } from "../wizard-step";
 import { wt } from "@/lib/wizard-typography";
-import { Zap, Bot, Monitor, Terminal, Code, Send } from "lucide-react";
+import { AGENT_PLATFORMS } from "@/lib/agent-platforms";
+import { Zap, Bot, Monitor, Terminal, Code, Send, type LucideIcon } from "lucide-react";
 
 interface ChoosePathProps {
   currentStep: number;
@@ -10,15 +11,22 @@ interface ChoosePathProps {
   onNext: (agentType: string) => void;
 }
 
-const agentTypes = [
-  { id: "claude_code", label: "Claude Code", icon: Terminal, enabled: true },
-  { id: "claude_cowork", label: "Claude CoWork", icon: Bot, enabled: true },
-  { id: "codex", label: "Codex", icon: Code, enabled: true },
-  { id: "openclaw", label: "OpenClaw", icon: Zap, enabled: true },
-  { id: "hermes", label: "Hermes Agent", icon: Send, enabled: true },
-  { id: "agent", label: "All Other Agents", icon: Bot, enabled: true },
-  { id: "application", label: "Building an Application", icon: Monitor, enabled: true },
-];
+const platformIcons: Record<string, LucideIcon> = {
+  claude_code: Terminal,
+  claude_cowork: Bot,
+  codex: Code,
+  openclaw: Zap,
+  hermes: Send,
+  agent: Bot,
+  application: Monitor,
+};
+
+const agentTypes = AGENT_PLATFORMS.map((p) => ({
+  id: p.id,
+  label: p.onboardingLabel,
+  icon: platformIcons[p.id] || Bot,
+  enabled: true,
+}));
 
 export function ChoosePath({ currentStep, totalSteps, onNext }: ChoosePathProps) {
   return (

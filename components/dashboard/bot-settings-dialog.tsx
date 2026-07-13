@@ -10,13 +10,29 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { AGENT_PLATFORMS } from "@/lib/agent-platforms";
 import { Loader2, AlertCircle, Copy, Check, AlertTriangle } from "lucide-react";
+
+const CUSTOM_PLATFORM_VALUE = "custom";
+
+function platformSelectValueFor(agentPlatform: string | null | undefined): string {
+  if (!agentPlatform) return "";
+  return AGENT_PLATFORMS.some((p) => p.id === agentPlatform) ? agentPlatform : CUSTOM_PLATFORM_VALUE;
+}
 
 interface BotSettingsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   botId: string;
   botName: string;
+  agentPlatform?: string | null;
   callbackUrl?: string | null;
   webhookStatus?: string;
   tunnelStatus?: string;
@@ -65,6 +81,7 @@ export function BotSettingsDialog({
   onOpenChange,
   botId,
   botName: initialBotName,
+  agentPlatform: initialAgentPlatform,
   callbackUrl: initialCallbackUrl,
   webhookStatus: initialWebhookStatus,
   tunnelStatus: initialTunnelStatus,
@@ -73,6 +90,10 @@ export function BotSettingsDialog({
 }: BotSettingsDialogProps) {
   const [name, setName] = useState(initialBotName);
   const [desc, setDesc] = useState(initialDescription || "");
+  const [platformSelect, setPlatformSelect] = useState(() => platformSelectValueFor(initialAgentPlatform));
+  const [customPlatform, setCustomPlatform] = useState(() =>
+    platformSelectValueFor(initialAgentPlatform) === CUSTOM_PLATFORM_VALUE ? initialAgentPlatform || "" : ""
+  );
   const [webhookUrl, setWebhookUrl] = useState(initialCallbackUrl || "");
   const [webhookStatus, setWebhookStatus] = useState(initialWebhookStatus || "none");
   const [saving, setSaving] = useState(false);
@@ -84,13 +105,16 @@ export function BotSettingsDialog({
     if (open) {
       setName(initialBotName);
       setDesc(initialDescription || "");
+      const selectValue = platformSelectValueFor(initialAgentPlatform);
+      setPlatformSelect(selectValue);
+      setCustomPlatform(selectValue === CUSTOM_PLATFORM_VALUE ? initialAgentPlatform || "" : "");
       setWebhookUrl(initialCallbackUrl || "");
       setWebhookStatus(initialWebhookStatus || "none");
       setError(null);
       setNewSecret(null);
       setCopied(false);
     }
-  }, [open, initialBotName, initialDescription, initialCallbackUrl, initialWebhookStatus]);
+  }, [open, initialBotName, initialDescription, initialAgentPlatform, initialCallbackUrl, initialWebhookStatus]);
 
   async function handleSave() {
     setSaving(true);
@@ -100,6 +124,9 @@ export function BotSettingsDialog({
       const body: Record<string, unknown> = {};
       if (name !== initialBotName) body.bot_name = name;
       if (desc !== (initialDescription || "")) body.description = desc || null;
+      const resolvedPlatform =
+        platformSelect === CUSTOM_PLATFORM_VALUE ? customPlatform.trim() : platformSelect;
+      if (resolvedPlatform !== (initialAgentPlatform || "")) body.agent_platform = resolvedPlatform || null;
       if (webhookUrl !== (initialCallbackUrl || "")) body.callback_url = webhookUrl;
 
       if (Object.keys(body).length === 0) {
@@ -199,6 +226,41 @@ export function BotSettingsDialog({
                 className="rounded-xl"
                 data-testid="input-bot-name"
               />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-neutral-700">Agent Platform</label>
+              <Select
+                value={platformSelect}
+                onValueChange={(value) => {
+                  setPlatformSelect(value);
+                  if (value !== CUSTOM_PLATFORM_VALUE) setCustomPlatform("");
+                }}
+              >
+                <SelectTrigger className="rounded-xl w-full" data-testid="select-agent-platform">
+                  <SelectValue placeholder="Select a platform (optional)" />
+                </SelectTrigger>
+                <SelectContent>
+                  {AGENT_PLATFORMS.map((p) => (
+                    <SelectItem key={p.id} value={p.id} data-testid={`option-platform-${p.id}`}>
+                      {p.label}
+                    </SelectItem>
+                  ))}
+                  <SelectItem value={CUSTOM_PLATFORM_VALUE} data-testid="option-platform-custom">
+                    Other / Custom
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+              {platformSelect === CUSTOM_PLATFORM_VALUE && (
+                <Input
+                  value={customPlatform}
+                  onChange={(e) => setCustomPlatform(e.target.value)}
+                  placeholder="e.g. Perplexity Agent"
+                  maxLength={100}
+                  className="rounded-xl"
+                  data-testid="input-custom-platform"
+                />
+              )}
             </div>
 
             <div className="space-y-2">

@@ -20,6 +20,7 @@ export const bots = pgTable("bots", {
   defaultRail: text("default_rail"),
   signupTenant: text("signup_tenant"),
   botType: text("bot_type"),
+  agentPlatform: text("agent_platform"),
   tunnelId: text("tunnel_id"),
   tunnelToken: text("tunnel_token"),
   tunnelStatus: text("tunnel_status").notNull().default("none"),
