@@ -38,9 +38,9 @@ const cardTypes: CardTypeOption[] = [
   },
   {
     icon: ShoppingCart,
-    label: "Card Wallet",
-    description: "CrossMint-powered wallets for AI agent commerce. Bots buy real products with your approval.",
-    href: "/card-wallet",
+    label: "VISA for Virtual Cards",
+    description: "Save your own Visa or Mastercard once. Your agent pays with one-time, merchant-locked virtual card numbers you control.",
+    href: "/virtual-cards",
     color: "text-violet-600",
     iconBg: "bg-violet-50",
     borderColor: "border-violet-200 hover:border-violet-400 hover:bg-violet-50/50",
