@@ -324,7 +324,7 @@ export default function DashboardOverview() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div data-testid="card-privy-wallet">
               <div className="flex items-center gap-2 mb-3">
-                <h3 className="text-sm font-semibold text-neutral-700">Crypto Wallet</h3>
+                <h3 className="text-sm font-semibold text-neutral-700">Stablecoin Wallet</h3>
                 <InfoTooltip text="USDC wallet x402 purchases. Fund with Stripe/Link." />
               </div>
               {firstWallet ? (
