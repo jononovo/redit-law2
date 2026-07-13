@@ -198,9 +198,6 @@ export function AppSidebar({ onNewCard }: AppSidebarProps) {
               )}>
                 <item.icon className={cn("w-5 h-5 flex-shrink-0", isActive ? "text-white" : "text-neutral-400")} />
                 {item.label}
-                {isExternal && (
-                  <ExternalLink className="w-3 h-3 ml-auto text-neutral-300 flex-shrink-0" />
-                )}
               </div>
             </Link>
           );
