@@ -210,7 +210,7 @@ export function AppSidebar({ onNewCard }: AppSidebarProps) {
               className="w-full flex items-center gap-1 pt-4 pb-1 px-4 cursor-pointer group"
               data-testid="button-toggle-tools-nav"
             >
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-neutral-400 group-hover:text-neutral-600 transition-colors">
+              <span className="text-xs font-semibold uppercase tracking-wider text-neutral-400 group-hover:text-neutral-600 transition-colors">
                 Tools
               </span>
               <ChevronDown className={cn(
@@ -248,7 +248,7 @@ export function AppSidebar({ onNewCard }: AppSidebarProps) {
               className="w-full flex items-center gap-1 pt-4 pb-1 px-4 cursor-pointer group"
               data-testid="button-toggle-sales-nav"
             >
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-neutral-400 group-hover:text-neutral-600 transition-colors">
+              <span className="text-xs font-semibold uppercase tracking-wider text-neutral-400 group-hover:text-neutral-600 transition-colors">
                 Sales
               </span>
               <ChevronDown className={cn(
@@ -284,7 +284,7 @@ export function AppSidebar({ onNewCard }: AppSidebarProps) {
               className="w-full flex items-center gap-1 pt-4 pb-1 px-4 cursor-pointer group"
               data-testid="button-toggle-support-nav"
             >
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-primary/80 group-hover:text-primary transition-colors">
+              <span className="text-xs font-semibold uppercase tracking-wider text-primary/80 group-hover:text-primary transition-colors">
                 Support
               </span>
               <ChevronDown className={cn(
