@@ -30,7 +30,7 @@ const cardTypes: CardTypeOption[] = [
   {
     icon: Wallet,
     label: "USDC Wallet",
-    description: "Fund bots with USDC on Base via Stripe. Bots pay for API resources using the x402 protocol.",
+    description: "Fund bots with USDC on Base via Stripe. Agents pay for API resources using the x402 protocol.",
     href: "/usdc-wallet",
     color: "text-blue-600",
     iconBg: "bg-blue-50",
