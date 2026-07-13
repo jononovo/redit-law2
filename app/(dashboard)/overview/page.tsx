@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { BotCard } from "@/components/dashboard/bot-card";
 import { PendingPairingCard } from "@/components/dashboard/pending-pairing-card";
 import { OverviewSectionHeader } from "@/components/dashboard/overview-section-header";
+import { OverviewCardSection } from "@/components/dashboard/overview-card-section";
 import { ActivityLog } from "@/components/dashboard/activity-log";
 import { WebhookLog } from "@/components/dashboard/webhook-log";
 import { OpsHealth } from "@/components/dashboard/ops-health";
@@ -304,34 +305,47 @@ export default function DashboardOverview() {
   const activeBots = bots.filter((b) => b.wallet_status === "active");
   const pendingBots = bots.filter((b) => b.wallet_status === "pending");
 
-  const firstWallet = privyWallets[0] || null;
-  const firstCard = rail5Cards[0] || null;
-  const firstVirtualCard = rail3Cards[0] || null;
-
   return (
     <div className="flex flex-col gap-8 animate-fade-in-up">
-      <div>
-        <OverviewSectionHeader
-          title="My Agents"
-          seeAllHref="/agents"
-          seeAllTestId="link-see-all-agents"
-          showSeeAll={!loading && (bots.length > 0 || pendingPairings.length > 0)}
-          className="mb-3"
-          meta={!loading && (
-            <span className="text-sm text-neutral-400" data-testid="text-agent-counts">
-              {activeBots.length} Active
-              {pendingBots.length > 0 && (
-                <> <span className="text-neutral-300">|</span> {pendingBots.length} Pending</>
-              )}
-            </span>
-          )}
-        />
-
-        {loading ? (
-          <div className="flex items-center justify-center py-16">
-            <Loader2 className="w-6 h-6 animate-spin text-neutral-400" />
-          </div>
-        ) : bots.length === 0 && pendingPairings.length === 0 ? (
+      <OverviewCardSection
+        title="My Agents"
+        seeAllHref="/agents"
+        seeAllTestId="link-see-all-agents"
+        showSeeAll={!loading && (bots.length > 0 || pendingPairings.length > 0)}
+        loading={loading}
+        meta={!loading && (
+          <span className="text-sm text-neutral-400" data-testid="text-agent-counts">
+            {activeBots.length} Active
+            {pendingBots.length > 0 && (
+              <> <span className="text-neutral-300">|</span> {pendingBots.length} Pending</>
+            )}
+          </span>
+        )}
+        items={[
+          ...pendingPairings.map((pairing) => ({
+            key: pairing.code,
+            content: <PendingPairingCard code={pairing.code} expiresAt={pairing.expires_at} />,
+          })),
+          ...bots.map((bot) => ({
+            key: bot.bot_id,
+            content: (
+              <BotCard
+                botName={bot.bot_name}
+                botId={bot.bot_id}
+                agentPlatform={bot.agent_platform}
+                description={bot.description}
+                walletStatus={bot.wallet_status}
+                webhookStatus={bot.webhook_status}
+                tunnelStatus={bot.tunnel_status}
+                callbackUrl={bot.callback_url}
+                createdAt={bot.created_at}
+                claimedAt={bot.claimed_at}
+                onUpdated={() => fetchData()}
+              />
+            ),
+          })),
+        ]}
+        emptyState={
           <div className="bg-white rounded-2xl border border-neutral-100 shadow-sm p-12 text-center" data-testid="empty-bots">
             <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
               <BotIcon className="w-8 h-8 text-primary" />
@@ -351,33 +365,8 @@ export default function DashboardOverview() {
               </Link>
             </div>
           </div>
-        ) : (
-          <div className="flex flex-wrap gap-4">
-            {pendingPairings.slice(0, 2).map((pairing) => (
-              <div key={pairing.code} className="w-full max-w-[26rem]">
-                <PendingPairingCard code={pairing.code} expiresAt={pairing.expires_at} />
-              </div>
-            ))}
-            {bots.slice(0, Math.max(0, 2 - pendingPairings.length)).map((bot) => (
-              <div key={bot.bot_id} className="w-full max-w-[26rem]">
-                <BotCard
-                  botName={bot.bot_name}
-                  botId={bot.bot_id}
-                  agentPlatform={bot.agent_platform}
-                  description={bot.description}
-                  walletStatus={bot.wallet_status}
-                  webhookStatus={bot.webhook_status}
-                  tunnelStatus={bot.tunnel_status}
-                  callbackUrl={bot.callback_url}
-                  createdAt={bot.created_at}
-                  claimedAt={bot.claimed_at}
-                  onUpdated={() => fetchData()}
-                />
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+        }
+      />
 
       {overviewApprovals.length > 0 && (
         <div data-testid="section-approvals">
@@ -402,35 +391,36 @@ export default function DashboardOverview() {
           </div>
         ) : (
           <div className="flex flex-col gap-10">
-            <div data-testid="row-virtual-cards">
-              <OverviewSectionHeader
-                title="Virtual Cards"
-                tooltip="Virtual cards issued from your vaulted real card. Each has its own spending limit and agent link."
-                seeAllHref="/virtual-cards"
-                seeAllTestId="link-see-all-virtual-cards"
-                className="mb-3"
-              />
-              <div className="w-full max-w-[26rem]">
-              {firstVirtualCard ? (
-                <CreditCardItem
-                  card={firstVirtualCard}
-                  onFreeze={() => setRail3FreezeTarget(firstVirtualCard)}
-                  onAddAgent={() => rail3BotLinking.openLinkDialog({
-                    id: firstVirtualCard.card_id,
-                    name: firstVirtualCard.card_name,
-                    bot_id: firstVirtualCard.bot_id,
-                    bot_name: firstVirtualCard.bot_name,
-                  })}
-                  onUnlinkBot={() => rail3BotLinking.openUnlinkDialog({
-                    id: firstVirtualCard.card_id,
-                    name: firstVirtualCard.card_name,
-                    bot_id: firstVirtualCard.bot_id,
-                    bot_name: firstVirtualCard.bot_name,
-                  })}
-                  onCopyCardId={() => rail3WalletActions.copyCardId(firstVirtualCard.card_id)}
-                  onDelete={() => setRail3DeleteTarget(firstVirtualCard)}
-                />
-              ) : (
+            <OverviewCardSection
+              testId="row-virtual-cards"
+              title="Virtual Cards"
+              tooltip="Virtual cards issued from your vaulted real card. Each has its own spending limit and agent link."
+              seeAllHref="/virtual-cards"
+              seeAllTestId="link-see-all-virtual-cards"
+              items={rail3Cards.map((card) => ({
+                key: card.card_id,
+                content: (
+                  <CreditCardItem
+                    card={card}
+                    onFreeze={() => setRail3FreezeTarget(card)}
+                    onAddAgent={() => rail3BotLinking.openLinkDialog({
+                      id: card.card_id,
+                      name: card.card_name,
+                      bot_id: card.bot_id,
+                      bot_name: card.bot_name,
+                    })}
+                    onUnlinkBot={() => rail3BotLinking.openUnlinkDialog({
+                      id: card.card_id,
+                      name: card.card_name,
+                      bot_id: card.bot_id,
+                      bot_name: card.bot_name,
+                    })}
+                    onCopyCardId={() => rail3WalletActions.copyCardId(card.card_id)}
+                    onDelete={() => setRail3DeleteTarget(card)}
+                  />
+                ),
+              }))}
+              emptyState={
                 <div className="flex flex-col items-center justify-center py-12 bg-white rounded-2xl border border-neutral-100 shadow-sm" data-testid="card-rail3-empty">
                   <CreditCard className="w-10 h-10 text-neutral-300 mb-3" />
                   <p className="text-sm text-neutral-400 font-medium">No virtual cards yet</p>
@@ -438,77 +428,77 @@ export default function DashboardOverview() {
                     <Link href="/virtual-cards" className="underline hover:text-neutral-600">Vault your card</Link> once, then create virtual cards on top of it.
                   </p>
                 </div>
-              )}
-              </div>
-            </div>
+              }
+            />
 
-            <div data-testid="card-privy-wallet">
-              <OverviewSectionHeader
-                title="USDC Wallet"
-                tooltip="USDC wallet x402 purchases. Fund with Stripe/Link."
-                seeAllHref="/usdc-wallet"
-                seeAllTestId="link-see-all-usdc-wallet"
-                className="mb-3"
-              />
-              <div className="w-full max-w-[26rem]">
-              {firstWallet ? (
-                <CryptoWalletItem
-                  wallet={firstWallet}
-                  color="blue"
-                  onFund={() => { setFundTarget({ id: firstWallet.id, address: firstWallet.address, botName: firstWallet.bot_name }); setFundSheetOpen(true); }}
-                  onFreeze={() => rail1WalletActions.handleFreeze({ id: firstWallet.id, name: firstWallet.bot_name || "Wallet", is_frozen: firstWallet.is_frozen })}
-                  onGuardrails={() => rail1Guardrails.openDialog(firstWallet)}
-                  onActivity={() => router.push("/usdc-wallet")}
-                  onAddAgent={() => rail1BotLinking.openLinkDialog({ id: firstWallet.id, name: firstWallet.bot_name || "Wallet", bot_id: firstWallet.bot_id || null, bot_name: firstWallet.bot_name || null })}
-                  onUnlinkBot={() => rail1BotLinking.openUnlinkDialog({ id: firstWallet.id, name: firstWallet.bot_name || "Wallet", bot_id: firstWallet.bot_id, bot_name: firstWallet.bot_name })}
-                  onCopyAddress={() => rail1WalletActions.copyAddress(firstWallet.address)}
-                  onSyncBalance={() => rail1WalletActions.handleSyncAndPatch(firstWallet.id, setPrivyWallets)}
-                  onTransfer={() => rail1Transfer.openTransferDialog(firstWallet)}
-                  syncingBalance={rail1WalletActions.syncingId === firstWallet.id}
-                  fundLabel="Fund"
-                  testIdPrefix="stripe"
-                  basescanUrl={`https://basescan.org/address/${firstWallet.address}#tokentxns`}
-                />
-              ) : (
+            <OverviewCardSection
+              testId="card-privy-wallet"
+              title="USDC Wallet"
+              tooltip="USDC wallet x402 purchases. Fund with Stripe/Link."
+              seeAllHref="/usdc-wallet"
+              seeAllTestId="link-see-all-usdc-wallet"
+              items={privyWallets.map((wallet) => ({
+                key: String(wallet.id),
+                content: (
+                  <CryptoWalletItem
+                    wallet={wallet}
+                    color="blue"
+                    onFund={() => { setFundTarget({ id: wallet.id, address: wallet.address, botName: wallet.bot_name }); setFundSheetOpen(true); }}
+                    onFreeze={() => rail1WalletActions.handleFreeze({ id: wallet.id, name: wallet.bot_name || "Wallet", is_frozen: wallet.is_frozen })}
+                    onGuardrails={() => rail1Guardrails.openDialog(wallet)}
+                    onActivity={() => router.push("/usdc-wallet")}
+                    onAddAgent={() => rail1BotLinking.openLinkDialog({ id: wallet.id, name: wallet.bot_name || "Wallet", bot_id: wallet.bot_id || null, bot_name: wallet.bot_name || null })}
+                    onUnlinkBot={() => rail1BotLinking.openUnlinkDialog({ id: wallet.id, name: wallet.bot_name || "Wallet", bot_id: wallet.bot_id, bot_name: wallet.bot_name })}
+                    onCopyAddress={() => rail1WalletActions.copyAddress(wallet.address)}
+                    onSyncBalance={() => rail1WalletActions.handleSyncAndPatch(wallet.id, setPrivyWallets)}
+                    onTransfer={() => rail1Transfer.openTransferDialog(wallet)}
+                    syncingBalance={rail1WalletActions.syncingId === wallet.id}
+                    fundLabel="Fund"
+                    testIdPrefix="stripe"
+                    basescanUrl={`https://basescan.org/address/${wallet.address}#tokentxns`}
+                  />
+                ),
+              }))}
+              emptyState={
                 <div className="flex flex-col items-center justify-center py-12 bg-white rounded-2xl border border-neutral-100 shadow-sm">
                   <Wallet className="w-10 h-10 text-neutral-300 mb-3" />
                   <p className="text-sm text-neutral-400 font-medium">No USDC wallet yet</p>
                   <p className="text-xs text-neutral-400 mt-1">A wallet will be created when you set up a bot.</p>
                 </div>
-              )}
-              </div>
-            </div>
+              }
+            />
 
-            {firstCard && (
-              <div data-testid="card-rail5">
-                <OverviewSectionHeader
-                  title="Self-hosted Cards"
-                  tooltip="Self-hosted: Agent uses your card. Secured with: Encryption & Ephemeral Sub-Agent."
-                  seeAllHref="/self-hosted"
-                  seeAllTestId="link-see-all-self-hosted"
-                  className="mb-3"
-                />
-                <div className="w-full max-w-[26rem]">
-                <CreditCardItem
-                  card={firstCard}
-                  onFreeze={() => setRail5FreezeTarget(firstCard)}
-                  onAddAgent={() => rail5BotLinking.openLinkDialog({
-                    id: firstCard.card_id,
-                    name: firstCard.card_name,
-                    bot_id: firstCard.bot_id,
-                    bot_name: firstCard.bot_name,
-                  })}
-                  onUnlinkBot={() => rail5BotLinking.openUnlinkDialog({
-                    id: firstCard.card_id,
-                    name: firstCard.card_name,
-                    bot_id: firstCard.bot_id,
-                    bot_name: firstCard.bot_name,
-                  })}
-                  onCopyCardId={() => rail5WalletActions.copyCardId(firstCard.card_id)}
-                  onDelete={() => setRail5DeleteTarget(firstCard)}
-                />
-                </div>
-              </div>
+            {rail5Cards.length > 0 && (
+              <OverviewCardSection
+                testId="card-rail5"
+                title="Self-hosted Cards"
+                tooltip="Self-hosted: Agent uses your card. Secured with: Encryption & Ephemeral Sub-Agent."
+                seeAllHref="/self-hosted"
+                seeAllTestId="link-see-all-self-hosted"
+                items={rail5Cards.map((card) => ({
+                  key: card.card_id,
+                  content: (
+                    <CreditCardItem
+                      card={card}
+                      onFreeze={() => setRail5FreezeTarget(card)}
+                      onAddAgent={() => rail5BotLinking.openLinkDialog({
+                        id: card.card_id,
+                        name: card.card_name,
+                        bot_id: card.bot_id,
+                        bot_name: card.bot_name,
+                      })}
+                      onUnlinkBot={() => rail5BotLinking.openUnlinkDialog({
+                        id: card.card_id,
+                        name: card.card_name,
+                        bot_id: card.bot_id,
+                        bot_name: card.bot_name,
+                      })}
+                      onCopyCardId={() => rail5WalletActions.copyCardId(card.card_id)}
+                      onDelete={() => setRail5DeleteTarget(card)}
+                    />
+                  ),
+                }))}
+              />
             )}
           </div>
         )}
