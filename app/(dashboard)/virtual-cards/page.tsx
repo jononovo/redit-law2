@@ -54,7 +54,7 @@ export default function VirtualCardsPage() {
       testId: "card-rail3-explainer",
       body: (
         <>
-          Save your own Visa or Mastercard once. Crossmint vaults it, then issues a one-time, merchant-locked card number for every agent purchase.
+          Save your own Visa or Mastercard once. CreditClaw securely vaults it.
           Create as many virtual cards as you want on top of one real card — each is a separate spending permission you can tune per agent or per category.
         </>
       ),
