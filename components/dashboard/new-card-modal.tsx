@@ -21,7 +21,7 @@ const cardTypes: CardTypeOption[] = [
   {
     icon: ShoppingCart,
     label: "VISA for Virtual Cards",
-    description: "Save your own Visa or Mastercard once. Your agent pays with one-time, merchant-locked virtual card numbers you control.",
+    description: "Save your Visa or Mastercard once. Create as many virtual cards as you want on top. Each has a separate spending permission.",
     href: "/virtual-cards",
     color: "text-violet-600",
     iconBg: "bg-violet-50",
