@@ -93,8 +93,8 @@ export function AppSidebar({ onNewCard }: AppSidebarProps) {
   const visibleProcurementNav = filterByAccess(procurementNavItems);
   const visibleSalesNav = filterByAccess(salesNavItems);
   const visibleToolsNav = filterByAccess(toolsNavItems);
-  const [salesOpen, setSalesOpen] = useState(() => salesNavItems.some(item => item.href === pathname));
-  const [toolsOpen, setToolsOpen] = useState(() => toolsNavItems.some(item => item.href === pathname));
+  const [salesOpen, setSalesOpen] = useState(true);
+  const [toolsOpen, setToolsOpen] = useState(true);
 
   const handleNavClick = () => {
     setOpenMobile(false);
