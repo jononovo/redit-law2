@@ -114,7 +114,7 @@ export function Hero() {
                       </div>
                   ))}
                </span>
-               <span className="ml-2">Join 14,000+ happy bot owners</span>
+               <span className="ml-2">Join 14,000+ happy agent owners</span>
             </div>
           </div>
 
