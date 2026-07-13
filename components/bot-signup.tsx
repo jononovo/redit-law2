@@ -110,7 +110,7 @@ export function BotSignup() {
                 data-testid="tab-bot"
               >
                 <Bot className="w-4 h-4" />
-                I&apos;m an Agent
+                For the Agent
               </TabsTrigger>
             </TabsList>
 
