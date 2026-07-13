@@ -17,7 +17,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-export function Header({ title }: { title: string }) {
+export function Header({ title }: { title?: string }) {
   const { user, logout } = useAuth();
   const router = useRouter();
   const [feedbackDialogOpen, setFeedbackDialogOpen] = useState(false);
@@ -27,7 +27,7 @@ export function Header({ title }: { title: string }) {
       <div className="max-w-[110rem] mx-auto w-full px-4 md:px-8 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <SidebarTrigger className="md:hidden" data-testid="button-sidebar-toggle" />
-          <h1 className="text-xl font-bold text-neutral-900">{title}</h1>
+          {title && <h1 className="text-xl font-bold text-neutral-900">{title}</h1>}
         </div>
 
         <div className="flex items-center gap-4">
