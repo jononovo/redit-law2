@@ -10,9 +10,7 @@ import {
   Plus,
   PlusCircle,
   DollarSign,
-  Shield,
   Wallet,
-  ShoppingCart,
   Lock,
   Store,
   ShoppingBag,
@@ -88,8 +86,10 @@ export function AppSidebar({ onNewCard }: AppSidebarProps) {
   const visibleMainNav = filterByAccess(mainNavItems);
   const visibleSalesNav = filterByAccess(salesNavItems);
   const visibleToolsNav = filterByAccess(toolsNavItems);
-  const [salesOpen, setSalesOpen] = useState(() => salesNavItems.some(item => item.href === pathname));
-  const [toolsOpen, setToolsOpen] = useState(() => toolsNavItems.some(item => item.href === pathname));
+  const matchesSectionItem = (items: NavItem[]) =>
+    items.some(item => pathname === item.href || pathname.startsWith(item.href + "/"));
+  const [salesOpen, setSalesOpen] = useState(() => matchesSectionItem(salesNavItems));
+  const [toolsOpen, setToolsOpen] = useState(() => matchesSectionItem(toolsNavItems));
 
   const handleNavClick = () => {
     setOpenMobile(false);
