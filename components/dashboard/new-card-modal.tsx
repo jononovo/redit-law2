@@ -19,13 +19,13 @@ interface CardTypeOption {
 
 const cardTypes: CardTypeOption[] = [
   {
-    icon: Shield,
-    label: "Self-hosted Card - Encrypted",
-    description: "Bring your own card. Encrypted and split between you and CreditClaw.",
-    href: "/setup/rail5",
-    color: "text-emerald-600",
-    iconBg: "bg-emerald-50",
-    borderColor: "border-emerald-200 hover:border-emerald-400 hover:bg-emerald-50/50",
+    icon: ShoppingCart,
+    label: "VISA for Virtual Cards",
+    description: "Save your own Visa or Mastercard once. Your agent pays with one-time, merchant-locked virtual card numbers you control.",
+    href: "/virtual-cards",
+    color: "text-violet-600",
+    iconBg: "bg-violet-50",
+    borderColor: "border-violet-200 hover:border-violet-400 hover:bg-violet-50/50",
   },
   {
     icon: Wallet,
@@ -37,13 +37,13 @@ const cardTypes: CardTypeOption[] = [
     borderColor: "border-blue-200 hover:border-blue-400 hover:bg-blue-50/50",
   },
   {
-    icon: ShoppingCart,
-    label: "VISA for Virtual Cards",
-    description: "Save your own Visa or Mastercard once. Your agent pays with one-time, merchant-locked virtual card numbers you control.",
-    href: "/virtual-cards",
-    color: "text-violet-600",
-    iconBg: "bg-violet-50",
-    borderColor: "border-violet-200 hover:border-violet-400 hover:bg-violet-50/50",
+    icon: Shield,
+    label: "Self-hosted Card",
+    description: "Bring your own card. Encrypted and split between you and CreditClaw.",
+    href: "/setup/rail5",
+    color: "text-emerald-600",
+    iconBg: "bg-emerald-50",
+    borderColor: "border-emerald-200 hover:border-emerald-400 hover:bg-emerald-50/50",
   },
 ];
 
