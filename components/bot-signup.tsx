@@ -202,7 +202,7 @@ export function BotSignup() {
                           Register
                         </button>
                       </AuthDrawer>{" "}
-                      and issue &quot;Virtual Cards&quot; from it.
+                      and issue &quot;Virtual Cards&quot; from Visa/Mastercard.
                     </p>
                   </div>
                 </div>
