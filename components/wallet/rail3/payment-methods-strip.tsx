@@ -85,7 +85,7 @@ export function PaymentMethodsStrip({ paymentMethods, loading, onChange }: Props
     <div className="rounded-2xl border border-neutral-200 bg-white p-4" data-testid="section-payment-methods">
       <div className="flex items-center justify-between mb-3">
         <div>
-          <h3 className="text-sm font-semibold text-neutral-900">Real cards on file</h3>
+          <h3 className="text-sm font-semibold text-neutral-900">Your real cards on file</h3>
           <p className="text-xs text-neutral-500 mt-0.5">Vaulted securely. Each virtual card spends from one of these.</p>
         </div>
         <Button
