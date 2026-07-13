@@ -18,7 +18,11 @@ import {
   ChevronDown,
   Gauge,
   Sparkles,
-  FlaskConical
+  FlaskConical,
+  MessageSquare,
+  LifeBuoy,
+  Bug,
+  Users
 } from "lucide-react";
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
 import Image from "next/image";
@@ -63,6 +67,13 @@ const toolsNavItems: NavItem[] = [
   { icon: FlaskConical, label: "Agent Shopping Test", href: "/agent-shopping-test", external: true },
 ];
 
+const supportNavItems: NavItem[] = [
+  { icon: MessageSquare, label: "Feedback", href: "#feedback" },
+  { icon: LifeBuoy, label: "Support", href: "#support" },
+  { icon: Bug, label: "Bug", href: "#bug" },
+  { icon: Users, label: "Community", href: "#community" },
+];
+
 const salesNavItems: NavItem[] = [
   { icon: PlusCircle, label: "Create Checkout", href: "/checkout/create" },
   { icon: ShoppingBag, label: "Shop", href: "/shop" },
@@ -90,6 +101,7 @@ export function AppSidebar({ onNewCard }: AppSidebarProps) {
     items.some(item => pathname === item.href || pathname.startsWith(item.href + "/"));
   const [salesOpen, setSalesOpen] = useState(() => matchesSectionItem(salesNavItems));
   const [toolsOpen, setToolsOpen] = useState(() => matchesSectionItem(toolsNavItems));
+  const [supportOpen, setSupportOpen] = useState(false);
 
   const handleNavClick = () => {
     setOpenMobile(false);
@@ -249,6 +261,34 @@ export function AppSidebar({ onNewCard }: AppSidebarProps) {
                 </Link>
               );
             })}
+          </CollapsibleContent>
+        </Collapsible>
+
+        <Collapsible open={supportOpen} onOpenChange={setSupportOpen}>
+          <CollapsibleTrigger asChild>
+            <button
+              type="button"
+              className="w-full flex items-center gap-1 pt-4 pb-1 px-4 cursor-pointer group"
+              data-testid="button-toggle-support-nav"
+            >
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-primary/80 group-hover:text-primary transition-colors">
+                Support
+              </span>
+              <ChevronDown className={cn(
+                "w-3.5 h-3.5 text-primary/80 group-hover:text-primary transition-all",
+                supportOpen && "rotate-180"
+              )} />
+            </button>
+          </CollapsibleTrigger>
+          <CollapsibleContent className="space-y-1">
+            {supportNavItems.map((item) => (
+              <Link key={item.href} href={item.href} onClick={handleNavClick}>
+                <div className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all cursor-pointer text-neutral-500 hover:bg-neutral-50 hover:text-neutral-900">
+                  <item.icon className="w-5 h-5 flex-shrink-0 text-neutral-400" />
+                  {item.label}
+                </div>
+              </Link>
+            ))}
           </CollapsibleContent>
         </Collapsible>
       </SidebarContent>
