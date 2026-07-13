@@ -18,7 +18,8 @@ import {
   ShoppingBag,
   ExternalLink,
   FileText,
-  ChevronDown
+  ChevronDown,
+  Gauge
 } from "lucide-react";
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
 import Image from "next/image";
@@ -60,6 +61,10 @@ const procurementNavItems: NavItem[] = [
   { icon: Store, label: "Supplier Hub", href: "/skills", external: true },
 ];
 
+const toolsNavItems: NavItem[] = [
+  { icon: Gauge, label: "Brand Agent-Friendly Score", href: "https://shopy.sh", external: true },
+];
+
 const salesNavItems: NavItem[] = [
   { icon: PlusCircle, label: "Create Checkout", href: "/checkout/create" },
   { icon: ShoppingBag, label: "Shop", href: "/shop" },
@@ -83,6 +88,7 @@ export function AppSidebar({ onNewCard }: AppSidebarProps) {
   const visibleMainNav = filterByAccess(mainNavItems);
   const visibleProcurementNav = filterByAccess(procurementNavItems);
   const visibleSalesNav = filterByAccess(salesNavItems);
+  const visibleToolsNav = filterByAccess(toolsNavItems);
   const [salesOpen, setSalesOpen] = useState(() => salesNavItems.some(item => item.href === pathname));
 
   const handleNavClick = () => {
@@ -170,6 +176,34 @@ export function AppSidebar({ onNewCard }: AppSidebarProps) {
             );
           }
           return navLink;
+        })}
+
+        <div className="pt-4 pb-1 px-4">
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-neutral-400">
+            Tools
+          </p>
+        </div>
+
+        {visibleToolsNav.map((item) => {
+          const isActive = pathname === item.href;
+          const isExternal = item.external;
+          const linkProps = isExternal ? { target: "_blank" as const, rel: "noopener noreferrer" } : {};
+          return (
+            <Link key={item.href} href={item.href} {...linkProps} onClick={handleNavClick}>
+              <div className={cn(
+                "flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all cursor-pointer",
+                isActive 
+                  ? "bg-neutral-900 text-white shadow-md shadow-neutral-900/10" 
+                  : "text-neutral-500 hover:bg-neutral-50 hover:text-neutral-900"
+              )}>
+                <item.icon className={cn("w-5 h-5 flex-shrink-0", isActive ? "text-white" : "text-neutral-400")} />
+                {item.label}
+                {isExternal && (
+                  <ExternalLink className="w-3 h-3 ml-auto text-neutral-300 flex-shrink-0" />
+                )}
+              </div>
+            </Link>
+          );
         })}
 
         <Collapsible open={salesOpen} onOpenChange={setSalesOpen}>
