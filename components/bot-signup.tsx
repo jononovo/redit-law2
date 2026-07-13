@@ -13,7 +13,7 @@ const SKILL_URL = "https://creditclaw.com/SKILL.md";
 const steps = [
   { num: "1", text: "Send this URL & code to your agent" },
   { num: "2", text: "They register & get a USDC wallet immediately." },
-  { num: "3", text: "Add your real Visa/Mastercard and issue \"Virtual Cards\" from it." },
+  { num: "3", text: "Register and issue \"Virtual Cards\" from it." },
 ];
 
 export function BotSignup() {
