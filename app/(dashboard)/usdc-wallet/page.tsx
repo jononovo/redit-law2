@@ -27,7 +27,7 @@ import type { CryptoGuardrailForm } from "@/components/wallet/dialogs/guardrail-
 import { ExplainerBlock, ExplainerToggleLink, type ExplainerContent } from "@/components/wallet/collapsible-explainer";
 
 const rail1Explainer: ExplainerContent = {
-  title: "How USDC Wallet Works",
+  title: "How USDC wallets work",
   icon: <Wallet className="w-5 h-5 text-blue-600" />,
   containerClassName: "bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-100",
   iconWrapClassName: "bg-blue-100",
