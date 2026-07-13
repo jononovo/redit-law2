@@ -135,7 +135,7 @@ export function OrdersPanel({ onConfigureGuardrails }: OrdersPanelProps) {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Rails</SelectItem>
+                <SelectItem value="all">All Methods</SelectItem>
                 <SelectItem value="rail1">USDC Wallet</SelectItem>
                 <SelectItem value="rail2">Card Wallet</SelectItem>
                 <SelectItem value="rail5">Self-hosted Card (Encrypted)</SelectItem>
