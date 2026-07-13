@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { 
   LayoutDashboard, 
+  Bot,
   CreditCard, 
   Activity, 
   Plus,
@@ -54,6 +55,7 @@ interface NavItem {
 
 const mainNavItems: NavItem[] = [
   { icon: LayoutDashboard, label: "Overview", href: "/overview" },
+  { icon: Bot, label: "Agents", href: "/agents" },
   { icon: CreditCard, label: "Virtual Cards", href: "/virtual-cards" },
   { icon: Lock, label: "Self-hosted Cards", subtitle: "Encrypted", href: "/self-hosted", tag: "beta", tooltip: "Self-hosted: Agent uses your card. Secured with: Encryption & Ephemeral Sub-Agent." },
   { icon: Wallet, label: "USDC Wallet", href: "/usdc-wallet", tag: "beta", tooltip: "USDC wallet x402 purchases. Fund with Stripe/Link." },

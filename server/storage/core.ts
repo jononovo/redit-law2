@@ -40,7 +40,7 @@ export const coreMethods: CoreMethods = {
   },
 
   async getBotsByOwnerUid(ownerUid: string): Promise<Bot[]> {
-    return db.select().from(bots).where(eq(bots.ownerUid, ownerUid));
+    return db.select().from(bots).where(eq(bots.ownerUid, ownerUid)).orderBy(bots.createdAt);
   },
 
   async claimBot(claimToken: string, ownerUid: string): Promise<Bot | null> {

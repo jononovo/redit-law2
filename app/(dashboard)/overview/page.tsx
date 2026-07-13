@@ -252,6 +252,11 @@ export default function DashboardOverview() {
               </span>
             )}
           </div>
+          {!loading && bots.length > 0 && (
+            <Link href="/agents" className="flex items-center gap-1.5 text-sm text-neutral-500 hover:text-neutral-700 transition-colors" data-testid="link-see-all-agents">
+              See all <ExternalLink className="w-3.5 h-3.5" />
+            </Link>
+          )}
         </div>
 
         {loading ? (
@@ -280,7 +285,7 @@ export default function DashboardOverview() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {bots.map((bot) => (
+            {bots.slice(0, 2).map((bot) => (
               <BotCard
                 key={bot.bot_id}
                 botName={bot.bot_name}

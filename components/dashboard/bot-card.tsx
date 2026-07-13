@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Bot, Clock, CheckCircle, MoreVertical, Settings } from "lucide-react";
+import { Bot, MoreVertical, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { BotSettingsDialog } from "@/components/dashboard/bot-settings-dialog";
 import {
@@ -37,37 +37,35 @@ export function BotCard({ botName, botId, agentPlatform, description, walletStat
       className="bg-white rounded-2xl border border-neutral-100 shadow-sm hover:shadow-md transition-shadow"
       data-testid={`bot-card-${botId}`}
     >
-      <div className="p-6">
-        <div className="flex items-start justify-between mb-4">
-          <div className="flex items-center gap-3">
-            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isActive ? "bg-green-50" : "bg-neutral-100"}`}>
-              <Bot className={`w-5 h-5 ${isActive ? "text-green-600" : "text-neutral-400"}`} />
+      <div className="p-5">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className={`w-10 h-10 shrink-0 rounded-xl flex items-center justify-center ${isActive ? "bg-primary/10" : "bg-neutral-100"}`}>
+              <Bot className={`w-5 h-5 ${isActive ? "text-primary" : "text-neutral-400"}`} />
             </div>
-            <div>
+            <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <h3 className="font-bold text-neutral-900">{botName}</h3>
+                <h3 className="font-bold text-neutral-900 truncate">{botName}</h3>
                 {platformLabel && (
                   <span
-                    className="text-[10px] font-semibold uppercase tracking-wide bg-neutral-100 text-neutral-500 px-2 py-0.5 rounded-full"
+                    className="shrink-0 text-[10px] font-semibold uppercase tracking-wide border border-neutral-200 text-neutral-500 px-2 py-0.5 rounded-full"
                     data-testid={`badge-platform-${botId}`}
                   >
                     {platformLabel}
                   </span>
                 )}
               </div>
-              <p className="text-xs text-neutral-400 font-mono">{botId}</p>
+              <p className="text-xs text-neutral-400 font-mono truncate">{botId}</p>
             </div>
           </div>
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 shrink-0">
             <span
-              className={`inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1 rounded-full ${
-                isActive
-                  ? "bg-green-50 text-green-700"
-                  : "bg-amber-50 text-amber-700"
+              className={`inline-flex items-center gap-1.5 text-xs font-medium ${
+                isActive ? "text-green-700" : "text-amber-700"
               }`}
               data-testid={`status-${botId}`}
             >
-              {isActive ? <CheckCircle className="w-3 h-3" /> : <Clock className="w-3 h-3" />}
+              <span className={`w-1.5 h-1.5 rounded-full ${isActive ? "bg-green-500" : "bg-amber-500"}`} />
               {isActive ? "Active" : "Pending"}
             </span>
             <DropdownMenu>
@@ -91,16 +89,14 @@ export function BotCard({ botName, botId, agentPlatform, description, walletStat
         </div>
 
         {description && (
-          <p className="text-sm text-neutral-500 mb-4 line-clamp-2">{description}</p>
+          <p className="text-sm text-neutral-500 mt-3 line-clamp-2">{description}</p>
         )}
 
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4 text-xs text-neutral-400">
-            <span>Registered {new Date(createdAt).toLocaleDateString()}</span>
-            {claimedAt && (
-              <span>Claimed {new Date(claimedAt).toLocaleDateString()}</span>
-            )}
-          </div>
+        <div className="flex items-center gap-4 text-xs text-neutral-400 mt-4 pt-3 border-t border-neutral-100">
+          <span>Registered {new Date(createdAt).toLocaleDateString()}</span>
+          {claimedAt && (
+            <span>Claimed {new Date(claimedAt).toLocaleDateString()}</span>
+          )}
         </div>
       </div>
 
