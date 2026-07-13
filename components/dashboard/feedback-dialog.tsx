@@ -20,6 +20,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { authFetch } from "@/features/platform-management/auth-fetch";
 import {
   feedbackRequestTypeLabels,
   supportRequestTypesByFeedbackType,
@@ -71,7 +72,7 @@ export function FeedbackDialog({ open, onOpenChange, initialType }: FeedbackDial
 
     setIsSubmitting(true);
     try {
-      const res = await fetch("/api/v1/feedback", {
+      const res = await authFetch("/api/v1/feedback", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
