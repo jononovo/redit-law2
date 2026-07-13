@@ -19,7 +19,8 @@ import {
   ExternalLink,
   FileText,
   ChevronDown,
-  Gauge
+  Gauge,
+  Sparkles
 } from "lucide-react";
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
 import Image from "next/image";
@@ -44,6 +45,7 @@ interface NavItem {
   tooltip?: string;
   inactive?: boolean;
   external?: boolean;
+  hideExternalIcon?: boolean;
   requiredAccess?: Tier;
 }
 
@@ -62,7 +64,8 @@ const procurementNavItems: NavItem[] = [
 ];
 
 const toolsNavItems: NavItem[] = [
-  { icon: Gauge, label: "Brand Agent Score", href: "https://shopy.sh", external: true },
+  { icon: Gauge, label: "Brand Agent Score", href: "https://shopy.sh", external: true, hideExternalIcon: true },
+  { icon: Sparkles, label: "Generate Brand Skill", href: "https://brands.sh", external: true },
 ];
 
 const salesNavItems: NavItem[] = [
@@ -198,6 +201,9 @@ export function AppSidebar({ onNewCard }: AppSidebarProps) {
               )}>
                 <item.icon className={cn("w-5 h-5 flex-shrink-0", isActive ? "text-white" : "text-neutral-400")} />
                 {item.label}
+                {isExternal && !item.hideExternalIcon && (
+                  <ExternalLink className="w-3 h-3 ml-auto text-neutral-300 flex-shrink-0" />
+                )}
               </div>
             </Link>
           );
