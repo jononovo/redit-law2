@@ -16,7 +16,7 @@ const agentTypes = [
   { id: "claude_cowork", label: "Claude CoWork", icon: Bot, enabled: true },
   { id: "codex", label: "Codex", icon: Code, enabled: true },
   { id: "agent", label: "All Other Agents", icon: Bot, enabled: true },
-  { id: "application", label: "Application", icon: Monitor, enabled: true },
+  { id: "application", label: "Building an Application", icon: Monitor, enabled: true },
 ];
 
 export function ChoosePath({ currentStep, totalSteps, onNext }: ChoosePathProps) {
