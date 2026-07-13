@@ -94,6 +94,7 @@ export function AppSidebar({ onNewCard }: AppSidebarProps) {
   const visibleSalesNav = filterByAccess(salesNavItems);
   const visibleToolsNav = filterByAccess(toolsNavItems);
   const [salesOpen, setSalesOpen] = useState(() => salesNavItems.some(item => item.href === pathname));
+  const [toolsOpen, setToolsOpen] = useState(() => toolsNavItems.some(item => item.href === pathname));
 
   const handleNavClick = () => {
     setOpenMobile(false);
@@ -182,30 +183,43 @@ export function AppSidebar({ onNewCard }: AppSidebarProps) {
           return navLink;
         })}
 
-        <div className="pt-4 pb-1 px-4">
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-neutral-400">
-            Tools
-          </p>
-        </div>
-
-        {visibleToolsNav.map((item) => {
-          const isActive = pathname === item.href;
-          const isExternal = item.external;
-          const linkProps = isExternal ? { target: "_blank" as const, rel: "noopener noreferrer" } : {};
-          return (
-            <Link key={item.href} href={item.href} {...linkProps} onClick={handleNavClick}>
-              <div className={cn(
-                "flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all cursor-pointer",
-                isActive 
-                  ? "bg-neutral-900 text-white shadow-md shadow-neutral-900/10" 
-                  : "text-neutral-500 hover:bg-neutral-50 hover:text-neutral-900"
-              )}>
-                <item.icon className={cn("w-5 h-5 flex-shrink-0", isActive ? "text-white" : "text-neutral-400")} />
-                {item.label}
-              </div>
-            </Link>
-          );
-        })}
+        <Collapsible open={toolsOpen} onOpenChange={setToolsOpen}>
+          <CollapsibleTrigger asChild>
+            <button
+              type="button"
+              className="w-full flex items-center gap-1 pt-4 pb-1 px-4 cursor-pointer group"
+              data-testid="button-toggle-tools-nav"
+            >
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-neutral-400 group-hover:text-neutral-600 transition-colors">
+                Tools
+              </span>
+              <ChevronDown className={cn(
+                "w-3.5 h-3.5 text-neutral-400 group-hover:text-neutral-600 transition-all",
+                toolsOpen && "rotate-180"
+              )} />
+            </button>
+          </CollapsibleTrigger>
+          <CollapsibleContent className="space-y-1">
+            {visibleToolsNav.map((item) => {
+              const isActive = pathname === item.href;
+              const isExternal = item.external;
+              const linkProps = isExternal ? { target: "_blank" as const, rel: "noopener noreferrer" } : {};
+              return (
+                <Link key={item.href} href={item.href} {...linkProps} onClick={handleNavClick}>
+                  <div className={cn(
+                    "flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all cursor-pointer",
+                    isActive 
+                      ? "bg-neutral-900 text-white shadow-md shadow-neutral-900/10" 
+                      : "text-neutral-500 hover:bg-neutral-50 hover:text-neutral-900"
+                  )}>
+                    <item.icon className={cn("w-5 h-5 flex-shrink-0", isActive ? "text-white" : "text-neutral-400")} />
+                    {item.label}
+                  </div>
+                </Link>
+              );
+            })}
+          </CollapsibleContent>
+        </Collapsible>
 
         <Collapsible open={salesOpen} onOpenChange={setSalesOpen}>
           <CollapsibleTrigger asChild>
