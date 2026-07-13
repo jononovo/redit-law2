@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useState } from "react";
 import { 
   LayoutDashboard, 
   CreditCard, 
@@ -16,8 +17,10 @@ import {
   Store,
   ShoppingBag,
   ExternalLink,
-  FileText
+  FileText,
+  ChevronDown
 } from "lucide-react";
+import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -80,6 +83,7 @@ export function AppSidebar({ onNewCard }: AppSidebarProps) {
   const visibleMainNav = filterByAccess(mainNavItems);
   const visibleProcurementNav = filterByAccess(procurementNavItems);
   const visibleSalesNav = filterByAccess(salesNavItems);
+  const [salesOpen, setSalesOpen] = useState(() => salesNavItems.some(item => item.href === pathname));
 
   const handleNavClick = () => {
     setOpenMobile(false);
@@ -168,28 +172,41 @@ export function AppSidebar({ onNewCard }: AppSidebarProps) {
           return navLink;
         })}
 
-        <div className="pt-4 pb-1 px-4">
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-neutral-400">
-            Sales
-          </p>
-        </div>
-
-        {visibleSalesNav.map((item) => {
-          const isActive = pathname === item.href;
-          return (
-            <Link key={item.href} href={item.href} onClick={handleNavClick}>
-              <div className={cn(
-                "flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all cursor-pointer",
-                isActive 
-                  ? "bg-neutral-900 text-white shadow-md shadow-neutral-900/10" 
-                  : "text-neutral-500 hover:bg-neutral-50 hover:text-neutral-900"
-              )}>
-                <item.icon className={cn("w-5 h-5", isActive ? "text-white" : "text-neutral-400")} />
-                {item.label}
-              </div>
-            </Link>
-          );
-        })}
+        <Collapsible open={salesOpen} onOpenChange={setSalesOpen}>
+          <CollapsibleTrigger asChild>
+            <button
+              type="button"
+              className="w-full flex items-center gap-1 pt-4 pb-1 px-4 cursor-pointer group"
+              data-testid="button-toggle-sales-nav"
+            >
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-neutral-400 group-hover:text-neutral-600 transition-colors">
+                Sales
+              </span>
+              <ChevronDown className={cn(
+                "w-3.5 h-3.5 text-neutral-400 group-hover:text-neutral-600 transition-all",
+                salesOpen && "rotate-180"
+              )} />
+            </button>
+          </CollapsibleTrigger>
+          <CollapsibleContent className="space-y-1">
+            {visibleSalesNav.map((item) => {
+              const isActive = pathname === item.href;
+              return (
+                <Link key={item.href} href={item.href} onClick={handleNavClick}>
+                  <div className={cn(
+                    "flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all cursor-pointer",
+                    isActive 
+                      ? "bg-neutral-900 text-white shadow-md shadow-neutral-900/10" 
+                      : "text-neutral-500 hover:bg-neutral-50 hover:text-neutral-900"
+                  )}>
+                    <item.icon className={cn("w-5 h-5", isActive ? "text-white" : "text-neutral-400")} />
+                    {item.label}
+                  </div>
+                </Link>
+              );
+            })}
+          </CollapsibleContent>
+        </Collapsible>
 
         <div className="pt-4 pb-1 px-4">
           <p className="text-[11px] font-semibold uppercase tracking-wider text-neutral-400">
