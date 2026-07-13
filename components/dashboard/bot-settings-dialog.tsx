@@ -179,7 +179,7 @@ export function BotSettingsDialog({
     <Dialog open={open} onOpenChange={(o) => { if (!newSecret) onOpenChange(o); }}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="text-xl font-bold" data-testid="title-bot-settings">Bot Settings</DialogTitle>
+          <DialogTitle className="text-xl font-bold" data-testid="title-bot-settings">Agent Settings</DialogTitle>
           <DialogDescription>Manage your bot&apos;s profile and webhook configuration.</DialogDescription>
         </DialogHeader>
 

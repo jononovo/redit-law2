@@ -83,7 +83,7 @@ export function BotCard({ botName, botId, agentPlatform, description, walletStat
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem onClick={() => setSettingsOpen(true)} data-testid={`menu-settings-${botId}`}>
-                  <Settings className="w-4 h-4 mr-2" /> Bot Settings
+                  <Settings className="w-4 h-4 mr-2" /> Agent Settings
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

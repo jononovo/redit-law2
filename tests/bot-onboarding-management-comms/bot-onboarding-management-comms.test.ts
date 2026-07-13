@@ -14,9 +14,9 @@ import { registerBotRequestSchema, claimBotRequestSchema } from "@/shared/schema
 import { createHmac } from "crypto";
 
 describe("Bot Identity — ID generation", () => {
-  it("generates bot IDs with bot_ prefix", () => {
+  it("generates bot IDs with agent_ prefix", () => {
     const id = generateBotId();
-    expect(id).toMatch(/^bot_[0-9a-f]{8}$/);
+    expect(id).toMatch(/^agent_[0-9a-f]{8}$/);
   });
 
   it("generates unique bot IDs", () => {

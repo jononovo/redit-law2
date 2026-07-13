@@ -9,7 +9,7 @@ const CLAIM_WORDS = [
 ];
 
 export function generateBotId(): string {
-  return "bot_" + randomBytes(4).toString("hex");
+  return "agent_" + randomBytes(4).toString("hex");
 }
 
 export function generateApiKey(): string {
