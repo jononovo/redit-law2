@@ -56,6 +56,13 @@ export default function VirtualCardsPage() {
         <>
           Save your own Visa or Mastercard once.
           Create as many virtual cards as you want on top of one real card — each is a separate spending permission you can tune per agent or per category.
+          <br />
+          <br />
+          <strong className="text-neutral-900">What Cards Work Now?</strong>
+          <br />
+          US-issued Visa or Mastercard credit/debit only.
+          <br />
+          Not supported: non-US, business, prepaid, Chase, Fidelity.
         </>
       ),
     },
