@@ -2,7 +2,7 @@
 
 import { WizardStep } from "../wizard-step";
 import { wt } from "@/lib/wizard-typography";
-import { Zap, Bot, Monitor } from "lucide-react";
+import { Zap, Bot, Monitor, Terminal, Code } from "lucide-react";
 
 interface ChoosePathProps {
   currentStep: number;
@@ -19,25 +19,39 @@ const agentTypes = [
     enabled: true,
   },
   {
+    id: "claude_code",
+    label: "Claude Code",
+    description: "Connect from the Claude Code CLI.",
+    icon: Terminal,
+    enabled: true,
+  },
+  {
     id: "claude_cowork",
     label: "Claude CoWork",
     description: "Install the Claude CoWork Plugin",
     icon: Bot,
-    enabled: false,
+    enabled: true,
+  },
+  {
+    id: "codex",
+    label: "Codex",
+    description: "Connect from the Codex CLI.",
+    icon: Code,
+    enabled: true,
   },
   {
     id: "agent",
     label: "Agent",
     description: "No write permissions.",
     icon: Bot,
-    enabled: false,
+    enabled: true,
   },
   {
     id: "application",
     label: "Application",
     description: "One-time setup of card & webhook.",
     icon: Monitor,
-    enabled: false,
+    enabled: true,
   },
 ];
 
