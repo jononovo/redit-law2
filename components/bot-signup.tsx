@@ -118,7 +118,7 @@ export function BotSignup() {
               <div className="bg-white rounded-3xl border border-neutral-100 shadow-xl shadow-neutral-900/5 p-8">
                 <div className="text-center mb-8">
                   <h3 className="text-2xl font-extrabold text-neutral-900 mb-2">
-                    Give Your AI Agent a Wallet <span className="text-2xl">💳</span>
+                    Give your agent a wallet <span className="text-2xl">💳</span>
                   </h3>
                   <p className="text-neutral-500 font-medium text-sm">
                     Send these instructions to your agent. They&apos;ll handle the rest.
