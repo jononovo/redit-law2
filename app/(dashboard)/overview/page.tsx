@@ -310,13 +310,13 @@ export default function DashboardOverview() {
 
   return (
     <div className="flex flex-col gap-8 animate-fade-in-up">
-      <div>
+      <div className="w-full max-w-[26rem]">
         <OverviewSectionHeader
           title="My Agents"
           seeAllHref="/agents"
           seeAllTestId="link-see-all-agents"
           showSeeAll={!loading && (bots.length > 0 || pendingPairings.length > 0)}
-          className="mb-6"
+          className="mb-3"
           meta={!loading && (
             <span className="text-sm text-neutral-400" data-testid="text-agent-counts">
               {activeBots.length} Active
@@ -352,28 +352,25 @@ export default function DashboardOverview() {
             </div>
           </div>
         ) : (
-          <div className="flex flex-wrap gap-4">
+          <div className="flex flex-col gap-4">
             {pendingPairings.slice(0, 2).map((pairing) => (
-              <div key={pairing.code} className="w-full max-w-[26rem]">
-                <PendingPairingCard code={pairing.code} expiresAt={pairing.expires_at} />
-              </div>
+              <PendingPairingCard key={pairing.code} code={pairing.code} expiresAt={pairing.expires_at} />
             ))}
             {bots.slice(0, Math.max(0, 2 - pendingPairings.length)).map((bot) => (
-              <div key={bot.bot_id} className="w-full max-w-[26rem]">
-                <BotCard
-                  botName={bot.bot_name}
-                  botId={bot.bot_id}
-                  agentPlatform={bot.agent_platform}
-                  description={bot.description}
-                  walletStatus={bot.wallet_status}
-                  webhookStatus={bot.webhook_status}
-                  tunnelStatus={bot.tunnel_status}
-                  callbackUrl={bot.callback_url}
-                  createdAt={bot.created_at}
-                  claimedAt={bot.claimed_at}
-                  onUpdated={() => fetchData()}
-                />
-              </div>
+              <BotCard
+                key={bot.bot_id}
+                botName={bot.bot_name}
+                botId={bot.bot_id}
+                agentPlatform={bot.agent_platform}
+                description={bot.description}
+                walletStatus={bot.wallet_status}
+                webhookStatus={bot.webhook_status}
+                tunnelStatus={bot.tunnel_status}
+                callbackUrl={bot.callback_url}
+                createdAt={bot.created_at}
+                claimedAt={bot.claimed_at}
+                onUpdated={() => fetchData()}
+              />
             ))}
           </div>
         )}
