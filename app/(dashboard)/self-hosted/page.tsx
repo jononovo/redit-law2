@@ -13,10 +13,10 @@ const config: CreditCardListPageConfig = {
   apiEndpoint: "/api/v1/rail5/cards",
   railPrefix: "rail5",
   railId: "rail5",
-  basePath: "/self-hosted-cards",
+  basePath: "/self-hosted",
   approvalsEndpoint: "/api/v1/approvals?rail=rail5",
   approvalsDecideEndpoint: "/api/v1/approvals/decide",
-  normalizeCards: (data: any) => (data.cards || []).map((c: any) => normalizeRail5Card(c, "/self-hosted-cards")),
+  normalizeCards: (data: any) => (data.cards || []).map((c: any) => normalizeRail5Card(c, "/self-hosted")),
   explainer: (
     <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-2xl border border-purple-100 p-6" data-testid="card-rail5-explainer">
       <div className="flex items-start gap-4">

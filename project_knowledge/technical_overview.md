@@ -262,7 +262,7 @@ Encrypted card files with plugin-based checkout. Uses the owner's personal credi
   - `decrypt-script.ts` — static `DECRYPT_SCRIPT` constant (~10-line AES-256-GCM Node.js script) with marker-based regex (`ENCRYPTED_CARD_START/END`) for extracting data from combined files. Falls back to code-fence matching for old-format files.
   - **Card status progression:** `pending_setup` → `pending_delivery` (key submitted) → `confirmed` (bot confirmed file delivery via `POST /bot/rail5/confirm-delivery`) → `active` (first successful checkout completed). `frozen` can be set by owner on `confirmed` or `active` cards; unfreezing restores to `confirmed` or `active` based on checkout history.
   - **Dual execution modes:** Checkout endpoint returns both `checkout_steps` (array of instructions for direct mode) and `spawn_payload` (spawn wrapper for sub-agent mode). Bot chooses which to use.
-  - DB tables: `rail5_cards`, `rail5_transactions`. Owner API: `/api/v1/rail5/{initialize,submit-key,cards,deliver-to-bot,cards/[cardId]/delivery-status}`. Bot API: `/api/v1/bot/rail5/{checkout,key,confirm,confirm-delivery}`. Dashboard: `/self-hosted-cards`. Setup wizard: 9-step (Name→HowItWorks→VisualCardEntry→BillingAddress→Limits→LinkBot→Encrypt&Send→DeliveryResult→TestVerification) with Web Crypto encryption. Card brand is auto-detected from BIN prefix via shared `features/payment-rails/card/card-brand.ts` utility (Visa/MC/Amex/Discover/JCB/Diners); sent to server during submit-key.
+  - DB tables: `rail5_cards`, `rail5_transactions`. Owner API: `/api/v1/rail5/{initialize,submit-key,cards,deliver-to-bot,cards/[cardId]/delivery-status}`. Bot API: `/api/v1/bot/rail5/{checkout,key,confirm,confirm-delivery}`. Dashboard: `/self-hosted`. Setup wizard: 9-step (Name→HowItWorks→VisualCardEntry→BillingAddress→Limits→LinkBot→Encrypt&Send→DeliveryResult→TestVerification) with Web Crypto encryption. Card brand is auto-detected from BIN prefix via shared `features/payment-rails/card/card-brand.ts` utility (Visa/MC/Amex/Discover/JCB/Diners); sent to server during submit-key.
   - **File delivery via `sendToBot()`**: Encryption step calls `POST /api/v1/bot-messages/send` which tries webhook first, falls back to staging a pending message. Combined self-contained markdown file format with `DECRYPT_SCRIPT_START/END` and `ENCRYPTED_CARD_START/END` markers. Backup download always happens.
   - **Delivery result step**: Shows live status (webhook delivered / waiting for bot / confirmed). 1-minute polling every 5s via `GET /rail5/cards/[cardId]/delivery-status`. Share buttons (Copy, Telegram, Discord) for relay message. Collapsible "For AI Agents" section with re-download option. **Phase 2: Test purchase verification** — after bot confirms delivery, polls `GET /rail5/cards/[cardId]/test-purchase-status` for 3 minutes. Server returns submitted card details from the test sale; client compares field-by-field against `savedCardDetails` (preserved in browser memory before input clearing). Shows green checkmarks (match) or red X (mismatch) per field. Confirm-delivery endpoint returns real `test_checkout_url` and `test_instructions` directing bot to sandbox checkout with "testing" payment method.
 
@@ -348,7 +348,7 @@ Rail 5 (`sub-agent-cards/page.tsx`) is ~43 lines — a pure config object passed
 
 **Transaction vs Order:** A *transaction* is a financial movement (deposit, transfer, debit, reconciliation) — it's about the money. An *order* is a confirmed purchase (product, vendor, shipping, tracking) — it's about what was bought. An order typically has a corresponding transaction (via `transactionId` FK), but not every transaction creates an order (deposits, transfers don't).
 
-Individual rail pages (`/usdc-wallet`, `/card-wallet`, `/self-hosted-cards`) use `RailPageTabs` to show rail-specific transactions, orders, and approvals alongside their wallet/card management. All three rail pages use `ApprovalHistoryPanel` (with `defaultRail` prop) for full approval history — not just pending. The rail filter is hidden on rail-specific pages since it's redundant. Pending approval count is reported back to the parent via `onPendingCount` callback for the tab badge.
+Individual rail pages (`/usdc-wallet`, `/card-wallet`, `/self-hosted`) use `RailPageTabs` to show rail-specific transactions, orders, and approvals alongside their wallet/card management. All three rail pages use `ApprovalHistoryPanel` (with `defaultRail` prop) for full approval history — not just pending. The rail filter is hidden on rail-specific pages since it's redundant. Pending approval count is reported back to the parent via `onPendingCount` callback for the tab badge.
 
 ---
 
@@ -509,7 +509,7 @@ The platform's inbound commerce engine. Buyers (humans and AI agents) pay into t
 - `/overview`: Dashboard overview
 - `/usdc-wallet`: Rail 1 dashboard (page route renamed; API stays `/api/v1/usdc-wallet/*`)
 - `/card-wallet`: Rail 2 dashboard
-- `/self-hosted-cards`: Self-hosted card management (Rail 5)
+- `/self-hosted`: Self-hosted card management (Rail 5)
 - `/transactions`: Transaction history, orders, and unified approvals (three tabs)
 - `/settings`: Account settings
 - `/onboarding`: Guided setup wizard

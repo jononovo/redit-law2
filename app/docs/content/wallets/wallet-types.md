@@ -30,7 +30,7 @@ The <a href="/card-wallet" target="_blank">**Card Wallet**</a> is a custodial wa
 
 ## Self-hosted Encrypted Cards (Rail 5)
 
-<a href="/self-hosted-cards" target="_blank">**Self-hosted Encrypted Cards**</a> use end-to-end encryption with a key that only you and your bot share. CreditClaw never has access to the decrypted card details.
+<a href="/self-hosted" target="_blank">**Self-hosted Encrypted Cards**</a> use end-to-end encryption with a key that only you and your bot share. CreditClaw never has access to the decrypted card details.
 
 - **Currency**: Your card's native currency
 - **Funding**: Your existing credit/debit card

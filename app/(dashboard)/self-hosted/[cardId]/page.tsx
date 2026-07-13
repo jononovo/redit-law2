@@ -111,7 +111,7 @@ export default function Rail5CardDetailPage() {
     <CardDetailShell
       loading={loading}
       notFound={!card}
-      backHref="/self-hosted-cards"
+      backHref="/self-hosted"
       backLabel="Back to Self-hosted Cards"
     >
       {card && (

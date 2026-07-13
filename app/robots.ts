@@ -17,7 +17,7 @@ export default function robots(): MetadataRoute.Robots {
           "/overview",
           "/card-wallet",
           "/usdc-wallet",
-          "/self-hosted-cards",
+          "/self-hosted",
           "/transactions",
           "/settings",
           "/sales",

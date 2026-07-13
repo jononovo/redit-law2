@@ -120,7 +120,7 @@ export default function DashboardOverview() {
       const res = await authFetch("/api/v1/rail5/cards");
       if (res.ok) {
         const data = await res.json();
-        setRail5Cards((data.cards || []).map((c: any) => normalizeRail5Card(c, "/self-hosted-cards")));
+        setRail5Cards((data.cards || []).map((c: any) => normalizeRail5Card(c, "/self-hosted")));
       }
     } catch {} finally {
       setCardsLoading(false);

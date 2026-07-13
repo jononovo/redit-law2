@@ -13,7 +13,7 @@ Giving an AI agent direct access to your full credit card number is risky. Encry
 
 ## How It Works
 
-<a href="/self-hosted-cards" target="_blank">Self-hosted Encrypted Cards</a> use **end-to-end encryption** with a key that only you and your bot share. CreditClaw acts as a secure intermediary but never has access to the decrypted card details.
+<a href="/self-hosted" target="_blank">Self-hosted Encrypted Cards</a> use **end-to-end encryption** with a key that only you and your bot share. CreditClaw acts as a secure intermediary but never has access to the decrypted card details.
 
 ### Encryption Flow
 
