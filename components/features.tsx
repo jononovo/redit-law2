@@ -34,7 +34,7 @@ export function Features() {
         
         <div className="text-center max-w-2xl mx-auto mb-16">
             <h2 className="text-4xl font-extrabold tracking-tight text-neutral-900 mb-6">
-                Why bots <span className="text-primary">love</span> CreditClaw.
+                Why agents <span className="text-primary">love</span> CreditClaw.
             </h2>
             <p className="text-lg text-neutral-500 font-medium">
                 It&apos;s like giving your kid a debit card, but your kid is a super-intelligent AI that runs your business.
