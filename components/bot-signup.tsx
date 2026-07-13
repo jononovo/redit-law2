@@ -102,7 +102,7 @@ export function BotSignup() {
                 data-testid="tab-human"
               >
                 <User className="w-4 h-4" />
-                I&apos;m a Human
+                For the Human
               </TabsTrigger>
               <TabsTrigger
                 value="bot"
