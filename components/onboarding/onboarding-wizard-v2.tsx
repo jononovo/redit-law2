@@ -4,7 +4,8 @@ import { useState, useMemo, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useOnboardingPairing } from "./use-onboarding-pairing";
+import { useAuth } from "@/features/platform-management/auth/auth-context";
+import { useOnboardingPairing, PAIRING_CODE_STORAGE_KEY } from "./use-onboarding-pairing";
 import { ChoosePath } from "./steps/choose-path";
 import { RegisterAgentWithCode } from "./steps/register-agent-with-code";
 import { SignInStep } from "./steps/sign-in";
@@ -43,6 +44,7 @@ export function OnboardingWizardV2() {
   const searchParams = useSearchParams();
   const stepParam = searchParams.get("step") as StepId | null;
   const { toast } = useToast();
+  const { user } = useAuth();
 
   const [state, setState] = useState<WizardState>(initialState);
 
@@ -90,6 +92,7 @@ export function OnboardingWizardV2() {
   }, [activeSteps, animateTransition]);
 
   const finishOnboarding = useCallback(() => {
+    sessionStorage.removeItem(PAIRING_CODE_STORAGE_KEY);
     import("@/features/platform-management/auth-fetch")
       .then(({ authFetch }) => authFetch("/api/v1/owners/onboarded", { method: "POST" }))
       .catch(() => {});
@@ -149,15 +152,29 @@ export function OnboardingWizardV2() {
             currentStep={currentStepIndex}
             totalSteps={totalSteps}
             onBack={goBack}
-            onNext={goForward}
+            onNext={() => {
+              if (user && pairingCode) {
+                goToStep("add-card-bridge");
+              } else {
+                goForward();
+              }
+            }}
             onSkip={() => {
               clearPairingCode();
               goForward();
             }}
             onAgentRegistered={(botId, botName) => {
-              setState((s) => ({ ...s, botId, botName }));
-              toast({ title: `${botName} registered`, description: "Sign in to finish linking it to your account." });
-              goForward();
+              if (user) {
+                setState((s) => ({ ...s, botId, botName, botConnected: true }));
+                saveAgentPlatform(botId);
+                clearPairingCode();
+                toast({ title: `${botName} connected`, description: "Your agent is linked to your account." });
+                goToStep("add-card-bridge");
+              } else {
+                setState((s) => ({ ...s, botId, botName }));
+                toast({ title: `${botName} registered`, description: "Sign in to finish linking it to your account." });
+                goForward();
+              }
             }}
             pairingCode={pairingCode}
             onCodeGenerated={handleCodeGenerated}

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getCurrentUser } from "@/features/platform-management/auth/session";
+import { getSessionUser } from "@/features/platform-management/auth/session";
 import { storage } from "@/server/storage";
 
 function generatePairingCode(): string {
@@ -29,7 +29,7 @@ function checkAnonRateLimit(ip: string): boolean {
 
 export async function POST(request: NextRequest) {
   try {
-    const user = await getCurrentUser();
+    const user = await getSessionUser(request);
 
     if (user) {
       const recentCount = await storage.getRecentPairingCodeCount(user.uid);

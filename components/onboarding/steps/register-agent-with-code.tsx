@@ -8,6 +8,18 @@ import { BotInstructionBlock } from "../bot-instruction-block";
 import { formatPairingCodeForDisplay } from "@/features/platform-management/agent-management/pairing-code-format";
 import { Loader2, RefreshCw } from "lucide-react";
 
+let inFlightPairingCodeRequest: Promise<{ code?: string; error?: string }> | null = null;
+
+async function requestNewPairingCode(): Promise<{ code?: string; error?: string }> {
+  const { authFetch } = await import("@/features/platform-management/auth-fetch");
+  const res = await authFetch("/api/v1/pairing-codes", { method: "POST" });
+  const data = await res.json();
+  if (!res.ok) {
+    return { error: data.error || "Failed to generate code" };
+  }
+  return { code: data.code };
+}
+
 interface RegisterAgentWithCodeProps {
   currentStep: number;
   totalSteps: number;
@@ -40,16 +52,19 @@ export function RegisterAgentWithCode({
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/v1/pairing-codes", { method: "POST" });
-      const data = await res.json();
-      if (!res.ok) {
-        setError(data.error || "Failed to generate code");
+      if (!inFlightPairingCodeRequest) {
+        inFlightPairingCodeRequest = requestNewPairingCode();
+      }
+      const result = await inFlightPairingCodeRequest;
+      if (result.error || !result.code) {
+        setError(result.error || "Failed to generate code");
         return;
       }
-      onCodeGenerated(data.code);
+      onCodeGenerated(result.code);
     } catch {
       setError("Something went wrong. Please try again.");
     } finally {
+      inFlightPairingCodeRequest = null;
       setLoading(false);
     }
   }, [onCodeGenerated]);
@@ -64,7 +79,9 @@ export function RegisterAgentWithCode({
   const checkStatus = useCallback(async () => {
     if (!pairingCode || registeredRef.current) return;
     try {
-      const res = await fetch(`/api/v1/pairing-codes/status?code=${pairingCode}`);
+      const { authFetch } = await import("@/features/platform-management/auth-fetch");
+      const res = await authFetch(`/api/v1/pairing-codes/status?code=${pairingCode}`);
+      if (!res.ok) return;
       const data = await res.json();
       if (data.status === "registered" && !registeredRef.current) {
         registeredRef.current = true;

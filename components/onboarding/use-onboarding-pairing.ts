@@ -4,7 +4,7 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import { useAuth } from "@/features/platform-management/auth/auth-context";
 import { useToast } from "@/hooks/use-toast";
 
-const PAIRING_CODE_STORAGE_KEY = "creditclaw_onboarding_pairing_code";
+export const PAIRING_CODE_STORAGE_KEY = "creditclaw_onboarding_pairing_code";
 
 interface UseOnboardingPairingOptions {
   claimEligible: boolean;

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getCurrentUser } from "@/features/platform-management/auth/session";
+import { getSessionUser } from "@/features/platform-management/auth/session";
 import { storage } from "@/server/storage";
 import { normalizePairingCode } from "@/features/platform-management/agent-management/pairing-code-format";
 import { checkPairingCodeRateLimit } from "@/features/platform-management/agent-management/pairing-code-rate-limit";
@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
     }
 
     if (pairingCode.ownerUid) {
-      const user = await getCurrentUser();
+      const user = await getSessionUser(request);
       if (!user || pairingCode.ownerUid !== user.uid) {
         return NextResponse.json({ error: "Pairing code not found" }, { status: 404 });
       }
