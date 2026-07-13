@@ -114,7 +114,7 @@ export function FeedbackDialog({ open, onOpenChange, initialType }: FeedbackDial
             Support
           </DialogTitle>
           <DialogDescription data-testid="text-feedback-description">
-            Have a question, found a bug, or want to request a feature? We'd love to hear from you.
+            We love to hear from you.
           </DialogDescription>
         </DialogHeader>
 
