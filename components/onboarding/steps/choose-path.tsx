@@ -15,7 +15,7 @@ const agentTypes = [
   { id: "claude_code", label: "Claude Code", icon: Terminal, enabled: true },
   { id: "claude_cowork", label: "Claude CoWork", icon: Bot, enabled: true },
   { id: "codex", label: "Codex", icon: Code, enabled: true },
-  { id: "agent", label: "Agent", icon: Bot, enabled: true },
+  { id: "agent", label: "All Other Agents", icon: Bot, enabled: true },
   { id: "application", label: "Application", icon: Monitor, enabled: true },
 ];
 
