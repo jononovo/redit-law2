@@ -120,7 +120,7 @@ export function Hero() {
 
           <div className="relative flex flex-col items-center justify-center perspective-[1000px]">
               <div 
-                className="relative w-full max-w-[500px] z-10 animate-pop-in"
+                className="relative w-full max-w-[500px] z-10 animate-pop-in mb-20 md:mb-0"
               >
                   <Image 
                       src="/assets/images/fun-lobster-black-card.png"
@@ -143,7 +143,7 @@ export function Hero() {
                      </div>
                    </div>
 
-                   <div className="absolute -bottom-12 right-0 md:-right-12">
+                   <div className="absolute -bottom-24 right-0 scale-75 origin-bottom-right md:scale-100 md:-bottom-12 md:-right-12">
                       <TransactionLedger />
                    </div>
               </div>
