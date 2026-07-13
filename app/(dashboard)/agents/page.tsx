@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { BotCard } from "@/components/dashboard/bot-card";
 import { PendingPairingCard } from "@/components/dashboard/pending-pairing-card";
 import { useAuth } from "@/features/platform-management/auth/auth-context";
+import { authFetch } from "@/features/platform-management/auth-fetch";
 
 interface BotData {
   bot_id: string;
@@ -35,7 +36,7 @@ export default function AgentsPage() {
 
   const fetchBots = useCallback(async () => {
     try {
-      const res = await fetch("/api/v1/bots/mine");
+      const res = await authFetch("/api/v1/bots/mine");
       if (res.ok) {
         const data = await res.json();
         setBots(data.bots || []);

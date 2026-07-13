@@ -34,6 +34,7 @@ export function RegisterAgentWithCode({
   const [error, setError] = useState<string | null>(null);
   const registeredRef = useRef(false);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const generateStartedRef = useRef(false);
 
   const generateCode = useCallback(async () => {
     setLoading(true);
@@ -54,7 +55,8 @@ export function RegisterAgentWithCode({
   }, [onCodeGenerated]);
 
   useEffect(() => {
-    if (!pairingCode) {
+    if (!pairingCode && !generateStartedRef.current) {
+      generateStartedRef.current = true;
       generateCode();
     }
   }, [pairingCode, generateCode]);

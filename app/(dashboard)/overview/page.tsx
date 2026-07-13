@@ -73,9 +73,9 @@ export default function DashboardOverview() {
   const [fundSheetOpen, setFundSheetOpen] = useState(false);
   const [fundTarget, setFundTarget] = useState<{ id: number; address: string; botName?: string } | null>(null);
 
-  async function fetchData() {
+  const fetchData = useCallback(async () => {
     try {
-      const botsRes = await fetch("/api/v1/bots/mine");
+      const botsRes = await authFetch("/api/v1/bots/mine");
       if (botsRes.ok) {
         const data = await botsRes.json();
         setBots(data.bots || []);
@@ -84,7 +84,7 @@ export default function DashboardOverview() {
     } catch {} finally {
       setLoading(false);
     }
-  }
+  }, []);
 
   const fetchPrivyWallets = useCallback(async () => {
     try {
@@ -228,20 +228,18 @@ export default function DashboardOverview() {
   }
 
   useEffect(() => {
-    fetchData();
-  }, []);
-
-  useEffect(() => {
     if (user) {
+      fetchData();
       fetchPrivyWallets();
       fetchRail5Cards();
       fetchApprovals();
       rail1BotLinking.fetchBots();
       rail5BotLinking.fetchBots();
     } else {
+      setLoading(false);
       setCardsLoading(false);
     }
-  }, [user, fetchPrivyWallets, fetchRail5Cards, fetchApprovals, rail1BotLinking.fetchBots, rail5BotLinking.fetchBots]);
+  }, [user, fetchData, fetchPrivyWallets, fetchRail5Cards, fetchApprovals, rail1BotLinking.fetchBots, rail5BotLinking.fetchBots]);
 
   const activeBots = bots.filter((b) => b.wallet_status === "active");
   const pendingBots = bots.filter((b) => b.wallet_status === "pending");

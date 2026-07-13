@@ -90,7 +90,9 @@ export function OnboardingWizardV2() {
   }, [activeSteps, animateTransition]);
 
   const finishOnboarding = useCallback(() => {
-    fetch("/api/v1/owners/onboarded", { method: "POST" }).catch(() => {});
+    import("@/features/platform-management/auth-fetch")
+      .then(({ authFetch }) => authFetch("/api/v1/owners/onboarded", { method: "POST" }))
+      .catch(() => {});
     router.push("/overview");
   }, [router]);
 

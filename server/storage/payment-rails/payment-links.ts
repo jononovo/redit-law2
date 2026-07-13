@@ -5,7 +5,7 @@ import {
   type WaitlistEntry, type InsertWaitlistEntry,
   type Bot,
 } from "@/shared/schema";
-import { eq, and, sql, gte, isNull } from "drizzle-orm";
+import { eq, and, sql, gte, isNull, desc } from "drizzle-orm";
 import type { IStorage } from "../types";
 
 type PairingWaitlistMethods = Pick<IStorage,
@@ -77,7 +77,8 @@ export const pairingWaitlistMethods: PairingWaitlistMethods = {
         eq(pairingCodes.status, "pending"),
         gte(pairingCodes.expiresAt, now),
       ))
-      .orderBy(pairingCodes.createdAt);
+      .orderBy(desc(pairingCodes.createdAt))
+      .limit(1);
   },
 
   async getRecentPairingCodeCount(ownerUid: string): Promise<number> {
