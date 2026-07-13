@@ -18,10 +18,7 @@ import {
   ShoppingBag,
   ExternalLink,
   FileText,
-  ChevronDown,
-  Gauge,
-  Sparkles,
-  FlaskConical
+  ChevronDown
 } from "lucide-react";
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
 import Image from "next/image";
@@ -38,7 +35,7 @@ import {
 } from "@/components/ui/sidebar";
 
 interface NavItem {
-  icon: React.ComponentType<{ className?: string }>;
+  icon?: React.ComponentType<{ className?: string }>;
   label: string;
   href: string;
   subtitle?: string;
@@ -65,9 +62,9 @@ const procurementNavItems: NavItem[] = [
 ];
 
 const toolsNavItems: NavItem[] = [
-  { icon: Gauge, label: "Brand Agent Score", href: "https://shopy.sh", external: true, hideExternalIcon: true },
-  { icon: Sparkles, label: "Generate Brand Skill", href: "https://brands.sh", external: true },
-  { icon: FlaskConical, label: "Agent Shopping Test", href: "/agent-shopping-test", external: true },
+  { label: "Brand Agent Score", href: "https://shopy.sh", external: true, hideExternalIcon: true },
+  { label: "Generate Brand Skill", href: "https://brands.sh", external: true },
+  { label: "Agent Shopping Test", href: "/agent-shopping-test", external: true },
 ];
 
 const salesNavItems: NavItem[] = [
@@ -136,7 +133,9 @@ export function AppSidebar({ onNewCard }: AppSidebarProps) {
                     ? "bg-neutral-900 text-white shadow-md shadow-neutral-900/10" 
                     : "text-neutral-500 hover:bg-neutral-50 hover:text-neutral-900"
               )}>
-                <item.icon className={cn("w-5 h-5 flex-shrink-0", isInactive ? "text-neutral-300" : isActive ? "text-white" : "text-neutral-400")} />
+                {item.icon && (
+                  <item.icon className={cn("w-5 h-5 flex-shrink-0", isInactive ? "text-neutral-300" : isActive ? "text-white" : "text-neutral-400")} />
+                )}
                 <div className="relative flex flex-col">
                   <span>{item.label}</span>
                   {item.subtitle && (
@@ -201,7 +200,9 @@ export function AppSidebar({ onNewCard }: AppSidebarProps) {
                   ? "bg-neutral-900 text-white shadow-md shadow-neutral-900/10" 
                   : "text-neutral-500 hover:bg-neutral-50 hover:text-neutral-900"
               )}>
-                <item.icon className={cn("w-5 h-5 flex-shrink-0", isActive ? "text-white" : "text-neutral-400")} />
+                {item.icon && (
+                  <item.icon className={cn("w-5 h-5 flex-shrink-0", isActive ? "text-white" : "text-neutral-400")} />
+                )}
                 {item.label}
                 {isExternal && !item.hideExternalIcon && (
                   <ExternalLink className="w-3 h-3 ml-auto text-neutral-300 flex-shrink-0" />
@@ -238,7 +239,9 @@ export function AppSidebar({ onNewCard }: AppSidebarProps) {
                       ? "bg-neutral-900 text-white shadow-md shadow-neutral-900/10" 
                       : "text-neutral-500 hover:bg-neutral-50 hover:text-neutral-900"
                   )}>
-                    <item.icon className={cn("w-5 h-5", isActive ? "text-white" : "text-neutral-400")} />
+                    {item.icon && (
+                      <item.icon className={cn("w-5 h-5", isActive ? "text-white" : "text-neutral-400")} />
+                    )}
                     {item.label}
                   </div>
                 </Link>
@@ -265,7 +268,9 @@ export function AppSidebar({ onNewCard }: AppSidebarProps) {
                   ? "bg-neutral-900 text-white shadow-md shadow-neutral-900/10" 
                   : "text-neutral-500 hover:bg-neutral-50 hover:text-neutral-900"
               )}>
-                <item.icon className={cn("w-5 h-5", isActive ? "text-white" : "text-neutral-400")} />
+                {item.icon && (
+                  <item.icon className={cn("w-5 h-5", isActive ? "text-white" : "text-neutral-400")} />
+                )}
                 {item.label}
                 {isExternal && (
                   <ExternalLink className="w-3 h-3 ml-auto text-neutral-300" />
