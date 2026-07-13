@@ -10,7 +10,7 @@ import type { IStorage } from "../types";
 
 type PairingWaitlistMethods = Pick<IStorage,
   | "createPairingCode" | "getPairingCodeByCode" | "getRecentPairingCodeCount"
-  | "adoptPairingCode" | "claimRegisteredPairingCode"
+  | "adoptPairingCode" | "claimRegisteredPairingCode" | "getPendingPairingCodesByOwnerUid"
   | "addWaitlistEntry" | "getWaitlistEntryByEmail"
 >;
 
@@ -65,6 +65,19 @@ export const pairingWaitlistMethods: PairingWaitlistMethods = {
 
       return bot || null;
     });
+  },
+
+  async getPendingPairingCodesByOwnerUid(ownerUid: string): Promise<PairingCode[]> {
+    const now = new Date();
+    return db
+      .select()
+      .from(pairingCodes)
+      .where(and(
+        eq(pairingCodes.ownerUid, ownerUid),
+        eq(pairingCodes.status, "pending"),
+        gte(pairingCodes.expiresAt, now),
+      ))
+      .orderBy(pairingCodes.createdAt);
   },
 
   async getRecentPairingCodeCount(ownerUid: string): Promise<number> {

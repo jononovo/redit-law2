@@ -31,9 +31,17 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const bots = await storage.getBotsByOwnerUid(user.uid);
+    const [bots, pendingPairings] = await Promise.all([
+      storage.getBotsByOwnerUid(user.uid),
+      storage.getPendingPairingCodesByOwnerUid(user.uid),
+    ]);
 
     return NextResponse.json({
+      pending_pairings: pendingPairings.map((pc) => ({
+        code: pc.code,
+        created_at: pc.createdAt,
+        expires_at: pc.expiresAt,
+      })),
       bots: bots.map((bot) => ({
         bot_id: bot.botId,
         bot_name: bot.botName,

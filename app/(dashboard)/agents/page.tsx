@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Bot as BotIcon, Plus, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { BotCard } from "@/components/dashboard/bot-card";
+import { PendingPairingCard } from "@/components/dashboard/pending-pairing-card";
 import { useAuth } from "@/features/platform-management/auth/auth-context";
 
 interface BotData {
@@ -20,9 +21,16 @@ interface BotData {
   claimed_at: string | null;
 }
 
+interface PendingPairing {
+  code: string;
+  created_at: string;
+  expires_at: string;
+}
+
 export default function AgentsPage() {
   const { user } = useAuth();
   const [bots, setBots] = useState<BotData[]>([]);
+  const [pendingPairings, setPendingPairings] = useState<PendingPairing[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchBots = useCallback(async () => {
@@ -31,6 +39,7 @@ export default function AgentsPage() {
       if (res.ok) {
         const data = await res.json();
         setBots(data.bots || []);
+        setPendingPairings(data.pending_pairings || []);
       }
     } catch (error) {
       console.error("Failed to fetch agents:", error);
@@ -78,7 +87,7 @@ export default function AgentsPage() {
         <div className="flex items-center justify-center py-16">
           <Loader2 className="w-6 h-6 animate-spin text-neutral-400" />
         </div>
-      ) : bots.length === 0 ? (
+      ) : bots.length === 0 && pendingPairings.length === 0 ? (
         <div className="bg-white rounded-2xl border border-neutral-100 shadow-sm p-12 text-center" data-testid="empty-bots">
           <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
             <BotIcon className="w-8 h-8 text-primary" />
@@ -88,6 +97,9 @@ export default function AgentsPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {pendingPairings.map((pairing) => (
+            <PendingPairingCard key={pairing.code} code={pairing.code} expiresAt={pairing.expires_at} />
+          ))}
           {bots.map((bot) => (
             <BotCard
               key={bot.bot_id}

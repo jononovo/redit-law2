@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { BotCard } from "@/components/dashboard/bot-card";
+import { PendingPairingCard } from "@/components/dashboard/pending-pairing-card";
 import { ActivityLog } from "@/components/dashboard/activity-log";
 import { WebhookLog } from "@/components/dashboard/webhook-log";
 import { OpsHealth } from "@/components/dashboard/ops-health";
@@ -45,11 +46,18 @@ interface BotData {
   claimed_at: string | null;
 }
 
+interface PendingPairing {
+  code: string;
+  created_at: string;
+  expires_at: string;
+}
+
 export default function DashboardOverview() {
   const router = useRouter();
   const { user } = useAuth();
   const { toast } = useToast();
   const [bots, setBots] = useState<BotData[]>([]);
+  const [pendingPairings, setPendingPairings] = useState<PendingPairing[]>([]);
   const [loading, setLoading] = useState(true);
   const [privyWallets, setPrivyWallets] = useState<Rail1WalletInfo[]>([]);
   const [rail5Cards, setRail5Cards] = useState<NormalizedCard[]>([]);
@@ -71,6 +79,7 @@ export default function DashboardOverview() {
       if (botsRes.ok) {
         const data = await botsRes.json();
         setBots(data.bots || []);
+        setPendingPairings(data.pending_pairings || []);
       }
     } catch {} finally {
       setLoading(false);
