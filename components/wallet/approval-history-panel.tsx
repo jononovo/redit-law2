@@ -160,7 +160,7 @@ export function ApprovalHistoryPanel({ defaultRail, onPendingCount, onDecisionCo
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Bots</SelectItem>
+                <SelectItem value="all">All Agents</SelectItem>
                 {botNames.map((name) => (
                   <SelectItem key={name} value={name}>{name}</SelectItem>
                 ))}

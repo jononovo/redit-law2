@@ -150,7 +150,7 @@ export function OrdersPanel({ onConfigureGuardrails }: OrdersPanelProps) {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Bots</SelectItem>
+                <SelectItem value="all">All Agents</SelectItem>
                 {bots.map((b) => (
                   <SelectItem key={b.botId} value={b.botId}>{b.botName}</SelectItem>
                 ))}
