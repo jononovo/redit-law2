@@ -47,7 +47,7 @@ export default function VirtualCardsPage() {
     transactionsEndpoint: "/api/v1/rail3/transactions",
     normalizeCards: (data: any) => (data.cards || []).map((c: Rail3CardInfo) => normalizeRail3Card(c, "/virtual-cards")),
     explainer: {
-      title: "How Virtual Cards Work",
+      title: "How virtual cards work",
       icon: <CreditCard className="w-5 h-5 text-orange-600" />,
       containerClassName: "bg-gradient-to-r from-orange-50 to-blue-50 border-orange-100",
       iconWrapClassName: "bg-orange-100",
