@@ -255,7 +255,10 @@ export default function DashboardOverview() {
             <h2 className="text-lg font-bold text-neutral-900">My Agents</h2>
             {!loading && (
               <span className="text-sm text-neutral-400" data-testid="text-agent-counts">
-                {activeBots.length} Active <span className="text-neutral-300">|</span> {pendingBots.length} Pending
+                {activeBots.length} Active
+                {pendingBots.length > 0 && (
+                  <> <span className="text-neutral-300">|</span> {pendingBots.length} Pending</>
+                )}
               </span>
             )}
           </div>
