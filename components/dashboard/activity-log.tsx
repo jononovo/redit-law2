@@ -67,7 +67,7 @@ export function ActivityLog() {
     <div data-testid="section-activity-log">
       <div className="flex items-center gap-2 mb-4">
         <Activity className="w-5 h-5 text-neutral-400" />
-        <h2 className="text-lg font-bold text-neutral-900">Bot Activity</h2>
+        <h2 className="text-lg font-bold text-neutral-900">Agent Activity</h2>
       </div>
 
       {loading ? (
