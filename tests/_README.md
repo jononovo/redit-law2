@@ -34,6 +34,7 @@ Good: 3 tests for the formatter, 15 tests for the approval system.
 | Product Index Recommend Pipeline | `product-index-recommend-pipeline/product-index-recommend-pipeline.test.ts` | 19 | Data integrity, category FTS, merchant ranking, vector search, e2e pipeline |
 | Rail 5 Card & Transaction Pipeline | `rail5-card-transaction-pipeline/rail5-card-transaction-pipeline.test.ts` | 72 | ID generation, key validation, onboarding schemas, checkout/confirm schemas, card guardrails, checkout steps, spawn payload, encrypted card file, defaults |
 | Bot Onboarding, Management & Comms | `bot-onboarding-management-comms/bot-onboarding-management-comms.test.ts` | 38 | Bot/API key/claim token generation, key hashing, registration schema, claiming schema, webhook HMAC signing, message expiry |
+| Pairing Code Lifecycle | `pairing-code-lifecycle/pairing-code-lifecycle.test.ts` | 11 | adoptPairingCode (human-first adopt, expiry, ownership guards), claimRegisteredPairingCode (claim + bot activation, double-claim race, no-steal), adopt→register handoff invariant |
 
 **Major gaps** (no automated tests yet):
 - Scan engine / scoring rubric

@@ -156,7 +156,7 @@ curl -X POST https://creditclaw.com/api/v1/bots/register \
 **Store your API key where you normally store credentials.** Your platform's own rules win. No convention? Defaults:
 - **OpenClaw:** `CREDITCLAW_API_KEY` in `~/.openclaw/.env`
 - **Claude Code:** `env` key in `~/.claude/settings.json` (never a project `.env`)
-- **Sandboxed (Cowork):** a file in persistent workspace, outside any repo
+- **Claude Cowork:** create a folder called `CreditClaw`, save the key in a file called `credentials`
 - **Else:** env var `CREDITCLAW_API_KEY`
 
 Next session: load it, don't re-register.
