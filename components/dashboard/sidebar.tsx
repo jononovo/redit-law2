@@ -20,7 +20,8 @@ import {
   FileText,
   ChevronDown,
   Gauge,
-  Sparkles
+  Sparkles,
+  FlaskConical
 } from "lucide-react";
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
 import Image from "next/image";
@@ -66,6 +67,7 @@ const procurementNavItems: NavItem[] = [
 const toolsNavItems: NavItem[] = [
   { icon: Gauge, label: "Brand Agent Score", href: "https://shopy.sh", external: true, hideExternalIcon: true },
   { icon: Sparkles, label: "Generate Brand Skill", href: "https://brands.sh", external: true },
+  { icon: FlaskConical, label: "Agent Shopping Test", href: "/agent-shopping-test", external: true },
 ];
 
 const salesNavItems: NavItem[] = [
