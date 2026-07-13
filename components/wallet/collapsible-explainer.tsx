@@ -26,7 +26,7 @@ export function ExplainerToggleLink({
       type="button"
       onClick={onOpen}
       data-testid={testId}
-      className="group flex items-center gap-1 text-neutral-500 hover:text-neutral-800 transition-colors"
+      className="group flex items-center gap-1 text-sm text-neutral-400 hover:text-neutral-700 transition-colors"
     >
       <span>{title}</span>
       <ChevronDown className="w-4 h-4 transition-transform group-hover:translate-y-0.5" />
