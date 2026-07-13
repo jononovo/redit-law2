@@ -4,7 +4,7 @@ import { useState, useCallback } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { CreditCard, Bot, User, Copy, Check, Shield, ArrowRight, Loader2, RefreshCw } from "lucide-react";
+import { CreditCard, Bot, User, Copy, Check, ArrowRight, Loader2, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { formatPairingCodeForDisplay } from "@/features/platform-management/agent-management/pairing-code-format";
 
@@ -234,11 +234,6 @@ export function BotSignup() {
                     <ArrowRight className="w-4 h-4" />
                   </Button>
                 </form>
-
-                <div className="flex items-center justify-center gap-2 text-xs text-neutral-400 font-medium">
-                  <Shield className="w-3.5 h-3.5" />
-                  <span>Payment details are handled securely by Stripe. CreditClaw never sees your card number.</span>
-                </div>
               </div>
             </TabsContent>
           </Tabs>
