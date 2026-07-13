@@ -15,7 +15,6 @@ import { authFetch } from "@/features/platform-management/auth-fetch";
 import { useToast } from "@/hooks/use-toast";
 import { CryptoWalletItem } from "@/components/wallet/crypto-wallet-item";
 import { CreditCardItem } from "@/components/wallet/credit-card-item";
-import { CardVisual } from "@/components/wallet/card-visual";
 import { useWalletActions } from "@/components/wallet/hooks/use-wallet-actions";
 import { useBotLinking } from "@/components/wallet/hooks/use-bot-linking";
 import { useGuardrails } from "@/components/wallet/hooks/use-guardrails";
@@ -30,7 +29,7 @@ import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/compone
 import { ApprovalList, type ApprovalRow } from "@/components/wallet/approval-list";
 import { InfoTooltip } from "@/components/ui/info-tooltip";
 import type { Rail1WalletInfo, NormalizedCard } from "@/components/wallet/types";
-import { normalizeRail5Card } from "@/components/wallet/types";
+import { normalizeRail5Card, normalizeRail3Card } from "@/components/wallet/types";
 import type { CryptoGuardrailForm } from "@/components/wallet/dialogs/guardrail-dialog";
 
 interface BotData {
@@ -62,6 +61,12 @@ export default function DashboardOverview() {
   const [privyWallets, setPrivyWallets] = useState<Rail1WalletInfo[]>([]);
   const [rail5Cards, setRail5Cards] = useState<NormalizedCard[]>([]);
   const [cardsLoading, setCardsLoading] = useState(true);
+  const [rail3Cards, setRail3Cards] = useState<NormalizedCard[]>([]);
+  const [rail3Loading, setRail3Loading] = useState(true);
+  const [rail3FreezeTarget, setRail3FreezeTarget] = useState<NormalizedCard | null>(null);
+  const [rail3FreezeLoading, setRail3FreezeLoading] = useState(false);
+  const [rail3DeleteTarget, setRail3DeleteTarget] = useState<NormalizedCard | null>(null);
+  const [rail3DeleteLoading, setRail3DeleteLoading] = useState(false);
 
   const [overviewApprovals, setOverviewApprovals] = useState<ApprovalRow[]>([]);
 
@@ -137,6 +142,18 @@ export default function DashboardOverview() {
     }
   }, []);
 
+  const fetchRail3Cards = useCallback(async () => {
+    try {
+      const res = await authFetch("/api/v1/rail3/cards");
+      if (res.ok) {
+        const data = await res.json();
+        setRail3Cards((data.cards || []).map((c: any) => normalizeRail3Card(c, "/virtual-cards")));
+      }
+    } catch {} finally {
+      setRail3Loading(false);
+    }
+  }, []);
+
   const rail1WalletActions = useWalletActions({
     railPrefix: "usdc-wallet",
     entityType: "wallet",
@@ -174,6 +191,46 @@ export default function DashboardOverview() {
     entityType: "card",
     onUpdate: fetchRail5Cards,
   });
+
+  const rail3WalletActions = useWalletActions({
+    railPrefix: "rail3",
+    entityType: "card",
+    entityIdField: "card_id",
+    onUpdate: fetchRail3Cards,
+  });
+
+  const rail3BotLinking = useBotLinking({
+    railPrefix: "rail3",
+    entityType: "card",
+    onUpdate: fetchRail3Cards,
+  });
+
+  function handleRail3FreezeConfirm() {
+    if (!rail3FreezeTarget) return;
+    rail3WalletActions.handleFreezeCard(
+      rail3FreezeTarget.card_id,
+      rail3FreezeTarget.is_frozen,
+      setRail3Cards,
+      setRail3FreezeLoading,
+      () => setRail3FreezeTarget(null),
+    );
+  }
+
+  async function handleRail3DeleteConfirm() {
+    if (!rail3DeleteTarget) return;
+    setRail3DeleteLoading(true);
+    try {
+      const res = await authFetch(`/api/v1/cards/${rail3DeleteTarget.card_id}?rail=rail3`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Failed to delete");
+      setRail3Cards((prev) => prev.filter((c) => c.card_id !== rail3DeleteTarget.card_id));
+      toast({ title: "Card Removed", description: `"${rail3DeleteTarget.card_name}" has been removed.` });
+    } catch {
+      toast({ title: "Delete failed", description: "Please try again.", variant: "destructive" });
+    } finally {
+      setRail3DeleteLoading(false);
+      setRail3DeleteTarget(null);
+    }
+  }
 
   async function handleRail5FreezeConfirm() {
     if (!rail5FreezeTarget) return;
@@ -232,20 +289,24 @@ export default function DashboardOverview() {
       fetchData();
       fetchPrivyWallets();
       fetchRail5Cards();
+      fetchRail3Cards();
       fetchApprovals();
       rail1BotLinking.fetchBots();
       rail5BotLinking.fetchBots();
+      rail3BotLinking.fetchBots();
     } else {
       setLoading(false);
       setCardsLoading(false);
+      setRail3Loading(false);
     }
-  }, [user, fetchData, fetchPrivyWallets, fetchRail5Cards, fetchApprovals, rail1BotLinking.fetchBots, rail5BotLinking.fetchBots]);
+  }, [user, fetchData, fetchPrivyWallets, fetchRail5Cards, fetchRail3Cards, fetchApprovals, rail1BotLinking.fetchBots, rail5BotLinking.fetchBots, rail3BotLinking.fetchBots]);
 
   const activeBots = bots.filter((b) => b.wallet_status === "active");
   const pendingBots = bots.filter((b) => b.wallet_status === "pending");
 
   const firstWallet = privyWallets[0] || null;
   const firstCard = rail5Cards[0] || null;
+  const firstVirtualCard = rail3Cards[0] || null;
 
   return (
     <div className="flex flex-col gap-8 animate-fade-in-up">
@@ -336,16 +397,65 @@ export default function DashboardOverview() {
       )}
 
       <div data-testid="section-cards-wallets">
-        {cardsLoading ? (
+        {cardsLoading || rail3Loading ? (
           <div className="flex items-center justify-center py-16">
             <Loader2 className="w-6 h-6 animate-spin text-neutral-400" />
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div data-testid="card-privy-wallet">
+          <div className="flex flex-col gap-10">
+            <div data-testid="row-virtual-cards" className="w-full max-w-[26rem]">
+              <div className="flex items-center gap-2 mb-3">
+                <h3 className="text-sm font-semibold text-neutral-700">Virtual Cards</h3>
+                <InfoTooltip text="Virtual cards issued from your vaulted real card. Each has its own spending limit and agent link." />
+                <Link
+                  href="/virtual-cards"
+                  className="ml-auto text-xs text-neutral-400 hover:text-neutral-700 transition-colors"
+                  data-testid="link-see-all-virtual-cards"
+                >
+                  See all →
+                </Link>
+              </div>
+              {firstVirtualCard ? (
+                <CreditCardItem
+                  card={firstVirtualCard}
+                  onFreeze={() => setRail3FreezeTarget(firstVirtualCard)}
+                  onAddAgent={() => rail3BotLinking.openLinkDialog({
+                    id: firstVirtualCard.card_id,
+                    name: firstVirtualCard.card_name,
+                    bot_id: firstVirtualCard.bot_id,
+                    bot_name: firstVirtualCard.bot_name,
+                  })}
+                  onUnlinkBot={() => rail3BotLinking.openUnlinkDialog({
+                    id: firstVirtualCard.card_id,
+                    name: firstVirtualCard.card_name,
+                    bot_id: firstVirtualCard.bot_id,
+                    bot_name: firstVirtualCard.bot_name,
+                  })}
+                  onCopyCardId={() => rail3WalletActions.copyCardId(firstVirtualCard.card_id)}
+                  onDelete={() => setRail3DeleteTarget(firstVirtualCard)}
+                />
+              ) : (
+                <div className="flex flex-col items-center justify-center py-12 bg-white rounded-2xl border border-neutral-100 shadow-sm" data-testid="card-rail3-empty">
+                  <CreditCard className="w-10 h-10 text-neutral-300 mb-3" />
+                  <p className="text-sm text-neutral-400 font-medium">No virtual cards yet</p>
+                  <p className="text-xs text-neutral-400 mt-1">
+                    <Link href="/virtual-cards" className="underline hover:text-neutral-600">Vault your card</Link> once, then create virtual cards on top of it.
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <div data-testid="card-privy-wallet" className="w-full max-w-[26rem]">
               <div className="flex items-center gap-2 mb-3">
                 <h3 className="text-sm font-semibold text-neutral-700">USDC Wallet</h3>
                 <InfoTooltip text="USDC wallet x402 purchases. Fund with Stripe/Link." />
+                <Link
+                  href="/usdc-wallet"
+                  className="ml-auto text-xs text-neutral-400 hover:text-neutral-700 transition-colors"
+                  data-testid="link-see-all-usdc-wallet"
+                >
+                  See all →
+                </Link>
               </div>
               {firstWallet ? (
                 <CryptoWalletItem
@@ -374,12 +484,19 @@ export default function DashboardOverview() {
               )}
             </div>
 
-            <div data-testid="card-rail5">
-              <div className="flex items-center gap-2 mb-3">
-                <h3 className="text-sm font-semibold text-neutral-700">Self-hosted Cards</h3>
-                <InfoTooltip text="Self-hosted: Agent uses your card. Secured with: Encryption & Ephemeral Sub-Agent." />
-              </div>
-              {firstCard ? (
+            {firstCard && (
+              <div data-testid="card-rail5" className="w-full max-w-[26rem]">
+                <div className="flex items-center gap-2 mb-3">
+                  <h3 className="text-sm font-semibold text-neutral-700">Self-hosted Cards</h3>
+                  <InfoTooltip text="Self-hosted: Agent uses your card. Secured with: Encryption & Ephemeral Sub-Agent." />
+                  <Link
+                    href="/self-hosted"
+                    className="ml-auto text-xs text-neutral-400 hover:text-neutral-700 transition-colors"
+                    data-testid="link-see-all-self-hosted"
+                  >
+                    See all →
+                  </Link>
+                </div>
                 <CreditCardItem
                   card={firstCard}
                   onFreeze={() => setRail5FreezeTarget(firstCard)}
@@ -398,35 +515,8 @@ export default function DashboardOverview() {
                   onCopyCardId={() => rail5WalletActions.copyCardId(firstCard.card_id)}
                   onDelete={() => setRail5DeleteTarget(firstCard)}
                 />
-              ) : (
-                <div className="relative" data-testid="card-rail5-empty">
-                  <CardVisual
-                    color="purple"
-                    last4="••••"
-                    expiry="••/••"
-                    holder="YOUR CARD"
-                    holderLabel="Card Name"
-                    balance="$0.00"
-                    balanceLabel="Spending Limit"
-                    status="pending_setup"
-                    className="pointer-events-none"
-                  />
-                  <div
-                    onClick={() => router.push("/setup/rail5")}
-                    className="group absolute inset-0 rounded-2xl flex items-center justify-center cursor-pointer transition-colors duration-200 hover:bg-black/15"
-                    data-testid="button-add-card-overlay"
-                  >
-                    <p className="absolute top-1/2 -translate-y-full -mt-4 text-sm text-white font-medium max-w-[240px] text-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none drop-shadow-sm">Securely encrypt your card for autonomous bot purchases</p>
-                    <button
-                      className="absolute top-1/2 translate-y-2 rounded-xl gap-2 px-8 py-4 text-base font-semibold bg-white/80 backdrop-blur-sm text-neutral-800 border border-white/50 shadow-sm cursor-pointer transition-all duration-200 hover:bg-white hover:shadow-md flex items-center"
-                    >
-                      <Plus className="w-5 h-5" />
-                      Add Your Card
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -446,6 +536,36 @@ export default function DashboardOverview() {
         onConfirm={handleRail5FreezeConfirm}
         itemType="card"
       />
+
+      <FreezeDialog
+        open={!!rail3FreezeTarget}
+        onOpenChange={(open) => !open && setRail3FreezeTarget(null)}
+        itemName={rail3FreezeTarget?.card_name || ""}
+        isFrozen={!!rail3FreezeTarget?.is_frozen}
+        loading={rail3FreezeLoading}
+        onConfirm={handleRail3FreezeConfirm}
+        itemType="card"
+      />
+
+      <Dialog open={!!rail3DeleteTarget} onOpenChange={(open) => !open && setRail3DeleteTarget(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogTitle className="flex items-center gap-2">
+            <Trash2 className="w-5 h-5 text-red-600" /> Remove Card
+          </DialogTitle>
+          <DialogDescription className="text-neutral-600">
+            Are you sure you want to remove &quot;{rail3DeleteTarget?.card_name}&quot;? This action cannot be undone.
+          </DialogDescription>
+          <div className="flex justify-end gap-3 mt-4">
+            <Button variant="outline" onClick={() => setRail3DeleteTarget(null)} disabled={rail3DeleteLoading} data-testid="button-rail3-delete-cancel">
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleRail3DeleteConfirm} disabled={rail3DeleteLoading} data-testid="button-rail3-delete-confirm">
+              {rail3DeleteLoading && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
+              Remove
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={!!rail5DeleteTarget} onOpenChange={(open) => !open && setRail5DeleteTarget(null)}>
         <DialogContent className="sm:max-w-md">
@@ -550,6 +670,29 @@ export default function DashboardOverview() {
         loading={rail5BotLinking.unlinkLoading}
         onConfirm={rail5BotLinking.handleUnlinkBot}
         onCancel={rail5BotLinking.closeUnlinkDialog}
+        itemType="card"
+      />
+
+      <LinkBotDialog
+        open={!!rail3BotLinking.linkTarget}
+        onOpenChange={(open) => { if (!open) rail3BotLinking.closeLinkDialog(); }}
+        itemName={rail3BotLinking.linkTarget?.name || ""}
+        bots={rail3BotLinking.bots}
+        selectedBotId={rail3BotLinking.linkBotId}
+        onBotIdChange={rail3BotLinking.setLinkBotId}
+        loading={rail3BotLinking.linkLoading}
+        onConfirm={rail3BotLinking.handleLinkBot}
+        onCancel={rail3BotLinking.closeLinkDialog}
+        itemType="card"
+      />
+
+      <UnlinkBotDialog
+        open={!!rail3BotLinking.unlinkTarget}
+        onOpenChange={(open) => { if (!open) rail3BotLinking.closeUnlinkDialog(); }}
+        botName={rail3BotLinking.unlinkTarget?.bot_name || ""}
+        loading={rail3BotLinking.unlinkLoading}
+        onConfirm={rail3BotLinking.handleUnlinkBot}
+        onCancel={rail3BotLinking.closeUnlinkDialog}
         itemType="card"
       />
     </div>
