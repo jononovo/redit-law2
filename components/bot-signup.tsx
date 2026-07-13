@@ -81,7 +81,7 @@ export function BotSignup() {
             Give your AI agent a <span className="text-primary">wallet</span>.
           </h2>
           <p className="text-lg text-neutral-500 font-medium">
-            Your bot signs up, you fund it. It&apos;s that simple.
+            Your agent signs up, you fund it. It&apos;s that simple.
           </p>
         </div>
 
