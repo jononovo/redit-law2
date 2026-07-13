@@ -62,7 +62,7 @@ const procurementNavItems: NavItem[] = [
 ];
 
 const toolsNavItems: NavItem[] = [
-  { icon: Gauge, label: "Brand Agent-Friendly Score", href: "https://shopy.sh", external: true },
+  { icon: Gauge, label: "Brand Agent Score", href: "https://shopy.sh", external: true },
 ];
 
 const salesNavItems: NavItem[] = [
