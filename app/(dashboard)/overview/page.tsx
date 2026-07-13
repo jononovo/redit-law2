@@ -334,7 +334,7 @@ export default function DashboardOverview() {
                   onFund={() => { setFundTarget({ id: firstWallet.id, address: firstWallet.address, botName: firstWallet.bot_name }); setFundSheetOpen(true); }}
                   onFreeze={() => rail1WalletActions.handleFreeze({ id: firstWallet.id, name: firstWallet.bot_name || "Wallet", is_frozen: firstWallet.is_frozen })}
                   onGuardrails={() => rail1Guardrails.openDialog(firstWallet)}
-                  onActivity={() => router.push("/stripe-wallet")}
+                  onActivity={() => router.push("/stablecoin-wallet")}
                   onAddAgent={() => rail1BotLinking.openLinkDialog({ id: firstWallet.id, name: firstWallet.bot_name || "Wallet", bot_id: firstWallet.bot_id || null, bot_name: firstWallet.bot_name || null })}
                   onUnlinkBot={() => rail1BotLinking.openUnlinkDialog({ id: firstWallet.id, name: firstWallet.bot_name || "Wallet", bot_id: firstWallet.bot_id, bot_name: firstWallet.bot_name })}
                   onCopyAddress={() => rail1WalletActions.copyAddress(firstWallet.address)}

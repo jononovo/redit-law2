@@ -29,9 +29,9 @@ const cardTypes: CardTypeOption[] = [
   },
   {
     icon: Wallet,
-    label: "Crypto Wallet",
+    label: "Stablecoin Wallet",
     description: "Fund bots with USDC on Base via Stripe. Bots pay for API resources using the x402 protocol.",
-    href: "/stripe-wallet",
+    href: "/stablecoin-wallet",
     color: "text-blue-600",
     iconBg: "bg-blue-50",
     borderColor: "border-blue-200 hover:border-blue-400 hover:bg-blue-50/50",

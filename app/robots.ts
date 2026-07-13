@@ -16,7 +16,7 @@ export default function robots(): MetadataRoute.Robots {
           "/claim/",
           "/overview",
           "/card-wallet",
-          "/stripe-wallet",
+          "/stablecoin-wallet",
           "/sub-agent-cards",
           "/transactions",
           "/settings",

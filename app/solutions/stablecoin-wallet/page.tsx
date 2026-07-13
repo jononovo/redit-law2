@@ -48,7 +48,7 @@ export default function StripeWalletLanding() {
             <span className="font-bold text-lg tracking-tight">CreditClaw</span>
           </Link>
           <div className="flex items-center gap-4">
-            <Link href="/stripe-wallet">
+            <Link href="/stablecoin-wallet">
               <Button variant="outline" className="rounded-full" data-testid="button-dashboard-cta">
                 Dashboard
               </Button>
@@ -72,7 +72,7 @@ export default function StripeWalletLanding() {
             with guardrails you control. No cards, no intermediaries, just on-chain payments.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link href="/stripe-wallet">
+            <Link href="/stablecoin-wallet">
               <Button size="lg" className="rounded-full bg-blue-600 hover:bg-blue-700 text-white px-8 gap-2 shadow-lg shadow-blue-600/20" data-testid="button-get-started">
                 Get Started
                 <ArrowRight className="w-4 h-4" />
@@ -138,9 +138,9 @@ export default function StripeWalletLanding() {
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-3xl font-bold mb-4">Ready to fund your bots?</h2>
           <p className="text-neutral-400 max-w-xl mx-auto mb-8">
-            Create a Crypto Wallet, set your guardrails, and let your bots pay for resources autonomously.
+            Create a Stablecoin Wallet, set your guardrails, and let your bots pay for resources autonomously.
           </p>
-          <Link href="/stripe-wallet">
+          <Link href="/stablecoin-wallet">
             <Button size="lg" className="rounded-full bg-blue-600 hover:bg-blue-700 px-8 gap-2" data-testid="button-cta-bottom">
               Open Dashboard
               <ArrowRight className="w-4 h-4" />
