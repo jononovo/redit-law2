@@ -189,11 +189,11 @@ Outbound payment rails — how users fund wallets and how their agents spend mon
 
 → Docs: `project_knowledge/internal_docs/04-payment-tools/`
 
-## Stablecoin Wallets (Rails 1 & 2)
+## USDC Wallets (Rails 1 & 2)
 
 Custodial USDC wallets on Base chain. Both rails share the same funding → spending → reconciliation pattern, inter-wallet transfers, and guardrail enforcement. They differ by provider.
 
-### Rail 1 — Stablecoin Wallet (Live)
+### Rail 1 — USDC Wallet (Live)
 
 Uses Privy server wallets on Base chain, USDC funding via Stripe Crypto Onramp, and x402 payment protocol. **Modularized under `features/payment-rails/rail1/`:**
   - `client.ts` — Privy client singleton, authorization signature helper, app ID/secret getters.
@@ -203,7 +203,7 @@ Uses Privy server wallets on Base chain, USDC funding via Stripe Crypto Onramp, 
   - `wallet/balance.ts` — `getOnChainUsdcBalance()` via viem + Base RPC.
   - `onramp.ts` — re-export shim for `createStripeOnrampSession` from `features/payment-rails/crypto-onramp/stripe-onramp/session.ts`. Uses `stripe.rawRequest()` via the shared Stripe SDK client (the crypto onramp endpoint is not yet in the SDK's typed API, so rawRequest is used with manual typing).
   - `x402.ts` — x402 typed data builders (`buildTransferWithAuthorizationTypedData`, `buildXPaymentHeader`, `generateNonce`) and USDC format helpers (`formatUsdc`, `usdToMicroUsdc`, `microUsdcToUsd`).
-  - Webhook: `STRIPE_WEBHOOK_SECRET_ONRAMP` env var, event type `crypto.onramp_session.updated`. Balance sync endpoint: `POST /api/v1/stripe-wallet/balance/sync` with 30-sec cooldown and `reconciliation` transaction type for discrepancies. Schema includes `last_synced_at` column on `privy_wallets`.
+  - Webhook: `STRIPE_WEBHOOK_SECRET_ONRAMP` env var, event type `crypto.onramp_session.updated`. Balance sync endpoint: `POST /api/v1/usdc-wallet/balance/sync` with 30-sec cooldown and `reconciliation` transaction type for discrepancies. Schema includes `last_synced_at` column on `privy_wallets`.
 
 ### Rail 2 — Stablecoin Shop Wallet (dormant)
 
@@ -244,7 +244,7 @@ CreditClaw supports USDC transfers between wallets across all rails and to exter
 - **On-chain Execution:** Privy wallets use REST API (`POST /v1/wallets/{id}/rpc` with ERC-20 transfer calldata, gas sponsored); CrossMint wallets use token transfer endpoint (`POST /wallets/{locator}/tokens/base:usdc/transfers`)
 - **Atomic DB Updates:** Source debit, destination credit, and transaction ledger entries are wrapped in a single Drizzle `db.transaction()` for consistency
 - **Transaction Type:** `"transfer"` with metadata containing `direction` ("inbound"/"outbound"), `transfer_tier`, `counterparty_address`, `counterparty_wallet_id`, `counterparty_rail`, `tx_hash`
-- **Frontend:** Transfer button on both Stablecoin Wallet and Card Wallet pages, dialog with destination picker (own wallets across both rails or external address), amount input in USD
+- **Frontend:** Transfer button on both USDC Wallet and Card Wallet pages, dialog with destination picker (own wallets across both rails or external address), amount input in USD
 - **Lib Functions:** `sendUsdcTransfer` in `features/payment-rails/rail1/wallet/transfer.ts` (Privy) and `features/payment-rails/rail2/wallet/transfer.ts` (CrossMint)
 
 ## Virtual Cards (Rail 3) — Live
@@ -301,7 +301,7 @@ See `internal_docs/05-agent-interaction/guardrails.md` for enforcement flow, spe
 **Centralized Dashboard API** (used by ALL rail dashboard pages):
 - `GET /api/v1/approvals?rail=<rail>` — returns pending unified approvals for the authenticated owner, filtered by rail. Extracts rail-specific display fields from `metadata` JSONB (Rail 1: `resource_url`; Rail 2: `product_name`, `shipping_address`).
 - `POST /api/v1/approvals/decide` — accepts `{ approval_id, decision }` (approval_id is the `ua_...` string), verifies ownership, calls `resolveApproval()` with stored HMAC token.
-- All rail dashboard pages (Stablecoin Wallet, Card Wallet, Self-Hosted Cards) use these centralized endpoints. No rail-specific approval endpoints remain.
+- All rail dashboard pages (USDC Wallet, Card Wallet, Self-Hosted Cards) use these centralized endpoints. No rail-specific approval endpoints remain.
 
 **Metadata JSONB**: Rail-specific display data is stored in the `metadata` column of `unified_approvals` when checkout routes call `createApproval()`:
 - Rail 1: `{ recipient_address, resource_url }`
@@ -348,7 +348,7 @@ Rail 5 (`sub-agent-cards/page.tsx`) is ~43 lines — a pure config object passed
 
 **Transaction vs Order:** A *transaction* is a financial movement (deposit, transfer, debit, reconciliation) — it's about the money. An *order* is a confirmed purchase (product, vendor, shipping, tracking) — it's about what was bought. An order typically has a corresponding transaction (via `transactionId` FK), but not every transaction creates an order (deposits, transfers don't).
 
-Individual rail pages (`/stablecoin-wallet`, `/card-wallet`, `/sub-agent-cards`) use `RailPageTabs` to show rail-specific transactions, orders, and approvals alongside their wallet/card management. All three rail pages use `ApprovalHistoryPanel` (with `defaultRail` prop) for full approval history — not just pending. The rail filter is hidden on rail-specific pages since it's redundant. Pending approval count is reported back to the parent via `onPendingCount` callback for the tab badge.
+Individual rail pages (`/usdc-wallet`, `/card-wallet`, `/sub-agent-cards`) use `RailPageTabs` to show rail-specific transactions, orders, and approvals alongside their wallet/card management. All three rail pages use `ApprovalHistoryPanel` (with `defaultRail` prop) for full approval history — not just pending. The rail filter is hidden on rail-specific pages since it's redundant. Pending approval count is reported back to the parent via `onPendingCount` callback for the tab badge.
 
 ---
 
@@ -402,7 +402,7 @@ Bots without a `callback_url` get a managed Cloudflare tunnel provisioned at reg
 - **Storage**: `server/storage/orders.ts` — CRUD methods: `createOrder`, `getOrderById`, `getOrderByExternalId`, `getOrdersByOwner` (with filters: rail, botId, walletId, cardId, status, dateFrom, dateTo), `getOrdersByWallet`, `getOrdersByCard`, `updateOrder`.
 - **Order creation module**: `features/agent-interaction/orders/create.ts` exports `recordOrder()` — single entry point all rails call after a confirmed purchase. `features/agent-interaction/orders/types.ts` defines `OrderInput` interface.
 - **Rail wiring** (order creation fires ONLY after confirmed execution, never on pending requests):
-  - Rail 1: `features/agent-interaction/approvals/rail1-fulfillment.ts` (approved) + `app/api/v1/stripe-wallet/bot/sign/route.ts` (auto-approved)
+  - Rail 1: `features/agent-interaction/approvals/rail1-fulfillment.ts` (approved) + `app/api/v1/usdc-wallet/bot/sign/route.ts` (auto-approved)
   - Rail 2: `features/agent-interaction/approvals/rail2-fulfillment.ts` (approved) + `app/api/v1/card-wallet/bot/purchase/route.ts` (auto-approved). Webhooks update order via `storage.getOrderByExternalId()` + `storage.updateOrder()`.
   - Rail 5: `features/agent-interaction/approvals/rail5-fulfillment.ts` (approved) + `app/api/v1/bot/rail5/checkout/route.ts` (auto-approved)
 - **API**: `GET /api/v1/orders` (list with query filters), `GET /api/v1/orders/[order_id]` (single order detail). Owner-authenticated.
@@ -505,9 +505,9 @@ The platform's inbound commerce engine. Buyers (humans and AI agents) pay into t
 - `/claim`: Bot claim page
 - `/skills`: Vendor procurement skills catalog (public)
 - `/solutions/card-wallet`: Card Wallet landing page (public)
-- `/solutions/stablecoin-wallet`: Stablecoin Wallet landing page (public)
+- `/solutions/usdc-wallet`: USDC Wallet landing page (public)
 - `/overview`: Dashboard overview
-- `/stablecoin-wallet`: Rail 1 dashboard (page route renamed; API stays `/api/v1/stripe-wallet/*`)
+- `/usdc-wallet`: Rail 1 dashboard (page route renamed; API stays `/api/v1/usdc-wallet/*`)
 - `/card-wallet`: Rail 2 dashboard
 - `/sub-agent-cards`: Self-hosted card management (Rail 5)
 - `/transactions`: Transaction history, orders, and unified approvals (three tabs)

@@ -45,7 +45,7 @@ export function Complete({ currentStep, totalSteps, state }: CompleteProps) {
     }).catch((err) => console.error("Failed to stamp onboarded_at:", err));
 
     if (state.botId && state.botConnected) {
-      fetch("/api/v1/stripe-wallet/create", {
+      fetch("/api/v1/usdc-wallet/create", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ bot_id: state.botId }),

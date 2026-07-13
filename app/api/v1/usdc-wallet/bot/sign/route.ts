@@ -23,7 +23,7 @@ async function handler(request: NextRequest, botId: string) {
 
     const wallet = await storage.privyGetWalletByBotId(botId);
     if (!wallet) {
-      return NextResponse.json({ error: "No Stablecoin Wallet found for this bot" }, { status: 404 });
+      return NextResponse.json({ error: "No USDC Wallet found for this bot" }, { status: 404 });
     }
 
     if (wallet.isFrozen) {
@@ -188,7 +188,7 @@ async function handler(request: NextRequest, botId: string) {
       signature,
     });
   } catch (error) {
-    console.error("POST /api/v1/stripe-wallet/bot/sign error:", error);
+    console.error("POST /api/v1/usdc-wallet/bot/sign error:", error);
     return NextResponse.json({ error: "internal_error" }, { status: 500 });
   }
 }

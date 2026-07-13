@@ -2,7 +2,7 @@ import type { VendorSkill } from "../types";
 import { inferRequiredRails } from "./skill-json";
 
 const RAIL_LABELS: Record<string, string> = {
-  stripe_wallet: "Stripe Wallet (Privy + x402)",
+  stripe_wallet: "USDC Wallet (Privy + x402)",
   card_wallet: "Card Wallet (CrossMint)",
 };
 

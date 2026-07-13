@@ -12,8 +12,8 @@ const nextConfig: NextConfig = {
   turbopack: {},
   async redirects() {
     return [
-      { source: "/stripe-wallet", destination: "/stablecoin-wallet", permanent: true },
-      { source: "/solutions/stripe-wallet", destination: "/solutions/stablecoin-wallet", permanent: true },
+      { source: "/stripe-wallet", destination: "/usdc-wallet", permanent: true },
+      { source: "/solutions/stripe-wallet", destination: "/solutions/usdc-wallet", permanent: true },
     ];
   },
   env: {},

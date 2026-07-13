@@ -8,7 +8,7 @@ The x402 protocol enables autonomous agent payments using the HTTP `402 Payment 
 
 1. **Bot requests a resource** from a vendor API
 2. **Vendor returns HTTP 402** with payment details (recipient address, amount in USDC)
-3. **Bot sends a signing request** to CreditClaw (`POST /api/v1/stripe-wallet/bot/sign`)
+3. **Bot sends a signing request** to CreditClaw (`POST /api/v1/usdc-wallet/bot/sign`)
 4. **CreditClaw evaluates guardrails** — spending limits, category checks, approval thresholds
 5. **If approved**, CreditClaw signs an EIP-3009 `TransferWithAuthorization` and returns the signature
 6. **Bot retries the vendor request** with the `X-PAYMENT` header containing the signed payment
@@ -33,7 +33,7 @@ Bot                    CreditClaw                  Vendor
 
 ## Signing Endpoint
 
-### `POST /api/v1/stripe-wallet/bot/sign`
+### `POST /api/v1/usdc-wallet/bot/sign`
 
 Requests a USDC payment signature for an x402 transaction.
 
@@ -76,7 +76,7 @@ Returned when the transaction exceeds the auto-approve threshold and requires hu
 | 401    | `{ "error": "Invalid or missing API key" }`  | Bad or missing `Authorization` header |
 | 403    | `{ "error": "Insufficient USDC balance" }`   | Wallet balance too low               |
 | 403    | `{ "error": "..." }`                         | Blocked by guardrails or procurement controls |
-| 404    | `{ "error": "No Stablecoin Wallet found..." }`   | Bot has no linked Stablecoin Wallet      |
+| 404    | `{ "error": "No USDC Wallet found..." }`   | Bot has no linked USDC Wallet      |
 | 500    | `{ "error": "internal_error" }`              | Server error                         |
 
 ---
@@ -175,7 +175,7 @@ curl -s https://api.vendor.com/data/report \
 ### Step 2: Request a signature from CreditClaw
 
 ```bash
-curl -X POST https://your-app.com/api/v1/stripe-wallet/bot/sign \
+curl -X POST https://your-app.com/api/v1/usdc-wallet/bot/sign \
   -H "Authorization: Bearer cck_live_abc123..." \
   -H "Content-Type: application/json" \
   -d '{

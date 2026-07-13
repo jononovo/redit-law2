@@ -88,7 +88,7 @@ export default function CreateCheckoutPage() {
   const fetchData = useCallback(async () => {
     try {
       const [walletsRes, pagesRes] = await Promise.all([
-        authFetch("/api/v1/stripe-wallet/list"),
+        authFetch("/api/v1/usdc-wallet/list"),
         authFetch("/api/v1/checkout-pages"),
       ]);
 
@@ -374,7 +374,7 @@ export default function CreateCheckoutPage() {
             Wallet <span className="text-red-500">*</span>
           </Label>
           {wallets.length === 0 ? (
-            <p className="text-sm text-neutral-400">No active wallets found. Create a Stablecoin Wallet first.</p>
+            <p className="text-sm text-neutral-400">No active wallets found. Create a USDC Wallet first.</p>
           ) : (
             <Select value={walletId} onValueChange={setWalletId}>
               <SelectTrigger data-testid="select-checkout-wallet">

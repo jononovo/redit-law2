@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ wallets: walletsWithBots });
   } catch (error) {
-    console.error("GET /api/v1/stripe-wallet/list error:", error);
+    console.error("GET /api/v1/usdc-wallet/list error:", error);
     return NextResponse.json({ error: "internal_error" }, { status: 500 });
   }
 }

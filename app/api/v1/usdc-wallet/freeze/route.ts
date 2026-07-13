@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
       is_frozen: updated.isFrozen,
     });
   } catch (error) {
-    console.error("POST /api/v1/stripe-wallet/freeze error:", error);
+    console.error("POST /api/v1/usdc-wallet/freeze error:", error);
     return NextResponse.json({ error: "internal_error" }, { status: 500 });
   }
 }

@@ -36,7 +36,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.7,
     },
     {
-      url: `${BASE_URL}/solutions/stablecoin-wallet`,
+      url: `${BASE_URL}/solutions/usdc-wallet`,
       changeFrequency: "monthly",
       priority: 0.7,
     },

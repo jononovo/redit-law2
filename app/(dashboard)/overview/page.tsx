@@ -78,7 +78,7 @@ export default function DashboardOverview() {
 
   const fetchPrivyWallets = useCallback(async () => {
     try {
-      const res = await authFetch("/api/v1/stripe-wallet/list");
+      const res = await authFetch("/api/v1/usdc-wallet/list");
       if (res.ok) {
         const data = await res.json();
         setPrivyWallets(data.wallets || []);
@@ -128,7 +128,7 @@ export default function DashboardOverview() {
   }, []);
 
   const rail1WalletActions = useWalletActions({
-    railPrefix: "stripe-wallet",
+    railPrefix: "usdc-wallet",
     entityType: "wallet",
     entityIdField: "wallet_id",
     approvalsDecideEndpoint: "/api/v1/approvals/decide",
@@ -136,14 +136,14 @@ export default function DashboardOverview() {
   });
 
   const rail1BotLinking = useBotLinking({
-    railPrefix: "stripe-wallet",
+    railPrefix: "usdc-wallet",
     entityType: "wallet",
     onUpdate: fetchPrivyWallets,
   });
 
   const rail1Guardrails = useGuardrails<Rail1WalletInfo>({
     variant: "crypto",
-    railPrefix: "stripe-wallet",
+    railPrefix: "usdc-wallet",
     onUpdate: fetchPrivyWallets,
   });
 
@@ -324,7 +324,7 @@ export default function DashboardOverview() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div data-testid="card-privy-wallet">
               <div className="flex items-center gap-2 mb-3">
-                <h3 className="text-sm font-semibold text-neutral-700">Stablecoin Wallet</h3>
+                <h3 className="text-sm font-semibold text-neutral-700">USDC Wallet</h3>
                 <InfoTooltip text="USDC wallet x402 purchases. Fund with Stripe/Link." />
               </div>
               {firstWallet ? (
@@ -334,7 +334,7 @@ export default function DashboardOverview() {
                   onFund={() => { setFundTarget({ id: firstWallet.id, address: firstWallet.address, botName: firstWallet.bot_name }); setFundSheetOpen(true); }}
                   onFreeze={() => rail1WalletActions.handleFreeze({ id: firstWallet.id, name: firstWallet.bot_name || "Wallet", is_frozen: firstWallet.is_frozen })}
                   onGuardrails={() => rail1Guardrails.openDialog(firstWallet)}
-                  onActivity={() => router.push("/stablecoin-wallet")}
+                  onActivity={() => router.push("/usdc-wallet")}
                   onAddAgent={() => rail1BotLinking.openLinkDialog({ id: firstWallet.id, name: firstWallet.bot_name || "Wallet", bot_id: firstWallet.bot_id || null, bot_name: firstWallet.bot_name || null })}
                   onUnlinkBot={() => rail1BotLinking.openUnlinkDialog({ id: firstWallet.id, name: firstWallet.bot_name || "Wallet", bot_id: firstWallet.bot_id, bot_name: firstWallet.bot_name })}
                   onCopyAddress={() => rail1WalletActions.copyAddress(firstWallet.address)}

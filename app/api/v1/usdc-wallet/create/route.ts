@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
 
     const existingWallet = await storage.privyGetWalletByBotId(bot_id);
     if (existingWallet) {
-      return NextResponse.json({ error: "Bot already has a Stablecoin Wallet" }, { status: 409 });
+      return NextResponse.json({ error: "Bot already has a USDC Wallet" }, { status: 409 });
     }
 
     const { id: privyWalletId, address } = await createServerWallet();
@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
       status: wallet.status,
     });
   } catch (error) {
-    console.error("POST /api/v1/stripe-wallet/create error:", error);
+    console.error("POST /api/v1/usdc-wallet/create error:", error);
     return NextResponse.json({ error: "internal_error" }, { status: 500 });
   }
 }

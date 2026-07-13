@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionUser } from "@/features/platform-management/auth/session";
-import { unlinkBotFromEntity } from "@/features/platform-management/agent-management/bot-linking";
+import { linkBotToEntity } from "@/features/platform-management/agent-management/bot-linking";
 
 export async function POST(request: NextRequest) {
   try {
@@ -10,13 +10,13 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { wallet_id } = body;
+    const { wallet_id, bot_id } = body;
 
-    if (!wallet_id) {
-      return NextResponse.json({ error: "wallet_id is required" }, { status: 400 });
+    if (!wallet_id || !bot_id) {
+      return NextResponse.json({ error: "wallet_id and bot_id are required" }, { status: 400 });
     }
 
-    const result = await unlinkBotFromEntity("rail1", Number(wallet_id), user.uid);
+    const result = await linkBotToEntity("rail1", Number(wallet_id), bot_id, user.uid);
 
     if (!result.success) {
       return NextResponse.json({ error: result.error, ...result.data }, { status: result.status || 500 });
@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(result.data);
   } catch (error) {
-    console.error("POST /api/v1/stripe-wallet/unlink error:", error);
+    console.error("POST /api/v1/usdc-wallet/link error:", error);
     return NextResponse.json({ error: "internal_error" }, { status: 500 });
   }
 }

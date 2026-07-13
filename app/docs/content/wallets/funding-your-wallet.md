@@ -1,12 +1,12 @@
 # Funding Your Wallet
 
-Stablecoin Wallets (Rail 1) and Card Wallets (Rail 2) need to be funded before your bot can make purchases. CreditClaw supports several funding methods.
+USDC Wallets (Rail 1) and Card Wallets (Rail 2) need to be funded before your bot can make purchases. CreditClaw supports several funding methods.
 
 > **Note**: Sub-Agent Cards (Rail 5) use your existing credit/debit cards directly and don't require separate funding.
 
 ## Opening the Fund Wallet Sheet
 
-1. Go to your wallet page (<a href="/stablecoin-wallet" target="_blank">**Stablecoin Wallets**</a> or <a href="/card-wallet" target="_blank">**Card Wallets**</a>)
+1. Go to your wallet page (<a href="/usdc-wallet" target="_blank">**USDC Wallets**</a> or <a href="/card-wallet" target="_blank">**Card Wallets**</a>)
 2. Select the wallet you want to fund
 3. Click the **Fund** button in the wallet action bar
 4. The funding sheet opens on the right side of the screen
@@ -39,12 +39,12 @@ Base Pay lets you fund your wallet with a single tap if you have a Base-compatib
 
 Base Pay is the fastest option if you already hold USDC on the Base network.
 
-### Stablecoin Wallet (QR Code)
+### USDC Wallet (QR Code)
 
 Send USDC from any crypto wallet by scanning a QR code or copying the wallet address.
 
 1. Enter your funding amount
-2. Select **Stablecoin Wallet**
+2. Select **USDC Wallet**
 3. A QR code and wallet address are displayed
 4. Send USDC (on Base) to the displayed address from your external wallet
 5. CreditClaw monitors the address and credits your wallet when the transfer is confirmed
@@ -53,7 +53,7 @@ This method works with any wallet that supports USDC on Base — hardware wallet
 
 ## Wallet Address
 
-Every Stablecoin Wallet and Card Wallet has a unique USDC address on the Base network. You can find this address:
+Every USDC Wallet and Card Wallet has a unique USDC address on the Base network. You can find this address:
 
 - In the funding sheet (displayed at the top with a copy button)
 - On the wallet detail page
@@ -70,7 +70,7 @@ You can transfer USDC between your own wallets:
 4. Enter the amount
 5. Confirm the transfer
 
-Transfers between your own wallets are instant and free. You can transfer between Stablecoin Wallets and Card Wallets in either direction.
+Transfers between your own wallets are instant and free. You can transfer between USDC Wallets and Card Wallets in either direction.
 
 ## Funding Tips
 

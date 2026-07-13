@@ -61,7 +61,7 @@ function SpendProgressBar({ spent, budget, label }: { spent: number; budget: num
 
 function RailBreakdown({ daily, monthly }: MasterGuardrailsData["spend"]) {
   const rails = [
-    { name: "Stablecoin Wallet", icon: Zap, daily: daily.rail1_usd, monthly: monthly.rail1_usd, color: "text-blue-600" },
+    { name: "USDC Wallet", icon: Zap, daily: daily.rail1_usd, monthly: monthly.rail1_usd, color: "text-blue-600" },
     { name: "Card Wallet", icon: CreditCard, daily: daily.rail2_usd, monthly: monthly.rail2_usd, color: "text-violet-600" },
     { name: "Sub-Agent Cards", icon: Smartphone, daily: daily.rail5_usd, monthly: monthly.rail5_usd, color: "text-orange-600" },
   ];
@@ -278,7 +278,7 @@ interface BotWithRails {
 }
 
 const RAIL_META: Record<string, { label: string; shortLabel: string; icon: typeof CreditCard; bg: string; text: string; border: string }> = {
-  stripe_wallet: { label: "Stablecoin Wallet", shortLabel: "Stablecoin", icon: Zap, bg: "bg-blue-50", text: "text-blue-700", border: "border-blue-200" },
+  stripe_wallet: { label: "USDC Wallet", shortLabel: "USDC", icon: Zap, bg: "bg-blue-50", text: "text-blue-700", border: "border-blue-200" },
   shopping_wallet: { label: "Shopping Wallet", shortLabel: "Shopping", icon: CreditCard, bg: "bg-violet-50", text: "text-violet-700", border: "border-violet-200" },
   sub_agent_cards: { label: "Sub-Agent Cards", shortLabel: "Sub-Agent", icon: Shield, bg: "bg-pink-50", text: "text-pink-700", border: "border-pink-200" },
 };

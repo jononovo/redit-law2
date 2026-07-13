@@ -39,7 +39,7 @@ export default function StripeWalletPage() {
 
   const fetchWallets = useCallback(async () => {
     try {
-      const res = await authFetch("/api/v1/stripe-wallet/list");
+      const res = await authFetch("/api/v1/usdc-wallet/list");
       if (res.ok) {
         const data = await res.json();
         setWallets(data.wallets || []);
@@ -54,7 +54,7 @@ export default function StripeWalletPage() {
 
   const fetchTransactions = useCallback(async (walletId: number) => {
     try {
-      const res = await authFetch(`/api/v1/stripe-wallet/transactions?wallet_id=${walletId}`);
+      const res = await authFetch(`/api/v1/usdc-wallet/transactions?wallet_id=${walletId}`);
       if (res.ok) {
         const data = await res.json();
         setTransactions(data.transactions || []);
@@ -104,7 +104,7 @@ export default function StripeWalletPage() {
   }, []);
 
   const walletActions = useWalletActions({
-    railPrefix: "stripe-wallet",
+    railPrefix: "usdc-wallet",
     entityType: "wallet",
     approvalsDecideEndpoint: "/api/v1/approvals/decide",
     entityIdField: "wallet_id",
@@ -117,7 +117,7 @@ export default function StripeWalletPage() {
   });
 
   const botLinking = useBotLinking({
-    railPrefix: "stripe-wallet",
+    railPrefix: "usdc-wallet",
     entityType: "wallet",
     onUpdate: fetchWallets,
   });
@@ -134,7 +134,7 @@ export default function StripeWalletPage() {
 
   const guardrails = useGuardrails<Rail1WalletInfo>({
     variant: "crypto",
-    railPrefix: "stripe-wallet",
+    railPrefix: "usdc-wallet",
     onUpdate: fetchWallets,
   });
 
@@ -168,7 +168,7 @@ export default function StripeWalletPage() {
     <div className="flex flex-col gap-8 animate-fade-in-up">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-neutral-900 mb-1" data-testid="text-stripe-wallet-title">Stablecoin Wallet</h1>
+          <h1 className="text-2xl font-bold text-neutral-900 mb-1" data-testid="text-usdc-wallet-title">USDC Wallet</h1>
           <p className="text-neutral-500">
             Fund bots with USDC on Base via Stripe. Bots pay for API resources using the x402 protocol.
           </p>
@@ -176,7 +176,7 @@ export default function StripeWalletPage() {
         <Button
           onClick={() => setCreateDialogOpen(true)}
           className="rounded-full bg-primary hover:bg-primary/90 gap-2"
-          data-testid="button-create-stripe-wallet"
+          data-testid="button-create-usdc-wallet"
         >
           <Plus className="w-4 h-4" />
           New Wallet
@@ -189,7 +189,7 @@ export default function StripeWalletPage() {
             <Wallet className="w-5 h-5 text-blue-600" />
           </div>
           <div>
-            <h3 className="font-bold text-neutral-900 mb-1">How Stablecoin Wallet Works</h3>
+            <h3 className="font-bold text-neutral-900 mb-1">How USDC Wallet Works</h3>
             <p className="text-sm text-neutral-600 leading-relaxed">
               Each agent gets a Privy server wallet on Base chain. You fund it with USDC via Stripe's Crypto Onramp (fiat → USDC).
               When your agent needs to pay for an API resource, it uses the x402 payment protocol — CreditClaw signs the EIP-712
@@ -208,13 +208,13 @@ export default function StripeWalletPage() {
             id: "wallets",
             label: "Wallets",
             content: loading ? (
-              <div className="flex items-center justify-center py-24" data-testid="loading-stripe-wallets">
+              <div className="flex items-center justify-center py-24" data-testid="loading-usdc-wallets">
                 <Loader2 className="w-8 h-8 animate-spin text-neutral-400" />
               </div>
             ) : wallets.length === 0 ? (
-              <div className="text-center py-24" data-testid="text-no-stripe-wallets">
+              <div className="text-center py-24" data-testid="text-no-usdc-wallets">
                 <Wallet className="w-12 h-12 text-neutral-300 mx-auto mb-4" />
-                <p className="text-lg text-neutral-400 font-medium">No Stablecoin Wallets yet.</p>
+                <p className="text-lg text-neutral-400 font-medium">No USDC Wallets yet.</p>
                 <p className="text-sm text-neutral-400 mt-2">Click "New Wallet" to provision a USDC wallet for your bot.</p>
               </div>
             ) : (
@@ -278,9 +278,9 @@ export default function StripeWalletPage() {
         onOpenChange={setCreateDialogOpen}
         bots={botLinking.bots}
         config={{
-          title: "Create Stablecoin Wallet",
+          title: "Create USDC Wallet",
           description: "Provision a Privy server wallet on Base for your bot. It can be funded with USDC via Stripe.",
-          endpoint: "/api/v1/stripe-wallet/create",
+          endpoint: "/api/v1/usdc-wallet/create",
           buttonLabel: "Create Wallet",
           successMessage: "Wallet created",
           successDescription: "Privy server wallet provisioned on Base.",

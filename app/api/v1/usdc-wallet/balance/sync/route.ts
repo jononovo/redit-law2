@@ -87,7 +87,7 @@ export async function POST(request: NextRequest) {
       changed,
     });
   } catch (error) {
-    console.error("POST /api/v1/stripe-wallet/balance/sync error:", error);
+    console.error("POST /api/v1/usdc-wallet/balance/sync error:", error);
     return NextResponse.json({ error: "internal_error" }, { status: 500 });
   }
 }

@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
       } : null,
     });
   } catch (error) {
-    console.error("GET /api/v1/stripe-wallet/guardrails error:", error);
+    console.error("GET /api/v1/usdc-wallet/guardrails error:", error);
     return NextResponse.json({ error: "internal_error" }, { status: 500 });
   }
 }
@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
     const guardrails = await storage.privyUpsertGuardrails(wallet_id, updateData);
     return NextResponse.json({ guardrails });
   } catch (error) {
-    console.error("POST /api/v1/stripe-wallet/guardrails error:", error);
+    console.error("POST /api/v1/usdc-wallet/guardrails error:", error);
     return NextResponse.json({ error: "internal_error" }, { status: 500 });
   }
 }

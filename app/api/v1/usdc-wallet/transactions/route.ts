@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
       })),
     });
   } catch (error) {
-    console.error("GET /api/v1/stripe-wallet/transactions error:", error);
+    console.error("GET /api/v1/usdc-wallet/transactions error:", error);
     return NextResponse.json({ error: "internal_error" }, { status: 500 });
   }
 }

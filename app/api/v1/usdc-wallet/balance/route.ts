@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
       status: wallet.status,
     });
   } catch (error) {
-    console.error("GET /api/v1/stripe-wallet/balance error:", error);
+    console.error("GET /api/v1/usdc-wallet/balance error:", error);
     return NextResponse.json({ error: "internal_error" }, { status: 500 });
   }
 }

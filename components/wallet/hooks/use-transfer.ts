@@ -35,7 +35,7 @@ export function useTransfer(config: UseTransferConfig) {
 
     try {
       const [stripeRes, cardRes] = await Promise.all([
-        authFetch("/api/v1/stripe-wallet/list"),
+        authFetch("/api/v1/usdc-wallet/list"),
         authFetch("/api/v1/card-wallet/list"),
       ]);
 
@@ -49,7 +49,7 @@ export function useTransfer(config: UseTransferConfig) {
               id: w.id,
               rail: "privy" as const,
               address: w.address,
-              label: `${w.bot_name || "Stablecoin Wallet"} (${w.address.slice(0, 6)}...${w.address.slice(-4)}) — Stripe/Privy`,
+              label: `${w.bot_name || "USDC Wallet"} (${w.address.slice(0, 6)}...${w.address.slice(-4)}) — Stripe/Privy`,
             });
           }
         });

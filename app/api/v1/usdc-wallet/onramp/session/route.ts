@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
       redirect_url: redirectUrl,
     });
   } catch (error) {
-    console.error("POST /api/v1/stripe-wallet/onramp/session error:", error);
+    console.error("POST /api/v1/usdc-wallet/onramp/session error:", error);
     return NextResponse.json({ error: "internal_error" }, { status: 500 });
   }
 }

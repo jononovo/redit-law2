@@ -2,11 +2,11 @@
 name: creditclaw-stripe-x402-wallet
 version: 2.5.0
 updated: 2026-03-09
-description: "Stripe Wallet (x402/USDC) — signing, balance, transactions, and guardrails."
+description: "USDC Wallet (x402) — signing, balance, transactions, and guardrails."
 parent: SKILL.md
 ---
 
-# Stripe Wallet — x402 / USDC (Private Beta)
+# USDC Wallet — x402 (Private Beta)
 
 > **Companion file** — see `SKILL.md` for registration, webhooks, and the full API reference.
 
@@ -14,7 +14,7 @@ parent: SKILL.md
 > If your owner has been granted access, the following endpoints will be active.
 > Otherwise, these endpoints will return `404`. Check back for updates.
 
-The Stripe Wallet rail provides USDC-based wallets on the Base blockchain with spending
+The USDC Wallet rail provides USDC-based wallets on the Base blockchain with spending
 via the x402 payment protocol. Your owner funds the wallet using Stripe's fiat-to-crypto
 onramp (credit card → USDC), and you spend by requesting cryptographic payment signatures
 that are settled on-chain.
@@ -26,7 +26,7 @@ that are settled on-chain.
 When you encounter a service that returns HTTP `402 Payment Required` with x402 payment
 details, you request a signature from CreditClaw:
 
-1. You send the payment details to `POST /stripe-wallet/bot/sign`
+1. You send the payment details to `POST /usdc-wallet/bot/sign`
 2. CreditClaw enforces your owner's guardrails (per-tx limit, daily budget, monthly budget, domain allow/blocklist, approval threshold)
 3. If approved, CreditClaw signs an EIP-712 `TransferWithAuthorization` message and returns an `X-PAYMENT` header
 4. You retry your original request with the `X-PAYMENT` header attached
@@ -37,7 +37,7 @@ details, you request a signature from CreditClaw:
 ## Request x402 Payment Signature
 
 ```bash
-curl -X POST https://creditclaw.com/api/v1/stripe-wallet/bot/sign \
+curl -X POST https://creditclaw.com/api/v1/usdc-wallet/bot/sign \
   -H "Authorization: Bearer $CREDITCLAW_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -115,10 +115,10 @@ Your owner configures these from their dashboard. All guardrails are enforced se
 
 ---
 
-## Check Stripe Wallet Balance
+## Check USDC Wallet Balance
 
 ```bash
-curl "https://creditclaw.com/api/v1/stripe-wallet/balance?wallet_id=1" \
+curl "https://creditclaw.com/api/v1/usdc-wallet/balance?wallet_id=1" \
   -H "Authorization: Bearer $CREDITCLAW_API_KEY"
 ```
 
@@ -135,10 +135,10 @@ Response:
 
 ---
 
-## View Stripe Wallet Transactions
+## View USDC Wallet Transactions
 
 ```bash
-curl "https://creditclaw.com/api/v1/stripe-wallet/transactions?wallet_id=1&limit=10" \
+curl "https://creditclaw.com/api/v1/usdc-wallet/transactions?wallet_id=1&limit=10" \
   -H "Authorization: Bearer $CREDITCLAW_API_KEY"
 ```
 
@@ -198,7 +198,7 @@ Base URL: `https://creditclaw.com/api/v1`
 
 | Method | Endpoint | Description | Rate Limit |
 |--------|----------|-------------|------------|
-| POST | `/stripe-wallet/bot/sign` | Request x402 payment signature. Enforces guardrails. | 30/hr |
-| GET | `/stripe-wallet/balance` | Get USDC balance for a wallet. | 12/hr |
-| GET | `/stripe-wallet/transactions` | List x402 transactions for a wallet. | 12/hr |
-| GET | `/bot/check/rail1` | Stripe Wallet detail: balance, guardrails, domain rules, pending approvals. | 6/hr |
+| POST | `/usdc-wallet/bot/sign` | Request x402 payment signature. Enforces guardrails. | 30/hr |
+| GET | `/usdc-wallet/balance` | Get USDC balance for a wallet. | 12/hr |
+| GET | `/usdc-wallet/transactions` | List x402 transactions for a wallet. | 12/hr |
+| GET | `/bot/check/rail1` | USDC Wallet detail: balance, guardrails, domain rules, pending approvals. | 6/hr |

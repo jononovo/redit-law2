@@ -29,7 +29,7 @@ export const tags: Tag[] = [
   { name: "Spending Controls", slug: "spending-controls" },
   { name: "Guardrails", slug: "guardrails" },
   { name: "Card Wallet", slug: "card-wallet" },
-  { name: "Stablecoin Wallet", slug: "stripe-wallet" },
+  { name: "USDC Wallet", slug: "usdc-wallet" },
   { name: "Procurement Skills", slug: "procurement-skills" },
   { name: "Security", slug: "security" },
   { name: "Plugins", slug: "plugins" },

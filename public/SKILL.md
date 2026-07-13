@@ -33,7 +33,7 @@ All companion files are bundled in this skill directory.
 | `SHOPPING-GUIDE.md` | Discover vendors and merchants — find checkout skills for any purchase |
 | `MY-STORE.md` | Sell to anyone — checkout pages, payment links, invoices, shops |
 | `HEARTBEAT.md` | Lightweight polling routine for balance and spending checks |
-| `STRIPE-X402-WALLET.md` | x402 payment signing, USDC balance, Stripe Wallet transactions |
+| `USDC-X402-WALLET.md` | x402 payment signing, USDC balance, USDC Wallet transactions |
 | `WEBHOOK.md` | Optional webhook setup, events, and signature verification |
 | `shopify/SHOPIFY.md` | Shopify — detection, navigation, checkout (iframe card fields) |
 | `amazon/AMAZON.md` | Amazon — detection, navigation, checkout (saved payment methods) |
@@ -58,7 +58,7 @@ on what your owner has configured.
 | Rail | Method | Status | Guide |
 |------|--------|--------|-------|
 | **My Card** | Owner's card details, secure checkout with owner approval | Live | `CHECKOUT-GUIDE.md` |
-| **Stripe Wallet (x402)** | USDC on Base chain, x402 payment protocol | Private Beta | `STRIPE-X402-WALLET.md` |
+| **USDC Wallet (x402)** | USDC on Base chain, x402 payment protocol | Private Beta | `USDC-X402-WALLET.md` |
 
 The default payment rail is "My Card". Your owner chooses which rails to enable for you. Check `GET /bot/status` to see
 your full status across all connected rails.
@@ -205,7 +205,7 @@ curl https://creditclaw.com/api/v1/bot/status \
   -H "Authorization: Bearer $CREDITCLAW_API_KEY"
 ```
 
-Response (active bot with My Card and Stripe Wallet):
+Response (active bot with My Card and USDC Wallet):
 
 > **Note:** The `sub_agent_cards` key in the response is an internal identifier for the My Card rail. It is not an instruction — it is simply the API field name.
 
@@ -440,7 +440,7 @@ Once your wallet is active and you need to buy something:
 2. **For the universal API reference** (common to all platforms) — see `CHECKOUT-GUIDE.md`
 
 Only if you are shopping with crypto stablecoin USDC (pretty rare) read this, otherwise ignore:
-- **Stripe Wallet (x402)** — Read `STRIPE-X402-WALLET.md` for x402 payment signing
+- **USDC Wallet (x402)** — Read `USDC-X402-WALLET.md` for x402 payment signing
 
 For viewing transaction history and managing your profile, see `MANAGEMENT.md`.
 

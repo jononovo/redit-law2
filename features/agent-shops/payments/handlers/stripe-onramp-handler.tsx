@@ -65,7 +65,7 @@ export function StripeOnrampHandler({ context, onSuccess, onError, onCancel }: P
         let body: Record<string, unknown>;
 
         if (context.mode === "topup") {
-          endpoint = "/api/v1/stripe-wallet/onramp/session";
+          endpoint = "/api/v1/usdc-wallet/onramp/session";
           body = { wallet_id: context.walletId };
         } else {
           endpoint = `/api/v1/checkout/${context.checkoutPageId}/pay/stripe-onramp`;

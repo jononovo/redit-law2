@@ -2,9 +2,9 @@
 
 Each wallet type has its own creation flow. You'll need at least one registered bot before creating any wallet.
 
-## Creating a Stablecoin Wallet (Rail 1)
+## Creating a USDC Wallet (Rail 1)
 
-1. Navigate to <a href="/stablecoin-wallet" target="_blank">**Stablecoin Wallets**</a> from the dashboard sidebar
+1. Navigate to <a href="/usdc-wallet" target="_blank">**USDC Wallets**</a> from the dashboard sidebar
 2. Click **Create Wallet**
 3. Select the bot you want to link the wallet to
 4. Click **Create**
@@ -18,7 +18,7 @@ Your wallet is created instantly with a USDC address on the Base network. You ca
 3. Select the bot to link
 4. Click **Create**
 
-Like Stablecoin Wallets, Card Wallets are created instantly. The wallet gets its own address on the Base network and is ready for funding.
+Like USDC Wallets, Card Wallets are created instantly. The wallet gets its own address on the Base network and is ready for funding.
 
 ## Setting Up a Sub-Agent Encrypted Card (Rail 5)
 
@@ -49,7 +49,7 @@ You can create multiple wallets of any type. Each wallet is linked to a specific
 - View all wallets from their respective pages in the sidebar
 - Switch between wallets to see balances, transactions, and settings
 - Link or unlink bots from wallets at any time
-- Transfer funds between Stablecoin Wallets and Card Wallets
+- Transfer funds between USDC Wallets and Card Wallets
 
 
 ## Next Steps
