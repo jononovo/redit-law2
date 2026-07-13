@@ -191,8 +191,8 @@ export default function StripeWalletPage() {
           <div>
             <h3 className="font-bold text-neutral-900 mb-1">How Stablecoin Wallet Works</h3>
             <p className="text-sm text-neutral-600 leading-relaxed">
-              Each bot gets a Privy server wallet on Base chain. You fund it with USDC via Stripe's Crypto Onramp (fiat → USDC).
-              When your bot needs to pay for an API resource, it uses the x402 payment protocol — CreditClaw signs the EIP-712
+              Each agent gets a Privy server wallet on Base chain. You fund it with USDC via Stripe's Crypto Onramp (fiat → USDC).
+              When your agent needs to pay for an API resource, it uses the x402 payment protocol — CreditClaw signs the EIP-712
               transfer authorization within guardrails you set (per-tx limits, daily/monthly budgets, domain allow/blocklists).
             </p>
           </div>
