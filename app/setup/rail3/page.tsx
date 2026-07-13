@@ -12,7 +12,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/features/platform-management/auth/auth-context";
 import { authFetch } from "@/features/platform-management/auth-fetch";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, Loader2, ShieldCheck } from "lucide-react";
+import { CheckCircle2, Loader2, ShieldCheck, X } from "lucide-react";
 import {
   CrossmintPaymentMethodManagement,
   PaymentMethodAgenticEnrollmentVerification,
@@ -143,6 +143,15 @@ function SetupInner() {
 
   return (
     <div className="min-h-screen bg-neutral-50 py-12 px-4">
+      <button
+        type="button"
+        onClick={() => router.push("/virtual-cards")}
+        className="fixed top-4 right-4 z-20 p-2 rounded-full bg-white/80 hover:bg-neutral-100 text-neutral-500 hover:text-neutral-900 transition-colors shadow-sm border border-neutral-200 cursor-pointer"
+        data-testid="button-r3-close"
+      >
+        <X className="w-5 h-5" />
+        <span className="sr-only">Close</span>
+      </button>
       <div className="max-w-2xl mx-auto">
         <h1 className="text-3xl font-bold text-neutral-900 mb-2" data-testid="text-wizard-title">Save your card</h1>
         <p className="text-neutral-600 mb-8">
