@@ -2,7 +2,7 @@
 
 import { WizardStep } from "../wizard-step";
 import { wt } from "@/lib/wizard-typography";
-import { Zap, Bot, Monitor, Terminal, Code } from "lucide-react";
+import { Zap, Bot, Monitor, Terminal, Code, Send } from "lucide-react";
 
 interface ChoosePathProps {
   currentStep: number;
@@ -11,10 +11,11 @@ interface ChoosePathProps {
 }
 
 const agentTypes = [
-  { id: "openclaw", label: "OpenClaw", icon: Zap, enabled: true },
   { id: "claude_code", label: "Claude Code", icon: Terminal, enabled: true },
   { id: "claude_cowork", label: "Claude CoWork", icon: Bot, enabled: true },
   { id: "codex", label: "Codex", icon: Code, enabled: true },
+  { id: "openclaw", label: "OpenClaw", icon: Zap, enabled: true },
+  { id: "hermes", label: "Hermes", icon: Send, enabled: true },
   { id: "agent", label: "All Other Agents", icon: Bot, enabled: true },
   { id: "application", label: "Building an Application", icon: Monitor, enabled: true },
 ];
