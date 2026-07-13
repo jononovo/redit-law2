@@ -29,7 +29,7 @@ export function ExplainerToggleLink({
       className="flex items-center gap-1 text-sm text-neutral-400 hover:text-neutral-700 transition-colors"
     >
       <span>{title}</span>
-      <ChevronDown className="w-4 h-4" />
+      <ChevronDown className="w-4 h-4 relative top-[1px]" />
     </button>
   );
 }
