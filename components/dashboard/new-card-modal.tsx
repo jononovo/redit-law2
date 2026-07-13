@@ -69,7 +69,7 @@ export function NewCardModal({ open, onOpenChange }: NewCardModalProps) {
             Add a New Card
           </DialogTitle>
           <DialogDescription className="text-sm text-neutral-500 mt-1">
-            Choose the card or wallet you wish to add.
+            Select the card or wallet you wish to add.
           </DialogDescription>
         </div>
 
