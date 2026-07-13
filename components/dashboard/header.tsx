@@ -23,7 +23,7 @@ export function Header({ title }: { title?: string }) {
   const [feedbackDialogOpen, setFeedbackDialogOpen] = useState(false);
 
   return (
-    <header className="h-16 bg-white/80 backdrop-blur-md border-b border-neutral-100 sticky top-0 z-40 flex items-center">
+    <header className="h-12 md:h-16 bg-white/80 backdrop-blur-md border-b border-neutral-100 sticky top-0 z-40 flex items-center">
       <div className="max-w-[110rem] mx-auto w-full px-4 md:px-8 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <SidebarTrigger className="md:hidden h-10 w-10 [&_svg]:size-6" data-testid="button-sidebar-toggle" />
