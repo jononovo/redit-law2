@@ -17,7 +17,7 @@ const config: CreditCardListPageConfig = {
   approvalsDecideEndpoint: "/api/v1/approvals/decide",
   normalizeCards: (data: any) => (data.cards || []).map((c: any) => normalizeRail5Card(c, "/self-hosted")),
   explainer: {
-    title: "How Self-hosted Cards Work",
+    title: "How self-hosted cards work",
     icon: <Lock className="w-5 h-5 text-purple-600" />,
     containerClassName: "bg-gradient-to-r from-purple-50 to-blue-50 border-purple-100",
     iconWrapClassName: "bg-purple-100",
