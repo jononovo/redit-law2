@@ -12,7 +12,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/features/platform-management/auth/auth-context";
 import { authFetch } from "@/features/platform-management/auth-fetch";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, Loader2, CreditCard, ShieldCheck } from "lucide-react";
+import { CheckCircle2, Loader2, ShieldCheck } from "lucide-react";
 import {
   CrossmintPaymentMethodManagement,
   PaymentMethodAgenticEnrollmentVerification,
@@ -153,20 +153,18 @@ function SetupInner() {
 
         <div className="bg-white rounded-2xl border border-neutral-200 p-8">
           {step === 1 && (
-            <Section icon={<CreditCard className="w-5 h-5" />} title="Save your card" subtitle="US-issued Visa or Mastercard credit/debit only. Not supported: non-US, business, prepaid, Chase, Fidelity. AMEX/Ramp need Crossmint approval.">
-              {jwt ? (
-                <div data-testid="container-pm-management" className="rounded-lg border border-neutral-200 overflow-hidden">
-                  <CrossmintPaymentMethodManagement
-                    jwt={jwt}
-                    onPaymentMethodSelected={(pm) => { savePaymentMethodAndEnroll(pm); }}
-                  />
-                </div>
-              ) : (
-                <div className="flex items-center gap-2 p-3 text-sm text-neutral-500">
-                  <Loader2 className="w-4 h-4 animate-spin" /> Connecting to Crossmint…
-                </div>
-              )}
-            </Section>
+            jwt ? (
+              <div data-testid="container-pm-management" className="rounded-lg border border-neutral-200 overflow-hidden">
+                <CrossmintPaymentMethodManagement
+                  jwt={jwt}
+                  onPaymentMethodSelected={(pm) => { savePaymentMethodAndEnroll(pm); }}
+                />
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 p-3 text-sm text-neutral-500">
+                <Loader2 className="w-4 h-4 animate-spin" /> Connecting to Crossmint…
+              </div>
+            )
           )}
 
           {step === 2 && (
