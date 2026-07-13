@@ -24,6 +24,22 @@ import { OrderList, type OrderRow } from "@/components/wallet/order-list";
 import { ApprovalHistoryPanel } from "@/components/wallet/approval-history-panel";
 import { WalletSelector } from "@/components/wallet/wallet-selector";
 import type { CryptoGuardrailForm } from "@/components/wallet/dialogs/guardrail-dialog";
+import { ExplainerBlock, ExplainerToggleLink, type ExplainerContent } from "@/components/wallet/collapsible-explainer";
+
+const rail1Explainer: ExplainerContent = {
+  title: "How USDC Wallet Works",
+  icon: <Wallet className="w-5 h-5 text-blue-600" />,
+  containerClassName: "bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-100",
+  iconWrapClassName: "bg-blue-100",
+  testId: "card-rail1-explainer",
+  body: (
+    <>
+      Each agent gets a Privy server wallet on Base chain. You fund it with USDC via Stripe&apos;s Crypto Onramp (fiat → USDC).
+      When your agent needs to pay for an API resource, it uses the x402 payment protocol — CreditClaw signs the EIP-712
+      transfer authorization within guardrails you set (per-tx limits, daily/monthly budgets, domain allow/blocklists).
+    </>
+  ),
+};
 
 export default function StripeWalletPage() {
   const { user } = useAuth();
@@ -36,6 +52,7 @@ export default function StripeWalletPage() {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("wallets");
   const [orders, setOrders] = useState<OrderRow[]>([]);
+  const [explainerOpen, setExplainerOpen] = useState(false);
 
   const fetchWallets = useCallback(async () => {
     try {
@@ -169,9 +186,13 @@ export default function StripeWalletPage() {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold text-neutral-900 mb-1" data-testid="text-usdc-wallet-title">USDC Wallet</h1>
-          <p className="text-neutral-500">
-            Fund bots with USDC on Base via Stripe. Bots pay for API resources using the x402 protocol.
-          </p>
+          {!explainerOpen && (
+            <ExplainerToggleLink
+              title={rail1Explainer.title}
+              onOpen={() => setExplainerOpen(true)}
+              testId="link-rail1-explainer-toggle"
+            />
+          )}
         </div>
         <Button
           onClick={() => setCreateDialogOpen(true)}
@@ -183,21 +204,9 @@ export default function StripeWalletPage() {
         </Button>
       </div>
 
-      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl border border-blue-100 p-6" data-testid="card-rail1-explainer">
-        <div className="flex items-start gap-4">
-          <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center flex-shrink-0">
-            <Wallet className="w-5 h-5 text-blue-600" />
-          </div>
-          <div>
-            <h3 className="font-bold text-neutral-900 mb-1">How USDC Wallet Works</h3>
-            <p className="text-sm text-neutral-600 leading-relaxed">
-              Each agent gets a Privy server wallet on Base chain. You fund it with USDC via Stripe's Crypto Onramp (fiat → USDC).
-              When your agent needs to pay for an API resource, it uses the x402 payment protocol — CreditClaw signs the EIP-712
-              transfer authorization within guardrails you set (per-tx limits, daily/monthly budgets, domain allow/blocklists).
-            </p>
-          </div>
-        </div>
-      </div>
+      {explainerOpen && (
+        <ExplainerBlock content={rail1Explainer} onClose={() => setExplainerOpen(false)} />
+      )}
 
       <RailPageTabs
         activeTab={activeTab}

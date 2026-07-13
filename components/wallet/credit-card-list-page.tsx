@@ -19,10 +19,10 @@ import { TransactionList, type TransactionRow } from "./transaction-list";
 import { OrderList, type OrderRow } from "./order-list";
 import { ApprovalHistoryPanel } from "./approval-history-panel";
 import type { NormalizedCard } from "./types";
+import { ExplainerBlock, ExplainerToggleLink, type ExplainerContent } from "./collapsible-explainer";
 
 export interface CreditCardListPageConfig {
   title: string;
-  subtitle: string;
   addButtonLabel: string;
   emptyTitle: string;
   emptySubtitle: string;
@@ -30,7 +30,7 @@ export interface CreditCardListPageConfig {
   railPrefix: string;
   basePath: string;
   normalizeCards: (data: any) => NormalizedCard[];
-  explainer: ReactNode;
+  explainer: ExplainerContent;
   setupWizard?: (props: { open: boolean; onOpenChange: (v: boolean) => void; onComplete: () => void }) => ReactNode;
   setupWizardHref?: string;
   headerSection?: ReactNode;
@@ -57,6 +57,7 @@ export function CreditCardListPage({ config }: { config: CreditCardListPageConfi
   const [deleteTarget, setDeleteTarget] = useState<NormalizedCard | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("cards");
+  const [explainerOpen, setExplainerOpen] = useState(false);
 
   const [transactions, setTransactions] = useState<TransactionRow[]>([]);
   const [orders, setOrders] = useState<OrderRow[]>([]);
@@ -272,7 +273,13 @@ export function CreditCardListPage({ config }: { config: CreditCardListPageConfi
             <h1 className="text-2xl font-bold text-neutral-900 mb-1" data-testid="text-page-title">{config.title}</h1>
             {config.titleAdornment}
           </div>
-          <p className="text-neutral-500">{config.subtitle}</p>
+          {!explainerOpen && (
+            <ExplainerToggleLink
+              title={config.explainer.title}
+              onOpen={() => setExplainerOpen(true)}
+              testId={`link-${config.railPrefix}-explainer-toggle`}
+            />
+          )}
         </div>
         <Button
           onClick={() => config.setupWizardHref ? router.push(config.setupWizardHref) : setWizardOpen(true)}
@@ -342,7 +349,9 @@ export function CreditCardListPage({ config }: { config: CreditCardListPageConfi
         </>
       )}
 
-      {config.explainer}
+      {explainerOpen && (
+        <ExplainerBlock content={config.explainer} onClose={() => setExplainerOpen(false)} />
+      )}
 
       <RailPageTabs
         activeTab={activeTab}
