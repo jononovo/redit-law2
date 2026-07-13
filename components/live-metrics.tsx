@@ -112,7 +112,6 @@ export function LiveMetrics() {
 
             <div className="flex items-center gap-3 group cursor-default">
               <img src="/assets/logos/stripe.svg" alt="Stripe" className="h-8 w-auto object-contain" />
-              <span className="text-[10px] font-bold text-green-600">Powered by</span>
             </div>
 
             <div className="flex items-center gap-2 group cursor-default">
