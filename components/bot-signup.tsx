@@ -7,17 +7,14 @@ import { Input } from "@/components/ui/input";
 import { CreditCard, Bot, User, Copy, Check, ArrowRight, Loader2, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { formatPairingCodeForDisplay } from "@/features/platform-management/agent-management/pairing-code-format";
+import { AuthDrawer } from "@/components/auth-drawer";
+import { useTenant } from "@/features/platform-management/tenants/tenant-context";
 
 const SKILL_URL = "https://creditclaw.com/SKILL.md";
 
-const steps = [
-  { num: "1", text: "Send this URL & code to your agent" },
-  { num: "2", text: "They register & get a USDC wallet immediately." },
-  { num: "3", text: "Register and issue \"Virtual Cards\" from it." },
-];
-
 export function BotSignup() {
   const { toast } = useToast();
+  const tenant = useTenant();
   const [copied, setCopied] = useState(false);
   const [claimToken, setClaimToken] = useState("");
   const [pairingCode, setPairingCode] = useState<string | null>(null);
@@ -175,16 +172,39 @@ export function BotSignup() {
                 )}
 
                 <div className="space-y-4">
-                  {steps.map((step) => (
-                    <div key={step.num} className="flex items-start gap-4">
-                      <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-sm font-bold shrink-0 mt-0.5">
-                        {step.num}
-                      </div>
-                      <p className="text-neutral-700 font-medium text-[15px] pt-1">
-                        {step.text}
-                      </p>
+                  <div className="flex items-start gap-4">
+                    <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-sm font-bold shrink-0 mt-0.5">
+                      1
                     </div>
-                  ))}
+                    <p className="text-neutral-700 font-medium text-[15px] pt-1">
+                      Send this URL &amp; code to your agent
+                    </p>
+                  </div>
+                  <div className="flex items-start gap-4">
+                    <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-sm font-bold shrink-0 mt-0.5">
+                      2
+                    </div>
+                    <p className="text-neutral-700 font-medium text-[15px] pt-1">
+                      They register &amp; get a USDC wallet immediately.
+                    </p>
+                  </div>
+                  <div className="flex items-start gap-4">
+                    <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-sm font-bold shrink-0 mt-0.5">
+                      3
+                    </div>
+                    <p className="text-neutral-700 font-medium text-[15px] pt-1">
+                      <AuthDrawer redirectTo={tenant.routes.authLanding}>
+                        <button
+                          type="button"
+                          className="text-primary font-bold underline underline-offset-2 hover:text-primary/80 cursor-pointer"
+                          data-testid="link-register-step"
+                        >
+                          Register
+                        </button>
+                      </AuthDrawer>{" "}
+                      and issue &quot;Virtual Cards&quot; from it.
+                    </p>
+                  </div>
                 </div>
               </div>
             </TabsContent>
