@@ -54,7 +54,7 @@ export function Hero() {
             <div 
               className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-neutral-900 text-white font-bold text-sm animate-fade-in-up"
             >
-              <span>For Your Secure Agentic Workflows</span>
+              <span>The World&apos;s Favorite Agentic Payments Platform *</span>
             </div>
 
             <h1 
