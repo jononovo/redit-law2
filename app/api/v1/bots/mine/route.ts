@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/features/platform-management/auth/session";
 import { adminAuth } from "@/features/platform-management/firebase/admin";
 import { storage } from "@/server/storage";
+import type { Bot } from "@/shared/schema";
 
 async function getAuthUser(request: NextRequest) {
   const sessionUser = await getCurrentUser();
@@ -32,11 +33,31 @@ export async function GET(request: NextRequest) {
     }
 
     const [bots, pendingPairings] = await Promise.all([
-      storage.getBotsByOwnerUid(user.uid),
+      storage.getBotsByOwnerUid(user.uid), // excludes the in-house agent at the storage layer
       storage.getPendingPairingCodesByOwnerUid(user.uid),
     ]);
 
+    // The in-house agent lives under its own key, NOT in bots[] — every
+    // bots[] consumer treats rows as linkable external agents (link-bot
+    // dialogs, card pickers, counts), which must never see it.
+    let inhouse: Bot | null = null;
+    try {
+      const email = user.email || (await storage.getOwnerByUid(user.uid))?.email;
+      if (email) inhouse = await storage.ensureInhouseBot(user.uid, email);
+    } catch (err) {
+      // Provisioning must never break the listing — degrade to plain bots.
+      console.error("ensureInhouseBot failed:", err);
+    }
+
     return NextResponse.json({
+      inhouse_agent: inhouse
+        ? {
+            bot_id: inhouse.botId,
+            bot_name: inhouse.botName,
+            description: inhouse.description,
+            created_at: inhouse.createdAt,
+          }
+        : null,
       pending_pairings: pendingPairings.map((pc) => ({
         code: pc.code,
         created_at: pc.createdAt,

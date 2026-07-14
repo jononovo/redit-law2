@@ -5,6 +5,8 @@ import Link from "next/link";
 import { Bot as BotIcon, Plus, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { BotCard } from "@/components/dashboard/bot-card";
+import { InhouseAgentCard } from "@/components/inhouse-agent/inhouse-agent-card";
+import { AddAgentCtaCard } from "@/components/dashboard/add-agent-cta-card";
 import { PendingPairingCard } from "@/components/dashboard/pending-pairing-card";
 import { CardRow, CardRowItem } from "@/components/dashboard/card-row";
 import { useAuth } from "@/features/platform-management/auth/auth-context";
@@ -29,9 +31,17 @@ interface PendingPairing {
   expires_at: string;
 }
 
+interface InhouseAgentData {
+  bot_id: string;
+  bot_name: string;
+  description: string | null;
+  created_at: string;
+}
+
 export default function AgentsPage() {
   const { user } = useAuth();
   const [bots, setBots] = useState<BotData[]>([]);
+  const [inhouseAgent, setInhouseAgent] = useState<InhouseAgentData | null>(null);
   const [pendingPairings, setPendingPairings] = useState<PendingPairing[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -41,6 +51,7 @@ export default function AgentsPage() {
       if (res.ok) {
         const data = await res.json();
         setBots(data.bots || []);
+        setInhouseAgent(data.inhouse_agent || null);
         setPendingPairings(data.pending_pairings || []);
       }
     } catch (error) {
@@ -89,7 +100,7 @@ export default function AgentsPage() {
         <div className="flex items-center justify-center py-16">
           <Loader2 className="w-6 h-6 animate-spin text-neutral-400" />
         </div>
-      ) : bots.length === 0 && pendingPairings.length === 0 ? (
+      ) : bots.length === 0 && pendingPairings.length === 0 && !inhouseAgent ? (
         <div className="bg-white rounded-2xl border border-neutral-100 shadow-sm p-12 text-center" data-testid="empty-bots">
           <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
             <BotIcon className="w-8 h-8 text-primary" />
@@ -99,6 +110,15 @@ export default function AgentsPage() {
         </div>
       ) : (
         <CardRow>
+          {inhouseAgent && (
+            <CardRowItem key={inhouseAgent.bot_id}>
+              <InhouseAgentCard
+                botName={inhouseAgent.bot_name}
+                description={inhouseAgent.description}
+                createdAt={inhouseAgent.created_at}
+              />
+            </CardRowItem>
+          )}
           {pendingPairings.map((pairing) => (
             <CardRowItem key={pairing.code}>
               <PendingPairingCard code={pairing.code} expiresAt={pairing.expires_at} />
@@ -121,6 +141,11 @@ export default function AgentsPage() {
               />
             </CardRowItem>
           ))}
+          {inhouseAgent && bots.length === 0 && pendingPairings.length === 0 && (
+            <CardRowItem key="add-agent-cta">
+              <AddAgentCtaCard />
+            </CardRowItem>
+          )}
         </CardRow>
       )}
     </div>
