@@ -124,3 +124,7 @@ CVC retention 1 hour — neither is 7d.
 on order-intent creation — the blocker is the Crossmint wrapper, not the protocol. Ask Crossmint
 to expose it (or check their gated Agentic Cards ref). Visa Intelligent Commerce public docs
 publish no numeric TTL (API is partner-gated); the concrete settable expiry lives at the BT instruction.
+
+## Prod enrollment OTP fix (July 2026)
+Silent prod passkey/OTP enrollment failure (card vaults, no email, spinner forever) was cured by bumping @crossmint/client-sdk-react-ui to 4.3.1 — Crossmint absorbs prod-vs-staging ceremony differences inside the SDK, so bump it first when prod-only Crossmint UI flows misbehave. Staging mocks the ceremony, so staging/demo success proves nothing about prod.
+**Watch:** 4.3.1 widened onPaymentMethodSelected to a card|bank-account-us union — always narrow (`"card" in pm`) or the type-error-failing prod build dies.
