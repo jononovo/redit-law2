@@ -49,12 +49,6 @@ npm rebuild esbuild
 
 so `drizzle-kit` and `vitest` (which need esbuild's native binary) work.
 
-## Port 5000 & macOS AirPlay
-
-The `dev`/`start` scripts bind `-p 5000` because Replit expects port 5000. On macOS, **AirPlay Receiver** (the `ControlCenter` process) also listens on `:5000`, so `npm run dev` fails with `EADDRINUSE` and any request to `localhost:5000` hits AirPlay (returns 403), not the app.
-
-**Fix (local, one-time):** System Settings → General → AirDrop & Handoff → turn **off** AirPlay Receiver. Then `localhost:5000` is the app, matching Replit exactly. Do **not** change the port in the scripts — it must stay 5000 for Replit.
-
 ## File storage
 
 Uses Replit App Storage (GCS-backed) via Replit's client library, which authenticates using the **Repl's own identity** — that identity does not exist on this machine. Storage calls may fail locally; that's expected. Don't rewire storage without asking.
@@ -73,5 +67,4 @@ Replit **Secrets** are injected as env vars inside the Repl only. They don't exi
 2. `mv package-lock.json /tmp/ && npm install && git checkout package-lock.json`
 3. `npm rebuild esbuild`
 4. Ensure local Postgres 17 + pgvector is running with `heliumdb`; `DATABASE_URL` in `.env.local` points at it.
-5. Turn off macOS AirPlay Receiver (frees port 5000).
-6. `npm run dev` → `localhost:5000`.
+5. `npm run dev` → `localhost:5000`.
