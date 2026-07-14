@@ -7,20 +7,17 @@ import { useToast } from "@/hooks/use-toast";
 import { ChoosePath } from "./steps/choose-path";
 import { RegisterAgentWithCode } from "./steps/register-agent-with-code";
 import { ClaimToken } from "./steps/claim-token";
-import { AddCardBridge } from "./steps/add-card-bridge";
-import { Rail5SetupWizardContent } from "@/components/onboarding/rail5-wizard";
 
 export const ADD_AGENT_PAIRING_CODE_STORAGE_KEY = "creditclaw_add_agent_pairing_code";
 
-type StepId = "choose-agent-type" | "register-agent" | "claim-token" | "add-card-bridge";
+type StepId = "choose-agent-type" | "register-agent" | "claim-token";
 
-const STEPS: StepId[] = ["choose-agent-type", "register-agent", "claim-token", "add-card-bridge"];
+const STEPS: StepId[] = ["choose-agent-type", "register-agent", "claim-token"];
 
 interface AddAgentWizardState {
   agentType: string | null;
   botId: string | null;
   botName: string | null;
-  bridgeReturnStep: StepId;
 }
 
 export function AddAgentWizard() {
@@ -31,11 +28,9 @@ export function AddAgentWizard() {
     agentType: null,
     botId: null,
     botName: null,
-    bridgeReturnStep: "register-agent",
   });
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [transitionClass, setTransitionClass] = useState("wizard-step-active");
-  const [showCardWizard, setShowCardWizard] = useState(false);
 
   const [pairingCode, setPairingCode] = useState<string | null>(() => {
     if (typeof window === "undefined") return null;
@@ -120,19 +115,16 @@ export function AddAgentWizard() {
             currentStep={currentStepIndex}
             totalSteps={totalSteps}
             onBack={goBack}
-            onNext={() => {
-              setState((s) => ({ ...s, bridgeReturnStep: "register-agent" }));
-              goToStep("add-card-bridge");
-            }}
+            onNext={finishAddAgent}
             onSkip={() => {
               clearPairingCode();
               goToStep("claim-token");
             }}
             onAgentRegistered={(botId, botName) => {
-              setState((s) => ({ ...s, botId, botName, bridgeReturnStep: "register-agent" }));
+              setState((s) => ({ ...s, botId, botName }));
               clearPairingCode();
               toast({ title: `${botName} connected`, description: "Your agent is linked to your account." });
-              goToStep("add-card-bridge");
+              finishAddAgent();
             }}
             pairingCode={pairingCode}
             onCodeGenerated={handleCodeGenerated}
@@ -147,24 +139,10 @@ export function AddAgentWizard() {
             totalSteps={totalSteps}
             onBack={() => goToStep("register-agent", "back")}
             onNext={(botId, botName) => {
-              setState((s) => ({ ...s, botId, botName, bridgeReturnStep: "claim-token" }));
+              setState((s) => ({ ...s, botId, botName }));
               saveAgentPlatform(botId);
-              goToStep("add-card-bridge");
+              finishAddAgent();
             }}
-            onSkip={() => {
-              setState((s) => ({ ...s, bridgeReturnStep: "claim-token" }));
-              goToStep("add-card-bridge");
-            }}
-          />
-        );
-
-      case "add-card-bridge":
-        return (
-          <AddCardBridge
-            currentStep={currentStepIndex}
-            totalSteps={totalSteps}
-            onBack={() => goToStep(state.bridgeReturnStep, "back")}
-            onNext={() => setShowCardWizard(true)}
             onSkip={finishAddAgent}
           />
         );
@@ -172,17 +150,6 @@ export function AddAgentWizard() {
       default:
         return null;
     }
-  }
-
-  if (showCardWizard) {
-    return (
-      <Rail5SetupWizardContent
-        inline
-        preselectedBotId={state.botId || undefined}
-        onComplete={finishAddAgent}
-        onClose={finishAddAgent}
-      />
-    );
   }
 
   return (
