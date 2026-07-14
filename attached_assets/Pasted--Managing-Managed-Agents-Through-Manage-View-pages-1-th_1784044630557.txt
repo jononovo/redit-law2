@@ -1,0 +1,24 @@
+# Managing “Managed Agents” - Through “Manage/View” pages:   
+
+1.  the URL you're talking about "Managed-Agent" if you're pushing and showing the single managed agent on that URL, isn't that now sort of hard coding a singular agent from "Crossmint" into that URL?
+
+And should we create like a separate page for each in-house agent? 
+In which case we would need sort of a specific page for this one, right?
+
+And we'd have to have a specific name for it. Or am I misunderstanding things?
+
+But I suppose that managed agents should be listed under the agents page just like all other agents, but they should have like a button that opens the page so that you can work with them and see what they're doing the task that they are running right now, and if there are other features, like adding a specific buyer profile or linking it or looking at the history, that should all be sort of "Manageable" under their page.
+
+Although this is now sort of merging with and conflicting and somewhat duplicating with the payment methods and itself because they keep a transaction ledger, right?
+
+But I guess the point is... This is a service and this is a feature, and it needs its own sort of module, but each of these managed agents also need their own page which may even have sort of sub-pages ( which may even be unique to the features of that particular managed agent - for example this Crossmint Managed Agent has its own sort of “buyer-profile” requirements, whereas if we build our own master agent, it will just use existing settings (shipping address, etc) that we have with our users.) and so I'm just saying that this should be kept in mind right?
+
+Or what do you think about this?  this in mind is there any major or minor changes that you would recommend that would make our platform more maintainable and clearer and better? Don't be afraid of once again changing anything in the database or in the URL structure because we haven't deployed any of the changes you just made.  
+
+
+2. It looks like you created a whole new structure for managed agents. With their own cards and pages and everything. 
+When I thought that they would be listed under the agents page.
+
+But maybe it's better this way. At least for now. To keep things separate because they are kind of different features.
+
+Don't change anything yet
