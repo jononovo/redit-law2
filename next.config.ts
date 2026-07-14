@@ -14,7 +14,8 @@ const nextConfig: NextConfig = {
     return [
       { source: "/stripe-wallet", destination: "/usdc-wallet", permanent: true },
       { source: "/api/v1/stripe-wallet/:path*", destination: "/api/v1/usdc-wallet/:path*", permanent: true },
-      { source: "/STRIPE-X402-WALLET.md", destination: "/USDC-X402-WALLET.md", permanent: true },
+      { source: "/STRIPE-X402-WALLET.md", destination: "/SKILL.md", permanent: false },
+      { source: "/USDC-X402-WALLET.md", destination: "/SKILL.md", permanent: false },
       { source: "/solutions/stripe-wallet", destination: "/solutions/usdc-wallet", permanent: true },
       { source: "/sub-agent-cards", destination: "/self-hosted", permanent: true },
       { source: "/sub-agent-cards/:cardId", destination: "/self-hosted/:cardId", permanent: true },
