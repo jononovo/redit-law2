@@ -1,5 +1,6 @@
 import { Loader2 } from "lucide-react";
 import { OverviewSectionHeader } from "./overview-section-header";
+import { CardRow, CardRowItem } from "./card-row";
 import type { ReactNode } from "react";
 
 const MAX_CARDS_PER_SECTION = 3;
@@ -45,15 +46,13 @@ export function OverviewCardSection({
           <Loader2 className="w-6 h-6 animate-spin text-neutral-400" />
         </div>
       ) : items.length === 0 ? (
-        emptyState ? <div className="w-full max-w-[26rem]">{emptyState}</div> : null
+        emptyState ? <CardRowItem>{emptyState}</CardRowItem> : null
       ) : (
-        <div className="flex flex-wrap gap-4">
+        <CardRow>
           {items.slice(0, MAX_CARDS_PER_SECTION).map(({ key, content }) => (
-            <div key={key} className="w-full max-w-[26rem]">
-              {content}
-            </div>
+            <CardRowItem key={key}>{content}</CardRowItem>
           ))}
-        </div>
+        </CardRow>
       )}
     </div>
   );

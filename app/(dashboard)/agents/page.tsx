@@ -6,6 +6,7 @@ import { Bot as BotIcon, Plus, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { BotCard } from "@/components/dashboard/bot-card";
 import { PendingPairingCard } from "@/components/dashboard/pending-pairing-card";
+import { CardRow, CardRowItem } from "@/components/dashboard/card-row";
 import { useAuth } from "@/features/platform-management/auth/auth-context";
 import { authFetch } from "@/features/platform-management/auth-fetch";
 
@@ -97,27 +98,30 @@ export default function AgentsPage() {
           <p className="text-sm text-neutral-500 mb-6">Connect an agent to start issuing cards and managing spend.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <CardRow>
           {pendingPairings.map((pairing) => (
-            <PendingPairingCard key={pairing.code} code={pairing.code} expiresAt={pairing.expires_at} />
+            <CardRowItem key={pairing.code}>
+              <PendingPairingCard code={pairing.code} expiresAt={pairing.expires_at} />
+            </CardRowItem>
           ))}
           {bots.map((bot) => (
-            <BotCard
-              key={bot.bot_id}
-              botName={bot.bot_name}
-              botId={bot.bot_id}
-              agentPlatform={bot.agent_platform}
-              description={bot.description}
-              walletStatus={bot.wallet_status}
-              webhookStatus={bot.webhook_status}
-              tunnelStatus={bot.tunnel_status}
-              callbackUrl={bot.callback_url}
-              createdAt={bot.created_at}
-              claimedAt={bot.claimed_at}
-              onUpdated={fetchBots}
-            />
+            <CardRowItem key={bot.bot_id}>
+              <BotCard
+                botName={bot.bot_name}
+                botId={bot.bot_id}
+                agentPlatform={bot.agent_platform}
+                description={bot.description}
+                walletStatus={bot.wallet_status}
+                webhookStatus={bot.webhook_status}
+                tunnelStatus={bot.tunnel_status}
+                callbackUrl={bot.callback_url}
+                createdAt={bot.created_at}
+                claimedAt={bot.claimed_at}
+                onUpdated={fetchBots}
+              />
+            </CardRowItem>
           ))}
-        </div>
+        </CardRow>
       )}
     </div>
   );
