@@ -33,7 +33,7 @@ export function buildBuyerProfileBody(addr: SavedShippingAddress, fallbackEmail:
 }
 
 // One buyer profile per owner, created lazily from the default (or first)
-// shipping address and cached on owners.crossmint_buyer_profile_id.
+// shipping address and cached on managed_agents.buyer_profile_id.
 export async function ensureBuyerProfile(ownerUid: string, ownerEmail: string, jwt: string): Promise<string> {
   // Cached on the managed_agents row (guaranteed to exist: startCheckout calls
   // ensureManagedAgent before this). The owners lookup stays only for the
