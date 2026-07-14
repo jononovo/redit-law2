@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { 
   LayoutDashboard, 
   Bot,
@@ -17,6 +17,8 @@ import {
   ShoppingBag,
   FileText,
   ChevronDown,
+  ChevronsLeft,
+  ChevronsRight,
   Gauge,
   Sparkles,
   FlaskConical,
@@ -40,6 +42,8 @@ import {
   SidebarContent,
   useSidebar,
 } from "@/components/ui/sidebar";
+
+const AUTO_COLLAPSE_MEDIA_QUERY = "(max-width: 1100px)";
 
 interface NavItem {
   icon: React.ComponentType<{ className?: string }>;
@@ -88,6 +92,120 @@ const salesNavItems: NavItem[] = [
   { icon: FileText, label: "Invoices", href: "/invoices" },
 ];
 
+function navRowClasses(isActive: boolean, isInactive?: boolean) {
+  return cn(
+    "group flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all cursor-pointer",
+    "group-data-[collapsible=icon]:px-2 group-data-[collapsible=icon]:justify-center",
+    isInactive
+      ? "text-neutral-300 hover:bg-neutral-50 hover:text-neutral-400 opacity-60"
+      : isActive
+        ? "bg-neutral-900 text-white shadow-md shadow-neutral-900/10"
+        : "text-neutral-500 hover:bg-neutral-50 hover:text-neutral-900"
+  );
+}
+
+function navIconClasses(isActive: boolean, isInactive?: boolean) {
+  return cn("w-5 h-5 flex-shrink-0", isInactive ? "text-neutral-300" : isActive ? "text-white" : "text-neutral-400");
+}
+
+function SidebarNavLink({ item, isActive, onClick }: { item: NavItem; isActive: boolean; onClick: () => void }) {
+  const isInactive = item.inactive;
+  const linkProps = item.external ? { target: "_blank" as const, rel: "noopener noreferrer" } : {};
+  const navLink = (
+    <Link href={item.href} {...linkProps} onClick={onClick}>
+      <div className={navRowClasses(isActive, isInactive)}>
+        <item.icon className={navIconClasses(isActive, isInactive)} />
+        <div className="relative flex flex-col group-data-[collapsible=icon]:hidden">
+          <span>{item.label}</span>
+          {item.subtitle && (
+            <span className={cn(
+              "text-[10px] font-medium leading-none mt-0.5",
+              isActive ? "text-white/50" : "text-neutral-400"
+            )}>
+              {item.subtitle}
+            </span>
+          )}
+          {item.tag && (
+            <span className={cn(
+              "absolute -top-1 -right-8 text-[8px] font-semibold uppercase tracking-wider px-1 py-px rounded-sm transition-colors z-10",
+              isActive
+                ? "text-white/60 bg-white/10"
+                : item.tag === "beta"
+                  ? "text-neutral-300 group-hover:text-blue-500 group-hover:bg-blue-50"
+                  : "text-neutral-300 group-hover:text-neutral-400 group-hover:bg-neutral-100"
+            )}>
+              {item.tag}
+            </span>
+          )}
+          {isInactive && (
+            <span className="absolute -top-1 -right-12 text-[8px] font-semibold uppercase tracking-wider px-1 py-px rounded-sm z-10 text-neutral-400 bg-neutral-100 hover:bg-neutral-200 transition-colors">
+              Inactive
+            </span>
+          )}
+        </div>
+      </div>
+    </Link>
+  );
+  if (item.tooltip) {
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>
+          {navLink}
+        </TooltipTrigger>
+        <TooltipContent side="right" className="max-w-[220px] text-xs leading-relaxed bg-white text-neutral-700 border border-neutral-200 shadow-md">
+          {item.tooltip}
+        </TooltipContent>
+      </Tooltip>
+    );
+  }
+  return navLink;
+}
+
+function SidebarNavSection({
+  label,
+  open,
+  onOpenChange,
+  toggleTestId,
+  labelClassName,
+  children,
+}: {
+  label: string;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  toggleTestId: string;
+  labelClassName?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="group-data-[collapsible=icon]:hidden">
+      <Collapsible open={open} onOpenChange={onOpenChange}>
+        <CollapsibleTrigger asChild>
+          <button
+            type="button"
+            className="w-full flex items-center gap-1 pt-4 pb-1 px-4 cursor-pointer group"
+            data-testid={toggleTestId}
+          >
+            <span className={cn(
+              "text-xs font-semibold uppercase tracking-wider transition-colors",
+              labelClassName ?? "text-neutral-400 group-hover:text-neutral-600"
+            )}>
+              {label}
+            </span>
+            <ChevronDown className={cn(
+              "w-3.5 h-3.5 transition-all",
+              labelClassName ?? "text-neutral-400 group-hover:text-neutral-600",
+              open && "rotate-180"
+            )} />
+          </button>
+        </CollapsibleTrigger>
+        <CollapsibleContent className="space-y-1">
+          {children}
+        </CollapsibleContent>
+      </Collapsible>
+    </div>
+  );
+}
+
 interface AppSidebarProps {
   onNewCard?: () => void;
 }
@@ -95,8 +213,32 @@ interface AppSidebarProps {
 export function AppSidebar({ onNewCard }: AppSidebarProps) {
   const pathname = usePathname();
   const { user } = useAuth();
-  const { setOpenMobile } = useSidebar();
+  const { setOpen, setOpenMobile, isMobile } = useSidebar();
   const userFlags = user?.flags ?? [];
+
+  const [collapsedPref, setCollapsedPref] = useState(false);
+  const [hovering, setHovering] = useState(false);
+  const manualPrefRef = useRef(false);
+
+  useEffect(() => {
+    const mq = window.matchMedia(AUTO_COLLAPSE_MEDIA_QUERY);
+    const apply = () => {
+      if (!manualPrefRef.current) setCollapsedPref(mq.matches);
+    };
+    apply();
+    mq.addEventListener("change", apply);
+    return () => mq.removeEventListener("change", apply);
+  }, []);
+
+  useEffect(() => {
+    if (!isMobile) setOpen(!collapsedPref || hovering);
+  }, [collapsedPref, hovering, isMobile, setOpen]);
+
+  const toggleCollapsedPref = () => {
+    manualPrefRef.current = true;
+    setHovering(false);
+    setCollapsedPref((prev) => !prev);
+  };
 
   const filterByAccess = (items: NavItem[]) =>
     items.filter(item => !item.requiredAccess || userFlags.includes(item.requiredAccess));
@@ -123,201 +265,112 @@ export function AppSidebar({ onNewCard }: AppSidebarProps) {
   };
 
   return (
-    <SidebarShell className="border-r border-neutral-100">
-      <SidebarHeader className="p-6 flex-row items-center gap-3">
+    <SidebarShell
+      collapsible="icon"
+      className="border-r border-neutral-100"
+      onMouseEnter={() => setHovering(true)}
+      onMouseLeave={() => setHovering(false)}
+    >
+      <SidebarHeader className="p-6 flex-row items-center gap-3 group-data-[collapsible=icon]:p-3 group-data-[collapsible=icon]:justify-center">
         <Image src="/assets/images/logo-claw-chip.png" alt="CreditClaw" width={32} height={32} className="object-contain" />
-        <span className="font-bold text-lg tracking-tight text-neutral-900">CreditClaw</span>
+        <span className="font-bold text-lg tracking-tight text-neutral-900 group-data-[collapsible=icon]:hidden">CreditClaw</span>
+        {!isMobile && (
+          <button
+            type="button"
+            onClick={toggleCollapsedPref}
+            className="ml-auto p-1 rounded-md text-neutral-300 hover:text-neutral-600 hover:bg-neutral-50 transition-colors cursor-pointer group-data-[collapsible=icon]:hidden"
+            aria-label={collapsedPref ? "Pin sidebar open" : "Collapse sidebar"}
+            data-testid="button-toggle-sidebar-collapse"
+          >
+            {collapsedPref ? <ChevronsRight className="w-4 h-4" /> : <ChevronsLeft className="w-4 h-4" />}
+          </button>
+        )}
       </SidebarHeader>
 
-      <div className="px-4 mb-6">
+      <div className="px-4 mb-6 group-data-[collapsible=icon]:px-1.5">
         <Button
           onClick={() => {
             onNewCard?.();
             setOpenMobile(false);
           }}
-          className="w-full justify-start gap-2 rounded-xl bg-primary hover:bg-primary/90 shadow-md shadow-primary/20"
+          className="w-full justify-start gap-2 rounded-xl bg-primary hover:bg-primary/90 shadow-md shadow-primary/20 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0"
           data-testid="button-new-card"
         >
             <Plus className="w-4 h-4" />
-            <span>New Card</span>
+            <span className="group-data-[collapsible=icon]:hidden">New Card</span>
         </Button>
       </div>
 
-      <SidebarContent className="px-4 space-y-1">
-        {visibleMainNav.map((item) => {
-          const isActive = pathname === item.href;
-          const isInactive = item.inactive;
-          const hasTooltip = item.tooltip;
-          const navLink = (
-            <Link key={item.href} href={item.href} onClick={handleNavClick}>
-              <div className={cn(
-                "group flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all cursor-pointer",
-                isInactive
-                  ? "text-neutral-300 hover:bg-neutral-50 hover:text-neutral-400 opacity-60"
-                  : isActive 
-                    ? "bg-neutral-900 text-white shadow-md shadow-neutral-900/10" 
-                    : "text-neutral-500 hover:bg-neutral-50 hover:text-neutral-900"
-              )}>
-                <item.icon className={cn("w-5 h-5 flex-shrink-0", isInactive ? "text-neutral-300" : isActive ? "text-white" : "text-neutral-400")} />
-                <div className="relative flex flex-col">
-                  <span>{item.label}</span>
-                  {item.subtitle && (
-                    <span className={cn(
-                      "text-[10px] font-medium leading-none mt-0.5",
-                      isActive ? "text-white/50" : "text-neutral-400"
-                    )}>
-                      {item.subtitle}
-                    </span>
-                  )}
-                  {item.tag && (
-                    <span className={cn(
-                      "absolute -top-1 -right-8 text-[8px] font-semibold uppercase tracking-wider px-1 py-px rounded-sm transition-colors z-10",
-                      isActive
-                        ? "text-white/60 bg-white/10"
-                        : item.tag === "beta"
-                          ? "text-neutral-300 group-hover:text-blue-500 group-hover:bg-blue-50"
-                          : "text-neutral-300 group-hover:text-neutral-400 group-hover:bg-neutral-100"
-                    )}>
-                      {item.tag}
-                    </span>
-                  )}
-                  {isInactive && (
-                    <span className="absolute -top-1 -right-12 text-[8px] font-semibold uppercase tracking-wider px-1 py-px rounded-sm z-10 text-neutral-400 bg-neutral-100 hover:bg-neutral-200 transition-colors">
-                      Inactive
-                    </span>
-                  )}
-                </div>
-              </div>
-            </Link>
-          );
-          if (hasTooltip) {
-            return (
-              <Tooltip key={item.href}>
-                <TooltipTrigger asChild>
-                  {navLink}
-                </TooltipTrigger>
-                <TooltipContent side="right" className="max-w-[220px] text-xs leading-relaxed bg-white text-neutral-700 border border-neutral-200 shadow-md">
-                  {item.tooltip}
-                </TooltipContent>
-              </Tooltip>
-            );
-          }
-          return navLink;
-        })}
+      <SidebarContent className="px-4 space-y-1 group-data-[collapsible=icon]:px-1.5">
+        {visibleMainNav.map((item) => (
+          <SidebarNavLink
+            key={item.href}
+            item={item}
+            isActive={pathname === item.href}
+            onClick={handleNavClick}
+          />
+        ))}
 
-        <Collapsible open={toolsOpen} onOpenChange={setToolsOpen}>
-          <CollapsibleTrigger asChild>
-            <button
-              type="button"
-              className="w-full flex items-center gap-1 pt-4 pb-1 px-4 cursor-pointer group"
-              data-testid="button-toggle-tools-nav"
-            >
-              <span className="text-xs font-semibold uppercase tracking-wider text-neutral-400 group-hover:text-neutral-600 transition-colors">
-                Tools
-              </span>
-              <ChevronDown className={cn(
-                "w-3.5 h-3.5 text-neutral-400 group-hover:text-neutral-600 transition-all",
-                toolsOpen && "rotate-180"
-              )} />
-            </button>
-          </CollapsibleTrigger>
-          <CollapsibleContent className="space-y-1">
-            {visibleToolsNav.map((item) => {
-              const isActive = pathname === item.href;
-              const isExternal = item.external;
-              const linkProps = isExternal ? { target: "_blank" as const, rel: "noopener noreferrer" } : {};
-              return (
-                <Link key={item.href} href={item.href} {...linkProps} onClick={handleNavClick}>
-                  <div className={cn(
-                    "flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all cursor-pointer",
-                    isActive 
-                      ? "bg-neutral-900 text-white shadow-md shadow-neutral-900/10" 
-                      : "text-neutral-500 hover:bg-neutral-50 hover:text-neutral-900"
-                  )}>
-                    <item.icon className={cn("w-5 h-5 flex-shrink-0", isActive ? "text-white" : "text-neutral-400")} />
-                    {item.label}
-                  </div>
-                </Link>
-              );
-            })}
-          </CollapsibleContent>
-        </Collapsible>
+        <SidebarNavSection
+          label="Tools"
+          open={toolsOpen}
+          onOpenChange={setToolsOpen}
+          toggleTestId="button-toggle-tools-nav"
+        >
+          {visibleToolsNav.map((item) => (
+            <SidebarNavLink
+              key={item.href}
+              item={item}
+              isActive={pathname === item.href}
+              onClick={handleNavClick}
+            />
+          ))}
+        </SidebarNavSection>
 
-        <Collapsible open={salesOpen} onOpenChange={setSalesOpen}>
-          <CollapsibleTrigger asChild>
-            <button
-              type="button"
-              className="w-full flex items-center gap-1 pt-4 pb-1 px-4 cursor-pointer group"
-              data-testid="button-toggle-sales-nav"
-            >
-              <span className="text-xs font-semibold uppercase tracking-wider text-neutral-400 group-hover:text-neutral-600 transition-colors">
-                Sales
-              </span>
-              <ChevronDown className={cn(
-                "w-3.5 h-3.5 text-neutral-400 group-hover:text-neutral-600 transition-all",
-                salesOpen && "rotate-180"
-              )} />
-            </button>
-          </CollapsibleTrigger>
-          <CollapsibleContent className="space-y-1">
-            {visibleSalesNav.map((item) => {
-              const isActive = pathname === item.href;
-              return (
-                <Link key={item.href} href={item.href} onClick={handleNavClick}>
-                  <div className={cn(
-                    "flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all cursor-pointer",
-                    isActive 
-                      ? "bg-neutral-900 text-white shadow-md shadow-neutral-900/10" 
-                      : "text-neutral-500 hover:bg-neutral-50 hover:text-neutral-900"
-                  )}>
-                    <item.icon className={cn("w-5 h-5", isActive ? "text-white" : "text-neutral-400")} />
-                    {item.label}
-                  </div>
-                </Link>
-              );
-            })}
-          </CollapsibleContent>
-        </Collapsible>
+        <SidebarNavSection
+          label="Sales"
+          open={salesOpen}
+          onOpenChange={setSalesOpen}
+          toggleTestId="button-toggle-sales-nav"
+        >
+          {visibleSalesNav.map((item) => (
+            <SidebarNavLink
+              key={item.href}
+              item={item}
+              isActive={pathname === item.href}
+              onClick={handleNavClick}
+            />
+          ))}
+        </SidebarNavSection>
 
-        <Collapsible open={supportOpen} onOpenChange={setSupportOpen}>
-          <CollapsibleTrigger asChild>
+        <SidebarNavSection
+          label="Support"
+          open={supportOpen}
+          onOpenChange={setSupportOpen}
+          toggleTestId="button-toggle-support-nav"
+          labelClassName="text-primary/80 group-hover:text-primary"
+        >
+          {supportDialogItems.map((item) => (
             <button
+              key={item.label}
               type="button"
-              className="w-full flex items-center gap-1 pt-4 pb-1 px-4 cursor-pointer group"
-              data-testid="button-toggle-support-nav"
+              onClick={() => openFeedbackDialog(item.feedbackType)}
+              className={cn("w-full", navRowClasses(false))}
+              data-testid={`button-support-${item.label.toLowerCase()}`}
             >
-              <span className="text-xs font-semibold uppercase tracking-wider text-primary/80 group-hover:text-primary transition-colors">
-                Support
-              </span>
-              <ChevronDown className={cn(
-                "w-3.5 h-3.5 text-primary/80 group-hover:text-primary transition-all",
-                supportOpen && "rotate-180"
-              )} />
+              <item.icon className={navIconClasses(false)} />
+              {item.label}
             </button>
-          </CollapsibleTrigger>
-          <CollapsibleContent className="space-y-1">
-            {supportDialogItems.map((item) => (
-              <button
-                key={item.label}
-                type="button"
-                onClick={() => openFeedbackDialog(item.feedbackType)}
-                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all cursor-pointer text-neutral-500 hover:bg-neutral-50 hover:text-neutral-900"
-                data-testid={`button-support-${item.label.toLowerCase()}`}
-              >
-                <item.icon className="w-5 h-5 flex-shrink-0 text-neutral-400" />
-                {item.label}
-              </button>
-            ))}
-            {supportNavItems.map((item) => (
-              <Link key={item.href} href={item.href} onClick={handleNavClick}>
-                <div className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all cursor-pointer text-neutral-500 hover:bg-neutral-50 hover:text-neutral-900">
-                  <item.icon className="w-5 h-5 flex-shrink-0 text-neutral-400" />
-                  {item.label}
-                </div>
-              </Link>
-            ))}
-          </CollapsibleContent>
-        </Collapsible>
+          ))}
+          {supportNavItems.map((item) => (
+            <SidebarNavLink
+              key={item.href}
+              item={item}
+              isActive={pathname === item.href}
+              onClick={handleNavClick}
+            />
+          ))}
+        </SidebarNavSection>
       </SidebarContent>
 
       <FeedbackDialog
