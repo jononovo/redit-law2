@@ -70,7 +70,7 @@ export default function AgentsPage() {
           )}
         </div>
         <div className="flex items-center gap-3">
-          <Link href="/onboarding">
+          <Link href="/add-agent">
             <Button className="rounded-xl gap-2" data-testid="button-add-agent">
               <Plus className="w-4 h-4" />
               Add Agent

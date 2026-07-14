@@ -110,6 +110,7 @@ export const pairingCodes = pgTable("pairing_codes", {
   code: text("code").notNull().unique(),
   ownerUid: text("owner_uid"),
   botId: text("bot_id"),
+  agentPlatform: text("agent_platform"),
   status: text("status").notNull().default("pending"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   expiresAt: timestamp("expires_at").notNull(),

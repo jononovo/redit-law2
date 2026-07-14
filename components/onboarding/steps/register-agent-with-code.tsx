@@ -10,9 +10,13 @@ import { Loader2, RefreshCw } from "lucide-react";
 
 let inFlightPairingCodeRequest: Promise<{ code?: string; error?: string }> | null = null;
 
-async function requestNewPairingCode(): Promise<{ code?: string; error?: string }> {
+async function requestNewPairingCode(agentPlatform?: string): Promise<{ code?: string; error?: string }> {
   const { authFetch } = await import("@/features/platform-management/auth-fetch");
-  const res = await authFetch("/api/v1/pairing-codes", { method: "POST" });
+  const res = await authFetch("/api/v1/pairing-codes", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(agentPlatform ? { agent_platform: agentPlatform } : {}),
+  });
   const data = await res.json();
   if (!res.ok) {
     return { error: data.error || "Failed to generate code" };
@@ -29,6 +33,7 @@ interface RegisterAgentWithCodeProps {
   onAgentRegistered: (botId: string, botName: string) => void;
   pairingCode: string | null;
   onCodeGenerated: (code: string) => void;
+  agentPlatform?: string;
 }
 
 export function RegisterAgentWithCode({
@@ -40,6 +45,7 @@ export function RegisterAgentWithCode({
   onAgentRegistered,
   pairingCode,
   onCodeGenerated,
+  agentPlatform,
 }: RegisterAgentWithCodeProps) {
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -53,7 +59,7 @@ export function RegisterAgentWithCode({
     setError(null);
     try {
       if (!inFlightPairingCodeRequest) {
-        inFlightPairingCodeRequest = requestNewPairingCode();
+        inFlightPairingCodeRequest = requestNewPairingCode(agentPlatform);
       }
       const result = await inFlightPairingCodeRequest;
       if (result.error || !result.code) {

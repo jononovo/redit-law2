@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionUser } from "@/features/platform-management/auth/session";
 import { storage } from "@/server/storage";
+import { AGENT_PLATFORMS } from "@/lib/agent-platforms";
 
 function generatePairingCode(): string {
   return Math.floor(100000 + Math.random() * 900000).toString();
@@ -49,6 +50,17 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    let agentPlatform: string | null = null;
+    try {
+      const body = await request.json();
+      const raw = typeof body?.agent_platform === "string" ? body.agent_platform : null;
+      if (raw && AGENT_PLATFORMS.some((p) => p.id === raw)) {
+        agentPlatform = raw;
+      }
+    } catch {
+      // No body or invalid JSON — agent platform is optional.
+    }
+
     const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
 
     let attempts = 0;
@@ -58,6 +70,7 @@ export async function POST(request: NextRequest) {
         const pairingCode = await storage.createPairingCode({
           code,
           ownerUid: user?.uid ?? null,
+          agentPlatform,
           expiresAt,
         });
         return NextResponse.json({

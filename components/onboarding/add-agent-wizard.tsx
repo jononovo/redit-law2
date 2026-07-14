@@ -1,64 +1,56 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/features/platform-management/auth/auth-context";
-import { useOnboardingPairing, PAIRING_CODE_STORAGE_KEY } from "./use-onboarding-pairing";
 import { ChoosePath } from "./steps/choose-path";
 import { RegisterAgentWithCode } from "./steps/register-agent-with-code";
-import { SignInStep } from "./steps/sign-in";
 import { ClaimToken } from "./steps/claim-token";
 import { AddCardBridge } from "./steps/add-card-bridge";
 import { Rail5SetupWizardContent } from "@/components/onboarding/rail5-wizard";
-import { Loader2 } from "lucide-react";
 
-interface WizardState {
+export const ADD_AGENT_PAIRING_CODE_STORAGE_KEY = "creditclaw_add_agent_pairing_code";
+
+type StepId = "choose-agent-type" | "register-agent" | "claim-token" | "add-card-bridge";
+
+const STEPS: StepId[] = ["choose-agent-type", "register-agent", "claim-token", "add-card-bridge"];
+
+interface AddAgentWizardState {
   agentType: string | null;
   botId: string | null;
   botName: string | null;
-  botConnected: boolean;
-  isAuthenticated: boolean;
+  bridgeReturnStep: StepId;
 }
 
-type StepId =
-  | "choose-agent-type"
-  | "register-agent"
-  | "sign-in"
-  | "claim-token"
-  | "add-card-bridge";
-
-const initialState: WizardState = {
-  agentType: null,
-  botId: null,
-  botName: null,
-  botConnected: false,
-  isAuthenticated: false,
-};
-
-const STEPS: StepId[] = ["choose-agent-type", "register-agent", "sign-in", "claim-token", "add-card-bridge"];
-
-export function OnboardingWizardV2() {
+export function AddAgentWizard() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const stepParam = searchParams.get("step") as StepId | null;
   const { toast } = useToast();
-  const { user } = useAuth();
 
-  const [state, setState] = useState<WizardState>(initialState);
-
-  const [currentStepIndex, setCurrentStepIndex] = useState(() => {
-    if (stepParam) {
-      const idx = STEPS.indexOf(stepParam);
-      if (idx !== -1) return idx;
-    }
-    return 0;
+  const [state, setState] = useState<AddAgentWizardState>({
+    agentType: null,
+    botId: null,
+    botName: null,
+    bridgeReturnStep: "register-agent",
   });
+  const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [transitionClass, setTransitionClass] = useState("wizard-step-active");
   const [showCardWizard, setShowCardWizard] = useState(false);
 
-  const activeSteps = useMemo<StepId[]>(() => STEPS, []);
+  const [pairingCode, setPairingCode] = useState<string | null>(() => {
+    if (typeof window === "undefined") return null;
+    return sessionStorage.getItem(ADD_AGENT_PAIRING_CODE_STORAGE_KEY);
+  });
+
+  const handleCodeGenerated = useCallback((code: string) => {
+    sessionStorage.setItem(ADD_AGENT_PAIRING_CODE_STORAGE_KEY, code);
+    setPairingCode(code);
+  }, []);
+
+  const clearPairingCode = useCallback(() => {
+    sessionStorage.removeItem(ADD_AGENT_PAIRING_CODE_STORAGE_KEY);
+    setPairingCode(null);
+  }, []);
 
   const animateTransition = useCallback((direction: "forward" | "back", callback: () => void) => {
     setTransitionClass(direction === "forward" ? "wizard-step-exit" : "wizard-step-exit-back");
@@ -71,32 +63,23 @@ export function OnboardingWizardV2() {
     }, 200);
   }, []);
 
-  const goForward = useCallback(() => {
-    animateTransition("forward", () => {
-      setCurrentStepIndex((prev) => Math.min(prev + 1, activeSteps.length - 1));
-    });
-  }, [animateTransition, activeSteps.length]);
-
   const goBack = useCallback(() => {
     animateTransition("back", () => {
       setCurrentStepIndex((prev) => Math.max(prev - 1, 0));
     });
   }, [animateTransition]);
 
-  const goToStep = useCallback((stepId: StepId) => {
-    const idx = activeSteps.indexOf(stepId);
+  const goToStep = useCallback((stepId: StepId, direction: "forward" | "back" = "forward") => {
+    const idx = STEPS.indexOf(stepId);
     if (idx === -1) return;
-    animateTransition("forward", () => {
+    animateTransition(direction, () => {
       setCurrentStepIndex(idx);
     });
-  }, [activeSteps, animateTransition]);
+  }, [animateTransition]);
 
-  const finishOnboarding = useCallback(() => {
-    sessionStorage.removeItem(PAIRING_CODE_STORAGE_KEY);
-    import("@/features/platform-management/auth-fetch")
-      .then(({ authFetch }) => authFetch("/api/v1/owners/onboarded", { method: "POST" }))
-      .catch(() => {});
-    router.push("/overview");
+  const finishAddAgent = useCallback(() => {
+    sessionStorage.removeItem(ADD_AGENT_PAIRING_CODE_STORAGE_KEY);
+    router.push("/agents");
   }, [router]);
 
   const saveAgentPlatform = useCallback(async (botId: string) => {
@@ -114,23 +97,8 @@ export function OnboardingWizardV2() {
     }
   }, [state.agentType]);
 
-  const currentStep = activeSteps[currentStepIndex];
-  const totalSteps = activeSteps.length;
-
-  const { pairingCode, claiming, handleCodeGenerated, clearPairingCode } = useOnboardingPairing({
-    claimEligible: currentStep === "sign-in" || currentStep === "claim-token",
-    onAgentLinked: useCallback((botId: string, botName: string) => {
-      setState((s) => ({ ...s, botId, botName, botConnected: true }));
-      saveAgentPlatform(botId);
-      goToStep("add-card-bridge");
-    }, [goToStep, saveAgentPlatform]),
-    onCodeAdopted: useCallback(() => {
-      goToStep("add-card-bridge");
-    }, [goToStep]),
-    onClaimFallback: useCallback(() => {
-      goToStep("claim-token");
-    }, [goToStep]),
-  });
+  const currentStep = STEPS[currentStepIndex];
+  const totalSteps = STEPS.length;
 
   function renderStep() {
     switch (currentStep) {
@@ -141,7 +109,7 @@ export function OnboardingWizardV2() {
             totalSteps={totalSteps}
             onNext={(agentType) => {
               setState((s) => ({ ...s, agentType }));
-              goForward();
+              goToStep("register-agent");
             }}
           />
         );
@@ -151,72 +119,42 @@ export function OnboardingWizardV2() {
           <RegisterAgentWithCode
             currentStep={currentStepIndex}
             totalSteps={totalSteps}
-            agentPlatform={state.agentType || undefined}
             onBack={goBack}
             onNext={() => {
-              if (user && pairingCode) {
-                goToStep("add-card-bridge");
-              } else {
-                goForward();
-              }
+              setState((s) => ({ ...s, bridgeReturnStep: "register-agent" }));
+              goToStep("add-card-bridge");
             }}
             onSkip={() => {
               clearPairingCode();
-              goForward();
+              goToStep("claim-token");
             }}
             onAgentRegistered={(botId, botName) => {
-              if (user) {
-                setState((s) => ({ ...s, botId, botName, botConnected: true }));
-                saveAgentPlatform(botId);
-                clearPairingCode();
-                toast({ title: `${botName} connected`, description: "Your agent is linked to your account." });
-                goToStep("add-card-bridge");
-              } else {
-                setState((s) => ({ ...s, botId, botName }));
-                toast({ title: `${botName} registered`, description: "Sign in to finish linking it to your account." });
-                goForward();
-              }
+              setState((s) => ({ ...s, botId, botName, bridgeReturnStep: "register-agent" }));
+              clearPairingCode();
+              toast({ title: `${botName} connected`, description: "Your agent is linked to your account." });
+              goToStep("add-card-bridge");
             }}
             pairingCode={pairingCode}
             onCodeGenerated={handleCodeGenerated}
-          />
-        );
-
-      case "sign-in":
-        return (
-          <SignInStep
-            currentStep={currentStepIndex}
-            totalSteps={totalSteps}
-            onBack={goBack}
-            onNext={() => {
-              setState((s) => ({ ...s, isAuthenticated: true }));
-              if (!pairingCode) {
-                goForward();
-              }
-            }}
+            agentPlatform={state.agentType || undefined}
           />
         );
 
       case "claim-token":
-        if (claiming) {
-          return (
-            <div className="flex flex-col items-center justify-center py-24 gap-3" data-testid="status-linking-agent">
-              <Loader2 className="w-8 h-8 animate-spin text-neutral-400" />
-              <p className="text-sm text-neutral-500">Linking your agent...</p>
-            </div>
-          );
-        }
         return (
           <ClaimToken
             currentStep={currentStepIndex}
             totalSteps={totalSteps}
-            onBack={goBack}
+            onBack={() => goToStep("register-agent", "back")}
             onNext={(botId, botName) => {
-              setState((s) => ({ ...s, botId, botName, botConnected: true }));
+              setState((s) => ({ ...s, botId, botName, bridgeReturnStep: "claim-token" }));
               saveAgentPlatform(botId);
-              goForward();
+              goToStep("add-card-bridge");
             }}
-            onSkip={goForward}
+            onSkip={() => {
+              setState((s) => ({ ...s, bridgeReturnStep: "claim-token" }));
+              goToStep("add-card-bridge");
+            }}
           />
         );
 
@@ -225,9 +163,9 @@ export function OnboardingWizardV2() {
           <AddCardBridge
             currentStep={currentStepIndex}
             totalSteps={totalSteps}
-            onBack={goBack}
+            onBack={() => goToStep(state.bridgeReturnStep, "back")}
             onNext={() => setShowCardWizard(true)}
-            onSkip={finishOnboarding}
+            onSkip={finishAddAgent}
           />
         );
 
@@ -241,8 +179,8 @@ export function OnboardingWizardV2() {
       <Rail5SetupWizardContent
         inline
         preselectedBotId={state.botId || undefined}
-        onComplete={finishOnboarding}
-        onClose={finishOnboarding}
+        onComplete={finishAddAgent}
+        onClose={finishAddAgent}
       />
     );
   }
@@ -276,7 +214,7 @@ export function OnboardingWizardV2() {
       `}</style>
       <div className="relative">
         <button
-          onClick={() => router.push("/overview")}
+          onClick={finishAddAgent}
           className="absolute top-4 right-4 z-20 p-2 rounded-full bg-white/80 hover:bg-neutral-100 text-neutral-500 hover:text-neutral-900 transition-colors shadow-sm border border-neutral-200"
           aria-label="Close wizard"
           data-testid="button-close-wizard"

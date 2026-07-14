@@ -352,7 +352,7 @@ export default function DashboardOverview() {
             </div>
             <h3 className="font-bold text-neutral-900 text-lg mb-2">Set up your first agent</h3>
             <div className="flex items-center justify-center gap-3">
-              <Link href="/onboarding">
+              <Link href="/add-agent">
                 <Button className="rounded-xl gap-2" data-testid="button-start-onboarding">
                   <Plus className="w-4 h-4" />
                   Add Agent

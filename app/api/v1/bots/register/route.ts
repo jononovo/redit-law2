@@ -130,6 +130,7 @@ export async function POST(request: NextRequest) {
       webhookFailCount: 0,
       signupTenant: tenantId,
       botType: effectiveBotType,
+      agentPlatform: pairingCodeRecord?.agentPlatform || null,
       tunnelId: tunnel?.dbFields.tunnelId || null,
       tunnelToken: tunnel?.dbFields.tunnelToken || null,
       tunnelStatus: tunnel ? "provisioned" : "none",
