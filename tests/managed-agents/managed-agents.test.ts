@@ -4,7 +4,7 @@ import { getPool, closePool } from "../helpers";
 import { isCardAction, mapCardActionProps, valuesFromMapping } from "@/features/managed-agents/crossmint-checkout/service";
 import { buildBuyerProfileBody } from "@/features/managed-agents/crossmint-checkout/buyer-profile";
 import { managedAgentMethods } from "@/server/storage/managed-agents";
-import { MANAGED_BOT_TYPE, MANAGED_AGENT_RUNTIMES, CROSSMINT_CHECKOUT_RUNTIME } from "@/lib/managed-agents";
+import { MANAGED_BOT_TYPE, MANAGED_AGENT_RUNTIMES, CROSSMINT_CHECKOUT_RUNTIME, runtimeFromSlug, managedAgentRoute } from "@/lib/managed-agents";
 import type { SavedShippingAddress } from "@/shared/schema";
 
 const TEST_UID_PREFIX = "test_mac_uid_";
@@ -135,6 +135,22 @@ describe("buildBuyerProfileBody", () => {
     expect(body.name).toEqual({ first: "Cher", last: "Cher" });
     expect(body.contact.email).toBe("cher@example.com");
     expect(body.shipping.addressLines).toEqual(["1 Market St"]);
+  });
+});
+
+// ─── Registry slug routing ───────────────────────────────────────────────────
+
+describe("runtimeFromSlug", () => {
+  it("maps the agent slug to its runtime and builds the route", () => {
+    expect(runtimeFromSlug(MANAGED_AGENT_RUNTIMES[CROSSMINT_CHECKOUT_RUNTIME].slug)).toBe(CROSSMINT_CHECKOUT_RUNTIME);
+    expect(managedAgentRoute(CROSSMINT_CHECKOUT_RUNTIME)).toBe(
+      `/managed-agents/${MANAGED_AGENT_RUNTIMES[CROSSMINT_CHECKOUT_RUNTIME].slug}`,
+    );
+  });
+
+  it("returns null for unknown slugs (page renders not-found)", () => {
+    expect(runtimeFromSlug("bogus")).toBeNull();
+    expect(runtimeFromSlug("crossmint-checkout")).toBeNull(); // runtime id is NOT a slug
   });
 });
 

@@ -152,4 +152,7 @@ CREATE TABLE IF NOT EXISTS managed_agent_checkouts (
 4. Pull into Repl → **run §4 SQL on dev, smoke-test, then prod** → Deploy.
 
 ## Status
+
+> 2026-07-15 follow-up: agent rebranded “Captain Crunch” → “Jennifer” (concierge shopping agent); dashboard restructured to index + per-agent pages (/managed-agents/jennifer). Historical mentions below left as-is.
+
 **Done in code 2026-07-14 — awaiting Replit DB migration + deploy.** Executed with two corrections from the preflight verification: (1) NO `bots.managed_runtime` column/index — the one-per-(owner,runtime) invariant lives only on `managed_agents` (the bots column would have duplicated it); `ensureManagedAgent` is race-safe via a transaction guarded by `managed_agents_owner_runtime_uidx`. (2) Storage is a single file (`server/storage/managed-agents/index.ts`), not split. Dashboard route is `/managed-agents` — owner decision 2026-07-14: the former marketing page at that URL moved to `/managed-payment-agents`. Local schema applied, tsc clean, 50 tests pass, build compiles. Replit migration (dev + prod) lives in `REPLIT-DEPLOY-managed-agents.md` at repo root — run it BEFORE the code deploy. Fold this file's outcome into `internal_docs/04-payment-tools/managed-agents/` and delete it once deployed.

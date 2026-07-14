@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/features/platform-management/auth/session";
 import { adminAuth } from "@/features/platform-management/firebase/admin";
 import { storage } from "@/server/storage";
-import { CROSSMINT_CHECKOUT_RUNTIME } from "@/lib/managed-agents";
+import { MANAGED_AGENT_RUNTIMES, type ManagedRuntime } from "@/lib/managed-agents";
 
 async function getAuthUser(request: NextRequest) {
   const sessionUser = await getCurrentUser();
@@ -39,21 +39,23 @@ export async function GET(request: NextRequest) {
 
     // Managed agents live under their own key, NOT in bots[] — every bots[]
     // consumer treats rows as linkable user-linked agents (link-bot dialogs,
-    // card pickers, counts), which must never see them. Provision the one
-    // runtime that exists today (loop over MANAGED_AGENT_RUNTIMES when more land).
-    const managedAgentEntries: Array<{ bot_id: string; bot_name: string; description: string | null; created_at: Date }> = [];
+    // card pickers, counts), which must never see them.
+    const managedAgentEntries: Array<{ bot_id: string; bot_name: string; description: string | null; runtime: string; created_at: Date }> = [];
     try {
       const email = user.email || (await storage.getOwnerByUid(user.uid))?.email;
       if (email) {
-        const agent = await storage.ensureManagedAgent(user.uid, email, CROSSMINT_CHECKOUT_RUNTIME);
-        const bot = await storage.getBotByBotId(agent.botId);
-        if (bot) {
-          managedAgentEntries.push({
-            bot_id: bot.botId,
-            bot_name: bot.botName,
-            description: bot.description,
-            created_at: bot.createdAt,
-          });
+        for (const runtime of Object.keys(MANAGED_AGENT_RUNTIMES) as ManagedRuntime[]) {
+          const agent = await storage.ensureManagedAgent(user.uid, email, runtime);
+          const bot = await storage.getBotByBotId(agent.botId);
+          if (bot) {
+            managedAgentEntries.push({
+              bot_id: bot.botId,
+              bot_name: bot.botName,
+              description: bot.description,
+              runtime: agent.runtime,
+              created_at: bot.createdAt,
+            });
+          }
         }
       }
     } catch (err) {

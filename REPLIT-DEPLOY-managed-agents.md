@@ -63,6 +63,10 @@ CREATE TABLE IF NOT EXISTS managed_agent_checkouts (
   updated_at timestamp NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS managed_agent_checkouts_owner_idx ON managed_agent_checkouts (owner_uid);
+
+-- Rebrand: the managed agent is now "Jennifer" (was Captain Crunch). Fixes
+-- rows provisioned before the rename; new rows get the name automatically.
+UPDATE bots SET bot_name='Jennifer', description='Jennifer — your concierge shopping agent. Give her a product link and she buys it with one of your virtual cards while you watch and stay in the loop.' WHERE bot_type='managed';
 ```
 
 Apply with direct SQL (Replit SQL runner or psql), **not** `npm run db:push --force`. `shared/schema.ts` already matches, so a plain `npm run db:push` afterward should report **"no changes"** — use that as the verification.
