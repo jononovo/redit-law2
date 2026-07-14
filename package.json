@@ -14,7 +14,7 @@
     "@anthropic-ai/sdk": "^0.82.0",
     "@base-org/account": "^2.5.2",
     "@base-org/account-ui": "^1.0.1",
-    "@crossmint/client-sdk-react-ui": "^4.2.1",
+    "@crossmint/client-sdk-react-ui": "^4.3.1",
     "@hookform/resolvers": "^3.10.0",
     "@privy-io/node": "^0.8.0",
     "@radix-ui/react-accordion": "^1.2.12",

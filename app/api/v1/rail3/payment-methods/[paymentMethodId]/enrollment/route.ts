@@ -18,6 +18,22 @@ function extractBearerJwt(request: NextRequest): string | null {
   return authHeader.slice(7);
 }
 
+// Diagnostic logging for the prod passkey-enrollment issue: log what Crossmint
+// actually returned (status + whether the verificationConfig needed to mount
+// the browser verification component is present) without leaking the config.
+function logEnrollmentShape(source: string, paymentMethodId: string, enrollment: unknown) {
+  const e = enrollment as { status?: string; verificationConfig?: { environment?: string } } | null;
+  console.log(
+    `[Rail3] enrollment ${source}`,
+    JSON.stringify({
+      paymentMethodId,
+      status: e?.status,
+      hasVerificationConfig: Boolean(e?.verificationConfig),
+      environment: e?.verificationConfig?.environment,
+    })
+  );
+}
+
 async function loadOwnerPm(request: NextRequest, paymentMethodId: string) {
   const user = await getSessionUser(request);
   if (!user) return { error: NextResponse.json({ error: "unauthorized" }, { status: 401 }) };
@@ -46,10 +62,12 @@ export async function GET(
 
   try {
     const enrollment = await getEnrollment({ jwt: jwt!, paymentMethodId });
+    logEnrollmentShape("GET", paymentMethodId, enrollment);
     return NextResponse.json({ payment_method_id: paymentMethodId, enrollment });
   } catch (err) {
     const status = err instanceof CrossmintApiError ? err.status : 500;
     const message = err instanceof Error ? err.message : "get_enrollment_failed";
+    console.error("[Rail3] get enrollment failed:", paymentMethodId, message);
     return NextResponse.json({ error: "get_enrollment_failed", message }, { status });
   }
 }
@@ -76,8 +94,10 @@ export async function POST(
 
   try {
     let enrollment = await getEnrollment({ jwt: jwt!, paymentMethodId });
+    logEnrollmentShape("POST pre-check", paymentMethodId, enrollment);
     if (enrollment.status === "not_started") {
       enrollment = await createEnrollment({ jwt: jwt!, paymentMethodId, email });
+      logEnrollmentShape("POST created", paymentMethodId, enrollment);
     }
     return NextResponse.json({ payment_method_id: paymentMethodId, enrollment });
   } catch (err) {

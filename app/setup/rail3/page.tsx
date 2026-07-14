@@ -185,6 +185,7 @@ function SetupInner() {
               )}
               {!enrolled && pendingEnrollment && (
                 <div data-testid="container-enrollment-verification" className="rounded-lg border border-neutral-200 overflow-hidden">
+                  <EnrollmentOverlayMountLogger environment={pendingEnrollment.verificationConfig.environment} />
                   <PaymentMethodAgenticEnrollmentVerification
                     paymentMethodAgenticEnrollment={pendingEnrollment}
                     onVerificationComplete={() => {
@@ -197,6 +198,23 @@ function SetupInner() {
                     }}
                   />
                 </div>
+              )}
+              {!enrolled && !pendingEnrollment && enrollmentStatus === "pending" && (
+                <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-900" data-testid="text-enrollment-stuck">
+                  Verification can't start: Crossmint reports this card's enrollment as pending but didn't return the
+                  verification setup, so the code-entry window can't open and no new email will be sent. Delete this
+                  card and re-add it to restart verification.
+                </div>
+              )}
+              {!enrolled && enrollmentStatus && !["pending", "active", "not_started", "failed"].includes(enrollmentStatus) && (
+                <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-900" data-testid="text-enrollment-unknown-status">
+                  Unexpected enrollment status from Crossmint: “{enrollmentStatus}”. Delete this card and re-add it to retry.
+                </div>
+              )}
+              {!enrolled && pendingEnrollment && (
+                <p className="text-xs text-neutral-500" data-testid="text-popup-hint">
+                  If nothing opens above, check that your browser isn't blocking pop-ups for this site.
+                </p>
               )}
               <div className="flex items-center gap-3 p-4 bg-blue-50 rounded-lg" data-testid="status-enrollment">
                 {enrolled ? (
@@ -229,6 +247,15 @@ function SetupInner() {
       </div>
     </div>
   );
+}
+
+// Logs once when the Crossmint verification overlay mounts, so prod debugging
+// can distinguish "overlay never mounted" from "overlay mounted but blank".
+function EnrollmentOverlayMountLogger({ environment }: { environment: string }) {
+  useEffect(() => {
+    console.log("[Rail3] mounting enrollment overlay", { environment });
+  }, [environment]);
+  return null;
 }
 
 function StepIndicator({ step }: { step: Step }) {
