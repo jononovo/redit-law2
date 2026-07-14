@@ -1,0 +1,28 @@
+# In-house Agent - Checkout Agent/API:  hey so there's this new feature that our partner “CrossMint” is launching. It’s called the “Checkout API” and it basically can access the cards that you have saved in the vault or rather the virtual cards that are tokenized, and it can utilize them for the checkout using its own browser session so that your agent doesn't actually need to do the browser control at all.  Which is kind of cool, but also not entirely necessary for some people.  In any case, there is even like a visual kind of screenshot,-based projection of what the agent is doing that is broadcast it as sort of a service that shows the browser agent in the remote browser session acting.  Does that make sense?  And so I have this sort of idea that you know how we generate a USDC wallet for every account that has an agent?   Didn't like manner we would just sort of act as if we're actually adding an in-house fully capable, mega agent to everyone that signs up, and this agent is capable of running all sorts of workflows, mainly relating to payments, of course. And in particular, actually exclusively, using virtual cards for payments.  Does that make sense?  So I guess this agent can use both MasterCard and visa virtual cards which are created in the user account.  I'm not entirely sure what we should call the agent, but it should definitely be our kind of in-house agent and be listed in the agent page and probably even in the dashboard.   But since it's the in-house agent, it should we should still have that kind of call to action/skeleton card, that encourages the user to add their own agent and not only depend on our own in house one.   Does that make sense?  Anyway, here is all the information about this new service:  ——   The Agent Checkout API is live 👍
+
+Your agent can now purchase from any Shopify store, worldwide, and pay with most methods the store accepts — such as card, Shop Pay, local payment methods, or bank transfer.
+
+It also works across many other merchants, any site with a standard guest checkout, no login required. Coverage keeps expanding, so we'd recommend pointing it at the specific stores you care about to see how it performs, and for any that need a little steering you can guide the agent through their checkout. There are a ton of features that will ship over the next few weeks and months to improve the experience, and we are finally ready to have people like you break open agentic commerce.
+
+How it works:
+
+• Create a checkout with one request. Point it at the product and say what you want in plain language, e.g."buy size M, pay by card, use the cheapest delivery."
+• Poll the checkout for its status while the agent works through the store's checkout pages.
+• If you chose to pay by card, when it reaches payment it asks you for the card details (via a user action).
+• You hand it a one-time-use Agent Card number and submit the payment. You get back a receipt.
+
+Shipping over the next week:
+
+• More descriptive progress events: some action events are still generic (you may see"Advancing checkout"); more granular, human-readable events land next week.
+• Submit payment up front: the card is collected mid-run via a user action; soon you'll be able to pass the card in the initial request when you already know the number. (If a method needs an OTP, you'll still confirm it when we surface the awaiting-user-action event.)
+• Sticky sessions: we don't support fully login-gated merchants yet, but sites that only need an OTP to proceed (e.g. OpenTable to book a table) already work (the agent logs in with the OTP during the run.) Right now the session isn't persisted, so you'll be asked for the OTP each time, but sticky sessions next week will fix that.
+
+Get started:
+
+• Live demo: https://agent-checkouts.demos-crossmint.com
+• Quickstart → https://docs.crossmint.com/agents/agent-checkouts-quickstart
+• Docs → https://docs.crossmint.com/agents/overview
+• Improving merchant conversion → https://docs.crossmint.com/agents/payment-flows/agent-checkouts-merchant-prompt
+
+
+
