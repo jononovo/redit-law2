@@ -86,7 +86,7 @@ components/wallet/
 | `guardrails.md` | Cross-rail spending-limit engine reference. |
 | `rail1-stripe-wallet-technical-spec.md` | Rail 1 (Privy stablecoin) deep dive. |
 | `rail3-virtual-cards.md` | Rail 3 (Crossmint Card Permissions) canonical operational doc. |
-| `agent-checkouts-inhouse-agent.md` | In-house agent (Captain Crunch) — Crossmint Agent Checkouts integration, pays with Rail 3 virtual cards. |
+| `managed-agents/` | Managed agents — remote runtimes CreditClaw orchestrates on the owner's behalf (vs user-linked bots). Overview + the Crossmint Agent Checkout runtime (Captain Crunch), which pays with Rail 3 virtual cards. |
 | `rail3/` | Rail 3 sub-tree: open-points tracker, refresh-token plan, master-agent plan, archived `_completed/` plans, `_images/`. |
 | `rail5-overview_260309.md` | Rail 5 (self-hosted cards) deep dive. |
 | `APPROVAL_HISTORY_ON_RAIL_PAGES_PLAN.md` | Plan for per-rail approval history surface. |

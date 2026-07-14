@@ -26,3 +26,6 @@ export const RAIL3_CROSSMINT_HOST = "https://www.crossmint.com";
 export const RAIL3_CROSSMINT_SERVER_API_KEY = process.env.CROSSMINT_SERVER_API_KEY;
 export const RAIL3_CROSSMINT_CLIENT_API_KEY = process.env.NEXT_PUBLIC_CROSSMINT_CLIENT_API_KEY;
 export const RAIL3_CROSSMINT_CLIENT_ORIGIN = "https://creditclaw.com";
+// Managed-agent checkouts (Crossmint Agent Checkout runtime) reuse
+// RAIL3_CROSSMINT_CLIENT_API_KEY above — no separate key. The Crossmint console
+// key just needs the agent-checkouts + buyer-profiles scopes enabled.

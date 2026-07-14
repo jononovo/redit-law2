@@ -75,7 +75,7 @@ export function EnterpriseCta() {
 
         <div className="text-center">
           <a
-            href="/managed-agents"
+            href="/managed-payment-agents"
             className="text-sm text-neutral-400 hover:text-primary transition-colors font-medium"
             data-testid="link-learn-more-managed"
           >

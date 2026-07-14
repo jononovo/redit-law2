@@ -1,5 +1,4 @@
 import { pgTable, serial, text, timestamp, integer, boolean, index, bigint, jsonb, numeric, uniqueIndex, customType } from "drizzle-orm/pg-core";
-import { sql } from "drizzle-orm";
 import { z } from "zod";
 import { GUARDRAIL_DEFAULTS } from "@/features/agent-interaction/guardrails/defaults";
 
@@ -29,10 +28,9 @@ export const bots = pgTable("bots", {
   openclawHooksToken: text("openclaw_hooks_token"),
   claimedAt: timestamp("claimed_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
-}, (table) => [
-  // One in-house agent per owner (botType "inhouse" — see lib/inhouse-agent.ts).
-  uniqueIndex("bots_inhouse_owner_uidx").on(table.ownerUid).where(sql`${table.botType} = 'inhouse'`),
-]);
+});
+// Managed agents (botType "managed") are one-per-(owner,runtime); that
+// uniqueness lives on the managed_agents table, not here — see lib/managed-agents.ts.
 
 export const paymentMethods = pgTable("payment_methods", {
   id: serial("id").primaryKey(),
@@ -404,14 +402,8 @@ export const owners = pgTable("owners", {
   // TODO: encrypt at rest (AES-256-GCM) before SOC2 / GA at scale.
   firebaseRefreshToken: text("firebase_refresh_token"),
   firebaseRefreshTokenUpdatedAt: timestamp("firebase_refresh_token_updated_at"),
-  // Crossmint Agent Checkouts buyer profile (one per owner, built from the
-  // default shipping address on first in-house checkout). See
-  // project_knowledge/internal_docs/04-payment-tools/agent-checkouts-inhouse-agent.md
-  crossmintBuyerProfileId: text("crossmint_buyer_profile_id"),
-  // The in-house agent's preferred virtual card (rail3 cardId). Preselected on
-  // each checkout; a per-run override never writes it. Validated at read time
-  // against the owner's active cards (self-healing when revoked/expired).
-  defaultAgentCheckoutCardId: text("default_agent_checkout_card_id"),
+  // (Managed-agent settings — Crossmint buyer profile id, preferred card —
+  // live on the managed_agents table, not here. See lib/managed-agents.ts.)
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 }, (table) => [
@@ -1661,10 +1653,33 @@ export const supportRequests = pgTable("support_requests", {
 export type SupportRequest = typeof supportRequests.$inferSelect;
 export type InsertSupportRequest = typeof supportRequests.$inferInsert;
 
-// Agent Checkouts — the in-house agent's purchases via Crossmint's hosted
-// checkout runtime. One row per checkout run. See
-// project_knowledge/internal_docs/04-payment-tools/agent-checkouts-inhouse-agent.md
-export const agentCheckouts = pgTable("agent_checkouts", {
+// Managed agents — one per (owner, runtime). A managed agent is a remote
+// runtime we orchestrate on the owner's behalf (vs user-linked bots that hold
+// an API key and call us inbound). Holds the per-runtime settings; the bot row
+// it points at is its dashboard identity. Uniqueness of (owner, runtime) here
+// is the single source of the one-agent-per-runtime invariant (nothing on bots).
+// See project_knowledge/internal_docs/04-payment-tools/managed-agents/.
+export const managedAgents = pgTable("managed_agents", {
+  id: serial("id").primaryKey(),
+  ownerUid: text("owner_uid").notNull(),
+  runtime: text("runtime").notNull(),          // ManagedRuntime, e.g. "crossmint-checkout"
+  botId: text("bot_id").notNull().unique(),    // -> bots.botId (its dashboard identity)
+  buyerProfileId: text("buyer_profile_id"),    // crossmint-checkout: Crossmint buyer profile id
+  defaultCardId: text("default_card_id"),       // preferred rail3 cardId; validated at read time
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+}, (table) => [
+  uniqueIndex("managed_agents_owner_runtime_uidx").on(table.ownerUid, table.runtime),
+]);
+
+export type ManagedAgent = typeof managedAgents.$inferSelect;
+export type InsertManagedAgent = typeof managedAgents.$inferInsert;
+
+// Managed agent checkouts — the crossmint-checkout runtime's purchase runs.
+// One row per checkout run. (A future runtime whose work isn't "checkouts"
+// gets its own runs table; this is why the settings table, not this ledger,
+// is the shared seam.)
+export const managedAgentCheckouts = pgTable("managed_agent_checkouts", {
   id: serial("id").primaryKey(),
   checkoutId: text("checkout_id").notNull().unique(),
   crossmintCheckoutId: text("crossmint_checkout_id").unique(),
@@ -1686,13 +1701,13 @@ export const agentCheckouts = pgTable("agent_checkouts", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 }, (table) => [
-  index("agent_checkouts_owner_idx").on(table.ownerUid),
+  index("managed_agent_checkouts_owner_idx").on(table.ownerUid),
 ]);
 
-export type AgentCheckout = typeof agentCheckouts.$inferSelect;
-export type InsertAgentCheckout = typeof agentCheckouts.$inferInsert;
+export type ManagedAgentCheckout = typeof managedAgentCheckouts.$inferSelect;
+export type InsertManagedAgentCheckout = typeof managedAgentCheckouts.$inferInsert;
 
-export const createAgentCheckoutSchema = z.object({
+export const createManagedAgentCheckoutSchema = z.object({
   card_id: z.string().min(1),
   product_url: z.string().url().max(2000),
   request: z.string().min(1).max(2000),
