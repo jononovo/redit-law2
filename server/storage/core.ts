@@ -40,7 +40,15 @@ export const coreMethods: CoreMethods = {
   },
 
   async getBotsByOwnerUid(ownerUid: string): Promise<Bot[]> {
-    return db.select().from(bots).where(eq(bots.ownerUid, ownerUid)).orderBy(bots.createdAt);
+    // Excludes the auto-provisioned in-house agent: every consumer of this
+    // list treats rows as external API-key agents (checkout attribution,
+    // webhooks, activity, linking). The in-house bot is fetched explicitly
+    // via ensureInhouseBot. IS DISTINCT FROM keeps NULL botType rows in.
+    return db
+      .select()
+      .from(bots)
+      .where(and(eq(bots.ownerUid, ownerUid), sql`${bots.botType} IS DISTINCT FROM 'inhouse'`))
+      .orderBy(bots.createdAt);
   },
 
   async claimBot(claimToken: string, ownerUid: string): Promise<Bot | null> {

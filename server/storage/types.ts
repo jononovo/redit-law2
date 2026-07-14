@@ -39,6 +39,7 @@ import {
   type BrandClaim, type InsertBrandClaim,
   type BrandFeedback, type InsertBrandFeedback,
   type SupportRequest, type InsertSupportRequest,
+  type AgentCheckout, type InsertAgentCheckout,
   type AgentTestSession, type InsertAgentTestSession,
   type AgentTestFieldEvent, type InsertAgentTestFieldEvent,
 } from "@/shared/schema";
@@ -304,6 +305,16 @@ export interface IStorage {
   getRecentFeedbackByBot(brandSlug: string, botId: string, windowHours?: number): Promise<BrandFeedback | null>;
 
   createSupportRequest(data: InsertSupportRequest): Promise<SupportRequest>;
+
+  ensureInhouseBot(ownerUid: string, ownerEmail: string): Promise<Bot>;
+  createAgentCheckout(data: InsertAgentCheckout): Promise<AgentCheckout>;
+  getAgentCheckoutByCheckoutId(checkoutId: string): Promise<AgentCheckout | null>;
+  getAgentCheckoutsByOwnerUid(ownerUid: string, limit?: number): Promise<AgentCheckout[]>;
+  updateAgentCheckout(checkoutId: string, data: Partial<InsertAgentCheckout>): Promise<AgentCheckout | null>;
+  claimAgentCheckoutCardMint(checkoutId: string, actionId: string): Promise<AgentCheckout | null>;
+  claimAgentCheckoutSuccess(checkoutId: string): Promise<AgentCheckout | null>;
+  setOwnerBuyerProfileId(ownerUid: string, buyerProfileId: string): Promise<void>;
+  setOwnerDefaultCheckoutCard(ownerUid: string, cardId: string | null): Promise<void>;
 
   createBrandClaim(data: InsertBrandClaim): Promise<BrandClaim>;
   getBrandClaimById(id: number): Promise<BrandClaim | null>;

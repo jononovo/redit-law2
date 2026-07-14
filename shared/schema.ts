@@ -1,4 +1,5 @@
 import { pgTable, serial, text, timestamp, integer, boolean, index, bigint, jsonb, numeric, uniqueIndex, customType } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 import { z } from "zod";
 import { GUARDRAIL_DEFAULTS } from "@/features/agent-interaction/guardrails/defaults";
 
@@ -28,7 +29,10 @@ export const bots = pgTable("bots", {
   openclawHooksToken: text("openclaw_hooks_token"),
   claimedAt: timestamp("claimed_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
-});
+}, (table) => [
+  // One in-house agent per owner (botType "inhouse" — see lib/inhouse-agent.ts).
+  uniqueIndex("bots_inhouse_owner_uidx").on(table.ownerUid).where(sql`${table.botType} = 'inhouse'`),
+]);
 
 export const paymentMethods = pgTable("payment_methods", {
   id: serial("id").primaryKey(),
@@ -400,6 +404,14 @@ export const owners = pgTable("owners", {
   // TODO: encrypt at rest (AES-256-GCM) before SOC2 / GA at scale.
   firebaseRefreshToken: text("firebase_refresh_token"),
   firebaseRefreshTokenUpdatedAt: timestamp("firebase_refresh_token_updated_at"),
+  // Crossmint Agent Checkouts buyer profile (one per owner, built from the
+  // default shipping address on first in-house checkout). See
+  // project_knowledge/internal_docs/04-payment-tools/agent-checkouts-inhouse-agent.md
+  crossmintBuyerProfileId: text("crossmint_buyer_profile_id"),
+  // The in-house agent's preferred virtual card (rail3 cardId). Preselected on
+  // each checkout; a per-run override never writes it. Validated at read time
+  // against the owner's active cards (self-healing when revoked/expired).
+  defaultAgentCheckoutCardId: text("default_agent_checkout_card_id"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 }, (table) => [
@@ -1648,3 +1660,42 @@ export const supportRequests = pgTable("support_requests", {
 
 export type SupportRequest = typeof supportRequests.$inferSelect;
 export type InsertSupportRequest = typeof supportRequests.$inferInsert;
+
+// Agent Checkouts — the in-house agent's purchases via Crossmint's hosted
+// checkout runtime. One row per checkout run. See
+// project_knowledge/internal_docs/04-payment-tools/agent-checkouts-inhouse-agent.md
+export const agentCheckouts = pgTable("agent_checkouts", {
+  id: serial("id").primaryKey(),
+  checkoutId: text("checkout_id").notNull().unique(),
+  crossmintCheckoutId: text("crossmint_checkout_id").unique(),
+  ownerUid: text("owner_uid").notNull(),
+  botId: text("bot_id").notNull(),
+  cardId: text("card_id").notNull(),
+  productUrl: text("product_url").notNull(),
+  request: text("request").notNull(),
+  merchantContext: text("merchant_context"),
+  maxCostCents: integer("max_cost_cents"),
+  status: text("status").notNull().default("created"),
+  // The Crossmint user-action id we have already minted+submitted a card for.
+  // Idempotency guard: prevents re-minting a live one-time PAN when the same
+  // card action stays pending across polls (see the mint claim in service.ts).
+  answeredActionId: text("answered_action_id"),
+  rail3TransactionId: text("rail3_transaction_id"),
+  receipt: jsonb("receipt"),
+  lastEvent: text("last_event"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+}, (table) => [
+  index("agent_checkouts_owner_idx").on(table.ownerUid),
+]);
+
+export type AgentCheckout = typeof agentCheckouts.$inferSelect;
+export type InsertAgentCheckout = typeof agentCheckouts.$inferInsert;
+
+export const createAgentCheckoutSchema = z.object({
+  card_id: z.string().min(1),
+  product_url: z.string().url().max(2000),
+  request: z.string().min(1).max(2000),
+  merchant_context: z.string().max(2000).optional(),
+  max_cost_cents: z.number().int().min(1).optional(),
+});

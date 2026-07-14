@@ -3,6 +3,8 @@
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { BotCard } from "@/components/dashboard/bot-card";
+import { InhouseAgentCard } from "@/components/inhouse-agent/inhouse-agent-card";
+import { AddAgentCtaCard } from "@/components/dashboard/add-agent-cta-card";
 import { PendingPairingCard } from "@/components/dashboard/pending-pairing-card";
 import { OverviewSectionHeader } from "@/components/dashboard/overview-section-header";
 import { OverviewCardSection } from "@/components/dashboard/overview-card-section";
@@ -52,11 +54,19 @@ interface PendingPairing {
   expires_at: string;
 }
 
+interface InhouseAgentData {
+  bot_id: string;
+  bot_name: string;
+  description: string | null;
+  created_at: string;
+}
+
 export default function DashboardOverview() {
   const router = useRouter();
   const { user } = useAuth();
   const { toast } = useToast();
   const [bots, setBots] = useState<BotData[]>([]);
+  const [inhouseAgent, setInhouseAgent] = useState<InhouseAgentData | null>(null);
   const [pendingPairings, setPendingPairings] = useState<PendingPairing[]>([]);
   const [loading, setLoading] = useState(true);
   const [privyWallets, setPrivyWallets] = useState<Rail1WalletInfo[]>([]);
@@ -85,6 +95,7 @@ export default function DashboardOverview() {
       if (botsRes.ok) {
         const data = await botsRes.json();
         setBots(data.bots || []);
+        setInhouseAgent(data.inhouse_agent || null);
         setPendingPairings(data.pending_pairings || []);
       }
     } catch {} finally {
@@ -311,7 +322,7 @@ export default function DashboardOverview() {
         title="My Agents"
         seeAllHref="/agents"
         seeAllTestId="link-see-all-agents"
-        showSeeAll={!loading && (bots.length > 0 || pendingPairings.length > 0)}
+        showSeeAll={!loading && (bots.length > 0 || pendingPairings.length > 0 || inhouseAgent !== null)}
         loading={loading}
         meta={!loading && (
           <span className="text-sm text-neutral-400" data-testid="text-agent-counts">
@@ -322,6 +333,18 @@ export default function DashboardOverview() {
           </span>
         )}
         items={[
+          ...(inhouseAgent
+            ? [{
+                key: inhouseAgent.bot_id,
+                content: (
+                  <InhouseAgentCard
+                    botName={inhouseAgent.bot_name}
+                    description={inhouseAgent.description}
+                    createdAt={inhouseAgent.created_at}
+                  />
+                ),
+              }]
+            : []),
           ...pendingPairings.map((pairing) => ({
             key: pairing.code,
             content: <PendingPairingCard code={pairing.code} expiresAt={pairing.expires_at} />,
@@ -344,6 +367,11 @@ export default function DashboardOverview() {
               />
             ),
           })),
+          // Keep the add-your-own-agent CTA alive when only the in-house
+          // agent exists — it must not read as "you're set up".
+          ...(inhouseAgent && bots.length === 0 && pendingPairings.length === 0
+            ? [{ key: "add-agent-cta", content: <AddAgentCtaCard /> }]
+            : []),
         ]}
         emptyState={
           <div className="bg-white rounded-2xl border border-neutral-100 shadow-sm p-12 text-center" data-testid="empty-bots">

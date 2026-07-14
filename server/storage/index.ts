@@ -29,6 +29,7 @@ import { brandCategoryMethods } from "./brand-engine/brand-categories";
 import { brandClaimMethods } from "./brand-engine/brand-claims";
 import { brandFeedbackMethods } from "./brand-engine/brand-feedback";
 import { supportRequestMethods } from "./platform-management/support-requests";
+import { agentCheckoutMethods } from "./payment-rails/agent-checkouts";
 import { agentTestingMethods } from "@/features/agent-testing/storage/agent-testing-storage";
 import type { IStorage } from "./types";
 
@@ -65,5 +66,6 @@ export const storage: IStorage = {
   ...brandClaimMethods,
   ...brandFeedbackMethods,
   ...supportRequestMethods,
+  ...agentCheckoutMethods,
   ...agentTestingMethods,
 };
