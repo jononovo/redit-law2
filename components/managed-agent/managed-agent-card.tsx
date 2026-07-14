@@ -33,7 +33,7 @@ export function ManagedAgentCard({ botName, description, runtime, createdAt }: M
       className="h-full bg-white rounded-2xl border border-neutral-100 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
       data-testid="managed-agent-card"
     >
-      <div className="p-5 h-full flex flex-col">
+      <div className="p-5 h-full">
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
             <div className="w-10 h-10 shrink-0 rounded-xl flex items-center justify-center bg-violet-50">
@@ -54,39 +54,34 @@ export function ManagedAgentCard({ botName, description, runtime, createdAt }: M
               </p>
             </div>
           </div>
-          <span
-            className="inline-flex items-center gap-1.5 shrink-0 text-xs font-medium text-green-700"
-            data-testid="status-managed-agent"
-          >
-            <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
-            Ready
-          </span>
+          {/* Actions live top-right, same spot as BotCard's menu — keeps the
+              card grammar consistent and the bottom edge tight. */}
+          <div className="flex items-center gap-1.5 shrink-0">
+            {actions.map(({ icon: Icon, label, href: actionHref, testId }) => (
+              <Tooltip key={testId}>
+                <TooltipTrigger asChild>
+                  <button
+                    aria-label={label}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      router.push(actionHref);
+                    }}
+                    className="w-8 h-8 rounded-[6px] bg-neutral-50 flex items-center justify-center text-neutral-500 hover:text-violet-600 hover:bg-violet-50 transition-colors"
+                    data-testid={testId}
+                  >
+                    <Icon className="w-4 h-4" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="text-xs bg-white text-neutral-700 border border-neutral-200 shadow-md">
+                  {label}
+                </TooltipContent>
+              </Tooltip>
+            ))}
+          </div>
         </div>
         {description && (
           <p className="text-sm text-neutral-500 mt-3 line-clamp-2">{description}</p>
         )}
-        <div className="flex items-center justify-end gap-1.5 mt-auto pt-3">
-          {actions.map(({ icon: Icon, label, href: actionHref, testId }) => (
-            <Tooltip key={testId}>
-              <TooltipTrigger asChild>
-                <button
-                  aria-label={label}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    router.push(actionHref);
-                  }}
-                  className="w-8 h-8 rounded-lg flex items-center justify-center text-neutral-400 hover:text-violet-600 hover:bg-violet-50 transition-colors"
-                  data-testid={testId}
-                >
-                  <Icon className="w-4 h-4" />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="top" className="text-xs bg-white text-neutral-700 border border-neutral-200 shadow-md">
-                {label}
-              </TooltipContent>
-            </Tooltip>
-          ))}
-        </div>
       </div>
     </div>
   );

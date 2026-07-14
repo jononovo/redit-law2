@@ -59,15 +59,17 @@ export function BotCard({ botName, botId, agentPlatform, description, walletStat
             </div>
           </div>
           <div className="flex items-center gap-1.5 shrink-0">
-            <span
-              className={`inline-flex items-center gap-1.5 text-xs font-medium ${
-                isActive ? "text-green-700" : "text-amber-700"
-              }`}
-              data-testid={`status-${botId}`}
-            >
-              <span className={`w-1.5 h-1.5 rounded-full ${isActive ? "bg-green-500" : "bg-amber-500"}`} />
-              {isActive ? "Active" : "Pending"}
-            </span>
+            {/* Status by exception: active is the normal state and stays
+                silent; only a pending agent needs the owner's attention. */}
+            {!isActive && (
+              <span
+                className="inline-flex items-center gap-1.5 text-xs font-medium text-amber-700"
+                data-testid={`status-${botId}`}
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                Pending
+              </span>
+            )}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
