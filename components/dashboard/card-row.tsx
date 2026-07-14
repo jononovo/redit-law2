@@ -5,5 +5,5 @@ export function CardRow({ children }: { children: ReactNode }) {
 }
 
 export function CardRowItem({ children }: { children: ReactNode }) {
-  return <div className="w-full max-w-[26rem]">{children}</div>;
+  return <div className="w-full min-w-[22rem] max-w-[26rem]">{children}</div>;
 }
