@@ -28,7 +28,7 @@ import {
   Users
 } from "lucide-react";
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
-import { INHOUSE_AGENT_NAME, INHOUSE_AGENT_ROUTE, INHOUSE_AGENT_DESCRIPTION } from "@/lib/inhouse-agent";
+import { MANAGED_AGENTS_ROUTE, MANAGED_AGENT_RUNTIMES, CROSSMINT_CHECKOUT_RUNTIME } from "@/lib/managed-agents";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -61,7 +61,7 @@ interface NavItem {
 const mainNavItems: NavItem[] = [
   { icon: LayoutDashboard, label: "Overview", href: "/overview" },
   { icon: Bot, label: "Agents", href: "/agents" },
-  { icon: ShoppingBag, label: INHOUSE_AGENT_NAME, href: INHOUSE_AGENT_ROUTE, tag: "beta", tooltip: INHOUSE_AGENT_DESCRIPTION },
+  { icon: ShoppingBag, label: MANAGED_AGENT_RUNTIMES[CROSSMINT_CHECKOUT_RUNTIME].displayName, href: MANAGED_AGENTS_ROUTE, tag: "beta", tooltip: MANAGED_AGENT_RUNTIMES[CROSSMINT_CHECKOUT_RUNTIME].description },
   { icon: CreditCard, label: "Virtual Cards", href: "/virtual-cards" },
   { icon: Lock, label: "Self-hosted Cards", subtitle: "Encrypted", href: "/self-hosted", tag: "beta", tooltip: "Self-hosted: Agent uses your card. Secured with: Encryption & Ephemeral Sub-Agent." },
   { icon: Wallet, label: "USDC Wallet", href: "/usdc-wallet", tag: "beta", tooltip: "USDC wallet x402 purchases. Fund with Stripe/Link." },
