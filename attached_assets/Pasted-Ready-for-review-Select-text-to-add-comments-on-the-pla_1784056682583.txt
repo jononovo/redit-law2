@@ -1,0 +1,41 @@
+Ready for review
+Select text to add comments on the plan
+Rail 3 production passkey enrollment: diagnosis + fix plan
+Context
+Real-card + virtual-card flows worked on Crossmint staging, but after the 2026-07-10 prod cutover (commit d015735) and Crossmint enabling the account, verifying a real card on creditclaw.com fails silently: no passkey prompt, no OTP email, wizard spins on "Waiting for passkey… (status: pending)". Jon asked: (a) what the flow should be, (b) whether we should send the email, (c) whether OTP-only enrollment without a passkey is possible, (d) how the Crossmint demo repo differs.
+
+Answers from Crossmint + Basis Theory docs and the demo repo
+Can we enroll with OTP only and switch off the passkey? No.
+No flag, tenant setting, or API parameter exists to disable the passkey — the enrollment create body is {email} only (same in Crossmint's own demo), and BT's /verify/complete is documented as "finalizes verification after passkey creation on the consumer's device".
+It's structural, not cosmetic: the passkey created at enrollment is the credential that later authorizes every virtual card (order-intent verification is documented as "passkey-only — the user does not receive an email code"). Without the passkey there'd be nothing to authorize order intents with.
+No-passkey outcomes do exist but are network-decided, not platform-selectable: BT's /verify can return {"status":"approved"} (auto-approved, no challenge), and one BT test card simulates "completes verification without passkey creation". Staging's mock "bypasses passkey steps automatically" — which is why staging never showed one.
+If OTP-only matters commercially, it's a Crossmint support question — but docs say expect "no".
+Who sends the OTP? The vendor rails (Crossmint/Basis Theory/Visa) — never us; Jon's issuer instinct is directionally right.
+The OTP is sent only after the overlay starts a verification session in the browser (BT: POST /enrollments/:id/verify → challenge lists masked email/SMS options → user picks → code sent). We never pass a phone number, so masked SMS options can only come from the card network / issuing bank's records (Visa Intelligent Commerce rails) — i.e., in production the code may go to the cardholder's bank-registered contact, not necessarily the account email we pass server-side.
+Nothing for us to build: CreditClaw neither sends the email nor can. "No email + no passkey prompt" = the overlay never initialized a session — client-side init failure, not email plumbing.
+Demo repo comparison (Crossmint/card-permissions-quickstart, cloned + read)
+Rhythm is identical to ours: same idempotent check-GET-then-create-POST enrollment (ensureEnrollment ≙ our enrollment route), same PaymentMethodAgenticEnrollmentVerification with the same paymentMethodAgenticEnrollment prop, same 3-state enrollment type (not_started/pending+verificationConfig/active), untouched pass-through of Crossmint's response. Only cosmetic delta: an optional appearance prop.
+But the demo runs on staging.crossmint.com only (hardcoded BASE_URL), where the ceremony is mocked — so "the demo works" validates our structure, not the production path. Its README production section is a single line; last commit (2026-05-26) predates the Agentic Cards production GA (2026-06-02). Its lockfile pins SDK 4.1.4.
+Conclusion: our integration shape is right; the failure is specific to the production (real Visa Click to Pay) overlay path, which nothing — demo included — has exercised with our SDK version.
+Why staging worked and prod doesn't (recap)
+Staging = BT mock providers: any OTP accepted, "passkey steps automatically bypassed", 4242… auto-approves. Prod = first genuine Visa Click to Pay + WebAuthn run (internal doc rail3-virtual-cards.md:438 warned staging "hides every real-world failure mode").
+Prime code-side lever: SDK version. Prod runs 4.2.1 (our package-lock.json); latest is 4.3.1; our own prod-flip checklist (rail3-virtual-cards.md:450 step 4) says bump to latest before prod because "Crossmint absorbs the prod-vs-staging overlay differences inside the SDK" — that step never landed. (Local node_modules already has 4.3.1, out of sync with the lockfile; our prop usage matches 4.3.1's d.ts.)
+Also viable: stale/failed enrollment silently spinning (wizard only mounts the overlay on pending+verificationConfig; anything else = infinite spinner), real-card eligibility (excluded: non-US Visa, business, prepaid, Chase, Fidelity; Mastercard is waitlist-gated at BT), popup blocker on the Visa window.
+Ruled out: prop drift (checked), CSP (none), wrong origin (Jon was on creditclaw.com), key/origin/3P-auth basics (card-save step succeeded in prod with the same key+JWT).
+Changes
+Pin + bump SDK — package.json: @crossmint/client-sdk-react-ui ^4.2.1 → exact 4.3.1; refresh package-lock.json; npm run build + npm test; also eyeball OrderIntentVerification props in 4.3.1 d.ts (add-card-dialog.tsx:289 passes as any).
+Instrument the silent path:
+enrollment/route.ts (GET+POST): log [Rail3] enrollment { paymentMethodId, status, hasVerificationConfig, environment } from the raw Crossmint response.
+app/setup/rail3/page.tsx: surface unexpected states instead of the infinite spinner (pending without verificationConfig, unknown statuses → visible message with "delete card + retry" guidance); console.log("[Rail3] mounting enrollment overlay", environment) when the overlay mounts; keep onVerificationError surfacing and add a popup-blocker hint.
+No flow/product changes; smallest diff.
+Deploy + reproduce (prod ceremony only runs on creditclaw.com)
+Commit → push → pull in Repl → Deploy (client key is build-baked + origin-locked; localhost/kirk.replit.dev cannot exercise this).
+On creditclaw.com with devtools open: delete the stuck payment method (resets stale enrollment), redo save → verify. Watch [Rail3]/[BtAi] console lines, blocked-popup icon, and the inbox including bank/network-registered contacts (masked options may point at issuer-held phone/email; check spam).
+If it still doesn't start (user actions, no code)
+Crossmint prod console: client key has https://creditclaw.com origin + agentic scopes; account enablement specifically covers agentic enrollment / Visa Intelligent Commerce in production.
+Card eligibility: retry with a US Visa credit/debit from a non-excluded issuer (not Chase/Fidelity/business/prepaid; hold Mastercard until BT waitlist status is known).
+Escalate to Crossmint with captured evidence (logged enrollment object, console errors, HAR) — and ask the OTP-only question then too.
+Watch-item (out of scope)
+agents.ts uses POST /api/unstable/agents; internal doc documents /api/2025-06-09/agents (demo also uses /api/unstable/agents, so ours likely fine) — verify at first prod virtual-card create.
+Verification
+On creditclaw.com after Deploy: save real card → overlay opens and shows masked OTP contact options → code arrives → enter it → passkey created → enrollment active → create one virtual card → passkey tap → phase active. npm run build + npm test pass locally before push.
