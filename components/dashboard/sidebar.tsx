@@ -96,7 +96,7 @@ const salesNavItems: NavItem[] = [
 
 function navRowClasses(isActive: boolean, isInactive?: boolean) {
   return cn(
-    "group flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all cursor-pointer",
+    "group flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-all cursor-pointer",
     "group-data-[collapsible=icon]:px-2 group-data-[collapsible=icon]:justify-center",
     isInactive
       ? "text-neutral-300 hover:bg-neutral-50 hover:text-neutral-400 opacity-60"
@@ -184,7 +184,7 @@ function SidebarNavSection({
         <CollapsibleTrigger asChild>
           <button
             type="button"
-            className="w-full flex items-center gap-1 pt-4 pb-1 px-4 cursor-pointer group"
+            className="w-full flex items-center gap-1 pt-3 pb-1 px-4 cursor-pointer group"
             data-testid={toggleTestId}
           >
             <span className={cn(
@@ -289,7 +289,7 @@ export function AppSidebar({ onNewCard }: AppSidebarProps) {
         )}
       </SidebarHeader>
 
-      <div className="px-4 mb-6 group-data-[collapsible=icon]:px-1.5">
+      <div className="px-4 mb-4 group-data-[collapsible=icon]:px-1.5">
         <Button
           onClick={() => {
             onNewCard?.();
