@@ -76,5 +76,5 @@ The managed-agent checkouts now **reuse the existing** `NEXT_PUBLIC_CROSSMINT_CL
 Pull `main` into the Repl, confirm Step 1's SQL ran on that environment, then Deploy.
 
 ## Notes
-- Dashboard route is `/agent-checkouts` (the public `/managed-agents` URL is the existing "Managed Agents" marketing page — unchanged).
+- Dashboard route is `/managed-agents`; the marketing page that used to live there is now `/managed-payment-agents` (nav links updated — old external links to the marketing URL will now hit the dashboard/login).
 - Production-only, real money on first real checkout — test with a cheap item + a Max Cost.

@@ -60,7 +60,7 @@ The split is deliberate: the settings table is the common contract; the runs tab
 Three things sound like they belong here but do not:
 
 1. **`rail3_agents` table** — a Crossmint **cards-API vendor resource** ("one Crossmint agent per owner" that owns order intents). Pure Rail 3 plumbing; it stays in `features/payment-rails/rail3/` and is documented in `rail3-virtual-cards.md`. It is **not** a managed agent — it's a Crossmint-side construct, not something we orchestrate outbound.
-2. **The public `/managed-agents` page** — the "Managed Agents" **services marketing page**, unrelated to this module. This is exactly why the managed-agents dashboard surface lives at `/agent-checkouts`, not `/managed-agents`: the marketing URL was already taken.
+2. **The `/managed-payment-agents` page** — the "Managed Agents" **services marketing page**, unrelated to this module. (It originally occupied `/managed-agents`; renamed 2026-07-14 so the managed-agents dashboard could take that URL — owner decision.)
 3. **Shipping addresses** — source of truth stays in `agent-interaction`. The Crossmint buyer profile (`managed_agents.buyer_profile_id`) is a **derived artifact** built from the default shipping address, not a second home for address data.
 
 ## Runtimes

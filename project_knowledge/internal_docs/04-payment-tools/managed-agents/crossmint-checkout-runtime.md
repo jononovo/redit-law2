@@ -7,7 +7,7 @@ last_updated: 2026-07-14
 
 # Managed Agents — Crossmint Agent Checkout runtime (Captain Crunch)
 
-> **Every account gets a first-party managed agent, branded "Captain Crunch", that can buy from almost any store: the owner pastes a product URL + plain-language instructions on the `/agent-checkouts` page, picks one of their virtual cards, and Crossmint's Agent Checkout API drives a remote browser through the merchant's checkout. When the remote agent asks for payment, our server mints a one-time merchant-locked PAN from the selected Rail 3 card and submits it — card numbers never touch the browser.**
+> **Every account gets a first-party managed agent, branded "Captain Crunch", that can buy from almost any store: the owner pastes a product URL + plain-language instructions on the `/managed-agents` page, picks one of their virtual cards, and Crossmint's Agent Checkout API drives a remote browser through the merchant's checkout. When the remote agent asks for payment, our server mints a one-time merchant-locked PAN from the selected Rail 3 card and submits it — card numbers never touch the browser.**
 
 This is the **first runtime of the managed-agents module** — read `managed-agents.md` (sibling in this folder) first for the module overview: what a managed agent is, the shared `managed_agents` settings table, and how future runtimes slot in.
 
@@ -25,9 +25,9 @@ The platform's pitch is "give your agent spending power" — but most signups do
 
 ## Relationship to the Master Agent plan
 
-This runtime is the **first incarnation** of the managed-agent thesis from `_payment_build_ideas/260528_rail3-master-agent-plan.md` (converged direction 2026-06-04), using Crossmint's hosted Agent Checkout runtime. It does **not** retire that plan: a self-hosted browser-use master agent may still be built later (owner-confirmed 2026-07-13) and would slot in as a **sibling runtime** of the managed-agents module, reusing the surfaces built here (the `/agent-checkouts` observance page, the `managed_agents` settings seam, the `managed_agent_checkouts` runs table, the form-factor-agnostic engine API). Deliberate v1 divergences from that doc's converged direction (owner-approved 2026-07-13, in-conversation):
+This runtime is the **first incarnation** of the managed-agent thesis from `_payment_build_ideas/260528_rail3-master-agent-plan.md` (converged direction 2026-06-04), using Crossmint's hosted Agent Checkout runtime. It does **not** retire that plan: a self-hosted browser-use master agent may still be built later (owner-confirmed 2026-07-13) and would slot in as a **sibling runtime** of the managed-agents module, reusing the surfaces built here (the `/managed-agents` observance page, the `managed_agents` settings seam, the `managed_agent_checkouts` runs table, the form-factor-agnostic engine API). Deliberate v1 divergences from that doc's converged direction (owner-approved 2026-07-13, in-conversation):
 - **Rail 3 only in v1** (not Rail 1 + Rail 3): the Crossmint checkout runtime takes card payment; stablecoin flows stay out of scope.
-- **Dashboard page, not a separate tenant**: `/agent-checkouts` inside the existing dashboard; the engine (`features/managed-agents/crossmint-checkout/`) stays form-factor-agnostic so other surfaces (CLI, tenant) can consume the same API later.
+- **Dashboard page, not a separate tenant**: `/managed-agents` inside the existing dashboard; the engine (`features/managed-agents/crossmint-checkout/`) stays form-factor-agnostic so other surfaces (CLI, tenant) can consume the same API later.
 - **Compliance / actor-of-record (GATING for launch, not build)**: the master-agent doc and `260528_rail3_open-points.md` flag AML/KYC/dispute exposure when CreditClaw executes on a user's card. Mitigation argument: the owner initiates every checkout in-session (owner-present, per-purchase consent; we submit credentials minted under their own card's mandates). **Owner must sign off on this before public launch.**
 
 ---
@@ -35,7 +35,7 @@ This runtime is the **first incarnation** of the managed-agent thesis from `_pay
 ## How It Works
 
 ```
-Owner (on /agent-checkouts page)              CreditClaw server                        Crossmint
+Owner (on /managed-agents page)                CreditClaw server                        Crossmint
   1. pick card, paste URL + request  ──────▶  POST /api/v1/managed-agents/checkouts
                                               ensure buyer profile ─────────────────▶  POST /buyer-profiles (once per managed agent)
                                               create checkout ────────────────────▶   POST /agent-checkouts {target, buyerProfileId, constraints}
@@ -63,7 +63,7 @@ Key properties:
 
 ### A. Runtime registry + provisioning
 
-1. `lib/managed-agents.ts` — the **runtime registry** (no per-runtime code constants leak into the app): `MANAGED_BOT_TYPE = "managed"`, `MANAGED_AGENTS_ROUTE = "/agent-checkouts"`, the `ManagedRuntime` type, `CROSSMINT_CHECKOUT_RUNTIME = "crossmint-checkout"`, and the `MANAGED_AGENT_RUNTIMES` record mapping each runtime to `{ displayName, description }` (so `MANAGED_AGENT_RUNTIMES['crossmint-checkout'].displayName === "Captain Crunch"` — branding is data, not an identifier). `agentPlatform` stays **null** — `botType === "managed"` is the sole discriminator ("creditclaw" is not in the closed `AGENT_PLATFORMS` enum and would render as a raw string in platform pills). The dashboard route is name-agnostic: `/agent-checkouts` (the public `/managed-agents` URL is a pre-existing marketing page, so the dashboard surface deliberately keeps the `/agent-checkouts` path).
+1. `lib/managed-agents.ts` — the **runtime registry** (no per-runtime code constants leak into the app): `MANAGED_BOT_TYPE = "managed"`, `MANAGED_AGENTS_ROUTE = "/managed-agents"`, the `ManagedRuntime` type, `CROSSMINT_CHECKOUT_RUNTIME = "crossmint-checkout"`, and the `MANAGED_AGENT_RUNTIMES` record mapping each runtime to `{ displayName, description }` (so `MANAGED_AGENT_RUNTIMES['crossmint-checkout'].displayName === "Captain Crunch"` — branding is data, not an identifier). `agentPlatform` stays **null** — `botType === "managed"` is the sole discriminator ("creditclaw" is not in the closed `AGENT_PLATFORMS` enum and would render as a raw string in platform pills). The dashboard route is `/managed-agents` (owner decision 2026-07-14 — the marketing page that previously held that URL moved to `/managed-payment-agents`).
 2. **Lazy, race-safe get-or-create** in `GET /api/v1/bots/mine` (the one endpoint both target pages already call — it is hit 4× in parallel on overview, so this MUST be conflict-safe AND cheap):
    - Uniqueness lives on `managed_agents`, **not** `bots`: `uniqueIndex("managed_agents_owner_runtime_uidx").on(managedAgents.ownerUid, managedAgents.runtime)`. **There is no `bots.managed_runtime` column and no bots-level uniqueness index** — the one-per-(owner, runtime) invariant is enforced entirely by the `managed_agents` unique index.
    - `storage.ensureManagedAgent(ownerUid, ownerEmail, runtime)`: **select-first** on `managed_agents` (matching the actual rail3 precedent `app/api/v1/rail3/cards/route.ts:67-81` — no write on the hot path when the row exists). On miss, it **creates BOTH rows in one transaction**: the `bots` row (`bot_type: 'managed'`) and the `managed_agents` settings row that points at it via `bot_id`. The `managed_agents` insert is the one guarded by `managed_agents_owner_runtime_uidx`; **a lost race rolls the whole transaction back — including the bot insert — so no orphan `bots` rows are ever left behind.** Re-select after rollback to return the winner's rows.
@@ -98,13 +98,13 @@ All modules `import "server-only"`, mirroring rail3.
 
 ### E. UI
 
-12. `app/(dashboard)/agent-checkouts/page.tsx` + `components/managed-agent/` — **this is an observance page**: once a checkout starts, the remote-session playback is the page. Layout mirrors Crossmint's own demo (progress rail left, large "Agent browser session" viewport center, instruction banner above).
+12. `app/(dashboard)/managed-agents/page.tsx` + `components/managed-agent/` — **this is an observance page**: once a checkout starts, the remote-session playback is the page. Layout mirrors Crossmint's own demo (progress rail left, large "Agent browser session" viewport center, instruction banner above).
     - `checkout-form.tsx` — the pre-run state: product URL input, "Buyer request" textarea (one instruction per line, placeholder mirrors Crossmint demo), card `Select` preloaded with first active card, `ExplainerToggleLink`/`ExplainerBlock`-style collapsible for optional merchant context, optional max-cost field. Start button posts, then the page swaps to the observance view.
     - `checkout-observer.tsx` — the run state: polls `GET` every ~2s while non-terminal. Center viewport renders the remote browser session **if the checkout payload exposes a view surface** (live-view URL / screenshot events — not in Crossmint's public docs yet; the first real checkout logs the full payload to discover the contract, and until then the viewport gracefully renders the event timeline). Progress rail with status/events, cancel button, receipt panel on success.
     - `user-action-modal.tsx` — user-in-the-loop requests render as a modal **over the playback** (shadcn Dialog), built from `pendingUserAction.responseSchema`: enums → option buttons, strings → inputs, booleans → toggles. Anything unrenderable → raw prompt text + a text input. Submits to the actions route. The engine stays form-factor-agnostic: all state lives in the API routes; this modal is just the dashboard renderer of it.
     - `checkout-history.tsx` — list from `GET /api/v1/managed-agents/checkouts`.
     - Styling: dashboard conventions — `rounded-2xl border border-neutral-100 bg-white shadow-sm` cards, `rounded-xl` inner elements, `data-testid` on every interactive element, `useToast` for errors.
-13. `components/managed-agent/managed-agent-card.tsx` (`ManagedAgentCard`) — a **dedicated card component** (BotCard is untouched: it has no botType prop and threading one through both pages' local interfaces is needless churn). Styled identically to BotCard (same container/pill/status classes), "MANAGED" badge, links to `/agent-checkouts`, no settings/webhook affordances. Rendered explicitly by the agents page and overview from each entry in the `managed_agents` response array. The "add your own agent" CTA card stays as-is; agent counts do NOT include managed agents.
+13. `components/managed-agent/managed-agent-card.tsx` (`ManagedAgentCard`) — a **dedicated card component** (BotCard is untouched: it has no botType prop and threading one through both pages' local interfaces is needless churn). Styled identically to BotCard (same container/pill/status classes), "MANAGED" badge, links to `/managed-agents`, no settings/webhook affordances. Rendered explicitly by the agents page and overview from each entry in the `managed_agents` response array. The "add your own agent" CTA card stays as-is; agent counts do NOT include managed agents.
 14. `components/dashboard/sidebar.tsx` — add to `mainNavItems`: `{ icon: Bot, label: MANAGED_AGENT_RUNTIMES[CROSSMINT_CHECKOUT_RUNTIME].displayName, href: MANAGED_AGENTS_ROUTE, tag: "beta" }`.
 
 ### F. Tests (per `tests/_README.md` — business logic only; add a Current Coverage row)
@@ -134,7 +134,7 @@ All modules `import "server-only"`, mirroring rail3.
 | Service | `features/managed-agents/crossmint-checkout/service.ts` |
 | Buyer profile | `features/managed-agents/crossmint-checkout/buyer-profile.ts` |
 | Routes | `app/api/v1/managed-agents/checkouts/**`, `app/api/v1/managed-agents/default-card` |
-| Page | `app/(dashboard)/agent-checkouts/page.tsx`, `components/managed-agent/*` |
+| Page | `app/(dashboard)/managed-agents/page.tsx`, `components/managed-agent/*` |
 | Provisioning | `server/storage/managed-agents/index.ts` (`ensureManagedAgent`), `app/api/v1/bots/mine/route.ts` |
 | Schema | `shared/schema.ts` (`managedAgents`, `managedAgentCheckouts`, `managed_agents_owner_runtime_uidx`) |
 | Reused rail3 | `credentials.ts` (`fetchOneTimeCredentials`), `client.ts` (`unwrapCrossmint`), guardrails `master.ts`, `rail3.ts` storage, `orders/create.ts` |

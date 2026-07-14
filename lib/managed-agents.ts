@@ -4,11 +4,9 @@
 // managed_agents table. See project_knowledge/internal_docs/04-payment-tools/managed-agents/.
 
 export const MANAGED_BOT_TYPE = "managed";
-// Dashboard surface for the managed agent. NOTE: the public marketing page
-// already owns /managed-agents ("Managed Agents" services), so the dashboard
-// lives at /agent-checkouts (the crossmint-checkout runtime's surface). Change
-// in one place here if the product picks a different URL.
-export const MANAGED_AGENTS_ROUTE = "/agent-checkouts";
+// Dashboard surface for managed agents. (The former marketing page at this
+// URL moved to /managed-payment-agents — owner decision 2026-07-14.)
+export const MANAGED_AGENTS_ROUTE = "/managed-agents";
 
 // Architecture: the set of runtimes. Add a value here + its runtime code when
 // a new managed agent (e.g. a self-hosted master agent) ships.
