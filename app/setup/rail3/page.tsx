@@ -166,7 +166,11 @@ function SetupInner() {
               <div data-testid="container-pm-management" className="rounded-lg border border-neutral-200 overflow-hidden">
                 <CrossmintPaymentMethodManagement
                   jwt={jwt}
-                  onPaymentMethodSelected={(pm) => { savePaymentMethodAndEnroll(pm); }}
+                  onPaymentMethodSelected={(pm) => {
+                    // SDK 4.3.1 widened this to a card|bank-account union;
+                    // this flow only vaults cards.
+                    if ("card" in pm && pm.card) savePaymentMethodAndEnroll(pm);
+                  }}
                 />
               </div>
             ) : (
