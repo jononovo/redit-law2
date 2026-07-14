@@ -41,6 +41,7 @@
     ".next",
     "dist",
     "skill-variants/**/dist/**",
+    "skill-variants/**/Plugins/**",
     "docs/tests/**/*",
     "public/Plugins/**/*"
   ]
