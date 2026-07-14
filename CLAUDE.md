@@ -22,6 +22,11 @@ Next.js 16 / React 19 / TypeScript app (App Router), multi-tenant (CreditClaw ·
 
 **Deploy flow:** edit locally → commit → push to GitHub → pull into the Repl → click Deploy in the Repl.
 
+**Verifying changes in a browser — don't guess, look:**
+- **Local:** `npm run dev` → `localhost:5000`. When the Claude Chrome extension is connected, the agent can drive the browser directly (navigate, click, screenshot); otherwise use `curl` for route/API smoke tests.
+- **Staging (the Repl's dev deployment):** https://89296d20-74da-43ec-8204-367df2a223d5-00-13onhnckmod4a.kirk.replit.dev — reflects whatever is pulled+running in the Repl. Check here to confirm a push actually landed.
+- **Production:** https://creditclaw.com — only updates when Deploy is clicked in the Repl. Staging and prod can run different builds; when behavior differs, compare the same route on both before debugging code.
+
 **Two-way sync — always pull first.** Changes are sometimes made directly in the Repl (Node version bumps, config, occasional code) and pushed to GitHub from that side. Before starting any local work, run `git fetch` / `git pull` so you're building on top of the Repl's changes and don't create conflicts. `.replit` in particular is owned by the Repl — expect it to change there, not here.
 
 ## Hard rules
