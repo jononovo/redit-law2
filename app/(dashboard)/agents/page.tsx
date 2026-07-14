@@ -35,6 +35,7 @@ interface ManagedAgentData {
   bot_id: string;
   bot_name: string;
   description: string | null;
+  runtime: string;
   created_at: string;
 }
 
@@ -115,6 +116,7 @@ export default function AgentsPage() {
               <ManagedAgentCard
                 botName={agent.bot_name}
                 description={agent.description}
+                runtime={agent.runtime}
                 createdAt={agent.created_at}
               />
             </CardRowItem>

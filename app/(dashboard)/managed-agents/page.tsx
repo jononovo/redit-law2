@@ -1,37 +1,34 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { ShoppingBag, Loader2 } from "lucide-react";
+import { Loader2, ShoppingBag } from "lucide-react";
 import { useAuth } from "@/features/platform-management/auth/auth-context";
 import { authFetch } from "@/features/platform-management/auth-fetch";
-import { MANAGED_AGENT_RUNTIMES, CROSSMINT_CHECKOUT_RUNTIME } from "@/lib/managed-agents";
+import { CardRow, CardRowItem } from "@/components/dashboard/card-row";
+import { ManagedAgentCard } from "@/components/managed-agent/managed-agent-card";
 
-const RUNTIME = MANAGED_AGENT_RUNTIMES[CROSSMINT_CHECKOUT_RUNTIME];
-import { CheckoutForm } from "@/components/managed-agent/checkout-form";
-import { CheckoutHistory } from "@/components/managed-agent/checkout-history";
-import { CheckoutObserver, type AgentCheckoutData } from "@/components/managed-agent/checkout-observer";
-import { isTerminalAgentCheckoutStatus } from "@/lib/managed-agent-checkouts";
+interface ManagedAgentData {
+  bot_id: string;
+  bot_name: string;
+  description: string | null;
+  runtime: string;
+  created_at: string;
+}
 
-// The observance page: form state until a checkout starts, then the running
-// checkout takes over the page (see plan doc — "the playback view is the page").
-export default function ManagedAgentsPage() {
+// Index of managed agents — remote agents CreditClaw runs on the owner's
+// behalf. User-linked agents live on /agents; each card here opens that
+// agent's own management page.
+export default function ManagedAgentsIndexPage() {
   const { user } = useAuth();
-  const [history, setHistory] = useState<AgentCheckoutData[]>([]);
+  const [agents, setAgents] = useState<ManagedAgentData[]>([]);
   const [loading, setLoading] = useState(true);
-  const [active, setActive] = useState<AgentCheckoutData | null>(null);
-  const [defaultCardId, setDefaultCardId] = useState<string | null>(null);
 
-  const fetchHistory = useCallback(async () => {
+  const fetchAgents = useCallback(async () => {
     try {
-      const res = await authFetch("/api/v1/managed-agents/checkouts");
+      const res = await authFetch("/api/v1/bots/mine");
       if (res.ok) {
-        const data = (await res.json()) as { checkouts?: AgentCheckoutData[]; default_card_id?: string | null };
-        const rows = data.checkouts || [];
-        setHistory(rows);
-        setDefaultCardId(data.default_card_id ?? null);
-        // Resume observing a checkout that's still running (e.g. tab was closed
-        // mid-run — the remote agent kept going).
-        setActive((prev) => prev ?? rows.find((c) => !isTerminalAgentCheckoutStatus(c.status)) ?? null);
+        const data = (await res.json()) as { managed_agents?: ManagedAgentData[] };
+        setAgents(data.managed_agents || []);
       }
     } catch {} finally {
       setLoading(false);
@@ -39,50 +36,43 @@ export default function ManagedAgentsPage() {
   }, []);
 
   useEffect(() => {
-    if (user) fetchHistory();
-  }, [user, fetchHistory]);
-
-  const exitObserver = () => {
-    setActive(null);
-    setLoading(true);
-    fetchHistory();
-  };
+    if (user) fetchAgents();
+  }, [user, fetchAgents]);
 
   return (
     <div className="flex flex-col gap-6 animate-fade-in-up">
-      <div className="flex items-center gap-3">
-        <div className="w-10 h-10 shrink-0 rounded-xl flex items-center justify-center bg-violet-50">
-          <ShoppingBag className="w-5 h-5 text-violet-600" />
-        </div>
-        <div>
-          <div className="flex items-center gap-2">
-            <h2 className="text-lg font-bold text-neutral-900">{RUNTIME.displayName}</h2>
-            <span
-              className="text-[10px] font-semibold uppercase tracking-wide bg-violet-50 text-violet-600 px-2 py-0.5 rounded-full"
-              data-testid="badge-inhouse-page"
-            >
-              In-house
-            </span>
-          </div>
-          <p className="text-sm text-neutral-500">{RUNTIME.description}</p>
-        </div>
+      <div>
+        <h2 className="text-lg font-bold text-neutral-900">Managed Agents</h2>
+        <p className="text-sm text-neutral-500">
+          Agents CreditClaw runs for you — open one to direct it, watch its runs, and manage its settings.
+        </p>
       </div>
 
       {loading ? (
-        <div className="flex items-center justify-center py-16" data-testid="loading-inhouse-page">
+        <div className="flex items-center justify-center py-16" data-testid="loading-managed-agents">
           <Loader2 className="w-6 h-6 animate-spin text-neutral-400" />
         </div>
-      ) : active ? (
-        <CheckoutObserver checkout={active} onExit={exitObserver} />
+      ) : agents.length === 0 ? (
+        <div className="bg-white rounded-2xl border border-neutral-100 shadow-sm p-12 text-center" data-testid="empty-managed-agents">
+          <div className="w-16 h-16 rounded-full bg-violet-50 flex items-center justify-center mx-auto mb-4">
+            <ShoppingBag className="w-8 h-8 text-violet-600" />
+          </div>
+          <h3 className="font-bold text-neutral-900 text-lg mb-2">No managed agents yet</h3>
+          <p className="text-sm text-neutral-500">Your managed agent is set up automatically — check back in a moment.</p>
+        </div>
       ) : (
-        <>
-          <CheckoutForm
-            onStarted={setActive}
-            defaultCardId={defaultCardId}
-            onDefaultCardChanged={setDefaultCardId}
-          />
-          <CheckoutHistory checkouts={history} onOpen={setActive} />
-        </>
+        <CardRow>
+          {agents.map((agent) => (
+            <CardRowItem key={agent.bot_id}>
+              <ManagedAgentCard
+                botName={agent.bot_name}
+                description={agent.description}
+                runtime={agent.runtime}
+                createdAt={agent.created_at}
+              />
+            </CardRowItem>
+          ))}
+        </CardRow>
       )}
     </div>
   );

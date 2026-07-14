@@ -2,20 +2,22 @@
 
 import Link from "next/link";
 import { ShoppingBag } from "lucide-react";
-import { MANAGED_AGENTS_ROUTE } from "@/lib/managed-agents";
+import { MANAGED_AGENTS_ROUTE, isManagedRuntime, managedAgentRoute } from "@/lib/managed-agents";
 
 interface ManagedAgentCardProps {
   botName: string;
   description: string | null;
+  runtime: string;
   createdAt: string;
 }
 
 // Dashboard card for a managed agent. Deliberately its own component —
 // BotCard models user-linked API-key agents (settings, webhooks, linking),
 // none of which apply here. Styling mirrors BotCard exactly.
-export function ManagedAgentCard({ botName, description, createdAt }: ManagedAgentCardProps) {
+export function ManagedAgentCard({ botName, description, runtime, createdAt }: ManagedAgentCardProps) {
+  const href = isManagedRuntime(runtime) ? managedAgentRoute(runtime) : MANAGED_AGENTS_ROUTE;
   return (
-    <Link href={MANAGED_AGENTS_ROUTE} className="block h-full" data-testid="managed-agent-card">
+    <Link href={href} className="block h-full" data-testid="managed-agent-card">
       <div className="h-full bg-white rounded-2xl border border-neutral-100 shadow-sm hover:shadow-md transition-shadow cursor-pointer">
         <div className="p-5">
           <div className="flex items-start justify-between gap-3">

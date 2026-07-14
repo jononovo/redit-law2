@@ -30,7 +30,6 @@ interface VirtualCard {
 interface CheckoutFormProps {
   onStarted: (checkout: AgentCheckoutData) => void;
   defaultCardId: string | null;
-  onDefaultCardChanged: (cardId: string | null) => void;
 }
 
 interface ApiError {
@@ -51,7 +50,7 @@ const CARD_ERROR_FALLBACKS: Record<string, string> = {
   master_guardrail: "Blocked by your master guardrails.",
 };
 
-export function CheckoutForm({ onStarted, defaultCardId, onDefaultCardChanged }: CheckoutFormProps) {
+export function CheckoutForm({ onStarted, defaultCardId }: CheckoutFormProps) {
   const { toast } = useToast();
   const [productUrl, setProductUrl] = useState("");
   const [request, setRequest] = useState("");
@@ -62,7 +61,6 @@ export function CheckoutForm({ onStarted, defaultCardId, onDefaultCardChanged }:
   const [merchantContext, setMerchantContext] = useState("");
   const [maxCost, setMaxCost] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [savingDefault, setSavingDefault] = useState(false);
   const [shippingNotice, setShippingNotice] = useState(false);
 
   useEffect(() => {
@@ -91,28 +89,6 @@ export function CheckoutForm({ onStarted, defaultCardId, onDefaultCardChanged }:
     };
   }, [defaultCardId]);
 
-  const setAsDefault = async () => {
-    if (!cardId || savingDefault) return;
-    setSavingDefault(true);
-    try {
-      const res = await authFetch("/api/v1/managed-agents/default-card", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ card_id: cardId }),
-      });
-      if (res.ok) {
-        onDefaultCardChanged(cardId);
-        toast({ title: "Default card set", description: "New checkouts will use this card unless you pick another." });
-      } else {
-        const b = (await res.json().catch(() => ({}))) as ApiError;
-        toast({ title: "Couldn't set default", description: b.message || b.error || "Try again.", variant: "destructive" });
-      }
-    } catch {
-      toast({ title: "Network error", description: "Couldn't set default — try again.", variant: "destructive" });
-    } finally {
-      setSavingDefault(false);
-    }
-  };
 
   const showError = (body: ApiError) => {
     const code = body.error || "internal_error";
@@ -258,22 +234,6 @@ export function CheckoutForm({ onStarted, defaultCardId, onDefaultCardChanged }:
                 ))}
               </SelectContent>
             </Select>
-            {cardId && cardId !== defaultCardId && (
-              <button
-                type="button"
-                onClick={setAsDefault}
-                disabled={savingDefault}
-                className="self-start text-xs text-neutral-400 hover:text-neutral-700 transition-colors"
-                data-testid="button-set-default-card"
-              >
-                {savingDefault ? "Saving…" : "Set as default card"}
-              </button>
-            )}
-            {cardId && cardId === defaultCardId && (
-              <span className="self-start text-xs text-neutral-400" data-testid="text-is-default-card">
-                Default card
-              </span>
-            )}
           </div>
         )}
       </div>

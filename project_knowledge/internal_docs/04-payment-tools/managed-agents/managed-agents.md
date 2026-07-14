@@ -2,12 +2,12 @@
 name: managed-agents
 description: "Overview of the managed-agents module — first-party agents CreditClaw provisions and orchestrates on the owner's behalf (remote runtimes with no credentials of their own), vs the owner's own external bots. Start here before touching anything under features/managed-agents/, then read the per-runtime doc."
 created: 2026-07-14
-last_updated: 2026-07-14
+last_updated: 2026-07-15
 ---
 
 # Managed Agents
 
-> A **managed agent** is a first-party agent CreditClaw provisions for an owner and drives **outbound** on their behalf. It has no API key of its own — it isn't a caller, it's a thing we orchestrate. The first (and today only) runtime is the Crossmint Agent Checkout runtime, branded "Captain Crunch". This module is the home for that runtime and any future ones.
+> A **managed agent** is a first-party agent CreditClaw provisions for an owner and drives **outbound** on their behalf. It has no API key of its own — it isn't a caller, it's a thing we orchestrate. The first (and today only) runtime is the Crossmint Agent Checkout runtime, branded "Jennifer". This module is the home for that runtime and any future ones.
 
 Read this file first for the module shape; read `crossmint-checkout-runtime.md` (sibling) for the first runtime's full technical detail.
 
@@ -33,7 +33,7 @@ A user-linked agent is a caller we authenticate. A managed agent is a capability
 
 ```
 features/managed-agents/
-  crossmint-checkout/     ← runtime #1: Crossmint Agent Checkout (Captain Crunch)
+  crossmint-checkout/     ← runtime #1: Crossmint Agent Checkout (Jennifer)
   <future runtime>/       ← e.g. a self-hosted browser-use master agent, slots in as a sibling
 ```
 
@@ -67,6 +67,6 @@ Three things sound like they belong here but do not:
 
 | Runtime | Doc | Status |
 |---|---|---|
-| Crossmint Agent Checkout ("Captain Crunch") | `crossmint-checkout-runtime.md` | Built + restructured into this module 2026-07-14; not yet deployed to Replit. |
+| Crossmint Agent Checkout ("Jennifer") | `crossmint-checkout-runtime.md` | Built + restructured into this module 2026-07-14; not yet deployed to Replit. |
 
 See `crossmint-checkout-runtime.md` for the first runtime's full build plan, schema, routes, UI, and gotchas.
