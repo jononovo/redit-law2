@@ -4,3 +4,4 @@
 - [Rail 3 expiry & prod cutover](rail3-orderintent-expiry.md) — camelCase `expiresAt`; Rail 3 on Crossmint PROD (Rail 2 staging); prod-only Crossmint UI bugs: bump the client SDK first (staging mocks the ceremony).
 - [Rail 3 refresh-token store](rail3-refresh-token-store.md) — Firebase refresh tokens stored plaintext BY DECISION; encryption + OWNER_REFRESH_TOKEN_ENCRYPTION_KEY intentionally declined, don't re-add.
 - [db:push blocker + test baseline](db-push-and-test-baseline.md) — db:push hangs on rail5_transactions constraint prompt (use direct SQL); 3 vitest suites fail on clean HEAD, don't chase them.
+- [Crossmint Agent Checkouts quirks](crossmint-agent-checkouts.md) — action submits need `action: "submit"` in body; create needs `constraints: {}` even when empty; prod-only, poll-based.

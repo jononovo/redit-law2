@@ -165,9 +165,11 @@ export async function startCheckout(params: {
     body: {
       target: { kind: "direct_url", url: input.product_url, request },
       buyerProfileId,
-      ...(input.max_cost_cents
-        ? { constraints: { maxCost: { amount: (input.max_cost_cents / 100).toFixed(2), currency: "USD" } } }
-        : {}),
+      // Crossmint requires `constraints` to be present as an object even when
+      // empty ("expected object, received undefined").
+      constraints: input.max_cost_cents
+        ? { maxCost: { amount: (input.max_cost_cents / 100).toFixed(2), currency: "USD" } }
+        : {},
     },
   });
   const cm = await unwrapCrossmint<CrossmintCheckout>(res, "createManagedAgentCheckout");
@@ -321,7 +323,7 @@ async function handleCardAction(row: ManagedAgentCheckout, jwt: string, cm: Cros
 
     const submitRes = await agentCheckoutsFetch(
       `/${claimed.crossmintCheckoutId}/actions/${action.id}`,
-      { jwt, method: "POST", body: { values } },
+      { jwt, method: "POST", body: { action: "submit", values } },
     );
     await unwrapCrossmint(submitRes, "submitCardAction");
 
@@ -402,7 +404,10 @@ export async function submitUserAction(row: ManagedAgentCheckout, jwt: string, a
   const res = await agentCheckoutsFetch(`/${row.crossmintCheckoutId}/actions/${actionId}`, {
     jwt,
     method: "POST",
-    body: { values },
+    // Crossmint requires the discriminator `action: "submit"` in the body
+    // (its absence is the 400 "action: Invalid input"); the action id rides
+    // in the path only.
+    body: { action: "submit", values },
   });
   await unwrapCrossmint(res, "submitUserAction");
 
