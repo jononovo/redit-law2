@@ -401,6 +401,14 @@ export async function submitUserAction(row: ManagedAgentCheckout, jwt: string, a
     throw new AgentCheckoutError("card_action_forbidden", 403, "Payment details are handled automatically.");
   }
 
+  // Diagnostic: logs what Crossmint asked for (the schema) so schema-mismatch
+  // 400s are debuggable from prod logs. Submitted values stay out of logs —
+  // answers can contain OTP codes — only their keys and types are recorded.
+  const valueShapes = Object.fromEntries(Object.entries(values).map(([k, v]) => [k, typeof v]));
+  console.log(
+    `[ManagedAgentCheckout] submitUserAction ${row.checkoutId} action=${actionId} responseSchema=${JSON.stringify(cm.pendingUserAction.responseSchema)} valueShapes=${JSON.stringify(valueShapes)}`
+  );
+
   const res = await agentCheckoutsFetch(`/${row.crossmintCheckoutId}/actions/${actionId}`, {
     jwt,
     method: "POST",

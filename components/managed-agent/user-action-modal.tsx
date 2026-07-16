@@ -16,11 +16,44 @@ import {
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 
+interface JsonSchemaVariant {
+  const?: string | number | boolean;
+  enum?: Array<string | number | boolean>;
+  title?: string;
+}
+
 interface JsonSchemaProperty {
   type?: string;
   enum?: Array<string | number | boolean>;
+  oneOf?: JsonSchemaVariant[];
+  anyOf?: JsonSchemaVariant[];
+  const?: string | number | boolean;
   description?: string;
   title?: string;
+}
+
+interface FieldOption {
+  value: string | number | boolean;
+  label: string;
+}
+
+// Fixed choices can arrive as `enum`, `oneOf`/`anyOf` of `const` variants, or a
+// lone `const`. Returns null when the field is genuinely free-form.
+function optionsFor(prop: JsonSchemaProperty): FieldOption[] | null {
+  if (Array.isArray(prop.enum) && prop.enum.length > 0) {
+    return prop.enum.map((v) => ({ value: v, label: String(v) }));
+  }
+  const variants = prop.oneOf || prop.anyOf;
+  if (Array.isArray(variants) && variants.length > 0) {
+    const opts: FieldOption[] = [];
+    for (const v of variants) {
+      if (v.const !== undefined) opts.push({ value: v.const, label: v.title || String(v.const) });
+      else if (Array.isArray(v.enum)) for (const e of v.enum) opts.push({ value: e, label: String(e) });
+    }
+    if (opts.length > 0) return opts;
+  }
+  if (prop.const !== undefined) return [{ value: prop.const, label: prop.title || String(prop.const) }];
+  return null;
 }
 
 interface UserActionModalProps {
@@ -55,8 +88,8 @@ export function UserActionModal({ action, onSubmit, onCancel }: UserActionModalP
 
   const properties = useMemo(() => schemaProperties(action.response_schema), [action.response_schema]);
   const fields = useMemo(() => (properties ? Object.entries(properties) : []), [properties]);
-  // A lone enum field submits on click — no separate Submit button needed.
-  const singleEnumField = fields.length === 1 && Array.isArray(fields[0][1].enum);
+  // A lone fixed-choice field submits on click — no separate Submit button needed.
+  const singleEnumField = fields.length === 1 && optionsFor(fields[0][1]) !== null;
 
   useEffect(() => {
     if (!action.expires_at) return;
@@ -77,7 +110,7 @@ export function UserActionModal({ action, onSubmit, onCancel }: UserActionModalP
   };
 
   const allChosen = fields.every(([name, prop]) =>
-    Array.isArray(prop.enum) || prop.type === "boolean" ? values[name] !== undefined : true
+    optionsFor(prop) !== null || prop.type === "boolean" ? values[name] !== undefined : true
   );
 
   return (
@@ -101,14 +134,16 @@ export function UserActionModal({ action, onSubmit, onCancel }: UserActionModalP
 
         {properties ? (
           <div className="flex flex-col gap-5">
-            {fields.map(([name, prop]) => (
+            {fields.map(([name, prop]) => {
+              const options = optionsFor(prop);
+              return (
               <div key={name} className="flex flex-col gap-2">
                 <Label>{prop.title || prettifyName(name)}</Label>
                 {prop.description && <p className="text-xs text-neutral-400">{prop.description}</p>}
 
-                {Array.isArray(prop.enum) ? (
+                {options ? (
                   <div className="flex flex-col gap-2">
-                    {prop.enum.map((option, i) => (
+                    {options.map((option, i) => (
                       <Button
                         key={i}
                         type="button"
@@ -116,15 +151,15 @@ export function UserActionModal({ action, onSubmit, onCancel }: UserActionModalP
                         disabled={submitting}
                         className={cn(
                           "w-full justify-start",
-                          values[name] === option && "border-primary bg-primary/5"
+                          values[name] === option.value && "border-primary bg-primary/5"
                         )}
                         onClick={() => {
-                          setValues((v) => ({ ...v, [name]: option }));
-                          if (singleEnumField) void doSubmit({ [name]: option });
+                          setValues((v) => ({ ...v, [name]: option.value }));
+                          if (singleEnumField) void doSubmit({ [name]: option.value });
                         }}
                         data-testid={`button-action-option-${name}-${i}`}
                       >
-                        {String(option)}
+                        {option.label}
                       </Button>
                     ))}
                   </div>
@@ -153,14 +188,23 @@ export function UserActionModal({ action, onSubmit, onCancel }: UserActionModalP
                   </div>
                 ) : (
                   <Input
-                    value={typeof values[name] === "string" ? (values[name] as string) : ""}
-                    onChange={(e) => setValues((v) => ({ ...v, [name]: e.target.value }))}
+                    type={prop.type === "number" || prop.type === "integer" ? "number" : "text"}
+                    value={values[name] === undefined ? "" : String(values[name])}
+                    onChange={(e) => {
+                      const raw = e.target.value;
+                      const coerced =
+                        (prop.type === "number" || prop.type === "integer") && raw !== "" && !Number.isNaN(Number(raw))
+                          ? Number(raw)
+                          : raw;
+                      setValues((v) => ({ ...v, [name]: coerced }));
+                    }}
                     disabled={submitting}
                     data-testid={`input-action-${name}`}
                   />
                 )}
               </div>
-            ))}
+              );
+            })}
 
             {!singleEnumField && (
               <Button
