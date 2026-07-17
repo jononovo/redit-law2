@@ -1550,6 +1550,17 @@ export const rail3Cards = pgTable("rail3_cards", {
   // here so the UI doesn't depend on Crossmint echoing it back. Nullable for legacy rows.
   expiresAt: timestamp("expires_at"),
 
+  // Minted card credentials (Crossmint POST /order-intents/:id/credentials).
+  // Saved when the card is issued (owner-present, JWT) so the owner and linked
+  // agents can use the card in checkouts. Re-mintable on demand.
+  cardNumber: text("card_number"),
+  cardExpirationMonth: text("card_expiration_month"),
+  cardExpirationYear: text("card_expiration_year"),
+  cardCvc: text("card_cvc"),
+  credentialExpiresAt: timestamp("credential_expires_at"),        // Crossmint's expiry on the minted numbers
+  credentialMerchant: jsonb("credential_merchant"),               // { name, url, countryCode } used at mint
+  credentialFetchedAt: timestamp("credential_fetched_at"),
+
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
   lastUsedAt: timestamp("last_used_at"),

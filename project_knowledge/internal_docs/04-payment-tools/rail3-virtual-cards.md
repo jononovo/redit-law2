@@ -7,7 +7,7 @@ last_updated: 2026-06-05
 
 # Rail 3 — Virtual Cards
 
-> Owner vaults their real Visa/Mastercard once in Crossmint. Each "virtual card" = one Crossmint **orderIntent** stacked on that vault with its own spending mandate. At bot checkout, Crossmint returns a **merchant-locked one-time PAN/CVC** scoped to that orderIntent. CreditClaw never stores card data.
+> Owner vaults their real Visa/Mastercard once in Crossmint. Each "virtual card" = one Crossmint **orderIntent** stacked on that vault with its own spending mandate. At bot checkout, Crossmint returns a **merchant-locked one-time PAN/CVC** scoped to that orderIntent. **Update 2026-07-17:** minted credentials ARE now stored plaintext on `rail3_cards` (by owner decision — matches the refresh-token precedent) and exposed to the owner UI and the bot cards API. Mint path: `POST /api/v1/rail3/cards/:cardId/credentials` (owner session + Bearer JWT; merchant optional, defaults to a generic descriptor). Auto-minted after verification completes in the add-card dialog; re-mintable from the card detail page.
 
 Third outbound payment rail, alongside Rail 1 (Privy stablecoin) and Rail 5 (self-hosted encrypted real card). "Virtual Cards" tile in the owner sidebar.
 
@@ -96,7 +96,7 @@ An orderIntent's "how long / how much" behavior is governed by **three independe
 
 | Clock | What it controls | Typical value | Who sets it | Where it lives |
 |---|---|---|---|---|
-| **Credential TTL** | The minted one-time PAN/CVC itself — single-use, short-lived. | Minutes to ~1h (Basis Theory CVC retention default 1h). | PCI / vault rules. **Not us.** | The bot-checkout response; never stored. |
+| **Credential TTL** | The minted one-time PAN/CVC itself — single-use, short-lived. | Minutes to ~1h (Basis Theory CVC retention default 1h). | PCI / vault rules. **Not us.** | The bot-checkout response; also saved to `rail3_cards.card_number/…` when minted via the owner credentials route (2026-07-17). |
 | **Intent expiry** (`expires_at`) | How long the **orderIntent (= the virtual card / authorization)** stays alive and able to mint credentials *at all*. | **~7 days from creation (staging, observed).** | **Crossmint default today** — we send no value. Settable one layer down (Basis Theory Instruction `expires_at`). | The orderIntent. Surfaces only in the credentials response's `expiresAt`; **not** on `getOrderIntent`. |
 | **Mandate period** | The **spend-cap refresh cadence** — when the budget resets. | `weekly` / `monthly` / `yearly`. | **Us**, via the create form → `mandates[].details.period`. | `rail3_cards.limit_period` + the Crossmint mandate. |
 

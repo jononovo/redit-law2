@@ -31,6 +31,13 @@ export const GET = withBotApi("/api/v1/bot/rail3/cards", async (_request, { bot 
         intent_mode: c.intentMode,
         limit_amount_cents: c.limitAmountCents,
         limit_period: c.limitPeriod,
+        // Minted card credentials — saved at issuance so agents can use the
+        // card in any checkout. Null until the owner mints them in the UI.
+        card_number: c.isFrozen ? null : c.cardNumber || null,
+        card_expiration_month: c.isFrozen ? null : c.cardExpirationMonth || null,
+        card_expiration_year: c.isFrozen ? null : c.cardExpirationYear || null,
+        card_cvc: c.isFrozen ? null : c.cardCvc || null,
+        credential_expires_at: c.credentialExpiresAt?.toISOString() ?? null,
       };
     }),
   });

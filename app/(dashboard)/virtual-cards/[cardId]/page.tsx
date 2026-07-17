@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import {
   Shield, Bot, Clock, CheckCircle2, XCircle, AlertTriangle, ShoppingCart,
-  Copy, ExternalLink, Wallet, FileText,
+  Copy, ExternalLink, Wallet, FileText, CreditCard, Eye, EyeOff, RefreshCw,
 } from "lucide-react";
 import { CardVisual } from "@/components/wallet/card-visual";
 import { CardColorPicker } from "@/components/wallet/card-color-picker";
@@ -54,6 +54,12 @@ interface Rail3CardDetail {
   mandates: Rail3Mandate[];
   limit_amount_cents: number | null;
   limit_period: "weekly" | "monthly" | "yearly" | null;
+  card_number: string | null;
+  card_expiration_month: string | null;
+  card_expiration_year: string | null;
+  card_cvc: string | null;
+  credential_expires_at: string | null;
+  credential_fetched_at: string | null;
   created_at: string;
   transactions: Rail3Transaction[];
 }
@@ -77,6 +83,8 @@ export default function Rail3CardDetailPage() {
   const [loading, setLoading] = useState(true);
   const [freezeLoading, setFreezeLoading] = useState(false);
   const [colorSaving, setColorSaving] = useState(false);
+  const [mintLoading, setMintLoading] = useState(false);
+  const [revealed, setRevealed] = useState(false);
 
   useEffect(() => {
     if (user && cardId) {
@@ -125,6 +133,32 @@ export default function Rail3CardDetailPage() {
       if (res.ok) setCard((prev) => prev ? { ...prev, card_color: color } : prev);
     } catch {}
     setColorSaving(false);
+  }
+
+  async function handleMintCredentials() {
+    if (!card) return;
+    setMintLoading(true);
+    try {
+      const res = await authFetch(`/api/v1/rail3/cards/${card.card_id}/credentials`, { method: "POST" });
+      const json = await res.json();
+      if (res.ok) {
+        setCard((prev) => (prev ? { ...prev, ...json } : prev));
+        setRevealed(true);
+        toast({ title: "Card numbers ready" });
+      } else {
+        toast({ title: "Could not get card numbers", description: json.message || json.error, variant: "destructive" });
+      }
+    } catch {
+      toast({ title: "Error", description: "Something went wrong.", variant: "destructive" });
+    } finally {
+      setMintLoading(false);
+    }
+  }
+
+  async function handleCopyCardNumber() {
+    if (!card?.card_number) return;
+    await navigator.clipboard.writeText(card.card_number);
+    toast({ title: "Copied", description: "Card number copied to clipboard." });
   }
 
   async function handleCopyIntentId() {
@@ -195,6 +229,84 @@ export default function Rail3CardDetailPage() {
                 </p>
               </div>
             </div>
+          </div>
+
+          <div className="bg-white rounded-2xl border border-neutral-100 p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="font-bold text-neutral-900 flex items-center gap-2">
+                <CreditCard className="w-5 h-5 text-emerald-600" /> Card Numbers
+              </h3>
+              {card.card_number && (
+                <button
+                  onClick={() => setRevealed((v) => !v)}
+                  className="text-neutral-400 hover:text-neutral-700 transition-colors"
+                  data-testid="button-r3-toggle-reveal"
+                >
+                  {revealed ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              )}
+            </div>
+            {card.card_number ? (
+              <>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div className="bg-neutral-50 rounded-xl p-4 col-span-2">
+                    <p className="text-neutral-500 mb-1">Number</p>
+                    <div className="flex items-center gap-2">
+                      <p className="font-bold text-neutral-900 text-lg font-mono flex-1" data-testid="text-r3-card-number">
+                        {revealed
+                          ? card.card_number.replace(/(.{4})/g, "$1 ").trim()
+                          : `•••• •••• •••• ${card.card_number.slice(-4)}`}
+                      </p>
+                      <button
+                        onClick={handleCopyCardNumber}
+                        className="text-neutral-400 hover:text-neutral-700 transition-colors flex-shrink-0"
+                        data-testid="button-r3-copy-card-number"
+                      >
+                        <Copy className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                  <div className="bg-neutral-50 rounded-xl p-4">
+                    <p className="text-neutral-500">Expiry</p>
+                    <p className="font-bold text-neutral-900 text-lg font-mono" data-testid="text-r3-card-expiry">
+                      {revealed
+                        ? `${String(card.card_expiration_month).padStart(2, "0")}/${String(card.card_expiration_year).slice(-2)}`
+                        : "••/••"}
+                    </p>
+                  </div>
+                  <div className="bg-neutral-50 rounded-xl p-4">
+                    <p className="text-neutral-500">CVC</p>
+                    <p className="font-bold text-neutral-900 text-lg font-mono" data-testid="text-r3-card-cvc">
+                      {revealed ? card.card_cvc : "•••"}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={handleMintCredentials}
+                  disabled={mintLoading || card.is_frozen || card.status !== "active"}
+                  className="text-sm text-neutral-500 hover:text-neutral-800 transition-colors flex items-center gap-1.5 disabled:opacity-50"
+                  data-testid="button-r3-remint-credentials"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${mintLoading ? "animate-spin" : ""}`} /> Get fresh numbers
+                </button>
+              </>
+            ) : (
+              <div className="space-y-3">
+                <p className="text-sm text-neutral-500">No card numbers saved yet.</p>
+                <button
+                  onClick={handleMintCredentials}
+                  disabled={mintLoading || card.is_frozen || card.status !== "active"}
+                  className="px-4 py-2 rounded-xl bg-neutral-900 text-white text-sm font-semibold hover:bg-neutral-700 transition-colors disabled:opacity-50 flex items-center gap-2"
+                  data-testid="button-r3-mint-credentials"
+                >
+                  {mintLoading && <RefreshCw className="w-4 h-4 animate-spin" />}
+                  Get card number
+                </button>
+                {card.status !== "active" && (
+                  <p className="text-xs text-neutral-400">Card must be active first.</p>
+                )}
+              </div>
+            )}
           </div>
 
           {card.card_last4 && (

@@ -137,6 +137,11 @@ function AddCardPanel({ open, onOpenChange, paymentMethods, onComplete }: Props)
       const json = await res.json();
       if (res.ok && json.status) {
         setCreatedCard((cur) => cur ? { ...cur, phase: json.status } : cur);
+        // Mint and save the card numbers as part of issuance. Non-blocking:
+        // failure here never blocks the dialog — the detail page can re-mint.
+        if (json.status === "active") {
+          authFetch(`/api/v1/rail3/cards/${createdCardId}/credentials`, { method: "POST" }).catch(() => {});
+        }
       } else {
         setError(json.message || json.error || "verification_refresh_failed");
       }

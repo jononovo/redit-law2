@@ -41,6 +41,13 @@ async function serializeCard(c: NonNullable<Awaited<ReturnType<typeof storage.ge
     mandates: c.mandates,
     limit_amount_cents: c.limitAmountCents,
     limit_period: c.limitPeriod,
+    card_number: c.cardNumber || null,
+    card_expiration_month: c.cardExpirationMonth || null,
+    card_expiration_year: c.cardExpirationYear || null,
+    card_cvc: c.cardCvc || null,
+    credential_expires_at: c.credentialExpiresAt?.toISOString() ?? null,
+    credential_merchant: c.credentialMerchant ?? null,
+    credential_fetched_at: c.credentialFetchedAt?.toISOString() ?? null,
     created_at: c.createdAt.toISOString(),
   };
 }
