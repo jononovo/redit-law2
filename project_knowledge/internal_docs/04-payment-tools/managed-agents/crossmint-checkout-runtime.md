@@ -2,7 +2,7 @@
 name: crossmint-checkout-runtime
 description: "Crossmint Agent Checkout runtime of the managed-agents module — the auto-provisioned managed agent (branded 'Jennifer') that buys from any store via Crossmint's Agent Checkout API, paying with the owner's virtual cards. Technical plan + runtime doc."
 created: 2026-07-13
-last_updated: 2026-07-15
+last_updated: 2026-07-17
 ---
 
 # Managed Agents — Crossmint Agent Checkout runtime (Jennifer)
@@ -139,11 +139,20 @@ All modules `import "server-only"`, mirroring rail3.
 | Schema | `shared/schema.ts` (`managedAgents`, `managedAgentCheckouts`, `managed_agents_owner_runtime_uidx`) |
 | Reused rail3 | `credentials.ts` (`fetchOneTimeCredentials`), `client.ts` (`unwrapCrossmint`), guardrails `master.ts`, `rail3.ts` storage, `orders/create.ts` |
 
+## Crossmint documentation
+
+- Quickstart (the primary reference): https://docs.crossmint.com/agents/agent-checkouts-quickstart — also fetchable as markdown at `https://docs.crossmint.com/agents/agent-checkouts-quickstart.md`.
+- Overview / how agents pay: https://docs.crossmint.com/agents/overview, https://docs.crossmint.com/agents/how-agents-pay
+- Our captured API evidence: `../_research/260713-crossmint-agent-checkouts-api.md`. API quirks also live in agent memory (`.agents/memory/crossmint-agent-checkouts.md`).
+
 ## Gotchas
 
 - **Approval modes do not apply.** The owner initiating the checkout in-session IS the approval — mirroring the existing rail3 bot-checkout behavior (no `evaluateApprovalDecision` call; amount is unknown at mint time). This is deliberate, despite `payments_overview.md`'s "every rail hits the unified approvals queue" wording.
 - **Production only.** Crossmint has no staging for Agent Checkouts — every test spends real money on the owner's real vaulted card. Test with a cheap item + `maxCost`.
 - **`unstable` API.** Same version-churn risk as order-intents; keep all paths in `client.ts` only.
+- **Action submits need the discriminator** (found in prod 2026-07-16): body must be `{ action: "submit", values }` — omitting `action` is a 400 `action: Invalid input`. The `actionId` rides in the path only; putting it in the body is rejected.
+- **`constraints` must always be an object on create** — omit it entirely and Crossmint 400s; send `{}` when there's no `maxCost`.
+- **`responseSchema` fixed choices aren't always `enum`** (found in prod 2026-07-16): choices can arrive as `oneOf`/`anyOf` of `const` variants or a lone `const`. Free-text answers to those get a 400 "User action response values do not match responseSchema" — submit the exact canonical value. `user-action-modal.tsx#optionsFor` handles all encodings; `submitUserAction` logs each schema + value shapes (never the values — they can be OTP codes) for diagnosing new encodings.
 - **Card-action detection is heuristic** (responseSchema field names). Log unrecognized schemas; fall back to treating them as user actions rather than guessing.
 - **Amount is unknown until receipt** — the rail3 transaction is `credentials_issued` with null amount until terminal success (same semantics as the bot flow). Rail 3 spend is not in master-guardrail totals (pre-existing behavior).
 - **Merchant lock derives from the product URL host.** If a store's checkout completes on a different domain, the network-token layer handles it the same as the existing bot flow — but log merchant mismatch failures distinctly (`credential_fetch_failed` vs checkout-declined).
@@ -158,4 +167,4 @@ All modules `import "server-only"`, mirroring rail3.
 
 ## Status
 
-**Built + restructured into the managed-agents module 2026-07-14 — not yet deployed to Replit.** Needs the migration in `REPLIT-DEPLOY-managed-agents.md` at repo root (new `managed_agents` + `managed_agent_checkouts` tables, `bot_type='managed'` rows; the former `owners.crossmint_buyer_profile_id` and `owners.default_agent_checkout_card_id` columns are dropped). Payment confirmed submit-only against Crossmint docs. Still pending before public launch: naming ("Jennifer") trademark check, and the first real checkout logging the full payload (`AGENT_CHECKOUT_DEBUG=1`) to discover the live-view stream + exact card-action field names.
+**Deployed and working on prod 2026-07-17.** Real checkouts run end-to-end on creditclaw.com: create → poll → non-card user actions answered from the dashboard (schema-driven modal incl. `oneOf`/`anyOf`/`const` choices) → receipt. The three API-shape gotchas above (submit discriminator, `constraints` object, responseSchema option encodings) were all found and fixed against live traffic 2026-07-16/17. Still pending before public launch: naming ("Jennifer") trademark check, and live-view stream discovery (viewport shows the event timeline until Crossmint exposes a stream contract).
